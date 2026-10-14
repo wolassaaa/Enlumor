@@ -1,10 +1,19 @@
-import sys, tempfile, unittest, hashlib
+import sys, tempfile, unittest, hashlib, subprocess, json, os
 from pathlib import Path
 import pymupdf as fitz
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / 'python'))
 from export_pdf import export_pdf
 
 class ExportTests(unittest.TestCase):
+    def test_cli_accepts_utf8_chinese_paths_with_windows_legacy_encoding(self):
+        with tempfile.TemporaryDirectory() as folder:
+            source = Path(folder) / '中文 source.pdf'
+            doc = fitz.open(); doc.new_page(); doc.save(source); doc.close()
+            request = json.dumps({'operation':'inspect','source':str(source)}, ensure_ascii=False).encode('utf-8')
+            run = subprocess.run([sys.executable, str(Path(__file__).resolve().parents[2] / 'python/export_pdf.py')], input=request, capture_output=True, env={**os.environ, 'PYTHONIOENCODING':'gbk', 'PYTHONUTF8':'0'})
+            self.assertEqual(run.returncode, 0, run.stdout)
+            self.assertEqual(json.loads(run.stdout)['value']['pageCount'], 1)
+
     def test_rotation_crop_native_marks_and_repeat_exports(self):
         for rotation in (0, 90, 180, 270):
             with self.subTest(rotation=rotation), tempfile.TemporaryDirectory() as folder:

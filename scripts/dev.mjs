@@ -2,6 +2,8 @@ import { createServer } from 'vite';
 import { build } from 'esbuild';
 import { spawn } from 'node:child_process';
 import electron from 'electron';
+import { copyAssets } from './assets.mjs';
+copyAssets('public/pdf-assets');
 await build({ entryPoints: ['src/main/index.ts', 'src/main/preload.ts'], outdir: 'dist/main', bundle: true, platform: 'node', format: 'cjs', outExtension: { '.js': '.cjs' }, external: ['electron'], sourcemap: true });
 const server = await createServer({ server: { port: 5173, strictPort: true, host: 'localhost' } });
 await server.listen();

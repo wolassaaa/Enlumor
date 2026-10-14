@@ -20,7 +20,7 @@ export function quadToScreen(q: Quad, m: number[]): [number, number, number, num
 }
 export function validateAnnotation(value: unknown, pageCount: number): asserts value is Annotation {
   const a = value as Annotation;
-  if (!a || typeof a !== 'object' || !/^[\w-]{1,100}$/.test(a.id) || !['highlight', 'note'].includes(a.type) || a.author !== 'user' ||
+  if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !/^[\w-]{1,100}$/.test(a.id) || typeof a.documentId !== 'string' || typeof a.fingerprint !== 'string' || !['highlight', 'note'].includes(a.type) || a.author !== 'user' ||
       !Number.isInteger(a.pageIndex) || a.pageIndex < 0 || a.pageIndex >= pageCount ||
       typeof a.quote !== 'string' || a.quote.length > 100000 || typeof a.note !== 'string' || a.note.length > 100000 ||
       !/^#[0-9a-f]{6}$/i.test(a.color) || !Array.isArray(a.quads) || !a.quads.length || a.quads.length > 10000 ||

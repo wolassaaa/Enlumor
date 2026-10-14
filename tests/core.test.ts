@@ -24,6 +24,7 @@ describe('canonical PDF geometry', () => {
     expect(() => validateAnnotation({ ...mark('d', 'f'), pageIndex: 1 }, 1)).toThrow();
     expect(() => validateAnnotation({ ...mark('d', 'f'), type: 'script' }, 1)).toThrow();
     expect(() => validateAnnotation({ ...mark('d', 'f'), color: 'url(x)' }, 1)).toThrow();
+    expect(() => validateAnnotation({ ...mark('d', 'f'), id: 123 }, 1)).toThrow();
   });
 });
 

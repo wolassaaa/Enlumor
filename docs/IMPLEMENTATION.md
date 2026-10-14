@@ -12,12 +12,28 @@ Windows first; platform-neutral document models, renderer and coordinate transfo
 - Runtime versions and acceptance evidence are recorded in VERIFICATION.txt.
 
 ## Milestones
-- [ ] Desktop and runtime
-- [ ] Document identity and reading
-- [ ] Coordinates and selection
-- [ ] Transactions and undo
-- [ ] Export and note
-- [ ] Acceptance and portable build
+- [x] Desktop and runtime
+- [x] Document identity and reading
+- [x] Coordinates and selection
+- [x] Transactions and undo
+- [x] Export and note
+- [x] Automated acceptance and portable build
+
+## Observed review and fixes
+- Independent final review identified undo/redo retries losing action kind; a real SQLite trigger failure reproduced the disabled-redo bug. Pending operations now retain their action kind; regression passed.
+- PDF.js search wraps matches in nested spans; selecting searched text duplicated quote/quads. A failing real Electron regression now passes with unique text-node traversal.
+- Windows legacy stdin encoding corrupted Chinese file paths. JSON requests now decode from UTF-8 bytes, with a GBK-environment subprocess regression.
+- Windows fsync requires a writable file handle. Export temp-file fsync uses r+b.
+- Runtime verified inside the packaged application: Electron 44.7.2 / Node 24.21.0 / SQLite 3.53.4.
+- 11 Vitest checks, 3 Python unittest cases and 9 real Electron scenarios pass.
+- Packaged application opened/annotated/exported a PDF. Edge displayed the exported native highlight correctly; screenshots inspected.
+- Standalone Adobe Acrobat Reader is not installed, so its separate compatibility gate remains unverified. Edge's Adobe-powered PDF engine was visually verified, not treated as a standalone Acrobat test.
+- macOS/iPad, arbitrary tilted glyphs and bundled Python remain later work, not implemented.
+- Packaging compression changed from maximum to store after maximum compression consumed several minutes on this machine; portable executable trades size for fast reproducible local builds.
+- npm audit reports 8 moderate development-toolchain advisories (electron-builder -> sprintf-js); production dependency audit reports 0. No automated breaking downgrade applied.
+
+## Completion / handoff
+First-stage application code is implemented. Keep feat/foundation in place; no remote was added and no changes were pushed. Original PDFs and personal userData are not touched by code rollback. Next product milestone is reader completion, not AI.
 
 ## Pre-flight
 Document fingerprint and canonical quads are shared by renderer, store and exporter; one TypeScript model and explicit Python request schema.

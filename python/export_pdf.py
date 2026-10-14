@@ -13,7 +13,11 @@ def digest(path):
         return hashlib.file_digest(stream, 'sha256').hexdigest()
 
 def inspect_pdf(source):
-    with fitz.open(source) as doc:
+    try:
+        opened = fitz.open(source)
+    except Exception as error:
+        raise ValueError('INVALID_PDF: 文件损坏或不是有效 PDF') from error
+    with opened as doc:
         if doc.needs_pass:
             raise ValueError('PASSWORD_REQUIRED: 首期暂不打开加密 PDF')
         if not doc.is_pdf or doc.page_count < 1:
@@ -82,7 +86,7 @@ def export_pdf(source, target, fingerprint, annotations):
 
 if __name__ == '__main__':
     try:
-        request = json.load(sys.stdin)
+        request = json.loads(sys.stdin.buffer.read())
         result = inspect_pdf(request['source']) if request['operation'] == 'inspect' else export_pdf(request['source'], request['target'], request['fingerprint'], request['annotations'])
         print(json.dumps({'ok': True, 'value': result}, ensure_ascii=True))
     except Exception as error:
