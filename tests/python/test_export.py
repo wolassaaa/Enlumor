@@ -22,7 +22,8 @@ class ExportTests(unittest.TestCase):
                     result = export_pdf(str(source), str(out), digest, marks)
                     self.assertEqual(result['annotationCount'], 2)
                     with fitz.open(out) as exported:
-                        annotations = list(exported[0].annots())
+                        exported_page = exported[0]
+                        annotations = list(exported_page.annots())
                         self.assertEqual(len(annotations), 3)
                         highlight = next(a for a in annotations if a.type[0] == 8)
                         # independent expected: x minus crop x, y reflected then minus crop y
