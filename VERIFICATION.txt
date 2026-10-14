@@ -1,0 +1,94 @@
+Enlumor foundation verification / 2026-10-15 / Asia/Taipei
+Repository: D:\codex project\Enlumor
+Branch: feat/foundation
+Implementation commit: f08e450
+No remote / no push. Original PDFs remain read-only; workspace is in Electron userData.
+
+FOUR ARTIFACTS
+MODIFIED_FILE = D:\codex project\Enlumor\python\export_pdf.py
+DIFF_FILE = D:\codex project\Enlumor\evidence\DIFF.patch
+VERIFICATION = D:\codex project\Enlumor\VERIFICATION.txt
+ROLLBACK = D:\codex project\Enlumor\ROLLBACK.sh (Git executable mode 100755)
+Original snapshot = D:\codex project\Enlumor\evidence\ORIGINAL_export_pdf.py
+
+CHANGED BRANCH / FIELD
+Python CLI request decoding: json.load(sys.stdin) -> json.loads(sys.stdin.buffer.read()).
+This decodes the Electron UTF-8 JSON byte stream independently of Windows GBK stdin encoding.
+Also: Windows temp export fsync uses a writable r+b handle; invalid input PDF receives INVALID_PDF.
+Original snapshot is exact git show 7f65e03:python/export_pdf.py bytes, kept separately.
+Original SHA256: 95b7ad6166ef53cee6dd516a4fe062b1be775ef47e1e06ef51ce64abd69b1ab6
+Modified SHA256: 3a6cedd4312c03014c869c8a0a15e959081945039c5fc3635f2c57e73322fb8e
+
+BASELINE
+Working directory: D:\codex project\Enlumor
+Command: node scripts/check-utf8.mjs .cache/baseline/export_pdf.py
+Input: UTF-8 JSON {"operation":"inspect","source":"D:\\codex project\\Enlumor\\.cache\\utf8-check\\中文.pdf"}
+Environment: PYTHONIOENCODING=gbk, PYTHONUTF8=0; one-page valid PDF.
+Literal output: UTF8_INSPECT: FAIL
+Exit status: 1
+Result: original text-mode stdin decoder rejects/corrupts the UTF-8 Chinese filename.
+
+MODIFIED
+Command: node scripts/check-utf8.mjs python/export_pdf.py
+Input/environment: identical to BASELINE.
+Literal output: UTF8_INSPECT: PASS
+Exit status: 0
+Result: PDF metadata returns pageCount=1.
+
+ROLLBACK (ONLY ON ANOTHER COPY)
+Preparation: Copy-Item -LiteralPath 'python/export_pdf.py' -Destination '.cache/rollback/export_pdf.py'
+Command: & 'C:\Program Files\Git\bin\bash.exe' ./ROLLBACK.sh .cache/rollback/export_pdf.py
+Input: a copy with the modified SHA256 above; target verified inside the project.
+Literal output: ROLLBACK: RESTORED 7f65e03 python/export_pdf.py
+Exit status: 0
+Command: node scripts/check-utf8.mjs .cache/rollback/export_pdf.py
+Input/environment: identical to BASELINE.
+Literal output: UTF8_INSPECT: FAIL
+Exit status: 1 (expected: baseline bug restored on the copy)
+Restored bytes check: RESTORED_BYTES_MATCH=true
+Restored behavior/status: original GBK failure restored on the copy; real MODIFIED_FILE remains fixed with SHA256 3a6cedd4312c03014c869c8a0a15e959081945039c5fc3635f2c57e73322fb8e.
+The rollback script demonstrates a guarded single-file regression rollback, not an application/data rollback. It never deletes userData.
+
+FRESH ACCEPTANCE COMMANDS AND OBSERVED RESULTS
+npm run typecheck -> tsc --noEmit; no diagnostics; exit 0.
+npm test -> Tests 11 passed (11); exit 0.
+npm run test:python -> Ran 3 tests; OK; exit 0.
+npx playwright test -> 9 passed (40.0s); exit 0.
+npm run portable -> Windows portable built at release\Enlumor 0.1.0.exe; exit 0.
+node scripts/check-dev.mjs -> DEV_RENDERER: PASS; exit 0.
+node scripts/check-package.mjs -> PACKAGED_READER: PASS; exit 0.
+Packaged runtime output: {"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
+Edge output: EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)
+Visual inspection completed: evidence\edge-export.png shows the native yellow highlight aligned to the correct sentence and the source note retained.
+Visual inspection completed: evidence\enlumor-reader.png shows the same sentence highlighted inside the packaged reader.
+
+TEST COVERAGE
+- Literal PDF coordinates: four rotations, crop translation, affine inversion.
+- Real Electron: Windows display scale 1/1.5/2; four rotations plus zoom with stable persisted quads.
+- SQLite restart recovery, atomic invalid multi-page change rejection, query_only write failure, inverse undo/redo.
+- Real SQLite trigger injection reproduces failed undo; retry now retains undo kind and enables redo.
+- Search-created nested spans regression: quote no longer duplicates matched words.
+- Multiline/cross-page selection is one undo/redo step.
+- Source replacement blocked; identical-byte relocated source re-associated without losing saved marks.
+- Cancelled opening, corrupt PDF, password PDF and image-only page produce distinct outcomes.
+- 200-page PDF rendered on demand (fewer than 30 retained canvases), restored at page 120 after process kill.
+- Renderer HTTP(S) requests blocked during offline reading test; PDF.js assets loaded locally.
+- Export preserves existing annotations, does not duplicate generated marks across repeated exports, leaves original hash unchanged.
+- Python export tests verify four source-page rotations and cropped-page native highlight vertices.
+- Real packaged application opens, commits an annotation and exports through the external Python environment.
+
+DELIVERABLE
+Windows portable: D:\codex project\Enlumor\release\Enlumor 0.1.0.exe
+Size: 472924331 bytes
+SHA256: 0b1875d9c0d7be4559c32e2a4c55388a65ac797fb93cfd9ad00d49280785f3bc
+Launcher: D:\codex project\Enlumor\启动 Enlumor.cmd
+PowerShell launcher: D:\codex project\Enlumor\launch-enlumor.ps1
+Requires the existing project Python virtual environment; launchers configure ENLUMOR_PYTHON.
+
+REMAINING / NOT CLAIMED
+- Standalone Adobe Acrobat Reader is not installed; its separate compatibility gate is unverified. Edge's Adobe-powered PDF engine was visually checked, not counted as standalone Acrobat.
+- macOS/iPad builds, bundled Python, OCR, AI, whiteboard, cruise and phase-2 drawing tools are not implemented in this phase.
+- SQLite emits Node's experimental-feature warning. Vite reports the large bundled PDF engine chunk.
+- npm audit reports 8 moderate development-toolchain advisories via electron-builder -> sprintf-js. npm audit --omit=dev reports 0 production vulnerabilities. No forced breaking downgrade performed.
+- Arbitrary tilted text glyphs are bounded by DOM selection rectangles; common horizontal text and whole-page rotation are tested.
+- Reading-state writes are merged for 500ms; a crash can lose the last fraction of a second of scrolling, not acknowledged annotation commits.
