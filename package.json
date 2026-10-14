@@ -1,0 +1,59 @@
+{
+  "name": "enlumor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Local-first PDF reading workspace",
+  "main": "dist/main/index.cjs",
+  "scripts": {
+    "dev": "node scripts/dev.mjs",
+    "build": "tsc --noEmit && node scripts/build.mjs",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:python": "node scripts/python.mjs -m unittest discover -s tests/python -v",
+    "test:e2e": "npm run build && playwright test",
+    "start": "electron .",
+    "pack": "npm run build && electron-builder --win dir",
+    "portable": "npm run build && electron-builder --win portable"
+  },
+  "build": {
+    "appId": "local.enlumor.reader",
+    "productName": "Enlumor",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "python",
+        "to": "python",
+        "filter": [
+          "*.py"
+        ]
+      }
+    ],
+    "win": {
+      "target": "portable"
+    }
+  },
+  "dependencies": {
+    "pdfjs-dist": "6.4.299",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "@types/node": "24.19.2",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "electron": "44.7.2",
+    "electron-builder": "26.15.3",
+    "esbuild": "0.28.2",
+    "typescript": "7.0.2",
+    "vite": "8.3.4",
+    "vitest": "5.0.4"
+  }
+}
