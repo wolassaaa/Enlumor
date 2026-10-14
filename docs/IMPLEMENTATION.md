@@ -27,6 +27,7 @@ Windows first; platform-neutral document models, renderer and coordinate transfo
 - Runtime verified inside the packaged application: Electron 44.7.2 / Node 24.21.0 / SQLite 3.53.4.
 - 11 Vitest checks, 3 Python unittest cases and 9 real Electron scenarios pass.
 - Packaged application opened/annotated/exported a PDF. Edge displayed the exported native highlight correctly; screenshots inspected.
+- Actual portable EXE was separately launched through its extraction wrapper; renderer and SQLite workspace initialized successfully and the window closed.
 - Standalone Adobe Acrobat Reader is not installed, so its separate compatibility gate remains unverified. Edge's Adobe-powered PDF engine was visually verified, not treated as a standalone Acrobat test.
 - macOS/iPad, arbitrary tilted glyphs and bundled Python remain later work, not implemented.
 - Packaging compression changed from maximum to store after maximum compression consumed several minutes on this machine; portable executable trades size for fast reproducible local builds.

@@ -57,6 +57,7 @@ npx playwright test -> 9 passed (40.0s); exit 0.
 npm run portable -> Windows portable built at release\Enlumor 0.1.0.exe; exit 0.
 node scripts/check-dev.mjs -> DEV_RENDERER: PASS; exit 0.
 node scripts/check-package.mjs -> PACKAGED_READER: PASS; exit 0.
+node scripts/check-portable.mjs -> PORTABLE_STARTUP_SQLITE: PASS; exit 0 (actual portable EXE extracted, rendered its window, initialized an empty SQLite workspace and closed).
 Packaged runtime output: {"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
 Edge output: EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)
 Visual inspection completed: evidence\edge-export.png shows the native yellow highlight aligned to the correct sentence and the source note retained.
