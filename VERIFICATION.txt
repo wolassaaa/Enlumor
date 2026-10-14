@@ -79,7 +79,7 @@ TEST COVERAGE
 
 DELIVERABLE
 Windows portable: D:\codex project\Enlumor\release\Enlumor 0.1.0.exe
-Size: 472924331 bytes
+Size: 472924780 bytes
 SHA256: 0b1875d9c0d7be4559c32e2a4c55388a65ac797fb93cfd9ad00d49280785f3bc
 Launcher: D:\codex project\Enlumor\启动 Enlumor.cmd
 PowerShell launcher: D:\codex project\Enlumor\launch-enlumor.ps1
