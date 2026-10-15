@@ -22,6 +22,6 @@ export type Bridge = {
   onFlush(handler: () => Promise<void>): () => void;
 };
 export function unwrap<T>(reply: Reply<T>): T {
-  if (!reply.ok) throw new Error(`${reply.error.code}: ${reply.error.message}`);
+  if (!reply.ok) throw new Error(reply.error.message.startsWith(`${reply.error.code}:`) ? reply.error.message : `${reply.error.code}: ${reply.error.message}`);
   return reply.value;
 }
