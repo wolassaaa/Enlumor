@@ -90,3 +90,19 @@ for(const mode of ['arrow','ink'] as const)test(`${mode} draft uses selected col
  await expect(page.locator('.line-draft')).toHaveCount(0);await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
 });
+
+for(const mode of ['arrow','ink'] as const)for(const timing of ['same-turn','after-render'] as const)for(const action of ['hide-library','hide-notes','spacing','right-divider'] as const)test(`${mode} gesture cancels before ${action} changes the page layout (${timing})`,async()=>{
+ const app=await launch(path.join(folder,'layout-'+mode+'-'+action+'-'+timing));
+ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
+ if(action==='spacing')await page.getByRole('button',{name:'布局设置',exact:true}).click();
+ const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;await page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+200,box.y+210);await expect(page.locator('.line-draft')).toHaveCount(1);
+ await page.evaluate(({action,timing,x,y})=>{
+  if(action==='hide-library')(document.querySelector('[aria-label="收起文档栏"]') as HTMLButtonElement).click();
+  else if(action==='hide-notes')(document.querySelector('[aria-label="收起批注栏"]') as HTMLButtonElement).click();
+  else if(action==='spacing'){const select=document.querySelector('[aria-label="阅读间距"]') as HTMLSelectElement;select.value='24';select.dispatchEvent(new Event('change',{bubbles:true}));}
+  else document.querySelector('[aria-label="调整批注栏宽度"]')!.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));
+  if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+ },{action,timing,x:box.x+200,y:box.y+210});
+ await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true,includeHidden:true})).toHaveAttribute('aria-pressed','false');
+ }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+});
