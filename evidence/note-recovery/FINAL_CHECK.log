@@ -1,0 +1,13 @@
+
+Running 5 tests using 1 worker
+
+(node:52468) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\note-recovery.spec.ts:13:1 › note modal traps keyboard focus and restores its trigger after cancellation (2.4s)
+  ok 2 tests\e2e\note-recovery.spec.ts:21:1 › note saves its captured original anchor even if background selection is cleared (1.8s)
+  ok 3 tests\e2e\note-recovery.spec.ts:28:1 › failed note save retains draft and exact retry after closing details or Escape (2.0s)
+  ok 4 tests\e2e\note-recovery.spec.ts:36:1 › closing save error details keeps pending recovery visible and commits original delete on retry (1.7s)
+  ok 5 tests\e2e\note-recovery.spec.ts:43:1 › explicitly discarding a failed note edit preserves the previously saved note (1.2s)
+
+  5 passed (9.9s)

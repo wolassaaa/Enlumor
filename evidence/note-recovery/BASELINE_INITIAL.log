@@ -1,0 +1,118 @@
+
+Running 4 tests using 1 worker
+
+(node:49804) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\note-recovery.spec.ts:13:1 › note modal traps keyboard focus and restores its trigger after cancellation (1.5s)
+(node:9620) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  2 tests\e2e\note-recovery.spec.ts:21:1 › note saves its captured original anchor even if background selection is cleared (6.5s)
+(node:41176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  3 tests\e2e\note-recovery.spec.ts:28:1 › failed note save retains draft and exact retry after closing details or Escape (5.9s)
+(node:45136) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 4 tests\e2e\note-recovery.spec.ts:36:1 › closing save error details keeps pending recovery visible and commits original delete on retry (1.8s)
+
+
+  1) tests\e2e\note-recovery.spec.ts:13:1 › note modal traps keyboard focus and restores its trigger after cancellation 
+
+    Error: expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      13 | test('note modal traps keyboard focus and restores its trigger after cancellation',async()=>{
+      14 |  const{app,page}=await launch('focus');try{await select(page);const trigger=page.getByRole('button',{name:'添加便签',exact:true});await trigger.click();await page.getByLabel('便签内容').fill('retained draft');await page.keyboard.press('Shift+Tab');
+    > 15 |  expect(await page.evaluate(()=>!!document.activeElement?.closest('.note-modal'))).toBe(true);
+         |                                                                                    ^
+      16 |  await expect(page.getByRole('dialog',{name:'添加便签',exact:true})).toBeVisible();await expect(page.getByRole('dialog')).toHaveAttribute('aria-modal','true');
+      17 |  await page.keyboard.press('Tab');await expect(page.getByLabel('便签内容')).toBeFocused();
+      18 |  await page.keyboard.press('Escape');await expect(page.locator('.note-modal')).toHaveCount(0);await expect(trigger).toBeFocused();
+        at D:\codex project\Enlumor\tests\e2e\note-recovery.spec.ts:15:84
+
+    Error Context: test-results\note-recovery-note-modal-t-854dc--trigger-after-cancellation\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\note-recovery-note-modal-t-854dc--trigger-after-cancellation\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\note-recovery-note-modal-t-854dc--trigger-after-cancellation\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\note-recovery.spec.ts:21:1 › note saves its captured original anchor even if background selection is cleared 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator: locator('.note-content')
+    Expected: "captured anchor"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveText" locator('.note-content') with timeout 5000ms
+      - waiting for locator('.note-content')
+
+
+      23 |  // Programmatic click bypasses native inert: the submit guard must not rely only on keyboard isolation.
+      24 |  await page.locator('[aria-label="取消选区"]').evaluate((b:HTMLButtonElement)=>b.click());await page.getByRole('button',{name:'保存便签',exact:true}).click();
+    > 25 |  await expect(page.locator('.note-content')).toHaveText('captured anchor');await expect(page.locator('.annotation-source')).toContainText('Original note anchor');await expect(page.getByRole('status')).toContainText('已保存');
+         |                                              ^
+      26 |  }finally{await finish(app);}
+      27 | });
+      28 | test('failed note save retains draft and exact retry after closing details or Escape',async()=>{
+        at D:\codex project\Enlumor\tests\e2e\note-recovery.spec.ts:25:46
+
+    Error Context: test-results\note-recovery-note-saves-i-d0f48-ground-selection-is-cleared\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\note-recovery-note-saves-i-d0f48-ground-selection-is-cleared\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\note-recovery-note-saves-i-d0f48-ground-selection-is-cleared\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests\e2e\note-recovery.spec.ts:28:1 › failed note save retains draft and exact retry after closing details or Escape 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: locator('.note-modal')
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" locator('.note-modal') with timeout 5000ms
+      - waiting for locator('.note-modal')
+
+
+      28 | test('failed note save retains draft and exact retry after closing details or Escape',async()=>{
+      29 |  const{app,page}=await launch('note-fail');try{await select(page);await page.getByRole('button',{name:'添加便签',exact:true}).click();await page.getByLabel('便签内容').fill('recover me');await fault(app);await page.getByRole('button',{name:'保存便签',exact:true}).click();
+    > 30 |  await expect(page.locator('.note-modal')).toBeVisible();await expect(page.getByLabel('便签内容')).toHaveValue('recover me');await expect(page.getByRole('button',{name:'重试保存',exact:true})).toBeVisible();
+         |                                            ^
+      31 |  await page.getByRole('button',{name:'关闭便签错误详情',exact:true}).click();await page.keyboard.press('Escape');await expect(page.locator('.note-modal')).toBeVisible();await expect(page.getByRole('button',{name:'重试保存',exact:true})).toBeVisible();
+      32 |  await page.getByRole('button',{name:'重试保存',exact:true}).click();await expect(page.locator('.note-modal')).toHaveCount(0);await expect(page.locator('.note-content')).toHaveText('recover me');await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
+      33 |  await page.screenshot({path:(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/note-recovery')+'/saved-note.png'});
+        at D:\codex project\Enlumor\tests\e2e\note-recovery.spec.ts:30:44
+
+    Error Context: test-results\note-recovery-failed-note--4cd3d-r-closing-details-or-Escape\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\note-recovery-failed-note--4cd3d-r-closing-details-or-Escape\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\note-recovery-failed-note--4cd3d-r-closing-details-or-Escape\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    tests\e2e\note-recovery.spec.ts:13:1 › note modal traps keyboard focus and restores its trigger after cancellation 
+    tests\e2e\note-recovery.spec.ts:21:1 › note saves its captured original anchor even if background selection is cleared 
+    tests\e2e\note-recovery.spec.ts:28:1 › failed note save retains draft and exact retry after closing details or Escape 
+  1 passed (18.5s)

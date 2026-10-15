@@ -1,0 +1,54 @@
+
+Running 5 tests using 1 worker
+
+(node:17864) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\note-recovery.spec.ts:13:1 › note modal traps keyboard focus and restores its trigger after cancellation (6.0s)
+(node:51380) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 2 tests\e2e\note-recovery.spec.ts:21:1 › note saves its captured original anchor even if background selection is cleared (994ms)
+  ok 3 tests\e2e\note-recovery.spec.ts:28:1 › failed note save retains draft and exact retry after closing details or Escape (1.1s)
+  ok 4 tests\e2e\note-recovery.spec.ts:36:1 › closing save error details keeps pending recovery visible and commits original delete on retry (1.6s)
+  ok 5 tests\e2e\note-recovery.spec.ts:43:1 › explicitly discarding a failed note edit preserves the previously saved note (1.1s)
+
+
+  1) tests\e2e\note-recovery.spec.ts:13:1 › note modal traps keyboard focus and restores its trigger after cancellation 
+
+    Error: expect(locator).toBeFocused() failed
+
+    Locator:  getByRole('button', { name: '添加便签', exact: true })
+    Expected: focused
+    Received: inactive
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeFocused" getByRole('button', { name: '添加便签', exact: true }) with timeout 5000ms
+      - waiting for getByRole('button', { name: '添加便签', exact: true })
+        14 × locator resolved to <button>添加便签</button>
+           - unexpected value "inactive"
+
+
+      16 |  await expect(page.getByRole('dialog',{name:'添加便签',exact:true})).toBeVisible();await expect(page.getByRole('dialog')).toHaveAttribute('aria-modal','true');
+      17 |  await page.keyboard.press('Tab');await expect(page.getByLabel('便签内容')).toBeFocused();
+    > 18 |  await page.keyboard.press('Escape');await expect(page.locator('.note-modal')).toHaveCount(0);await expect(trigger).toBeFocused();
+         |                                                                                                                     ^
+      19 |  }finally{await finish(app);}
+      20 | });
+      21 | test('note saves its captured original anchor even if background selection is cleared',async()=>{
+        at D:\codex project\Enlumor\tests\e2e\note-recovery.spec.ts:18:117
+
+    Error Context: test-results\note-recovery-note-modal-t-854dc--trigger-after-cancellation\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\note-recovery-note-modal-t-854dc--trigger-after-cancellation\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\note-recovery-note-modal-t-854dc--trigger-after-cancellation\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\note-recovery.spec.ts:13:1 › note modal traps keyboard focus and restores its trigger after cancellation 
+  4 passed (12.2s)

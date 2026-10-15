@@ -62,3 +62,7 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
 
 .drawn-ink{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;opacity:.95}
 #viewerContainer.drawing-line{touch-action:none}
+
+.note-dialog{border:0;padding:0;background:transparent;color:var(--ink);max-width:95vw;max-height:95vh;overflow:auto}
+.note-dialog::backdrop{background:#202a2359;backdrop-filter:blur(3px)}
+.note-error{font-size:12px;color:#82462e;background:#f9e9df;padding:8px;margin-bottom:16px;overflow-wrap:anywhere}.note-error p{margin:0 0 6px}.note-error button{padding:3px 8px;font-size:11px}

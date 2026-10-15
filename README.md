@@ -16,11 +16,13 @@ npm start          # 启动已构建的桌面应用
 
 推荐发布：`npm run release:verified`。全部测试及暂存包性能门禁通过后生成 ZIP 和解压目录；双击 `启动 Enlumor.cmd` 使用 latest.json 指向的已验证版本。ZIP 解压一次后启动，比每次自解压的便携 EXE 更快。`npm run portable` 保留为手动构建，不经过完整发布门禁。
 
-**0.1.1 已内置 PDF 处理程序**。可直接双击 `D:\codex project\Enlumor\release\Enlumor 0.1.1.exe`，无需安装 Python、配置环境变量或经过启动脚本。旧的 0.1.0 缺少这一组件，请使用新文件。
+**当前发布包已内置 PDF 处理程序**，运行不需要安装Python或配置环境变量。请用“启动 Enlumor.cmd”或latest.json指向的最新解压目录；0.1.1起引入内置程序，旧包不包含后续修复。
 
 仅开发/重新构建需要 Node 和 Python。`setup.ps1` 安装 requirements-build.txt；打包命令通过 PyInstaller 收集解释器、PyMuPDF 和依赖到应用资源目录，运行时优先使用内置程序。Windows 构建不作为 macOS/iPad 的二进制包使用。
 
-0.1.8 新增箭头与画笔（标准PDF批注导出）。右栏选择工具后页内拖动，一次笔迹保存后恢复文字选择；Esc或布局改变取消。画笔每条最多4096采样点，长笔迹抽样降密度，不模拟压感。箭头头部应用内实心、导出空心，端点方向保持一致。保留删除线、直线、下划线、高亮、便签、侧栏调宽/间距、多标签及按需渲染。完整清单与每两项review见 [docs/FEATURES.md](docs/FEATURES.md)、[docs/REVIEW-CADENCE.md](docs/REVIEW-CADENCE.md)。
+0.1.9 修复便签模态焦点隔离、原文锚点固定与失败草稿保留；保存失败后收起详情仍能重试。明确放弃失败便签编辑不会删除旧的已保存内容。
+
+此前0.1.8 新增箭头与画笔（标准PDF批注导出）。右栏选择工具后页内拖动，一次笔迹保存后恢复文字选择；Esc或布局改变取消。画笔每条最多4096采样点，长笔迹抽样降密度，不模拟压感。箭头头部应用内实心、导出空心，端点方向保持一致。保留删除线、直线、下划线、高亮、便签、侧栏调宽/间距、多标签及按需渲染。完整清单与每两项review见 [docs/FEATURES.md](docs/FEATURES.md)、[docs/REVIEW-CADENCE.md](docs/REVIEW-CADENCE.md)。
 
 ## 已有功能
 

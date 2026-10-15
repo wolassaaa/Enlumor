@@ -113,3 +113,9 @@ Literal evidence: PAGE_BOUNDARY: {"page":"1","previousEnabled":true}
 
 可复用执行提示：
 > 按本报告两条Important逐项先写能复现的失败测试，再实现模态背景隔离/提交保护与pending恢复入口；保留用户数据，跑完整release:verified通过后发布，再继续擦除。
+
+## 修复追记 — 0.1.9（2026-10-16）
+用户批准修复后，P1/P2已按上述建议实现并通过失败→成功测试。原文保留0.1.8审查事实，不把历史问题抹除。
+新增note-recovery.spec.ts五条测试：焦点隔离/恢复、原文锚点固定、失败草稿重试与Esc保护、关闭错误后恢复入口常驻、放弃失败编辑保留旧便签。
+完整发布102项通过，发布EXE五项再测通过；证据见../../evidence/note-recovery/VERIFICATION.txt。
+P3边界反馈仍暂缓，未纳入本次修复。

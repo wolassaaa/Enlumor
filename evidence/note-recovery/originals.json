@@ -1,0 +1,12 @@
+[
+  {
+    "name": "src__renderer__main.tsx",
+    "target": "src/renderer/main.tsx",
+    "sha256": "77c7fa1e51fe54af94491ab99c2a3d07d9595fb7722d53e6ae5825305a2a464c"
+  },
+  {
+    "name": "src__renderer__style.css",
+    "target": "src/renderer/style.css",
+    "sha256": "65cd218cd38f865a531c1fb02bc681e9576bf7004b2dffcc93ce7b3e74babab9"
+  }
+]

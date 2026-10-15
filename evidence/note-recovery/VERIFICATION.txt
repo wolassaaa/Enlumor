@@ -1,0 +1,71 @@
+Enlumor0.1.9 note and recovery fix
+Branch: fix/note-recovery; baseline:189afb3.
+Changed branches/fields: NoteDialog native modal, noteAnchor snapshot (documentId/fingerprint/parts), noteTrigger focus restore; commit returns boolean and closes note only after success; pending recovery visibility independent of error details; pending note keeps exact change until retry or explicit discard.
+MODIFIED_FILE: D:\codex project\Enlumor\evidence\note-recovery/MODIFIED_FILE.tsx
+DIFF_FILE: D:\codex project\Enlumor\evidence\note-recovery/DIFF.patch
+VERIFICATION: D:\codex project\Enlumor\evidence\note-recovery/VERIFICATION.txt
+ROLLBACK: D:\codex project\Enlumor\evidence\note-recovery/ROLLBACK.sh
+Original main.tsx/style.css raw SHA256 recorded in originals.json, preserved in originals/ with -text Git attributes. New note-dialog.tsx is separate reusable component; no new dependency/schema.
+
+BASELINE
+Command (PowerShell):
+$env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.8-win-x64/Enlumor.exe).Path
+npx playwright test note-recovery.spec.ts
+Input: actual0.1.8 EXE, first4 regression cases, synthetic2-page PDF, fresh profiles.
+Literal output: 4 failed
+Exit status:1. BASELINE.log.
+Initial test run had3 failed/1 passed: polling masked missing retry because reading flush re-exposed error; immediate count assertion fixes the test (BASELINE_INITIAL.log).
+Additional command: npx playwright test note-recovery.spec.ts --grep 'explicitly discarding'
+Input: old EXE, failed note edit.
+Literal output: 1 failed
+Exit status:1. DISCARD_RED.log.
+Initial modified run4 passed/1 failed: focus restoration returned to prior element because invoker mousedown prevents focus; explicit trigger restore fixed this (FOCUS_RESTORE_RED.log).
+
+MODIFIED
+Command (PowerShell):
+$env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.9-win-x64/Enlumor.exe).Path
+$env:ENLUMOR_EVIDENCE_DIR='evidence/note-recovery'
+npx playwright test note-recovery.spec.ts
+Input: actual published0.1.9 EXE, five regressions, fresh profiles/synthetic PDF; one-shot injected write errors only within test processes.
+Literal output: 5 passed (9.9s)
+Exit status:0. FINAL_CHECK.log.
+Verified Tab/Shift+Tab/modal semantics and cancellation focus; captured anchor survives background programmatic selection cancellation; failed draft stays, closing details/Esc preserves exact pending retry; error dismissal keeps global retry visible; explicit failed-edit discard retains previously saved note.
+Pending textarea read-only prevents changing content while retrying the original change.
+No successful-save claim until SQLite confirms; existing export/crash/restart tests pass full suite.
+Snapshots note-dialog.png and pending-recovery.png visually inspected; no invisible retry behind modal.
+
+ROLLBACK
+Command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' evidence/note-recovery/ROLLBACK.sh
+Input: isolated .cache/note-recovery-rollback/run-* copy; two original source files verified against SHA256 and restored; separate fresh profile.
+Literal output: ROLLBACK: NATIVE_DIALOG=0; NOTE_FOCUS_ESCAPES=YES; DRAW_ARROW=1; LIVE_SOURCE_UNCHANGED=YES
+Exit status:0. ROLLBACK.log.
+Restored behavior/status: copy returns to previous non-modal editor/focus escape, retains arrow function. Live source remains modified; personal data and source PDFs untouched. This tests code-copy rollback, not personal data rollback.
+
+FULL RELEASE
+Command (PowerShell): $env:ENLUMOR_EVIDENCE_DIR='evidence/note-recovery'; npm run release:verified
+Input:0.1.9 source, bundled PDF worker, staged actual EXE, fresh profiles, two200-page/approximately32MB/1000-highlight stress samples.
+32 Vitest +7 Python unittest +63 actual staged Electron E2E =102 passed.
+Literal outputs:
+63 passed (2.0m)
+PACKAGED_READER: PASS
+{"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
+EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.9 D:\codex project\Enlumor\release\Enlumor-0.1.9-win.zip SHA256=e135de5824326875221c551ccc738cb3ac1ce81678823f5063db85f0b90f5134
+Exit status:0. RELEASE.log.
+latest.json points0.1.9 only after gates. Independently checked ZIP SHA256:
+e135de5824326875221c551ccc738cb3ac1ce81678823f5063db85f0b90f5134
+Known tool warnings: >500kB bundle / experimental SQLite; not a warning-free claim.
+
+PERFORMANCE
+Text extracted startup median381.5046000000002ms; frame p95=14.799999998882413ms; save IPC p95=8.800000000745058ms; main/thumbnail canvas8/5.
+Scanned startup median381.3737999999994ms; frame p95=15.300000000745058ms; save IPC p95=5.599999999627471ms; canvas8/4.
+Both zero measured >50ms long tasks. Passed1500ms/34ms/20ms/30 main canvases/8 thumbnails budgets. Rawrelease.json/scanned.json. Synthetic samples, not all real PDF performance or1000 complex ink marks.
+
+REVIEW RESPONSE
+This is the approved Important fix pass for docs/reviews/2026-10-16-operation-review.md; no repeated reviewer dispatch and no feature-counter increment.
+P1/P2 addressed. P3boundary button feedback remains deferred, as do prior arrow appearance/focus/grip minors.
+Native dialog preserves existing warm-paper style and uses built-in modal keyboard/background behavior.
+Reusable next prompt:
+继续Enlumor清单中的擦除；保留本轮便签与失败恢复回归，每个新任务先写失败测试；两项功能后review，完整release:verified与双样本性能通过后再更新最新版。原PDF只读，个人数据不回退。

@@ -1,3 +1,4 @@
+import { NoteDialog } from './note-dialog';
 import { PanelDivider } from './panel-divider';
 import { defaultLayout, fitPanels } from './layout';
 import type { CSSProperties } from 'react';
@@ -38,6 +39,8 @@ function App() {
   const [readingLayout,setReadingLayout]=useState<'continuous'|'single'>('continuous');
   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
   const colorRef=useRef(color);colorRef.current=color;
+  const noteTrigger=useRef<HTMLElement|null>(null);
+  const noteAnchor=useRef<{documentId:string;fingerprint:string;parts:SelectionPart[]}|null>(null);
   const noteOpen = useRef(false); noteOpen.current = note !== null;
   const activeDocument = useRef<OpenedDocument | null>(null), activeMarks = useRef<Annotation[]>([]);
   const [tabs, setTabs] = useState<DocumentInfo[]>([]);
@@ -64,7 +67,7 @@ function App() {
   useEffect(() => {
     reader.current = new PdfReader(container.current!, state => {
       current.current = state; setReadingLayout(state.layout||'continuous'); setPage(String(state.pageIndex + 1)); setZoom(state.zoom);
-      clearTimeout(timer.current); timer.current = setTimeout(() => { void flush().catch(fail); }, 500);
+      clearTimeout(timer.current); if(!noteOpen.current)timer.current = setTimeout(() => { void flush().catch(fail); }, 500);
     }, selected => {
       setParts(old => !selected.length && !old.length ? old : selected);
     }, setNotice, setOutline, line=>{
@@ -89,6 +92,7 @@ function App() {
         const next=list[(index+(event.shiftKey?-1:1)+list.length)%list.length];if(next)void load(next.id);return;
       }
       if (event.ctrlKey && event.key.toLowerCase()==='w') { event.preventDefault(); if(activeId.current)void closeTab(activeId.current);return; }
+      if(event.key==='Escape'&&noteOpen.current){event.preventDefault();if(!locked.current&&!pending.current)closeNote();return;}
       if (event.key === 'Escape') { resetDrawing(); setParts([]); setNote(null); setLayoutOpen(false); window.getSelection()?.removeAllRanges(); }
     };
     window.addEventListener('keydown', keyboard);
@@ -149,9 +153,9 @@ function App() {
       fail(reason); return false;
     } finally { flight.current = null; locked.current = false; setBusy(false); }
   }
-  async function commit(change: AnnotationChange, kind: 'new' | 'undo' | 'redo' = 'new') {
-    if (locked.current || (pending.current && pending.current.change!==change)) return;
-    if(change.documentId!==activeId.current){fail(new Error('DOCUMENT_MISMATCH: 批注不属于当前文档'));return;}
+  async function commit(change: AnnotationChange, kind: 'new' | 'undo' | 'redo' = 'new'):Promise<boolean> {
+    if (locked.current || (pending.current && pending.current.change!==change)) return false;
+    if(change.documentId!==activeId.current){fail(new Error('DOCUMENT_MISMATCH: 批注不属于当前文档'));return false;}
     resetDrawing();locked.current = true; setBusy(true); setError(''); setStatus('正在保存…'); pending.current = { change, kind };
     const job = (async () => {
       const result = unwrap(await window.enlumor.applyAnnotationChange(change));
@@ -163,7 +167,35 @@ function App() {
       setStatus('已保存 · 本地 SQLite');
     })();
     flight.current = job;
-    try { await job; } catch (reason) { fail(reason); } finally { flight.current = null; locked.current = false; setBusy(false); }
+    try { await job; return true; } catch (reason) { fail(reason); return false; } finally { flight.current = null; locked.current = false; setBusy(false); }
+  }
+  function openNote(mark?:Annotation,trigger?:HTMLElement) {
+    if(locked.current||pending.current)return;
+    const opened=activeDocument.current;if(!opened)return;
+    noteTrigger.current=trigger||document.activeElement as HTMLElement;resetDrawing();clearTimeout(timer.current);setError('');
+    noteAnchor.current={documentId:opened.id,fingerprint:opened.fingerprint,parts:parts.map(p=>({...p,quads:p.quads.map(q=>[...q])}))};
+    noteOpen.current=true;setEditing(mark||null);setNote(mark?.note||'');
+  }
+  function closeNote() {
+    if(locked.current)return;
+    // Explicit cancellation may discard only the uncommitted operation, never persisted marks.
+    if(pending.current){pending.current=null;setError('');setStatus('已放弃未保存便签 · 已保存批注保留');}
+    noteOpen.current=false;noteAnchor.current=null;setNote(null);setEditing(null);
+  }
+  async function submitNote() {
+    if(locked.current||note===null)return;
+    const anchor=noteAnchor.current,opened=activeDocument.current;
+    if(!anchor||!opened||anchor.documentId!==opened.id||anchor.fingerprint!==opened.fingerprint){
+      fail(new Error('NOTE_DOCUMENT_MISMATCH: 文档已变化，便签草稿已保留'));return;
+    }
+    let change:AnnotationChange,kind:'new'|'undo'|'redo'='new';
+    if(pending.current){change=pending.current.change;kind=pending.current.kind;}
+    else if(editing)change={documentId:anchor.documentId,upserts:[{...editing,note}],deletes:[]};
+    else {
+      if(!anchor.parts.length){fail(new Error('NOTE_ANCHOR_MISSING: 原文定位已失效，草稿已保留。请取消后重新选择原文'));return;}
+      change={documentId:anchor.documentId,upserts:anchor.parts.map(p=>({...p,id:crypto.randomUUID(),documentId:anchor.documentId,fingerprint:anchor.fingerprint,type:'note',note,color,author:'user'})),deletes:[]};
+    }
+    if(await commit(change,kind))closeNote();
   }
   function clearCurrent() {
     clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');resetDrawing();setPage('1');setZoom(1);setReadingLayout('continuous');
@@ -235,7 +267,7 @@ function App() {
           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
           <form className="search" onSubmit={event => { event.preventDefault(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
         </div>
-        {error && <div className="error" role="alert">{error}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && <button onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
+        {(error||pending.current||layoutError) && <div className="error" role="alert">{error||'存在未保存更改'}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && note===null && <button disabled={busy} onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && note===null && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
         {notice && <div className="notice">{notice}</div>}
         <div className="reader-stage"><div id="viewerContainer" ref={container} tabIndex={0}><div id="viewer" className="pdfViewer"/></div>
           {!doc && <div className="empty"><div className="paper-emblem" aria-hidden="true"><svg viewBox="0 0 140 100" fill="none"><path d="M70 21C50 9 25 10 12 16v64c20-7 38-6 58 4 20-10 38-11 58-4V16c-13-6-38-7-58 5Zm0 0v63M25 33l30 4M25 45l30 4M25 57l22 3M85 37l29-4M85 49l29-4M85 61l21-3"/></svg></div><span className="empty-index">A QUIETER PLACE TO READ</span><h1>让理解，<br/>留在原文旁。</h1><p>打开一本书、一篇论文，或今天的讲义。<br/>选中，标记，下次从这里继续。</p><button className="primary" disabled={busy} onClick={() => void load()}>打开 PDF <Glyph name="open"/></button><small>无需账户 · 离线可用 · 原文件保持不变</small><div className="empty-footnote"><span>01 — 阅读原文</span><span>02 — 留下思考</span><span>03 — 从这里继续</span></div></div>}
@@ -244,15 +276,15 @@ function App() {
       </main>
       {notesOpen && <PanelDivider side="right" size={panels.right} max={Math.min(460,workspaceWidth-400-(libraryOpen?panels.left+12:6))} start={()=>{resetDrawing();setParts([]);}} preview={value=>previewPanel('right',value)} commit={value=>commitPanel('right',value)} reset={()=>persistLayout({...layoutRef.current,right:282})}/>}
       <aside className="annotations" hidden={!notesOpen}><div className="section-label">MARGINALIA / 页边思考</div><h2>批注 <span>{marks.length.toString().padStart(2, '0')}</span></h2>
-        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length||busy||!!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('strikeout')}>删除线选区</button><button aria-label="绘制直线" aria-pressed={drawMode==='line'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='line'?null:'line';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>直线</button><button aria-label="绘制箭头" aria-pressed={drawMode==='arrow'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='arrow'?null:'arrow';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>箭头</button><button aria-label="绘制画笔" aria-pressed={drawMode==='ink'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='ink'?null:'ink';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>画笔</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => { setEditing(null); setNote(''); }}>添加便签</button></div>
+        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length||busy||!!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('strikeout')}>删除线选区</button><button aria-label="绘制直线" aria-pressed={drawMode==='line'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='line'?null:'line';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>直线</button><button aria-label="绘制箭头" aria-pressed={drawMode==='arrow'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='arrow'?null:'arrow';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>箭头</button><button aria-label="绘制画笔" aria-pressed={drawMode==='ink'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='ink'?null:'ink';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>画笔</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={event => openNote(undefined,event.currentTarget)}>添加便签</button></div>
         <div className="history"><button disabled={!history.undo.length || busy || !!pending.current} onClick={() => void commit(history.undo.at(-1)!, 'undo')}>撤销</button><button disabled={!history.redo.length || busy || !!pending.current} onClick={() => void commit(history.redo.at(-1)!, 'redo')}>重做</button></div>
         {parts.length > 0 && <div className="selection-preview">已选 {parts.length} 页原文<p>{parts.map(part => part.quote).join(' ').slice(0, 180)}</p></div>}
-        <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':mark.type==='strikeout'?'删除线':mark.type==='ink'?'画笔':mark.type==='arrow'?'箭头':mark.type==='line'?'直线':'高亮'}</span><p>{mark.quote || (mark.type==='ink'?'页面笔迹':mark.type==='arrow'?'页面箭头':mark.type==='line'?'页面直线':'页面便签')}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}<div className="card-actions"><button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current} onClick={() => { setEditing(mark); setNote(mark.note); }}>编辑</button>}<button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
+        <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':mark.type==='strikeout'?'删除线':mark.type==='ink'?'画笔':mark.type==='arrow'?'箭头':mark.type==='line'?'直线':'高亮'}</span><p>{mark.quote || (mark.type==='ink'?'页面笔迹':mark.type==='arrow'?'页面箭头':mark.type==='line'?'页面直线':'页面便签')}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}<div className="card-actions"><button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current} onClick={event => openNote(mark,event.currentTarget)}>编辑</button>}<button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
         {!marks.length && <div className="annotation-empty"><span>〰</span><p>选中一段原文<br/>留下你的第一个标记。</p><small>批注自动保存到本地工作区</small></div>}
       </aside>
     </div>
-    {parts.length > 0 && doc && <div ref={selectionPopover} className="selection-popover" role="toolbar" aria-label="选区工具" style={{...selectionPosition,maxWidth:Math.max(200,(container.current?.clientWidth||400)-24)}} onMouseDown={event => event.preventDefault()}><span>{parts.length > 1 ? `${parts.length} 页选区` : '原文选区'}</span><button disabled={busy || !!pending.current} onClick={() => add('highlight')}><Glyph name="mark"/>高亮</button><button disabled={busy||!!pending.current} onClick={()=>add('underline')}>下划线</button><button disabled={busy||!!pending.current} onClick={()=>add('strikeout')}>删除线</button><button disabled={busy || !!pending.current} onClick={() => { setEditing(null); setNote(''); }}>写便签</button><button className="popover-close" aria-label="取消选区" onClick={() => { setParts([]); window.getSelection()?.removeAllRanges(); }}><Glyph name="close"/></button></div>}
-    {note !== null && <div className="modal-backdrop"><form className="note-modal" onSubmit={event => { event.preventDefault(); if (editing) void commit({ documentId: editing.documentId, upserts: [{ ...editing, note }], deletes: [] }); else add('note', note); setNote(null); }}><div className="section-label">NOTE / 原文旁的想法</div><h2>{editing ? '编辑便签' : '添加便签'}</h2><textarea autoFocus aria-label="便签内容" value={note} maxLength={100000} onChange={event => setNote(event.target.value)}/><div><button type="button" onClick={() => setNote(null)}>取消</button><button className="primary" type="submit" disabled={!note.trim()}>保存便签</button></div></form></div>}
+    {parts.length > 0 && doc && <div ref={selectionPopover} className="selection-popover" role="toolbar" aria-label="选区工具" style={{...selectionPosition,maxWidth:Math.max(200,(container.current?.clientWidth||400)-24)}} onMouseDown={event => event.preventDefault()}><span>{parts.length > 1 ? `${parts.length} 页选区` : '原文选区'}</span><button disabled={busy || !!pending.current} onClick={() => add('highlight')}><Glyph name="mark"/>高亮</button><button disabled={busy||!!pending.current} onClick={()=>add('underline')}>下划线</button><button disabled={busy||!!pending.current} onClick={()=>add('strikeout')}>删除线</button><button disabled={busy || !!pending.current} onClick={event => openNote(undefined,event.currentTarget)}>写便签</button><button className="popover-close" aria-label="取消选区" onClick={() => { setParts([]); window.getSelection()?.removeAllRanges(); }}><Glyph name="close"/></button></div>}
+    {note !== null && <NoteDialog returnFocus={noteTrigger.current} value={note} editing={!!editing} busy={busy} pending={!!pending.current} error={error} change={setNote} submit={()=>void submitNote()} cancel={closeNote} dismiss={()=>setError('')}/>}
   </div>;
 }
 createRoot(document.getElementById('root')!).render(<App/>);
