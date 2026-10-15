@@ -1,11 +1,11 @@
 export type Quad = number[];
 export type Annotation = {
-  id: string; documentId: string; fingerprint: string; type: 'highlight' | 'note';
+  id: string; documentId: string; fingerprint: string; type: 'highlight' | 'underline' | 'note';
   pageIndex: number; quote: string; quads: Quad[]; color: string; note: string; author: 'user';
 };
 export type AnnotationChange = { documentId: string; upserts: Annotation[]; deletes: string[] };
 export type CommitResult = { annotations: Annotation[]; inverse: AnnotationChange };
-export type ReadingState = { documentId: string; fingerprint: string; pageIndex: number; offset: number; zoom: number; rotation: number };
+export type ReadingState = { documentId: string; fingerprint: string; pageIndex: number; offset: number; zoom: number; rotation: number; layout?: 'continuous' | 'single' };
 export type DocumentInfo = { id: string; path: string; name: string; fingerprint: string; pageCount: number; updatedAt: number };
 export type OpenedDocument = DocumentInfo & { data: Uint8Array; reading: ReadingState | null };
 export type ExportResult = { cancelled: boolean; path?: string; annotationCount?: number };

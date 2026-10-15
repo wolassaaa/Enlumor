@@ -1,0 +1,68 @@
+
+Running 2 tests using 1 worker
+
+(node:58948) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages (31.0s)
+(node:54724) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  2 tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source (31.7s)
+
+
+  1) tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages 
+
+    TimeoutError: locator.selectOption: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByLabel('阅读模式')
+
+
+      17 |  try{
+      18 |  let page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
+    > 19 |  await page.getByLabel('阅读模式').selectOption('single');await page.getByLabel('跳转页码').fill('120');await page.getByLabel('跳转页码').press('Enter');
+         |                                ^
+      20 |  await expect(page.locator('#viewer .page')).toHaveCount(1);await expect(page.locator('#viewer .page')).toHaveAttribute('data-page-number','120');
+      21 |  await page.getByRole('button',{name:'下一页',exact:true}).click();await expect(page.getByLabel('跳转页码')).toHaveValue('121');
+      22 |  await page.getByLabel('全文搜索').fill('Evidence page 151');await page.getByLabel('全文搜索').press('Enter');await expect(page.getByLabel('跳转页码')).toHaveValue('151');await expect(page.locator('.textLayer .highlight').first()).toBeVisible();
+        at D:\codex project\Enlumor\tests\e2e\reading-tools.spec.ts:19:32
+
+    Error Context: test-results\reading-tools-single-page--25069--without-mounting-all-pages\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\reading-tools-single-page--25069--without-mounting-all-pages\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\reading-tools-single-page--25069--without-mounting-all-pages\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '下划线选区', exact: true })
+
+
+      31 |  try{
+      32 |  let page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();await select(app);
+    > 33 |  await page.getByRole('button',{name:'下划线选区',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);await expect(page.locator('.annotation-source')).toContainText('下划线');
+         |                                                           ^
+      34 |  for(let i=0;i<4;i++){
+      35 |  const line=page.locator('.enlumor-marks .underline-line line').first();await expect(line).toBeVisible();
+      36 |  const direction=await line.evaluate(l=>({dx:Math.abs(Number(l.getAttribute('x2'))-Number(l.getAttribute('x1'))),dy:Math.abs(Number(l.getAttribute('y2'))-Number(l.getAttribute('y1')))}));
+        at D:\codex project\Enlumor\tests\e2e\reading-tools.spec.ts:33:59
+
+    Error Context: test-results\reading-tools-underline-pe-728f3-ion-without-changing-source\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\reading-tools-underline-pe-728f3-ion-without-changing-source\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\reading-tools-underline-pe-728f3-ion-without-changing-source\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages 
+    tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source 

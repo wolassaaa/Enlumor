@@ -1,9 +1,9 @@
 import { drawPageThumbnail } from './thumbnail-render';
 import { getDocument, GlobalWorkerOptions, type PDFDocumentLoadingTask } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
-import { EventBus, PDFViewer, PDFLinkService, PDFFindController } from 'pdfjs-dist/web/pdf_viewer.mjs';
+import { EventBus, PDFViewer, PDFLinkService, PDFFindController, ScrollMode } from 'pdfjs-dist/web/pdf_viewer.mjs';
 import 'pdfjs-dist/web/pdf_viewer.css';
-import { screenRectToQuad, quadToScreen } from '../shared/geometry';
+import { screenRectToQuad, quadToScreen, transform } from '../shared/geometry';
 import type { Annotation, OpenedDocument, ReadingState } from '../shared/model';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
@@ -26,6 +26,10 @@ export class PdfReader {
     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
     this.link.setViewer(this.viewer);
+    this.bus.on('pagechanging', ({pageNumber}:{pageNumber:number}) => {
+      const generation=this.generation;
+      requestAnimationFrame(()=>{if(generation===this.generation&&this.ready)this.paint(pageNumber-1);});
+    });
     this.bus.on('pagerendered', ({ pageNumber }: { pageNumber: number }) => this.paint(pageNumber - 1));
     this.bus.on('scalechanging', () => { this.paint(); onSelection([]); });
     this.bus.on('rotationchanging', () => { this.paint(); onSelection([]); });
@@ -41,7 +45,7 @@ export class PdfReader {
       const index = this.viewer.currentPageNumber - 1;
       const view = this.viewer.getPageView(index);
       const offset = view ? Math.max(0, Math.min(1, (container.scrollTop - view.div.offsetTop) / view.div.clientHeight)) : 0;
-      onState({ documentId: this.active.id, fingerprint: this.active.fingerprint, pageIndex: index, offset, zoom: Math.max(.25, Math.min(4, this.viewer.currentScale)), rotation: this.viewer.pagesRotation });
+      onState({ documentId: this.active.id, fingerprint: this.active.fingerprint, pageIndex: index, offset, zoom: Math.max(.25, Math.min(4, this.viewer.currentScale)), rotation: this.viewer.pagesRotation, layout:this.viewer.scrollMode===ScrollMode.PAGE?'single':'continuous' });
     });
     container.addEventListener('mouseup', () => onSelection(this.selection()));
     container.addEventListener('keyup', () => onSelection(this.selection()));
@@ -65,6 +69,7 @@ export class PdfReader {
       const initialized = () => {
         this.bus.off('pagesinit', initialized);
         const state = doc.reading;
+        this.viewer.scrollMode = state?.layout==='single'?ScrollMode.PAGE:ScrollMode.VERTICAL;
         this.viewer.pagesRotation = state?.rotation || 0;
         this.viewer.currentScale = state?.zoom || 1;
         this.viewer.currentPageNumber = (state?.pageIndex || 0) + 1;
@@ -111,6 +116,7 @@ export class PdfReader {
     this.outlineTargets.clear(); this.onOutline([]);
     this.viewer.setDocument(null); this.link.setDocument(null); void this.task?.destroy(); this.task = undefined;
   }
+  setLayout(mode: 'continuous'|'single') { if(this.ready) { this.viewer.scrollMode=mode==='single'?ScrollMode.PAGE:ScrollMode.VERTICAL; this.paint(); } }
   zoom(value: number) { if (this.ready) this.viewer.currentScale = Math.max(.25, Math.min(4, value)); }
   fit(mode: 'page-width' | 'page-fit') { if (this.ready) this.viewer.currentScaleValue = mode; }
   rotate() { if (this.ready) this.viewer.pagesRotation = (this.viewer.pagesRotation + 90) % 360; }
@@ -173,6 +179,13 @@ export class PdfReader {
       for (const mark of [...this.marks, ...(this.flash ? [this.flash] : [])].filter(a => a.pageIndex === index)) {
         for (const quad of mark.quads) {
           const [left, top, right, bottom] = quadToScreen(quad, view.viewport.transform);
+          if(mark.type==='underline' && mark!==this.flash) {
+            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('underline-line');
+            const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+            const [x1,y1]=transform(quad[4],quad[5],view.viewport.transform),[x2,y2]=transform(quad[6],quad[7],view.viewport.transform);
+            for(const [key,value] of Object.entries({x1,y1,x2,y2}))line.setAttribute(key,String(value));
+            line.setAttribute('stroke',mark.color);line.setAttribute('stroke-width','1.5');svg.append(line);overlay.append(svg);continue;
+          }
           const block = document.createElement('div'); block.className = mark === this.flash ? 'mark flash' : `mark ${mark.type}`;
           Object.assign(block.style, { left: `${left}px`, top: `${top}px`, width: `${right - left}px`, height: `${bottom - top}px`, backgroundColor: mark.color });
           if (mark.type === 'note') { block.textContent = '▤'; block.style.width = '20px'; block.style.height = '20px'; }

@@ -1,0 +1,10 @@
+
+Running 2 tests using 1 worker
+
+(node:55176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages (2.8s)
+  ok 2 tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source (3.3s)
+
+  2 passed (7.6s)

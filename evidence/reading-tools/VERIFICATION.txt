@@ -1,0 +1,58 @@
+Enlumor 0.1.6 / 2026-10-15
+Branch=feat/single-page-underline; baseline=b88a7e5.
+Changed fields/branches: ReadingState.layout optional continuous/single, validation and PDF.js ScrollMode; Annotation.type=underline through validation/SQLite/undo/renderer/export; native transformed SVG endpoints; pagechanging cached overlay repaint + mode-change repaint.
+
+Four artifacts:
+MODIFIED_FILE=D:\codex project\Enlumor\evidence\reading-tools\MODIFIED_FILE.ts
+DIFF_FILE=D:\codex project\Enlumor\evidence\reading-tools\DIFF.patch
+VERIFICATION=D:\codex project\Enlumor\evidence\reading-tools\VERIFICATION.txt
+ROLLBACK=D:\codex project\Enlumor\evidence\reading-tools\ROLLBACK.sh (git mode 100755)
+Live changed file=D:\codex project\Enlumor\src\renderer\pdf-reader.ts
+Originals=originals/ and originals.json: seven preserved files with SHA256, byte-preserving Git attributes. Rollback verifies each hash.
+
+CWD=D:\codex project\Enlumor
+BASELINE command: npx playwright test reading-tools.spec.ts
+Input: old 0.1.5 build, new single-page/underline contracts, actual Electron, 200-page text PDF, temp profiles.
+Literal result: 2 failed
+Exit=1. Reading-mode selector and underline action absent. Full output=BASELINE.log.
+MODIFIED command (PowerShell): $env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.6-win-x64/Enlumor.exe).Path; $env:ENLUMOR_EVIDENCE_DIR='evidence/reading-tools'; npx playwright test reading-tools.spec.ts
+Input: actual final 0.1.6 EXE, same 200-page PDF, fresh profiles; single-page jump120/search151/restart/continuous toggle; underline rotation four ways, undo/redo/restart/subtype9 export/source unchanged; cached-page offscreen deletion and undo.
+Literal result: 3 passed (9.9s)
+Exit=0. Full output=FINAL_CHECK.log. Prior standalone two-feature tests: 2 passed (7.6s), MODIFIED.log.
+ROLLBACK command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' evidence/reading-tools/ROLLBACK.sh
+Input: independent source copy in .cache/reading-tools-rollback/run-*, seven original files restored after hash verification; actual separate build/Electron/profile, 200-page PDF. Live source remains modified.
+Literal result: ROLLBACK: MODE_SELECTOR=0; UNDERLINE_BUTTON=0; DOCUMENT_TABS=1; LIVE_SOURCE_UNCHANGED=YES
+Exit=0. Restored behavior: old continuous reader and document tabs retained, no new mode selector or underline action. User workspace is untouched. Source/Python rollback only runs on fresh data: old programs do not understand new underline payloads; retain new workspace and use new version for those annotations, not silent downgrade or deletion.
+
+TDD evidence:
+- Reading/underline core tests RED 2 failed before implementation, then full Vitest26 passed.
+- Python export new test RED INVALID_ANNOTATION (four rotation subtests), GREEN accepts standard Underline subtype9 with crop translation and repeated exports preserving source hash; four unittest methods pass.
+- E2E initial underline SVG line visibility assertion was corrected: a horizontal SVG line has zero-height DOM bounds, so visibility checks its full-page SVG, and coordinates/direction check the line. No functional bug was inferred just from that assertion.
+- Round2 independent review Important: cached page retains deleted/old marks in single mode. REVIEW_RED command: npx playwright test reading-tools.spec.ts --grep 'cached overlays'; result 1 failed, exit1 (expected0 underline elements, actual1).
+- Fix: pagechanging schedules generation-guarded repaint after reattachment; mode switch repaints attached cached pages. REVIEW_GREEN command: npx playwright test reading-tools.spec.ts; 3 passed (9.0s), exit0. Includes 1→2→1 deletion, offscreen undo and return to continuous mode.
+- One final independent review, no re-review after fix; tests/full gate validate the fix. Code and single.png/underline.png inspected. References recorded in docs/REVIEW-CADENCE.md.
+- Deferred minor: first/last page previous/next controls remain enabled but no-op at bounds. Prior focus-continuation and divider-grip minors stay recorded.
+
+Full release command (PowerShell): $env:ENLUMOR_EVIDENCE_DIR='evidence/reading-tools'; npm run release:verified
+Input: 0.1.6 source, embedded updated PyMuPDF worker, actual staged EXE for all21 E2Es, fresh profiles, both 200-page stress samples with1000annotations and thumbnail rail active.
+Literal key output:
+Tests 26 passed (26)
+Ran 4 tests
+OK
+21 passed (53.2s)
+PACKAGED_READER: PASS
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.6 D:\codex project\Enlumor\release\Enlumor-0.1.6-win.zip SHA256=29f84f876169e77b4d6207f5b1811a2cebcc492154d6647dd084c1d11f74fc1d
+Exit=0. Total51 tests plus typecheck/build/package smoke and two performance gates. Full output=RELEASE.log.
+Text sample: scroll p95=14.399999998509884ms; reading-save p95=2.3000000044703484ms; extracted startup median375.1642ms; snapshot正文/thumbnail canvases=8/4.
+Image sample:200pages/32,101,181bytes; scroll p95=14.399999998509884ms; reading-save p95=5.800000004470348ms; extracted startup median360.1719ms; snapshot canvases=8/3.
+Both0 long tasks>50ms. Synthetic budgets do not guarantee all documents/hardware. These pressure timings use continuous mode; single-page mounting/search/state are covered by functional E2E.
+Actual UI underline export copied to exported-underline.pdf; opened in Edge, screenshot edge-underline.png inspected: visible line under Evidence page1,200pages. No standalone Acrobat Reader claim. App screenshots single.png and underline.png inspected. Standard subtype9 also independently re-opened with PyMuPDF in actual packaged E2E.
+
+Release EXE=D:\codex project\Enlumor\release\Enlumor-0.1.6-win-x64\Enlumor.exe
+ZIP=D:\codex project\Enlumor\release\Enlumor-0.1.6-win.zip
+Manifest=D:\codex project\Enlumor\release\latest.json
+Round2 complete; review counter0. Next two tasks: strikeout+standard export, then straight line+standard export, then Round3 review.
+Reusable prompt:
+按 docs/FEATURES.md 逐项实施，先失败测试再实现，每两项做代码/成熟交互 review。当前第2轮结束，计数0；下一项删除线，随后直线，两项后第3轮review。全部实际打包测试与双样本性能门禁通过才更新最新版；保持源 PDF 只读及 SQLite 权威数据。

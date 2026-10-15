@@ -1,0 +1,46 @@
+
+Running 1 test using 1 worker
+
+(node:28184) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\reading-tools.spec.ts:47:1 › single-page cached overlays reflect offscreen deletion and undo when pages remount (6.2s)
+
+
+  1) tests\e2e\reading-tools.spec.ts:47:1 › single-page cached overlays reflect offscreen deletion and undo when pages remount 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.enlumor-marks .underline-line')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.enlumor-marks .underline-line') with timeout 5000ms
+      - waiting for locator('.enlumor-marks .underline-line')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      51 |  await page.getByLabel('阅读模式').selectOption('single');await page.getByRole('button',{name:'下一页',exact:true}).click();await expect(page.getByLabel('跳转页码')).toHaveValue('2');
+      52 |  await page.getByRole('button',{name:'删除',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+    > 53 |  await page.getByRole('button',{name:'上一页',exact:true}).click();await expect(page.getByLabel('跳转页码')).toHaveValue('1');await expect(page.locator('.enlumor-marks .underline-line')).toHaveCount(0);
+         |                                                                                                                                                                                     ^
+      54 |  await page.getByRole('button',{name:'下一页',exact:true}).click();await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
+      55 |  await page.getByRole('button',{name:'上一页',exact:true}).click();await expect(page.locator('.enlumor-marks .underline-line')).toHaveCount(1);
+      56 |  await page.getByRole('button',{name:'下一页',exact:true}).click();await page.getByRole('button',{name:'删除',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+        at D:\codex project\Enlumor\tests\e2e\reading-tools.spec.ts:53:181
+
+    Error Context: test-results\reading-tools-single-page--9b219-and-undo-when-pages-remount\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\reading-tools-single-page--9b219-and-undo-when-pages-remount\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\reading-tools-single-page--9b219-and-undo-when-pages-remount\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\reading-tools.spec.ts:47:1 › single-page cached overlays reflect offscreen deletion and undo when pages remount 

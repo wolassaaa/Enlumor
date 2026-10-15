@@ -50,3 +50,6 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
 .document-tab>button[role="tab"]{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;max-width:210px}
 .document-tab>button:last-child{padding:6px 9px;color:#777f70}
 .document-tabs+.document-bar{height:32px}
+.underline-line{position:absolute;inset:0;width:100%;height:100%;overflow:visible;opacity:.95}
+.reading-layout select{font:inherit;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:4px;background:var(--paper);color:var(--ink)}
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}

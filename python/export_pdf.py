@@ -45,7 +45,7 @@ def export_pdf(source, target, fingerprint, annotations):
                 index = item['pageIndex']
                 if type(index) is not int or not 0 <= index < len(doc):
                     raise ValueError('INVALID_PAGE')
-                if item['type'] not in ('highlight', 'note') or not item['quads']:
+                if item['type'] not in ('highlight', 'underline', 'note') or not item['quads']:
                     raise ValueError('INVALID_ANNOTATION')
                 page = doc[index]
                 # PyMuPDF's rotated-page transformation_matrix loses crop translation.
@@ -66,6 +66,8 @@ def export_pdf(source, target, fingerprint, annotations):
                 rgb = tuple(int(color[i:i+2], 16) / 255 for i in (1, 3, 5))
                 if item['type'] == 'highlight':
                     annotation = page.add_highlight_annot(quads)
+                elif item['type'] == 'underline':
+                    annotation = page.add_underline_annot(quads)
                 else:
                     annotation = page.add_text_annot(quads[0].ul, item.get('note', ''))
                 annotation.set_colors(stroke=rgb)

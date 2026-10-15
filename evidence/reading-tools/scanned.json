@@ -1,0 +1,26 @@
+{
+  "label": "scanned",
+  "fixture": "200 scanned image pages / approximately 32MB / 1000 annotations",
+  "startupMs": [
+    439.5389,
+    480.71479999999997,
+    479.34069999999997
+  ],
+  "portableStartupMs": [
+    389.04569999999967,
+    360.1719000000003,
+    355.7539000000006
+  ],
+  "scrolling": {
+    "frameP50Ms": 8.5,
+    "frameP95Ms": 14.399999998509884,
+    "longTasks": 0,
+    "worstLongTaskMs": 0,
+    "retainedCanvases": 8,
+    "thumbnailCanvases": 3
+  },
+  "readingSave": {
+    "p50Ms": 0.8000000044703484,
+    "p95Ms": 5.800000004470348
+  }
+}

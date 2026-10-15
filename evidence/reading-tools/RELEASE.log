@@ -1,0 +1,197 @@
+
+> enlumor@0.1.6 release:verified
+> node scripts/release.mjs
+
+
+> enlumor@0.1.6 build
+> tsc --noEmit && node scripts/build.mjs
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 27 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/renderer/index.html                                          0.59 kB │ gzip:   0.38 kB
+dist/renderer/assets/cursor-editorTextHighlight-kG3uUOwL.svg      5.40 kB │ gzip:   2.20 kB
+dist/renderer/assets/pdf.worker.min-CjEcRF4W.mjs              1,264.34 kB
+dist/renderer/assets/index-CUN1tXzZ.css                         244.58 kB │ gzip:  45.60 kB
+dist/renderer/assets/index-BbtHw8AK.js                          854.95 kB │ gzip: 259.61 kB
+
+✓ built in 380ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+> enlumor@0.1.6 test
+> vitest run
+
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+(node:32744) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:43284) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:59004) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54536) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  8 passed (8)
+      Tests  26 passed (26)
+   Start at  11:48:41
+   Duration  323ms (transform 41%, tests 31%, import 23%, worker 6%)
+
+
+> enlumor@0.1.6 test:python
+> node scripts/python.mjs -m unittest discover -s tests/python -v
+
+test_cli_accepts_utf8_chinese_paths_with_windows_legacy_encoding (test_export.ExportTests.test_cli_accepts_utf8_chinese_paths_with_windows_legacy_encoding) ... ok
+test_rejects_overwrite_stale_and_invalid_without_output (test_export.ExportTests.test_rejects_overwrite_stale_and_invalid_without_output) ... ok
+test_rotation_crop_native_marks_and_repeat_exports (test_export.ExportTests.test_rotation_crop_native_marks_and_repeat_exports) ... ok
+test_underline_standard_subtype_crop_rotation_and_repeat_export (test_export.ExportTests.test_underline_standard_subtype_crop_rotation_and_repeat_export) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.324s
+
+OK
+
+> enlumor@0.1.6 build:worker
+> node scripts/build-worker.mjs
+
+204 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.8
+204 INFO: Python: 3.14.3
+238 INFO: Platform: Windows-11-10.0.26200-SP0
+238 INFO: Python environment: D:\codex project\Enlumor\.venv
+239 INFO: wrote .cache\enlumor-pdf-worker.spec
+244 INFO: Removing temporary files and cleaning cache in C:\Users\woola\AppData\Local\pyinstaller
+714 INFO: Module search paths (PYTHONPATH):
+['D:\\codex project\\Enlumor',
+ 'C:\\Python314\\python314.zip',
+ 'C:\\Python314\\DLLs',
+ 'C:\\Python314\\Lib',
+ 'C:\\Python314',
+ 'D:\\codex project\\Enlumor\\.venv',
+ 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages',
+ 'D:\\codex project\\Enlumor\\python']
+969 INFO: Appending 'binaries' from .spec
+969 INFO: Appending 'datas' from .spec
+974 INFO: checking Analysis
+974 INFO: Building Analysis because Analysis-00.toc is non existent
+974 INFO: Looking for Python shared library...
+974 INFO: Using Python shared library: C:\Python314\python314.dll
+974 INFO: Running Analysis Analysis-00.toc
+974 INFO: Target bytecode optimization level: 0
+974 INFO: Initializing module dependency graph...
+976 INFO: Initializing module graph hook caches...
+987 INFO: Analyzing modules for base_library.zip ...
+1793 INFO: Processing standard module hook 'hook-encodings.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2701 INFO: Processing standard module hook 'hook-math.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4044 INFO: Processing standard module hook 'hook-difflib.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4055 INFO: Processing standard module hook 'hook-heapq.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4184 INFO: Processing standard module hook 'hook-pickle.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5835 INFO: Caching module dependency graph...
+5857 INFO: Analyzing D:\codex project\Enlumor\python\export_pdf.py
+8460 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8728 INFO: Processing standard module hook 'hook-xml.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9116 INFO: Processing standard module hook 'hook-sysconfig.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9123 INFO: Processing standard module hook 'hook-_ctypes.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9200 INFO: Processing standard module hook 'hook-platform.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9585 INFO: Analyzing hidden import 'pymupdf.__main__'
+9631 INFO: Processing module hooks (post-graph stage)...
+9711 INFO: Performing binary vs. data reclassification (117 entries)
+9741 INFO: Looking for ctypes DLLs
+9755 INFO: Analyzing run-time hooks ...
+9756 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9759 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9762 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9771 INFO: Creating base_library.zip...
+9786 INFO: Looking for dynamic libraries
+10015 INFO: Extra DLL search directories (AddDllDirectory): []
+10015 INFO: Extra DLL search directories (PATH): []
+10411 INFO: Warnings written to D:\codex project\Enlumor\.cache\pyinstaller-build\enlumor-pdf-worker\warn-enlumor-pdf-worker.txt
+10425 INFO: Graph cross-reference written to D:\codex project\Enlumor\.cache\pyinstaller-build\enlumor-pdf-worker\xref-enlumor-pdf-worker.html
+10444 INFO: checking PYZ
+10444 INFO: Building PYZ because PYZ-00.toc is non existent
+10444 INFO: Building PYZ (ZlibArchive) D:\codex project\Enlumor\.cache\pyinstaller-build\enlumor-pdf-worker\PYZ-00.pyz
+10677 INFO: Building PYZ (ZlibArchive) D:\codex project\Enlumor\.cache\pyinstaller-build\enlumor-pdf-worker\PYZ-00.pyz completed successfully.
+10690 INFO: checking PKG
+10690 INFO: Building PKG because PKG-00.toc is non existent
+10690 INFO: Building PKG (CArchive) enlumor-pdf-worker.pkg
+10703 INFO: Building PKG (CArchive) enlumor-pdf-worker.pkg completed successfully.
+10704 INFO: Bootloader D:\codex project\Enlumor\.venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+10704 INFO: checking EXE
+10704 INFO: Building EXE because EXE-00.toc is non existent
+10704 INFO: Building EXE from EXE-00.toc
+10704 INFO: Copying bootloader EXE to D:\codex project\Enlumor\.cache\pyinstaller-build\enlumor-pdf-worker\enlumor-pdf-worker.exe
+10707 INFO: Copying icon to EXE
+10710 INFO: Copying 0 resources to EXE
+10710 INFO: Embedding manifest in EXE
+10713 INFO: Appending PKG archive to EXE
+10716 INFO: Fixing EXE headers
+10790 INFO: Building EXE from EXE-00.toc completed successfully.
+10793 INFO: checking COLLECT
+10793 INFO: Building COLLECT because COLLECT-00.toc is non existent
+10793 INFO: Removing dir D:\codex project\Enlumor\.cache\pdf-worker\enlumor-pdf-worker
+10807 INFO: Building COLLECT COLLECT-00.toc
+10955 INFO: Building COLLECT COLLECT-00.toc completed successfully.
+10958 INFO: Build complete! The results are available in: D:\codex project\Enlumor\.cache\pdf-worker
+  • electron-builder  version=26.15.3 os=10.0.26200
+  • loaded configuration  file=package.json ("build" field)
+  • executing @electron/rebuild  electronVersion=44.7.2 arch=x64 buildFromSource=false workspaceRoot=D:\codex project\Enlumor projectDir=./ appDir=./
+  • installing native dependencies  arch=x64
+  • completed installing native dependencies
+  • packaging       platform=win32 arch=x64 electron=44.7.2 appOutDir=.cache\release-0.1.6-1792036119511\win-unpacked
+  • downloaded      label=electron progress=100%
+  • downloaded electron zip extracted successfully  output=D:\codex project\Enlumor\.cache\release-0.1.6-1792036119511\win-unpacked
+  • searching for node modules  pm=npm searchDir=D:\codex project\Enlumor
+  • updating asar integrity executable resource  executablePath=.cache\release-0.1.6-1792036119511\win-unpacked\Enlumor.exe
+  • signing with signtool.exe  path=.cache\release-0.1.6-1792036119511\win-unpacked\resources\pdf-worker\enlumor-pdf-worker.exe
+  • default Electron icon is used  reason=application icon is not set
+  • signing with signtool.exe  path=.cache\release-0.1.6-1792036119511\win-unpacked\Enlumor.exe
+  • building        target=zip arch=x64 file=.cache\release-0.1.6-1792036119511\Enlumor-0.1.6-win.zip
+(node:29980) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 21 tests using 1 worker
+
+(node:62332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:62332) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  1 tests\e2e\reader.spec.ts:17:1 › packaged app opens and exports without external Python configuration (2.9s)
+  ok  2 tests\e2e\reader.spec.ts:33:1 › reading layout collapses panels and keeps selection tools near the text (1.7s)
+  ok  3 tests\e2e\reader.spec.ts:64:1 › PDF directory resolves nested entries to source pages (1.7s)
+  ok  4 tests\e2e\reader.spec.ts:80:1 › PDF thumbnails render on demand, navigate and release offscreen canvases (2.0s)
+
+  ok  5 tests\e2e\reader.spec.ts:117:1 › PDF thumbnail jobs cancel on rapid scroll and document replacement (2.5s)
+  ok  6 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1 (2.3s)
+  ok  7 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1.5 (2.2s)
+  ok  8 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 2 (2.4s)
+  ok  9 tests\e2e\reader.spec.ts:163:1 › failed undo retries as undo and preserves the redo action (2.0s)
+  ok 10 tests\e2e\reader.spec.ts:183:1 › search markup does not duplicate selected text or quads (1.9s)
+  ok 11 tests\e2e\reader.spec.ts:197:1 › cross-page multiline selection is one undo step (1.7s)
+
+  ok 12 tests\e2e\reader.spec.ts:221:1 › cancel, corrupt, encrypted and image-only PDFs have explicit outcomes (2.0s)
+  ok 13 tests\e2e\reader.spec.ts:262:1 › offline reading, selected highlight, note, undo/redo, export and crash recovery (6.0s)
+  ok 14 tests\e2e\reader.spec.ts:300:1 › rejects replaced source and permits same-content relocation (1.8s)
+
+  ok 15 tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages (2.7s)
+  ok 16 tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source (3.1s)
+  ok 17 tests\e2e\reading-tools.spec.ts:47:1 › single-page cached overlays reflect offscreen deletion and undo when pages remount (1.4s)
+
+  ok 18 tests\e2e\workspace.spec.ts:18:1 › adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport (2.1s)
+  ok 19 tests\e2e\workspace.spec.ts:41:1 › document tabs isolate progress and undo, deduplicate opens, restore session and close without deleting data (3.4s)
+  ok 20 tests\e2e\workspace.spec.ts:63:1 › note drafts block tab navigation and close shortcuts until saved or cancelled (1.8s)
+  ok 21 tests\e2e\workspace.spec.ts:79:1 › failed PDF renderer opening restores prior document, undo history and persisted active session (2.5s)
+
+  21 passed (53.2s)
+PACKAGED_READER: PASS
+{"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
+EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+{"label":"release","fixture":"200 pages / 32MiB unused PDF stream / 1000 annotations","startupMs":[447.7655,423.8602000000001,495.9579000000001],"portableStartupMs":[378.1379999999999,375.16420000000016,365.66429999999946],"scrolling":{"frameP50Ms":8.799999997019768,"frameP95Ms":14.399999998509884,"longTasks":0,"worstLongTaskMs":0,"retainedCanvases":8,"thumbnailCanvases":4},"readingSave":{"p50Ms":0.8999999985098839,"p95Ms":2.3000000044703484}}
+{"label":"scanned","fixture":"200 scanned image pages / approximately 32MB / 1000 annotations","startupMs":[439.5389,480.71479999999997,479.34069999999997],"portableStartupMs":[389.04569999999967,360.1719000000003,355.7539000000006],"scrolling":{"frameP50Ms":8.5,"frameP95Ms":14.399999998509884,"longTasks":0,"worstLongTaskMs":0,"retainedCanvases":8,"thumbnailCanvases":3},"readingSave":{"p50Ms":0.8000000044703484,"p95Ms":5.800000004470348}}
+VERIFIED_RELEASE: 0.1.6 D:\codex project\Enlumor\release\Enlumor-0.1.6-win.zip SHA256=29f84f876169e77b4d6207f5b1811a2cebcc492154d6647dd084c1d11f74fc1d

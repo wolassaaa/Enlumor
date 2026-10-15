@@ -40,6 +40,21 @@ class ExportTests(unittest.TestCase):
                         self.assertAlmostEqual(highlight.vertices[0][1], 45, places=2)
                 self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(), digest)
 
+    def test_underline_standard_subtype_crop_rotation_and_repeat_export(self):
+        for rotation in (0, 90, 180, 270):
+            with self.subTest(rotation=rotation), tempfile.TemporaryDirectory() as folder:
+                source=Path(folder)/'source.pdf'; doc=fitz.open(); page=doc.new_page(width=300,height=400)
+                page.insert_text((60,90),'Underline evidence');page.set_cropbox(fitz.Rect(20,30,280,370));page.set_rotation(rotation)
+                page.add_text_annot((40,100),'existing');doc.save(source);doc.close();fingerprint=hashlib.sha256(source.read_bytes()).hexdigest()
+                mark={'id':'underline-1','type':'underline','pageIndex':0,'quads':[[60,325,180,325,60,305,180,305]],'color':'#335588','quote':'Underline evidence','note':''}
+                for index in range(2):
+                    target=Path(folder)/f'out-{index}.pdf';export_pdf(str(source),str(target),fingerprint,[mark])
+                    with fitz.open(target) as exported:
+                        page=exported[0];items=list(page.annots());self.assertEqual(len(items),2)
+                        underline=next(a for a in items if a.type[0]==9)
+                        self.assertAlmostEqual(underline.vertices[0][0],40,places=2);self.assertAlmostEqual(underline.vertices[0][1],45,places=2)
+                self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(),fingerprint)
+
     def test_rejects_overwrite_stale_and_invalid_without_output(self):
         with tempfile.TemporaryDirectory() as folder:
             source = Path(folder) / 'source.pdf'; out = Path(folder) / 'out.pdf'

@@ -1,0 +1,45 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+(node:62720) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/reading-tools.test.ts (2 tests | 2 failed) 24ms
+   × reading mode persists per document and invalid modes do not overwrite saved reading state 15ms
+   × underline uses existing annotation transaction and inverse operations 8ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/reading-tools.test.ts > reading mode persists per document and invalid modes do not overwrite saved reading state
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ tests/reading-tools.test.ts:9:144
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/reading-tools.test.ts > underline uses existing annotation transaction and inverse operations
+Error: INVALID_ANNOTATION: 批注类型、页码或坐标无效
+ ❯ validateAnnotation src/shared/geometry.ts:28:11
+     26|       !/^#[0-9a-f]{6}$/i.test(a.color) || !Array.isArray(a.quads) || !…
+     27|       a.quads.some(q => !Array.isArray(q) || q.length !== 8 || q.some(…
+     28|     throw new Error('INVALID_ANNOTATION: 批注类型、页码或坐标无效');
+       |           ^
+     29|   }
+     30| }
+ ❯ Workspace.apply src/main/workspace.ts:113:7
+ ❯ tests/reading-tools.test.ts:15:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed (2)
+   Start at  11:42:30
+   Duration  189ms (tests 38%, transform 35%, import 21%, worker 6%)
+

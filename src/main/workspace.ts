@@ -102,7 +102,7 @@ export class Workspace {
     // Only position autosave uses metadata. Annotation/export/open paths still hash full bytes.
     if (!previous || previous.path !== doc.path || previous.stamp !== this.sourceStamp(doc.path)) doc = this.verified(doc.id);
     if (state.fingerprint !== doc.fingerprint || !Number.isInteger(state.pageIndex) || state.pageIndex < 0 || state.pageIndex >= doc.pageCount ||
-        !Number.isFinite(state.offset) || state.offset < 0 || state.offset > 1 || !Number.isFinite(state.zoom) || state.zoom < .25 || state.zoom > 4 || ![0, 90, 180, 270].includes(state.rotation)) throw new Error('INVALID_READING_STATE');
+        !Number.isFinite(state.offset) || state.offset < 0 || state.offset > 1 || !Number.isFinite(state.zoom) || state.zoom < .25 || state.zoom > 4 || ![0, 90, 180, 270].includes(state.rotation) || (state.layout !== undefined && !['continuous','single'].includes(state.layout))) throw new Error('INVALID_READING_STATE');
     this.db.prepare('INSERT INTO reading VALUES (?,?) ON CONFLICT(documentId) DO UPDATE SET payload=excluded.payload').run(state.documentId, JSON.stringify(state));
   }
   apply(change: AnnotationChange): CommitResult {

@@ -26,7 +26,7 @@ test('adjustable sidebars support drag, keyboard, spacing, persistence and a usa
  const right=page.getByRole('separator',{name:'调整批注栏宽度'});await right.focus();await page.keyboard.press('ArrowLeft');
  await page.getByRole('button',{name:'布局设置',exact:true}).click();await page.getByLabel('阅读间距').selectOption('24');
  await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.querySelector('.app')!).getPropertyValue('--ui-spacing').trim())).toBe('24px');
- await page.getByRole('button',{name:'关闭布局设置'}).click();await page.screenshot({path:'evidence/layout-tabs/layout.png'});
+ await page.getByRole('button',{name:'关闭布局设置'}).click();await page.screenshot({path:(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/layout-tabs')+'/layout.png'});
  const leftWidth=(await page.locator('.library').boundingBox())!.width;await app.close();app=await launch(profile);
  const reopened=await app.firstWindow();await expect(reopened.locator('.document-name')).toContainText('alpha.pdf');
  await expect.poll(async()=>(await reopened.locator('.library').boundingBox())!.width).toBeCloseTo(leftWidth,0);
@@ -51,7 +51,7 @@ test('document tabs isolate progress and undo, deduplicate opens, restore sessio
  await tabs.getByRole('tab',{name:'alpha.pdf',exact:true}).click();await expect(page.getByLabel('跳转页码')).toHaveValue('51');
  await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);await expect(page.getByRole('button',{name:'撤销',exact:true})).toBeEnabled();
  await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
- await open(app);await expect(tabs.getByRole('tab')).toHaveCount(2);await page.screenshot({path:'evidence/layout-tabs/tabs.png'});
+ await open(app);await expect(tabs.getByRole('tab')).toHaveCount(2);await page.screenshot({path:(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/layout-tabs')+'/tabs.png'});
  await app.close();app=await launch(profile);page=await app.firstWindow();await expect(page.locator('.document-name')).toContainText('alpha.pdf');
  const restored=page.getByRole('tablist',{name:'已打开文档'});await expect(restored.getByRole('tab')).toHaveCount(2);await expect(page.getByLabel('跳转页码')).toHaveValue('51');
  await page.getByRole('button',{name:'关闭 beta.pdf',exact:true}).click();await expect(restored.getByRole('tab')).toHaveCount(1);

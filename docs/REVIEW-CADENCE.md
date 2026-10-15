@@ -1,4 +1,8 @@
-# Enlumor 两项一 Review：第 1 轮
+# Enlumor 两项一 Review 记录
+
+当前执行位置：第2轮已完成，计数0。下一轮删除线、直线，完成后第3轮 Review。
+
+## 第1轮：侧栏与标签
 
 日期：2026-10-15；基线 0192aaa；分支 feat/layout-tabs。
 
@@ -39,3 +43,15 @@ Important 2：reader.open 失败后文档标签、撤销历史和 SQLite 活动�
 
 两个独立功能任务记为一轮；完成后必须 review 再继续。每个任务先失败测试→实现→回归；Review 同时检查代码/数据安全与操作逻辑，参考官方成熟产品设计，不能只看视觉。Important/Critical 必须修复并补测试；Minor 如暂缓则记录。
 本轮 Review 已完成，计数清零。下一轮：① RDR-02 单页模式；② ANN-01 下划线（包括标准 PDF 导出）。两项后执行第 2 轮 Review，继续不提前引入 AI/白板。
+
+## 第2轮：单页模式与下划线/导出（0.1.6）
+
+两个任务的单独测试先失败后通过，再进行一次独立代码/截图 Review。参考 [Acrobat 页面布局](https://helpx.adobe.com/acrobat/using/adjusting-pdf-views.html)区分单页与连续滚动；复用 PDF.js ScrollMode.PAGE，而不是隐藏整本已渲染页面。标准导出参考 [PyMuPDF 页面批注](https://pymupdf.readthedocs.io/en/latest/page.html)。
+
+Important：单页会复用已完成渲染的缓存页面，离屏删除/改色后只更新当前页面，翻回可能显示旧批注。相邻页删除测试 RED（预期0条线，实际1条），修复为 pagechanging 重新挂载后重绘，模式切换刷新附着页面；测试 GREEN，覆盖删除、撤销恢复与切回连续模式。最终51项测试和实际打包/双压力样本门禁通过。
+
+Deferred minor：页1的上一页与末页的下一页仍可点击但不跳转，后续应按边界禁用。第1轮焦点接续和分隔线握柄提示继续记录，不在本轮扩展。
+
+阅读模式作为可选 ReadingState.layout 写入 SQLite JSON，旧记录默认连续模式，不迁移 schema。旧程序不识别新的下划线批注类型；回退仅在独立副本验证，保留新版工作区，新批注继续由新版处理。
+
+第2轮已完成，计数归零。下一轮：删除线（含导出）、直线（含导出），两项完成后 Review；之后再推进箭头、画笔与擦除。
