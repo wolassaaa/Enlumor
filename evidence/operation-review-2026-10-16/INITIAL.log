@@ -1,0 +1,112 @@
+NOTE_FOCUS_ESCAPE: {"tag":"BUTTON","label":"取消选区","text":"","inside":false}
+NOTE_SAVE_AFTER_BACKGROUND_CANCEL: {"modalCount":0,"stored":0,"status":"已恢复 · 原 PDF 只读","alerts":0}
+DISMISS_SAVE_ERROR: {"retryButtons":0,"alerts":0,"exportDisabled":true,"drawDisabled":true,"status":"尚未保存 / 操作未完成","stored":1}
+PENDING_CLOSE_SHORTCUT: {"tabs":1,"retryButtons":0}
+node:internal/modules/run_main:107
+    triggerUncaughtException(
+    ^
+
+ExpectError: expect(locator).toBeVisible() failed
+
+Locator: getByRole('alert')
+Expected: visible
+Timeout: 5000ms
+Error: element(s) not found
+
+Call log:
+  - Expect "toBeVisible" getByRole('alert') with timeout 5000ms
+  - waiting for getByRole('alert')
+
+    at captureRawStack (D:\codex project\Enlumor\node_modules\playwright-core\lib\coreBundle.js:9282:17)
+    at callMatcherAsStep (D:\codex project\Enlumor\node_modules\playwright\lib\matchers\expect.js:13316:57)
+    at Object.toBeVisible (D:\codex project\Enlumor\node_modules\playwright\lib\matchers\expect.js:13308:23)
+    at D:\codex project\Enlumor\.cache\audit-operations.mjs:32:120 {
+  matcherResult: {
+    message: 'expect(locator).toBeVisible() failed\n' +
+      '\n' +
+      "Locator: getByRole('alert')\n" +
+      'Expected: visible\n' +
+      'Timeout: 5000ms\n' +
+      'Error: element(s) not found\n' +
+      '\n' +
+      'Call log:\n' +
+      `  - Expect "toBeVisible" getByRole('alert') with timeout 5000ms\n` +
+      "  - waiting for getByRole('alert')\n",
+    pass: false,
+    actual: undefined,
+    name: 'toBeVisible',
+    expected: 'visible',
+    log: [
+      `  - Expect "toBeVisible" getByRole('alert') with timeout 5000ms`,
+      "  - waiting for getByRole('alert')"
+    ],
+    timeout: 5000,
+    ariaSnapshot: '- banner:\n' +
+      '  - text: e enlumor YOUR QUIET READING ROOM\n' +
+      '  - button "收起文档栏" [expanded]\n' +
+      '  - button "收起批注栏" [expanded]\n' +
+      '  - button "布局设置": 布局\n' +
+      '  - button "打开 PDF" [disabled]\n' +
+      '  - button "导出批注 PDF" [disabled]\n' +
+      '- complementary:\n' +
+      '  - text: LIBRARY / 你的阅读空间\n' +
+      '  - heading "文档 01" [level=2]\n' +
+      '  - tablist "文档导航":\n' +
+      '    - tab "文档" [selected]\n' +
+      '    - tab "目录"\n' +
+      '    - tab "缩略图"\n' +
+      '  - button "Audit.pdf 2 页 · 本地文件" [disabled]\n' +
+      '  - button "重新关联 Audit.pdf" [disabled]: 重新关联\n' +
+      '  - text: 离线可用 所有阅读痕迹保存在这台电脑\n' +
+      '- separator "调整文档栏宽度"\n' +
+      '- main:\n' +
+      '  - tablist "已打开文档":\n' +
+      '    - tab "Audit.pdf" [disabled] [selected]\n' +
+      '    - button "关闭 Audit.pdf" [disabled]: ×\n' +
+      '  - text: Audit.pdf 纯阅读 阅读模式\n' +
+      '  - combobox "阅读模式":\n' +
+      '    - option "连续滚动" [selected]\n' +
+      '    - option "单页阅读"\n' +
+      '  - button "上一页": ‹\n' +
+      '  - textbox "跳转页码": "1"\n' +
+      '  - text: / 2\n' +
+      '  - button "下一页": ›\n' +
+      '  - button "缩小": −\n' +
+      '  - text: 100%\n' +
+      '  - button "放大": +\n' +
+      '  - button "适宽"\n' +
+      '  - button "适页"\n' +
+      '  - button "旋转页面": ↻\n' +
+      '  - textbox "全文搜索":\n' +
+      '    - /placeholder: 在文档中搜索…\n' +
+      '  - button "搜索": ⌕\n' +
+      '  - button "下一个搜索结果": ↓\n' +
+      '  - region "Page ⁨1⁩": Evidence for operation review\n' +
+      '  - region "Page ⁨2⁩"\n' +
+      '  - status: 尚未保存 / 操作未完成\n' +
+      '  - text: 1 条批注\n' +
+      '- separator "调整批注栏宽度"\n' +
+      '- complementary:\n' +
+      '  - text: MARGINALIA / 页边思考\n' +
+      '  - heading "批注 01" [level=2]\n' +
+      '  - text: 颜色\n' +
+      '  - textbox "批注颜色": "#f4cf58"\n' +
+      '  - button "高亮选区" [disabled]\n' +
+      '  - button "下划线选区" [disabled]\n' +
+      '  - button "删除线选区" [disabled]\n' +
+      '  - button "绘制直线" [disabled]: 直线\n' +
+      '  - button "绘制箭头" [disabled]: 箭头\n' +
+      '  - button "绘制画笔" [disabled]: 画笔\n' +
+      '  - button "添加便签" [disabled]\n' +
+      '  - button "撤销" [disabled]\n' +
+      '  - button "重做" [disabled]\n' +
+      '  - article:\n' +
+      '    - button "第 1 页 · 高亮 Evidence for operation review":\n' +
+      '      - text: 第 1 页 · 高亮\n' +
+      '      - paragraph: Evidence for operation review\n' +
+      '    - button "应用颜色" [disabled]\n' +
+      '    - button "删除" [disabled]'
+  }
+}
+
+Node.js v24.14.0

@@ -1,0 +1,51 @@
+{
+  "version": "0.1.8",
+  "profile": "C:\\Users\\woola\\AppData\\Local\\Temp\\enlumor-operation-review-wF3reB",
+  "source": "C:\\Users\\woola\\AppData\\Local\\Temp\\enlumor-operation-review-wF3reB\\Audit.pdf",
+  "checks": [
+    {
+      "name": "NOTE_FOCUS_ESCAPE",
+      "tag": "BUTTON",
+      "label": "取消选区",
+      "text": "",
+      "inside": false
+    },
+    {
+      "name": "NOTE_SAVE_AFTER_BACKGROUND_CANCEL",
+      "modalCount": 0,
+      "stored": 0,
+      "status": "已恢复 · 原 PDF 只读",
+      "alerts": 0
+    },
+    {
+      "name": "DISMISS_SAVE_ERROR",
+      "retryButtons": 0,
+      "alerts": 0,
+      "exportDisabled": true,
+      "drawDisabled": true,
+      "status": "尚未保存 / 操作未完成",
+      "stored": 1
+    },
+    {
+      "name": "PENDING_CLOSE_SHORTCUT",
+      "tabs": 1,
+      "retryButtons": 0
+    },
+    {
+      "name": "RECOVERY_AFTER_READING_FLUSH",
+      "stored": 0,
+      "status": "已保存 · 本地 SQLite"
+    },
+    {
+      "name": "PAGE_BOUNDARY",
+      "page": "1",
+      "previousEnabled": true
+    },
+    {
+      "name": "ESC_DRAW_CANCEL",
+      "drafts": 0,
+      "stored": 0,
+      "pressed": "false"
+    }
+  ]
+}

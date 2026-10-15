@@ -1,0 +1,42 @@
+
+Running 33 tests using 1 worker
+
+(node:34860) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\arrows-ink.spec.ts:15:1 › arrow direction and Escape cancellation preserve native endpoints through rotation restart and standard export (2.6s)
+  ok  2 tests\e2e\arrows-ink.spec.ts:35:1 › ink keeps an ordered closed stroke through cancel undo restart and native export (3.0s)
+  ok  3 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 0 degrees and display scale 1 matches native SVG and PDF coordinates (1.5s)
+  ok  4 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 90 degrees and display scale 1.5 matches native SVG and PDF coordinates (2.1s)
+  ok  5 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 180 degrees and display scale 1 matches native SVG and PDF coordinates (1.6s)
+  ok  6 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 270 degrees and display scale 2 matches native SVG and PDF coordinates (1.6s)
+  ok  7 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 0 degrees and display scale 1 matches native SVG and PDF coordinates (1.5s)
+  ok  8 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 90 degrees and display scale 1.5 matches native SVG and PDF coordinates (1.5s)
+  ok  9 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 180 degrees and display scale 1 matches native SVG and PDF coordinates (1.6s)
+  ok 10 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 270 degrees and display scale 2 matches native SVG and PDF coordinates (1.6s)
+  ok 11 tests\e2e\arrows-ink.spec.ts:73:1 › long ink gesture bounds stored samples and preserves first and terminal coordinates (1.6s)
+  ok 12 tests\e2e\arrows-ink.spec.ts:84:44 › arrow draft uses selected color and cancels on rotation without saving (925ms)
+  ok 13 tests\e2e\arrows-ink.spec.ts:84:44 › ink draft uses selected color and cancels on rotation without saving (1.4s)
+  ok 14 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (same-turn) (914ms)
+  ok 15 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (same-turn) (944ms)
+  ok 16 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (same-turn) (1.5s)
+  ok 17 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (same-turn) (907ms)
+  ok 18 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (after-render) (918ms)
+  ok 19 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (after-render) (1.4s)
+  ok 20 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (after-render) (928ms)
+  ok 21 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (after-render) (956ms)
+  ok 22 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (same-turn) (902ms)
+  ok 23 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (same-turn) (896ms)
+  ok 24 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (same-turn) (1.4s)
+  ok 25 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (same-turn) (906ms)
+  ok 26 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (after-render) (1.5s)
+  ok 27 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (after-render) (937ms)
+  ok 28 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (after-render) (1.5s)
+  ok 29 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (after-render) (949ms)
+
+  ok 30 tests\e2e\workspace.spec.ts:18:1 › adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport (1.7s)
+  ok 31 tests\e2e\workspace.spec.ts:41:1 › document tabs isolate progress and undo, deduplicate opens, restore session and close without deleting data (3.0s)
+  ok 32 tests\e2e\workspace.spec.ts:63:1 › note drafts block tab navigation and close shortcuts until saved or cancelled (1.7s)
+  ok 33 tests\e2e\workspace.spec.ts:79:1 › failed PDF renderer opening restores prior document, undo history and persisted active session (2.1s)
+
+  33 passed (50.7s)
