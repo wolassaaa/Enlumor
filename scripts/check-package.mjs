@@ -8,7 +8,7 @@ const root = path.resolve('.'), python = path.join(root, '.venv/Scripts/python.e
 const folder = path.join(root, '.cache/package-check'); mkdirSync(folder, { recursive: true });
 const source = path.join(folder, 'Enlumor reading.pdf'), output = path.join(folder, 'Enlumor annotated.pdf');
 execFileSync(python, ['-c', `import pymupdf as f;d=f.open();p=d.new_page(width=480,height=640);p.insert_text((45,55),'ENLUMOR / READING NOTES',fontsize=11,color=(.25,.4,.3));p.insert_text((45,110),'A quieter place to read.',fontsize=24);p.insert_text((45,165),'Understanding stays beside the original.',fontsize=15);p.insert_text((45,200),'Select a passage. Keep a thought. Return tomorrow.',fontsize=12);p.insert_text((45,280),'01 / Evidence before explanation',fontsize=17);p.insert_text((45,320),'A useful reading tool preserves both context and progress.',fontsize=11);p.insert_text((45,345),'Highlights point back to the text, not away from it.',fontsize=11);p.add_text_annot((45,380),'This note belongs to the original PDF.');d.save(${JSON.stringify(source)})`]);
-const app = await electron.launch({ executablePath: path.join(root, 'release/win-unpacked/Enlumor.exe'), args: [`--user-data-dir=${mkdtempSync(path.join(tmpdir(), 'enlumor-package-'))}`], env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
+const app = await electron.launch({ executablePath: path.resolve(process.env.ENLUMOR_TEST_APP || 'release/win-unpacked/Enlumor.exe'), args: [`--user-data-dir=${mkdtempSync(path.join(tmpdir(), 'enlumor-package-'))}`], env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
 try {
   await app.evaluate(({ dialog }, files) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [files.source] });
@@ -25,15 +25,15 @@ try {
   });
   await expect(page.locator('.selection-popover')).toBeVisible();
   await page.locator('.selection-popover').evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
-  mkdirSync('evidence/ui-runtime', { recursive: true });
-  await page.screenshot({ path: 'evidence/ui-runtime/selection.png' });
+  mkdirSync((process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/ui-runtime'), { recursive: true });
+  await page.screenshot({ path: (process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/ui-runtime') + '/selection.png' });
   await page.getByRole('button', { name: '高亮选区', exact: true }).click();
   await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
   await page.getByRole('button', { name: '适宽', exact: true }).click();
   await page.getByRole('button', { name: '导出批注 PDF', exact: true }).click();
   await expect(page.getByRole('status')).toContainText('导出完成');
   mkdirSync('evidence', { recursive: true });
-  await page.screenshot({ path: 'evidence/ui-runtime/reader.png' });
+  await page.screenshot({ path: (process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/ui-runtime') + '/reader.png' });
   console.log('PACKAGED_READER: PASS');
   console.log(JSON.stringify(await app.evaluate(({ app }) => ({ packaged: app.isPackaged, electron: process.versions.electron, node: process.versions.node, sqlite: process.versions.sqlite }))));
 } finally { await app.close(); }
@@ -43,6 +43,6 @@ try {
   const page = await edge.newPage({ viewport: { width: 1100, height: 900 } });
   await page.goto(pathToFileURL(output).href);
   await page.waitForTimeout(2500);
-  await page.screenshot({ path: 'evidence/ui-runtime/edge-export.png' });
+  await page.screenshot({ path: (process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/ui-runtime') + '/edge-export.png' });
   console.log('EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)');
 } finally { await edge.close(); }

@@ -14,11 +14,13 @@ npm start          # 启动已构建的桌面应用
 
 开发：`npm run dev`。主进程修改后需重新启动开发命令。
 
-便携构建：`npm run portable`，然后双击项目目录下的 `启动 Enlumor.cmd`，或运行 `launch-enlumor.ps1`。
+推荐发布：`npm run release:verified`。全部测试及暂存包性能门禁通过后生成 ZIP 和解压目录；双击 `启动 Enlumor.cmd` 使用 latest.json 指向的已验证版本。ZIP 解压一次后启动，比每次自解压的便携 EXE 更快。`npm run portable` 保留为手动构建，不经过完整发布门禁。
 
 **0.1.1 已内置 PDF 处理程序**。可直接双击 `D:\codex project\Enlumor\release\Enlumor 0.1.1.exe`，无需安装 Python、配置环境变量或经过启动脚本。旧的 0.1.0 缺少这一组件，请使用新文件。
 
 仅开发/重新构建需要 Node 和 Python。`setup.ps1` 安装 requirements-build.txt；打包命令通过 PyInstaller 收集解释器、PyMuPDF 和依赖到应用资源目录，运行时优先使用内置程序。Windows 构建不作为 macOS/iPad 的二进制包使用。
+
+0.1.3 新增 PDF 嵌套目录导航与阅读位置保存/滚动优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
 
 ## 已有功能
 

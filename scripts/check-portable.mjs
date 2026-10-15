@@ -10,7 +10,7 @@ const port = socket.address().port; await new Promise(resolve => socket.close(re
 const inspectorSocket = createServer(); await new Promise(resolve => inspectorSocket.listen(0, '127.0.0.1', resolve));
 const inspectorPort = inspectorSocket.address().port; await new Promise(resolve => inspectorSocket.close(resolve));
 const profile = mkdtempSync(path.join(tmpdir(), 'enlumor-portable-'));
-const child = spawn(path.join(root, 'release/Enlumor 0.1.1.exe'), [`--remote-debugging-port=${port}`, `--inspect=${inspectorPort}`, `--user-data-dir=${profile}`], { windowsHide: true, env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
+const child = spawn(path.resolve(process.argv[2] || 'release/Enlumor 0.1.1.exe'), [`--remote-debugging-port=${port}`, `--inspect=${inspectorPort}`, `--user-data-dir=${profile}`], { windowsHide: true, env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
 let browser;
 try {
   for (let attempt = 0; attempt < 120; attempt++) {

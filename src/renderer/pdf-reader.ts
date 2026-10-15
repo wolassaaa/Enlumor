@@ -7,6 +7,7 @@ import type { Annotation, OpenedDocument, ReadingState } from '../shared/model';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 export type SelectionPart = { pageIndex: number; quote: string; quads: number[][] };
+export type OutlineEntry = { id: string; title: string; navigable: boolean; children: OutlineEntry[] };
 export class PdfReader {
   readonly bus = new EventBus();
   readonly viewer: PDFViewer;
@@ -18,12 +19,13 @@ export class PdfReader {
   private flash?: Annotation;
   private flashTimer?: ReturnType<typeof setTimeout>;
   private ready = false;
-  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, onNotice: (text: string) => void) {
+  private outlineTargets = new Map<string, string | any[]>();
+  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}) {
     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
     this.link.setViewer(this.viewer);
-    this.bus.on('pagerendered', () => this.paint());
+    this.bus.on('pagerendered', ({ pageNumber }: { pageNumber: number }) => this.paint(pageNumber - 1));
     this.bus.on('scalechanging', () => { this.paint(); onSelection([]); });
     this.bus.on('rotationchanging', () => { this.paint(); onSelection([]); });
     this.bus.on('textlayerrendered', async ({ pageNumber }: { pageNumber: number }) => {
@@ -50,6 +52,7 @@ export class PdfReader {
   }
   async open(doc: OpenedDocument) {
     const generation = ++this.generation;
+    this.outlineTargets.clear(); this.onOutline(null);
     this.ready = false; this.active = doc; this.marks = []; this.flash = undefined;
     this.viewer.setDocument(null); this.link.setDocument(null); await this.task?.destroy();
     if (generation !== this.generation) return;
@@ -73,10 +76,33 @@ export class PdfReader {
       this.bus.on('pagesinit', initialized);
       this.link.setDocument(pdf); this.viewer.setDocument(pdf);
     });
+    void pdf.getOutline().then(items => {
+      if (generation !== this.generation) return;
+      const entries = (nodes: NonNullable<typeof items>, parent = ''): OutlineEntry[] => nodes.map((node, index) => {
+        const id = `${parent}${index}`;
+        if (node.dest) this.outlineTargets.set(id, node.dest);
+        return { id, title: node.title, navigable: !!node.dest, children: entries(node.items, `${id}.`) };
+      });
+      this.onOutline(entries(items || []));
+    }).catch(() => { if (generation === this.generation) { this.onOutline([]); this.onNotice('目录读取失败，可使用页码跳转。'); } });
+  }
+  async goToOutline(id: string) {
+    const pdf = this.viewer.pdfDocument, target = this.outlineTargets.get(id);
+    if (!pdf || !target) return;
+    try {
+      const destination = typeof target === 'string' ? await pdf.getDestination(target) : target;
+      if (!destination) throw new Error('没有对应的页面位置');
+      const ref = destination[0];
+      const index = Number.isInteger(ref) ? ref : await pdf.getPageIndex(ref);
+      if (pdf !== this.viewer.pdfDocument) return;
+      if (!Number.isInteger(index) || index < 0 || index >= pdf.numPages) throw new Error('目录页码无效');
+      this.viewer.scrollPageIntoView({ pageNumber: index + 1, destArray: destination, ignoreDestinationZoom: true });
+    } catch { if (pdf === this.viewer.pdfDocument) this.onNotice('此目录项无法定位，可使用页码跳转。'); }
   }
   setMarks(marks: Annotation[]) { this.marks = marks; this.paint(); }
   clear() {
     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
+    this.outlineTargets.clear(); this.onOutline([]);
     this.viewer.setDocument(null); this.link.setDocument(null); void this.task?.destroy(); this.task = undefined;
   }
   zoom(value: number) { if (this.ready) this.viewer.currentScale = Math.max(.25, Math.min(4, value)); }
@@ -130,9 +156,10 @@ export class PdfReader {
       this.container.scrollTop = Math.max(0, view.div.offsetTop + rect[1] - this.container.clientHeight / 3);
     });
   }
-  private paint() {
+  private paint(pageIndex?: number) {
     if (!this.active) return;
-    for (const page of this.container.querySelectorAll<HTMLElement>('.page')) {
+    const pages: HTMLElement[] = pageIndex === undefined ? [...this.container.querySelectorAll<HTMLElement>('.page')] : [this.viewer.getPageView(pageIndex)?.div].filter(Boolean);
+    for (const page of pages) {
       const index = Number(page.dataset.pageNumber) - 1, view = this.viewer.getPageView(index);
       page.querySelector('.enlumor-marks')?.remove();
       if (!view?.viewport || !page.querySelector('canvas')) continue;

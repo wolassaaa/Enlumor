@@ -11,11 +11,11 @@ const python = path.join(root, '.venv/Scripts/python.exe');
 const folder = mkdtempSync(path.join(tmpdir(), 'enlumor-e2e-'));
 const source = path.join(folder, '中文 reading sample.pdf');
 const output = path.join(folder, 'annotated.pdf');
-execFileSync(python, ['-c', `import pymupdf as f; d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence for reading page '+str(i+1),fontsize=16);p.insert_text((48,105),'A second line explains the idea.',fontsize=12)\nd[0].add_text_annot((48,160),'Original note'); d.save(${JSON.stringify(source)})`]);
+execFileSync(python, ['-c', `import pymupdf as f; d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence for reading page '+str(i+1),fontsize=16);p.insert_text((48,105),'A second line explains the idea.',fontsize=12)\nd[0].add_text_annot((48,160),'Original note');d.set_toc([[1,'Part One',1],[2,'Evidence',51],[1,'Part Two',101]]); d.save(${JSON.stringify(source)})`]);
 const hash = () => createHash('sha256').update(readFileSync(source)).digest('hex');
 
 test('packaged app opens and exports without external Python configuration', async () => {
-  const app = await electron.launch({ executablePath: path.join(root, 'release/win-unpacked/Enlumor.exe'), args: [`--user-data-dir=${path.join(folder, 'no-python')}`], env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
+  const app = await electron.launch({ executablePath: path.resolve(process.env.ENLUMOR_TEST_APP || 'release/win-unpacked/Enlumor.exe'), args: [`--user-data-dir=${path.join(folder, 'no-python')}`], env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
   try {
     await app.evaluate(({ dialog }, files) => {
       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [files.source] });
@@ -60,6 +60,22 @@ async function launch(data: string, scale = 1) {
   }, { source, output });
   return app;
 }
+
+test('PDF directory resolves nested entries to source pages', async () => {
+  const app = await launch(path.join(folder, 'outline'));
+  try {
+    const page = await app.firstWindow();
+    await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
+    await expect(page.locator('.textLayer span').first()).toBeVisible();
+    await page.getByRole('tab', { name: '目录', exact: true }).click();
+    await page.getByRole('button', { name: 'Evidence', exact: true }).click();
+    await expect(page.getByLabel('跳转页码')).toHaveValue('51');
+    await page.getByRole('button', { name: 'Part Two', exact: true }).click();
+    await expect(page.getByLabel('跳转页码')).toHaveValue('101');
+    await page.getByRole('button', { name: 'Part One', exact: true }).click();
+    await expect(page.getByLabel('跳转页码')).toHaveValue('1');
+  } finally { await app.close(); }
+});
 
 for (const scale of [1, 1.5, 2]) test(`selection stays anchored across view rotation and zoom at Windows scale ${scale}`, async () => {
   const app = await launch(path.join(folder, `scale-${scale}`), scale);

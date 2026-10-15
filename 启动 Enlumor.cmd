@@ -1,2 +1,2 @@
 @echo off
-start "" "%~dp0release\Enlumor 0.1.1.exe"
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0launch-enlumor.ps1"

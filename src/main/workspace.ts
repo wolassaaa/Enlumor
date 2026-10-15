@@ -1,6 +1,6 @@
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomUUID } from 'node:crypto';
-import { readFileSync, existsSync, copyFileSync } from 'node:fs';
+import { readFileSync, existsSync, copyFileSync, statSync } from 'node:fs';
 import path from 'node:path';
 import type { Annotation, AnnotationChange, CommitResult, DocumentInfo, ReadingState } from '../shared/model';
 import { validateAnnotation } from '../shared/geometry';
@@ -9,6 +9,13 @@ export function fingerprint(file: string): string { return createHash('sha256').
 export class Workspace {
   readonly db: DatabaseSync;
   private closed = false;
+  private readingChecks = new Map<string, { path: string; stamp: string }>();
+  private sourceStamp(file: string): string {
+    try {
+      const stat = statSync(file, { bigint: true });
+      return `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
+    } catch { throw new Error('SOURCE_MISSING: 原文件已移动，请重新关联'); }
+  }
   constructor(file: string) {
     this.db = new DatabaseSync(file);
     this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000');
@@ -35,7 +42,10 @@ export class Workspace {
   verified(id: string): DocumentInfo {
     const doc = this.document(id);
     if (!existsSync(doc.path)) throw new Error('SOURCE_MISSING: 原文件已移动，请重新关联');
+    const before = this.sourceStamp(doc.path);
     if (fingerprint(doc.path) !== doc.fingerprint) throw new Error('SOURCE_CHANGED: 文件内容已改变，旧批注未应用；请打开新版本或重新关联原文件');
+    if (before !== this.sourceStamp(doc.path)) throw new Error('SOURCE_CHANGED: 校验期间原文件发生变化，请重新打开');
+    this.readingChecks.set(id, { path: doc.path, stamp: before });
     return doc;
   }
   register(file: string, pageCount: number): DocumentInfo {
@@ -56,7 +66,10 @@ export class Workspace {
   annotations(id: string): Annotation[] { this.document(id); return this.db.prepare('SELECT payload FROM annotations WHERE documentId=? ORDER BY rowid').all(id).map(row => JSON.parse(row.payload as string)); }
   reading(id: string): ReadingState | null { this.document(id); const row = this.db.prepare('SELECT payload FROM reading WHERE documentId=?').get(id); return row ? JSON.parse(row.payload as string) : null; }
   saveReading(state: ReadingState) {
-    const doc = this.verified(state.documentId);
+    let doc = this.document(state.documentId);
+    const previous = this.readingChecks.get(doc.id);
+    // Only position autosave uses metadata. Annotation/export/open paths still hash full bytes.
+    if (!previous || previous.path !== doc.path || previous.stamp !== this.sourceStamp(doc.path)) doc = this.verified(doc.id);
     if (state.fingerprint !== doc.fingerprint || !Number.isInteger(state.pageIndex) || state.pageIndex < 0 || state.pageIndex >= doc.pageCount ||
         !Number.isFinite(state.offset) || state.offset < 0 || state.offset > 1 || !Number.isFinite(state.zoom) || state.zoom < .25 || state.zoom > 4 || ![0, 90, 180, 270].includes(state.rotation)) throw new Error('INVALID_READING_STATE');
     this.db.prepare('INSERT INTO reading VALUES (?,?) ON CONFLICT(documentId) DO UPDATE SET payload=excluded.payload').run(state.documentId, JSON.stringify(state));

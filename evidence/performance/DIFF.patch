@@ -1,0 +1,687 @@
+diff --git a/README.md b/README.md
+index b41014e..eb382f0 100644
+--- a/README.md
++++ b/README.md
+@@ -14,12 +14,14 @@ npm start          # 启动已构建的桌面应用
+ 
+ 开发：`npm run dev`。主进程修改后需重新启动开发命令。
+ 
+-便携构建：`npm run portable`，然后双击项目目录下的 `启动 Enlumor.cmd`，或运行 `launch-enlumor.ps1`。
++推荐发布：`npm run release:verified`。全部测试及暂存包性能门禁通过后生成 ZIP 和解压目录；双击 `启动 Enlumor.cmd` 使用 latest.json 指向的已验证版本。ZIP 解压一次后启动，比每次自解压的便携 EXE 更快。`npm run portable` 保留为手动构建，不经过完整发布门禁。
+ 
+ **0.1.1 已内置 PDF 处理程序**。可直接双击 `D:\codex project\Enlumor\release\Enlumor 0.1.1.exe`，无需安装 Python、配置环境变量或经过启动脚本。旧的 0.1.0 缺少这一组件，请使用新文件。
+ 
+ 仅开发/重新构建需要 Node 和 Python。`setup.ps1` 安装 requirements-build.txt；打包命令通过 PyInstaller 收集解释器、PyMuPDF 和依赖到应用资源目录，运行时优先使用内置程序。Windows 构建不作为 macOS/iPad 的二进制包使用。
+ 
++0.1.3 新增 PDF 嵌套目录导航与阅读位置保存/滚动优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
++
+ ## 已有功能
+ 
+ - 打开文本型 PDF、连续阅读、原文选择、全文搜索与命中定位、页码跳转、缩放、适宽/适页、旋转。
+diff --git a/docs/FEATURES.md b/docs/FEATURES.md
+new file mode 100644
+index 0000000..4498337
+--- /dev/null
++++ b/docs/FEATURES.md
+@@ -0,0 +1,46 @@
++# Enlumor 功能逐项交付清单
++
++来源：CoReader_MVP_PRD_v0.1.md（产品现名 Enlumor）。状态按子项记录，部分通过不等于整个需求完成。
++
++## 每次发布门禁
++
++使用 Superpowers：systematic-debugging → test-driven-development（先见失败）→ verification-before-completion。
++`npm run release:verified` 顺序执行类型检查、Vitest、Python unittest、构建内置 PDF 程序、暂存 ZIP、真实 Electron E2E、无外部 Python 的打开/导出、实际暂存 EXE 性能测试。
++任一步失败不更新 release/latest.json。成功后才生成不可变版本文件与最新版本指针；工作区数据不迁移、不删除。
++合成压力样本：200 页 + 32MiB 流 + 1000 个真实批注；滚动 p95≤34ms、保存 IPC p95≤20ms、解压后启动三次中位数≤1500ms、保留 canvas≤30。这是本机回归预算，不是所有电脑/所有 PDF 的性能保证。
++
++## 本轮 0.1.3
++
++- 性能：阅读位置保存复用已校验文件的元数据，避免每次同步读取整份 PDF；文件变动重新做完整指纹校验，批注和导出仍完整校验。
++- 性能：空选区滚动不触发无效 React 更新；单页完成渲染只重画该页批注。
++- 启动：默认 ZIP 解压一次后运行，避免自解压 EXE 每次解包。
++- RDR-01 子项：PDF 原生嵌套目录导航；测试 Evidence→51、Part Two→101、Part One→1。
++
++## 逐项状态与后续顺序
++
++| 需求 | 已实现并有回归覆盖 | 待交付 |
++|---|---|---|
++| RDR-01 | 本地打开、最近文件、目录、页码、全文搜索、位置/缩放恢复 | 缩略图（下一项）、多标签页 |
++| RDR-02 | 连续滚动、适宽/适页、滚轮、Ctrl+滚轮缩放 | 单页模式 |
++| RDR-03 | 搜索命中定位与强调 | 更复杂 PDF 的兼容回归持续补充 |
++| ANN-01 | 高亮、便签、缩放旋转锚定 | 下划线→删除线→直线/箭头→画笔→擦除，每种连同导出独立验收 |
++| ANN-02 | 手动编辑、删除/改色、当前会话撤销/重做、持久化 | 可见修改历史、AI 来源/逐个接受撤销 |
++| ANN-03 | — | AI 永久批注预览、匹配范围及确认 |
++| AI-01/02 | 底层文字选区与临时强调可复用 | 引文验证、点击回跳、解释/举例/画图/标记 |
++| FOC-01/02 | — | 光圈、跟随、半径/强度、退出、可关闭/改绑快捷键 |
++| FOC-03/04 | — | 高分辨率局部重渲染、倍率、已验证锚点指引/锁定 |
++| BRD-01/02 | — | 三种可编辑结构图、增量续画 |
++| BRD-03/04 | — | 节点来源锚点、回跳、状态/缩略图保存、PNG、原文链接 |
++| CRU-01/02/03 | — | 文本分块、分步解释、继续/暂停/后退/略过/调速、手动接管 |
++| SAVE-01 | 批注及阅读位置恢复、写入失败重试、强退恢复测试 | 白板/AI 引文恢复（对应功能实现时加入） |
++| SAVE-02 | 另存带批注 PDF，源文件保持不变 | 备份后显式写回源 PDF（后期） |
++| SAVE-03 | 标准高亮/便签、保留原有批注、重复导出不叠加 | 新批注类型、白板来源静态快照/说明 |
++
++顺序遵循已批准计划：阅读器完整化 → 可信 AI → 注意力工具 → 白板 → 巡航/完整保存 → 发布加固。
++每个子项必须先通过对应失败→成功小测试，再通过整个已有套件与打包检查；不把占位按钮当功能上线。
++
++## 已知情况
++
++合成样本基线滚动本身没有 >50ms 长任务，尚未复现用户具体 PDF 的严重卡顿；需要代表性文件继续定位图像解码、复杂矢量或显存压力。
++解压包未代码签名；独立 Acrobat Reader 尚未验收（本机 Edge PDF 引擎已检验）。8 项中危告警位于构建开发依赖，生产依赖审计为零（上轮记录）；不自动升级破坏锁定版本。
++最终独立审查发现“性能预算只测开发进程而非暂存包”，已增加测试并改为传入 EXE 时全程启动该 EXE。低优先级：发布复制中断可能留下半成品版本目录，最新指针仍不变，但同版本重试需处理该目录。
+diff --git a/launch-enlumor.ps1 b/launch-enlumor.ps1
+index d8fa2ea..855f231 100644
+--- a/launch-enlumor.ps1
++++ b/launch-enlumor.ps1
+@@ -1,4 +1,7 @@
+ $ErrorActionPreference = 'Stop'
+-$exe = Join-Path $PSScriptRoot 'release\Enlumor 0.1.1.exe'
+-if (-not (Test-Path -LiteralPath $exe)) { throw 'Run npm run portable first.' }
++$manifest = Join-Path $PSScriptRoot 'release\latest.json'
++if (-not (Test-Path -LiteralPath $manifest)) { throw 'Run npm run release:verified first.' }
++$release = Get-Content -LiteralPath $manifest -Raw | ConvertFrom-Json
++$exe = Join-Path (Join-Path $PSScriptRoot 'release') $release.exe
++if (-not (Test-Path -LiteralPath $exe)) { throw 'Released application is missing.' }
+ Start-Process -FilePath $exe -WorkingDirectory $PSScriptRoot
+diff --git a/package-lock.json b/package-lock.json
+index 869e3e6..e827c1e 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "enlumor",
+-  "version": "0.1.1",
++  "version": "0.1.3",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "enlumor",
+-      "version": "0.1.1",
++      "version": "0.1.3",
+       "dependencies": {
+         "pdfjs-dist": "6.4.299",
+         "react": "19.3.1",
+diff --git a/package.json b/package.json
+index e21eeeb..cd77b27 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "enlumor",
+-  "version": "0.1.1",
++  "version": "0.1.3",
+   "private": true,
+   "type": "module",
+   "description": "Local-first PDF reading workspace",
+@@ -16,7 +16,8 @@
+     "start": "electron .",
+     "build:worker": "node scripts/build-worker.mjs",
+     "pack": "npm run build && npm run build:worker && electron-builder --win dir",
+-    "portable": "npm run build && npm run build:worker && electron-builder --win portable"
++    "portable": "npm run build && npm run build:worker && electron-builder --win portable",
++    "release:verified": "node scripts/release.mjs"
+   },
+   "build": {
+     "appId": "local.enlumor.reader",
+@@ -44,7 +45,8 @@
+     ],
+     "win": {
+       "target": "portable"
+-    }
++    },
++    "artifactName": "Enlumor-${version}-win.${ext}"
+   },
+   "dependencies": {
+     "pdfjs-dist": "6.4.299",
+diff --git a/scripts/benchmark-launch.d.mts b/scripts/benchmark-launch.d.mts
+new file mode 100644
+index 0000000..bc6b9ec
+--- /dev/null
++++ b/scripts/benchmark-launch.d.mts
+@@ -0,0 +1 @@
++export function benchmarkLaunch(executable: string | undefined, root: string): { executablePath?: string; args: string[] };
+diff --git a/scripts/benchmark-launch.mjs b/scripts/benchmark-launch.mjs
+new file mode 100644
+index 0000000..0f2ad3b
+--- /dev/null
++++ b/scripts/benchmark-launch.mjs
+@@ -0,0 +1,3 @@
++export function benchmarkLaunch(executable, root) {
++  return executable ? { executablePath: executable, args: [] } : { args: [root] };
++}
+diff --git a/scripts/benchmark.mjs b/scripts/benchmark.mjs
+new file mode 100644
+index 0000000..6bad3eb
+--- /dev/null
++++ b/scripts/benchmark.mjs
+@@ -0,0 +1,65 @@
++import { benchmarkLaunch } from './benchmark-launch.mjs';
++import { _electron as electron, chromium, expect } from '@playwright/test';
++import { spawn, execFileSync } from 'node:child_process';
++import { createServer } from 'node:net';
++import { mkdirSync, mkdtempSync, existsSync, writeFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import path from 'node:path';
++const root = path.resolve('.');
++mkdirSync('.cache/benchmark', { recursive: true }); mkdirSync('evidence/performance', { recursive: true });
++const source = path.join(root, '.cache/benchmark/200-pages-32MiB.pdf');
++if (!existsSync(source)) execFileSync(path.join(root, '.venv/Scripts/python.exe'), ['-c', `import pymupdf as f;d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence page '+str(i+1),fontsize=16);p.insert_text((48,110),'Read the original. Keep the context.',fontsize=12)\nx=d.get_new_xref();d.update_object(x,'<<>>');d.update_stream(x,b'A'*(32*1024*1024),compress=False);d.set_toc([[1,'Part One',1],[2,'Evidence',51],[1,'Part Two',101]]);d.save(${JSON.stringify(source)})`]);
++const label = process.argv[2] || 'baseline';
++const portable = process.argv[3] || 'release/Enlumor 0.1.1.exe';
++const startup = [], portableStartup = [];
++const env = { ...process.env, ENLUMOR_PYTHON: path.join(root, '.venv/Scripts/python.exe') };
++let app;
++for (let i = 0; i < 3; i++) {
++  const start = performance.now();
++  const launch = benchmarkLaunch(process.argv[3] ? path.resolve(process.argv[3]) : undefined, root);
++  app = await electron.launch({ ...launch, args: [...launch.args, `--user-data-dir=${mkdtempSync(path.join(tmpdir(), 'enlumor-bench-'))}`], env });
++  const page = await app.firstWindow(); await expect(page.locator('.wordmark')).toBeVisible();
++  startup.push(performance.now() - start);
++  if (i < 2) await app.close();
++}
++let scrolling, saves;
++try {
++  await app.evaluate(({ dialog }, source) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [source] }); }, source);
++  const page = await app.firstWindow();
++  await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
++  await expect(page.locator('.textLayer span').first()).toBeVisible({ timeout: 30000 });
++  await page.evaluate(async () => {
++    const list = await window.enlumor.listDocuments(); const doc = list.value[0];
++    const marks = Array.from({ length: 1000 }, (_, i) => ({ id: `stress-${i}`, documentId: doc.id, fingerprint: doc.fingerprint, pageIndex: i % 200, type: 'highlight', author: 'user', color: '#f4cf58', quote: `Evidence ${i}`, note: '', quads: [[48,570,200,570,48,550,200,550]] }));
++    await window.enlumor.applyAnnotationChange({ documentId: doc.id, upserts: marks, deletes: [] });
++  });
++  // Reload through the ordinary recent-document UI so real annotation cards are mounted.
++  await page.locator('.recent>button').first().click();
++  await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1000, { timeout: 30000 });
++  scrolling = await page.evaluate(async () => {
++    const frames = [], tasks = [];
++    const observer = new PerformanceObserver(list => tasks.push(...list.getEntries().map(entry => entry.duration)));
++    observer.observe({ type: 'longtask', buffered: false });
++    const view = document.querySelector('#viewerContainer'); let last = performance.now();
++    for (let i = 0; i < 180; i++) { await new Promise(requestAnimationFrame); const now = performance.now(); frames.push(now-last); last=now; view.scrollTop = (i % 60) * 80; }
++    observer.disconnect(); frames.sort((a,b)=>a-b);
++    return { frameP50Ms: frames[Math.floor(frames.length*.5)], frameP95Ms: frames[Math.floor(frames.length*.95)], longTasks: tasks.length, worstLongTaskMs: Math.max(0,...tasks), retainedCanvases: document.querySelectorAll('#viewer canvas').length };
++  });
++  saves = await page.evaluate(async () => {
++    const list = await window.enlumor.listDocuments(); const doc = list.value[0]; const times=[];
++    for (let i=0;i<12;i++) { const start=performance.now(); const result=await window.enlumor.saveReadingState({ documentId:doc.id,fingerprint:doc.fingerprint,pageIndex:i,offset:.2,zoom:1,rotation:0 }); if (!result.ok) throw Error(result.error.message); times.push(performance.now()-start); }
++    times.sort((a,b)=>a-b); return { p50Ms:times[6],p95Ms:times[11] };
++  });
++} finally { await app.close(); }
++for (let i = 0; i < 3; i++) {
++  const server=createServer(); await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve)); const port=server.address().port; await new Promise(resolve=>server.close(resolve));
++  const start=performance.now(); const child=spawn(path.resolve(portable),[`--remote-debugging-port=${port}`,`--user-data-dir=${mkdtempSync(path.join(tmpdir(),'enlumor-start-'))}`],{ windowsHide:true,env });
++  let browser;
++  try {
++    for(let j=0;j<180;j++){try{browser=await chromium.connectOverCDP(`http://127.0.0.1:${port}`,{timeout:300});break;}catch{await new Promise(resolve=>setTimeout(resolve,100));}}
++    if(!browser)throw Error('startup timeout'); const page=browser.contexts()[0].pages()[0]; await expect(page.locator('.wordmark')).toBeVisible();
++    portableStartup.push(performance.now()-start); await page.close();
++  } finally { await browser?.close(); child.kill(); }
++}
++const result={label,fixture:'200 pages / 32MiB unused PDF stream / 1000 annotations',startupMs:startup,portableStartupMs:portableStartup,scrolling,readingSave:saves};
++writeFileSync(`evidence/performance/${label}.json`,JSON.stringify(result,null,2)); console.log(JSON.stringify(result));
+diff --git a/scripts/check-autosave.mjs b/scripts/check-autosave.mjs
+new file mode 100644
+index 0000000..91a9833
+--- /dev/null
++++ b/scripts/check-autosave.mjs
+@@ -0,0 +1,22 @@
++import { build } from 'esbuild';
++import { createRequire } from 'node:module';
++import { mkdtempSync, mkdirSync, writeFileSync, readFileSync } from 'node:fs';
++import path from 'node:path';
++const source = path.resolve(process.argv[2] || 'src/main/workspace.ts');
++const expected = Number(process.argv[3] || 0);
++mkdirSync('.cache/autosave-check',{recursive:true});
++const folder=mkdtempSync(path.resolve('.cache/autosave-check/run-'));
++const out=path.join(folder,'workspace.cjs');
++await build({entryPoints:[path.resolve('src/main/workspace.ts')],outfile:out,bundle:true,platform:'node',format:'cjs',plugins:[{name:'preserved-source',setup(build){build.onLoad({filter:/workspace\.ts$/},()=>({contents:readFileSync(source,'utf8'),loader:'ts',resolveDir:path.resolve('src/main')}));}}]});
++const require=createRequire(import.meta.url), fs=require('node:fs');
++const {Workspace}=require(out);
++const file=path.join(folder,'source.pdf');writeFileSync(file,Buffer.alloc(8*1024*1024,65));
++const workspace=new Workspace(path.join(folder,'state.sqlite'));
++let reads=0;const actual=fs.readFileSync;
++try {
++ const doc=workspace.register(file,200);workspace.verified(doc.id);
++ fs.readFileSync=(target,...args)=>{if(target===file)reads++;return actual(target,...args)};
++ for(let i=0;i<20;i++)workspace.saveReading({documentId:doc.id,fingerprint:doc.fingerprint,pageIndex:i,offset:.2,zoom:1,rotation:0});
++ console.log(`AUTOSAVE_FULL_READS=${reads}; LAST_PAGE=${workspace.reading(doc.id).pageIndex}; EXPECTED=${expected}`);
++ if(reads!==expected)process.exitCode=1;
++} finally {fs.readFileSync=actual;workspace.close();}
+diff --git a/scripts/check-package.mjs b/scripts/check-package.mjs
+index f15395f..4f440fd 100644
+--- a/scripts/check-package.mjs
++++ b/scripts/check-package.mjs
+@@ -8,7 +8,7 @@ const root = path.resolve('.'), python = path.join(root, '.venv/Scripts/python.e
+ const folder = path.join(root, '.cache/package-check'); mkdirSync(folder, { recursive: true });
+ const source = path.join(folder, 'Enlumor reading.pdf'), output = path.join(folder, 'Enlumor annotated.pdf');
+ execFileSync(python, ['-c', `import pymupdf as f;d=f.open();p=d.new_page(width=480,height=640);p.insert_text((45,55),'ENLUMOR / READING NOTES',fontsize=11,color=(.25,.4,.3));p.insert_text((45,110),'A quieter place to read.',fontsize=24);p.insert_text((45,165),'Understanding stays beside the original.',fontsize=15);p.insert_text((45,200),'Select a passage. Keep a thought. Return tomorrow.',fontsize=12);p.insert_text((45,280),'01 / Evidence before explanation',fontsize=17);p.insert_text((45,320),'A useful reading tool preserves both context and progress.',fontsize=11);p.insert_text((45,345),'Highlights point back to the text, not away from it.',fontsize=11);p.add_text_annot((45,380),'This note belongs to the original PDF.');d.save(${JSON.stringify(source)})`]);
+-const app = await electron.launch({ executablePath: path.join(root, 'release/win-unpacked/Enlumor.exe'), args: [`--user-data-dir=${mkdtempSync(path.join(tmpdir(), 'enlumor-package-'))}`], env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
++const app = await electron.launch({ executablePath: path.resolve(process.env.ENLUMOR_TEST_APP || 'release/win-unpacked/Enlumor.exe'), args: [`--user-data-dir=${mkdtempSync(path.join(tmpdir(), 'enlumor-package-'))}`], env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
+ try {
+   await app.evaluate(({ dialog }, files) => {
+     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [files.source] });
+@@ -25,15 +25,15 @@ try {
+   });
+   await expect(page.locator('.selection-popover')).toBeVisible();
+   await page.locator('.selection-popover').evaluate(element => Promise.all(element.getAnimations().map(animation => animation.finished)));
+-  mkdirSync('evidence/ui-runtime', { recursive: true });
+-  await page.screenshot({ path: 'evidence/ui-runtime/selection.png' });
++  mkdirSync((process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/ui-runtime'), { recursive: true });
++  await page.screenshot({ path: (process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/ui-runtime') + '/selection.png' });
+   await page.getByRole('button', { name: '高亮选区', exact: true }).click();
+   await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
+   await page.getByRole('button', { name: '适宽', exact: true }).click();
+   await page.getByRole('button', { name: '导出批注 PDF', exact: true }).click();
+   await expect(page.getByRole('status')).toContainText('导出完成');
+   mkdirSync('evidence', { recursive: true });
+-  await page.screenshot({ path: 'evidence/ui-runtime/reader.png' });
++  await page.screenshot({ path: (process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/ui-runtime') + '/reader.png' });
+   console.log('PACKAGED_READER: PASS');
+   console.log(JSON.stringify(await app.evaluate(({ app }) => ({ packaged: app.isPackaged, electron: process.versions.electron, node: process.versions.node, sqlite: process.versions.sqlite }))));
+ } finally { await app.close(); }
+@@ -43,6 +43,6 @@ try {
+   const page = await edge.newPage({ viewport: { width: 1100, height: 900 } });
+   await page.goto(pathToFileURL(output).href);
+   await page.waitForTimeout(2500);
+-  await page.screenshot({ path: 'evidence/ui-runtime/edge-export.png' });
++  await page.screenshot({ path: (process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/ui-runtime') + '/edge-export.png' });
+   console.log('EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)');
+ } finally { await edge.close(); }
+diff --git a/scripts/check-portable.mjs b/scripts/check-portable.mjs
+index 8874d9b..adfb18a 100644
+--- a/scripts/check-portable.mjs
++++ b/scripts/check-portable.mjs
+@@ -10,7 +10,7 @@ const port = socket.address().port; await new Promise(resolve => socket.close(re
+ const inspectorSocket = createServer(); await new Promise(resolve => inspectorSocket.listen(0, '127.0.0.1', resolve));
+ const inspectorPort = inspectorSocket.address().port; await new Promise(resolve => inspectorSocket.close(resolve));
+ const profile = mkdtempSync(path.join(tmpdir(), 'enlumor-portable-'));
+-const child = spawn(path.join(root, 'release/Enlumor 0.1.1.exe'), [`--remote-debugging-port=${port}`, `--inspect=${inspectorPort}`, `--user-data-dir=${profile}`], { windowsHide: true, env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
++const child = spawn(path.resolve(process.argv[2] || 'release/Enlumor 0.1.1.exe'), [`--remote-debugging-port=${port}`, `--inspect=${inspectorPort}`, `--user-data-dir=${profile}`], { windowsHide: true, env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
+ let browser;
+ try {
+   for (let attempt = 0; attempt < 120; attempt++) {
+diff --git a/scripts/performance-gate.d.mts b/scripts/performance-gate.d.mts
+new file mode 100644
+index 0000000..af3e04a
+--- /dev/null
++++ b/scripts/performance-gate.d.mts
+@@ -0,0 +1 @@
++export function assertPerformance(report: unknown): void;
+diff --git a/scripts/performance-gate.mjs b/scripts/performance-gate.mjs
+new file mode 100644
+index 0000000..684066b
+--- /dev/null
++++ b/scripts/performance-gate.mjs
+@@ -0,0 +1,7 @@
++export function assertPerformance(report) {
++  const finite = (n, limit) => typeof n === 'number' && Number.isFinite(n) && n >= 0 && n <= limit;
++  const samples = report?.portableStartupMs;
++  if (!Array.isArray(samples) || samples.length !== 3 || !samples.every(n => finite(n,60000))) throw Error('Invalid startup samples');
++  const median = [...samples].sort((a,b) => a-b)[1];
++  if (!finite(median,1500) || !finite(report?.scrolling?.frameP95Ms,34) || !finite(report?.scrolling?.retainedCanvases,30) || !finite(report?.readingSave?.p95Ms,20)) throw Error('Performance budget exceeded');
++}
+diff --git a/scripts/release.mjs b/scripts/release.mjs
+new file mode 100644
+index 0000000..74892f2
+--- /dev/null
++++ b/scripts/release.mjs
+@@ -0,0 +1,34 @@
++import { execFileSync } from 'node:child_process';
++import { readFileSync, mkdirSync, copyFileSync, cpSync, existsSync, writeFileSync, renameSync } from 'node:fs';
++import path from 'node:path';
++import { createHash } from 'node:crypto';
++import { assertPerformance } from './performance-gate.mjs';
++const root = path.resolve('.');
++const { version } = JSON.parse(readFileSync('package.json','utf8'));
++const stage = path.join(root,'.cache',`release-${version}-${Date.now()}`);
++mkdirSync(stage,{recursive:true});
++const run = (file,args,env={}) => execFileSync(file,args,{cwd:root,stdio:'inherit',windowsHide:true,env:{...process.env,...env}});
++const npmCli = process.env.npm_execpath;
++if (!npmCli) throw Error('Run npm run release:verified');
++const task = name => run(process.execPath,[npmCli,'run',name]);
++task('build'); task('test'); task('test:python'); task('build:worker');
++run(process.execPath,['node_modules/electron-builder/cli.js','--win','zip',`--config.directories.output=${stage}`]);
++const exe=path.join(stage,'win-unpacked/Enlumor.exe');
++const env={ENLUMOR_TEST_APP:exe,ENLUMOR_EVIDENCE_DIR:'evidence/performance'};
++run(process.execPath,['node_modules/@playwright/test/cli.js','test'],env);
++run(process.execPath,['scripts/check-package.mjs'],env);
++run(process.execPath,['scripts/check-portable.mjs',exe]);
++run(process.execPath,['scripts/benchmark.mjs','release',exe]);
++assertPerformance(JSON.parse(readFileSync('evidence/performance/release.json','utf8')));
++const zip=path.join(stage,`Enlumor-${version}-win.zip`);
++if(!existsSync(zip)) throw Error(`Missing ${zip}`);
++const destination=path.join(root,'release',`Enlumor-${version}-win-x64`);
++const zipDestination=path.join(root,'release',`Enlumor-${version}-win.zip`);
++if(existsSync(destination)||existsSync(zipDestination)) throw Error('Version already released; increment package version');
++// Publish only after functional and performance gates; failed gates leave latest untouched.
++cpSync(path.join(stage,'win-unpacked'),destination,{recursive:true,errorOnExist:true,force:false});
++copyFileSync(zip,zipDestination);
++const sha256=createHash('sha256').update(readFileSync(zipDestination)).digest('hex');
++writeFileSync('release/latest.json.tmp',JSON.stringify({version,exe:path.relative(path.join(root,'release'),path.join(destination,'Enlumor.exe')),zip:path.basename(zipDestination),sha256},null,2));
++renameSync('release/latest.json.tmp','release/latest.json');
++console.log(`VERIFIED_RELEASE: ${version} ${zipDestination} SHA256=${sha256}`);
+diff --git a/src/main/workspace.ts b/src/main/workspace.ts
+index 808a6db..d6a81e4 100644
+--- a/src/main/workspace.ts
++++ b/src/main/workspace.ts
+@@ -1,6 +1,6 @@
+ import { DatabaseSync } from 'node:sqlite';
+ import { createHash, randomUUID } from 'node:crypto';
+-import { readFileSync, existsSync, copyFileSync } from 'node:fs';
++import { readFileSync, existsSync, copyFileSync, statSync } from 'node:fs';
+ import path from 'node:path';
+ import type { Annotation, AnnotationChange, CommitResult, DocumentInfo, ReadingState } from '../shared/model';
+ import { validateAnnotation } from '../shared/geometry';
+@@ -9,6 +9,13 @@ export function fingerprint(file: string): string { return createHash('sha256').
+ export class Workspace {
+   readonly db: DatabaseSync;
+   private closed = false;
++  private readingChecks = new Map<string, { path: string; stamp: string }>();
++  private sourceStamp(file: string): string {
++    try {
++      const stat = statSync(file, { bigint: true });
++      return `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
++    } catch { throw new Error('SOURCE_MISSING: 原文件已移动，请重新关联'); }
++  }
+   constructor(file: string) {
+     this.db = new DatabaseSync(file);
+     this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000');
+@@ -35,7 +42,10 @@ export class Workspace {
+   verified(id: string): DocumentInfo {
+     const doc = this.document(id);
+     if (!existsSync(doc.path)) throw new Error('SOURCE_MISSING: 原文件已移动，请重新关联');
++    const before = this.sourceStamp(doc.path);
+     if (fingerprint(doc.path) !== doc.fingerprint) throw new Error('SOURCE_CHANGED: 文件内容已改变，旧批注未应用；请打开新版本或重新关联原文件');
++    if (before !== this.sourceStamp(doc.path)) throw new Error('SOURCE_CHANGED: 校验期间原文件发生变化，请重新打开');
++    this.readingChecks.set(id, { path: doc.path, stamp: before });
+     return doc;
+   }
+   register(file: string, pageCount: number): DocumentInfo {
+@@ -56,7 +66,10 @@ export class Workspace {
+   annotations(id: string): Annotation[] { this.document(id); return this.db.prepare('SELECT payload FROM annotations WHERE documentId=? ORDER BY rowid').all(id).map(row => JSON.parse(row.payload as string)); }
+   reading(id: string): ReadingState | null { this.document(id); const row = this.db.prepare('SELECT payload FROM reading WHERE documentId=?').get(id); return row ? JSON.parse(row.payload as string) : null; }
+   saveReading(state: ReadingState) {
+-    const doc = this.verified(state.documentId);
++    let doc = this.document(state.documentId);
++    const previous = this.readingChecks.get(doc.id);
++    // Only position autosave uses metadata. Annotation/export/open paths still hash full bytes.
++    if (!previous || previous.path !== doc.path || previous.stamp !== this.sourceStamp(doc.path)) doc = this.verified(doc.id);
+     if (state.fingerprint !== doc.fingerprint || !Number.isInteger(state.pageIndex) || state.pageIndex < 0 || state.pageIndex >= doc.pageCount ||
+         !Number.isFinite(state.offset) || state.offset < 0 || state.offset > 1 || !Number.isFinite(state.zoom) || state.zoom < .25 || state.zoom > 4 || ![0, 90, 180, 270].includes(state.rotation)) throw new Error('INVALID_READING_STATE');
+     this.db.prepare('INSERT INTO reading VALUES (?,?) ON CONFLICT(documentId) DO UPDATE SET payload=excluded.payload').run(state.documentId, JSON.stringify(state));
+diff --git a/src/renderer/main.tsx b/src/renderer/main.tsx
+index 1ee0d3d..0ea0718 100644
+--- a/src/renderer/main.tsx
++++ b/src/renderer/main.tsx
+@@ -1,6 +1,6 @@
+ import { createRoot } from 'react-dom/client';
+ import { useEffect, useRef, useState } from 'react';
+-import { PdfReader, type SelectionPart } from './pdf-reader';
++import { PdfReader, type SelectionPart, type OutlineEntry } from './pdf-reader';
+ import { unwrap, type Annotation, type AnnotationChange, type Bridge, type DocumentInfo, type OpenedDocument, type ReadingState } from '../shared/model';
+ import './style.css';
+ declare global { interface Window { enlumor: Bridge } }
+@@ -9,6 +9,9 @@ function Glyph({ name }: { name: 'library' | 'notes' | 'open' | 'export' | 'mark
+   const paths = { library: 'M4 4h5v16H4z M12 4h4v16h-4z M19 5l3 14', notes: 'M5 3h14v18H5z M8 8h8 M8 12h8 M8 16h5', open: 'M3 8h7l2-3h8v5 M3 8v12h16l3-10H7l-4 10', export: 'M13 3h8v8 M21 3L10 14 M9 5H4v15h15v-5', mark: 'M5 15l9-11 5 4-9 11H5z M4 22h16', close: 'M6 6l12 12 M18 6L6 18' };
+   return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>;
+ }
++function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id: string) => void }) {
++  return <ul className="outline-tree">{items.map(item => <li key={item.id}><button disabled={!item.navigable} onClick={() => navigate(item.id)}>{item.title}</button>{item.children.length > 0 && <OutlineTree items={item.children} navigate={navigate}/>}</li>)}</ul>;
++}
+ 
+ function App() {
+   const container = useRef<HTMLDivElement>(null), reader = useRef<PdfReader | null>(null);
+@@ -19,6 +22,7 @@ function App() {
+   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
+   const [history, setHistory] = useState({ undo: [] as AnnotationChange[], redo: [] as AnnotationChange[] });
+   const [libraryOpen, setLibraryOpen] = useState(true), [notesOpen, setNotesOpen] = useState(true);
++  const [libraryView, setLibraryView] = useState<'documents' | 'outline'>('documents'), [outline, setOutline] = useState<OutlineEntry[] | null>([]);
+   const [selectionPosition, setSelectionPosition] = useState({ left: 0, top: 0 });
+   const current = useRef<ReadingState | null>(null), timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+   const pending = useRef<{ change: AnnotationChange; kind: 'new' | 'undo' | 'redo' } | null>(null), flight = useRef<Promise<unknown> | null>(null), locked = useRef(false);
+@@ -35,7 +39,7 @@ function App() {
+       current.current = state; setPage(String(state.pageIndex + 1)); setZoom(state.zoom);
+       clearTimeout(timer.current); timer.current = setTimeout(() => { void flush().catch(fail); }, 500);
+     }, selected => {
+-      setParts(selected);
++      setParts(old => !selected.length && !old.length ? old : selected);
+       const selection = window.getSelection();
+       if (selected.length && selection?.rangeCount) {
+         const rect = selection.getRangeAt(0).getBoundingClientRect();
+@@ -43,7 +47,7 @@ function App() {
+         const top = rect.top >= bounds.top + 64 ? rect.top - 52 : rect.bottom + 10;
+         setSelectionPosition({ left: Math.max(bounds.left + 12, Math.min(bounds.right - 310, rect.left)), top: Math.max(bounds.top + 12, Math.min(bounds.bottom - 60, top)) });
+       }
+-    }, setNotice);
++    }, setNotice, setOutline);
+     const off = window.enlumor.onFlush(flush);
+     void (async () => {
+       try { const list = unwrap(await window.enlumor.listDocuments()); setRecent(list); if (list.length) await load(list[0].id); }
+@@ -105,7 +109,13 @@ function App() {
+       <div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}><Glyph name="open"/>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <Glyph name="export"/></button></div>
+     </header>
+     <div className="workspace">
+-      <aside className="library" hidden={!libraryOpen}><div className="section-label">LIBRARY / 你的阅读空间</div><h2>文档<span className="section-count">{recent.length.toString().padStart(2, '0')}</span></h2><p className="muted">原文不动，思考留下。</p><div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div><div className="library-footer"><span className="online-dot"/> 离线可用<span>所有阅读痕迹保存在这台电脑</span></div></aside>
++      <aside className="library" hidden={!libraryOpen}>
++        <div className="section-label">LIBRARY / 你的阅读空间</div>
++        <h2>{libraryView === 'documents' ? '文档' : '目录'}<span className="section-count">{(libraryView === 'documents' ? recent.length : outline?.length || 0).toString().padStart(2, '0')}</span></h2>
++        <div className="library-tabs" role="tablist" aria-label="文档导航"><button role="tab" aria-selected={libraryView === 'documents'} onClick={() => setLibraryView('documents')}>文档</button><button role="tab" aria-selected={libraryView === 'outline'} disabled={!doc} onClick={() => setLibraryView('outline')}>目录</button></div>
++        {libraryView === 'documents' ? <div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div> : <div className="recent-list" aria-label="PDF 目录">{outline === null ? <p className="library-empty">正在读取目录…</p> : outline.length ? <OutlineTree items={outline} navigate={id => void reader.current?.goToOutline(id)}/> : <p className="library-empty">此 PDF 没有目录，可使用页码跳转。</p>}</div>}
++        <div className="library-footer"><span className="online-dot"/> 离线可用<span>所有阅读痕迹保存在这台电脑</span></div>
++      </aside>
+       <main className="reading"><div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
+         <div className="toolbar"><div className="toolbar-group"><button aria-label="上一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) - 1)}>‹</button><input aria-label="跳转页码" className="page-input" disabled={!doc} value={page} onChange={event => setPage(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') reader.current?.go(Number(page)); }}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) + 1)}>›</button></div>
+           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
+diff --git a/src/renderer/pdf-reader.ts b/src/renderer/pdf-reader.ts
+index 50c27ad..6c43ff2 100644
+--- a/src/renderer/pdf-reader.ts
++++ b/src/renderer/pdf-reader.ts
+@@ -7,6 +7,7 @@ import type { Annotation, OpenedDocument, ReadingState } from '../shared/model';
+ 
+ GlobalWorkerOptions.workerSrc = workerUrl;
+ export type SelectionPart = { pageIndex: number; quote: string; quads: number[][] };
++export type OutlineEntry = { id: string; title: string; navigable: boolean; children: OutlineEntry[] };
+ export class PdfReader {
+   readonly bus = new EventBus();
+   readonly viewer: PDFViewer;
+@@ -18,12 +19,13 @@ export class PdfReader {
+   private flash?: Annotation;
+   private flashTimer?: ReturnType<typeof setTimeout>;
+   private ready = false;
+-  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, onNotice: (text: string) => void) {
++  private outlineTargets = new Map<string, string | any[]>();
++  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}) {
+     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
+     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
+     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
+     this.link.setViewer(this.viewer);
+-    this.bus.on('pagerendered', () => this.paint());
++    this.bus.on('pagerendered', ({ pageNumber }: { pageNumber: number }) => this.paint(pageNumber - 1));
+     this.bus.on('scalechanging', () => { this.paint(); onSelection([]); });
+     this.bus.on('rotationchanging', () => { this.paint(); onSelection([]); });
+     this.bus.on('textlayerrendered', async ({ pageNumber }: { pageNumber: number }) => {
+@@ -50,6 +52,7 @@ export class PdfReader {
+   }
+   async open(doc: OpenedDocument) {
+     const generation = ++this.generation;
++    this.outlineTargets.clear(); this.onOutline(null);
+     this.ready = false; this.active = doc; this.marks = []; this.flash = undefined;
+     this.viewer.setDocument(null); this.link.setDocument(null); await this.task?.destroy();
+     if (generation !== this.generation) return;
+@@ -73,10 +76,33 @@ export class PdfReader {
+       this.bus.on('pagesinit', initialized);
+       this.link.setDocument(pdf); this.viewer.setDocument(pdf);
+     });
++    void pdf.getOutline().then(items => {
++      if (generation !== this.generation) return;
++      const entries = (nodes: NonNullable<typeof items>, parent = ''): OutlineEntry[] => nodes.map((node, index) => {
++        const id = `${parent}${index}`;
++        if (node.dest) this.outlineTargets.set(id, node.dest);
++        return { id, title: node.title, navigable: !!node.dest, children: entries(node.items, `${id}.`) };
++      });
++      this.onOutline(entries(items || []));
++    }).catch(() => { if (generation === this.generation) { this.onOutline([]); this.onNotice('目录读取失败，可使用页码跳转。'); } });
++  }
++  async goToOutline(id: string) {
++    const pdf = this.viewer.pdfDocument, target = this.outlineTargets.get(id);
++    if (!pdf || !target) return;
++    try {
++      const destination = typeof target === 'string' ? await pdf.getDestination(target) : target;
++      if (!destination) throw new Error('没有对应的页面位置');
++      const ref = destination[0];
++      const index = Number.isInteger(ref) ? ref : await pdf.getPageIndex(ref);
++      if (pdf !== this.viewer.pdfDocument) return;
++      if (!Number.isInteger(index) || index < 0 || index >= pdf.numPages) throw new Error('目录页码无效');
++      this.viewer.scrollPageIntoView({ pageNumber: index + 1, destArray: destination, ignoreDestinationZoom: true });
++    } catch { if (pdf === this.viewer.pdfDocument) this.onNotice('此目录项无法定位，可使用页码跳转。'); }
+   }
+   setMarks(marks: Annotation[]) { this.marks = marks; this.paint(); }
+   clear() {
+     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
++    this.outlineTargets.clear(); this.onOutline([]);
+     this.viewer.setDocument(null); this.link.setDocument(null); void this.task?.destroy(); this.task = undefined;
+   }
+   zoom(value: number) { if (this.ready) this.viewer.currentScale = Math.max(.25, Math.min(4, value)); }
+@@ -130,9 +156,10 @@ export class PdfReader {
+       this.container.scrollTop = Math.max(0, view.div.offsetTop + rect[1] - this.container.clientHeight / 3);
+     });
+   }
+-  private paint() {
++  private paint(pageIndex?: number) {
+     if (!this.active) return;
+-    for (const page of this.container.querySelectorAll<HTMLElement>('.page')) {
++    const pages: HTMLElement[] = pageIndex === undefined ? [...this.container.querySelectorAll<HTMLElement>('.page')] : [this.viewer.getPageView(pageIndex)?.div].filter(Boolean);
++    for (const page of pages) {
+       const index = Number(page.dataset.pageNumber) - 1, view = this.viewer.getPageView(index);
+       page.querySelector('.enlumor-marks')?.remove();
+       if (!view?.viewport || !page.querySelector('canvas')) continue;
+diff --git a/src/renderer/style.css b/src/renderer/style.css
+index ed9e2ee..5776885 100644
+--- a/src/renderer/style.css
++++ b/src/renderer/style.css
+@@ -23,3 +23,5 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
+ @keyframes appear{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+ @media(max-width:1120px){.library{width:176px;padding:24px 13px}.annotations{width:232px;padding:24px 13px}.edition{display:none}.topbar{padding:0 18px;gap:18px}.toolbar{gap:5px;padding:7px 8px}.toolbar-group+.toolbar-group{padding-left:6px}.search{max-width:170px}.search input{width:92px}.empty{padding:40px}.paper-emblem{width:80px}.empty-footnote{gap:12px;margin-top:40px}.empty h1{font-size:37px}}
+ @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}
++
++.library-tabs{display:flex;gap:4px;margin:5px 0 20px;border-bottom:1px solid var(--line);padding-bottom:10px}.library-tabs button{flex:1;border:0;background:transparent;padding:7px;font-size:12px}.library-tabs button[aria-selected="true"]{background:#e9e5da;color:#30392f}.outline-tree{list-style:none;margin:0;padding:0}.outline-tree .outline-tree{padding-left:12px;border-left:1px solid var(--line);margin-left:7px}.outline-tree button{display:block;text-align:left;width:100%;background:none;border:0;font-size:12px;line-height:1.7;padding:9px 7px;overflow-wrap:anywhere}
+diff --git a/tests/benchmark.test.ts b/tests/benchmark.test.ts
+new file mode 100644
+index 0000000..e914391
+--- /dev/null
++++ b/tests/benchmark.test.ts
+@@ -0,0 +1,7 @@
++import { expect, it } from 'vitest';
++import { benchmarkLaunch } from '../scripts/benchmark-launch.mjs';
++it('artifact performance measurements launch the supplied release, never the developer checkout', () => {
++ const target='D:/stage/Enlumor.exe';
++ expect(benchmarkLaunch(target,'D:/checkout')).toEqual({executablePath:target,args:[]});
++ expect(benchmarkLaunch(undefined,'D:/checkout')).toEqual({args:['D:/checkout']});
++});
+diff --git a/tests/e2e/reader.spec.ts b/tests/e2e/reader.spec.ts
+index 86dc1f8..c2fb28d 100644
+--- a/tests/e2e/reader.spec.ts
++++ b/tests/e2e/reader.spec.ts
+@@ -11,11 +11,11 @@ const python = path.join(root, '.venv/Scripts/python.exe');
+ const folder = mkdtempSync(path.join(tmpdir(), 'enlumor-e2e-'));
+ const source = path.join(folder, '中文 reading sample.pdf');
+ const output = path.join(folder, 'annotated.pdf');
+-execFileSync(python, ['-c', `import pymupdf as f; d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence for reading page '+str(i+1),fontsize=16);p.insert_text((48,105),'A second line explains the idea.',fontsize=12)\nd[0].add_text_annot((48,160),'Original note'); d.save(${JSON.stringify(source)})`]);
++execFileSync(python, ['-c', `import pymupdf as f; d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence for reading page '+str(i+1),fontsize=16);p.insert_text((48,105),'A second line explains the idea.',fontsize=12)\nd[0].add_text_annot((48,160),'Original note');d.set_toc([[1,'Part One',1],[2,'Evidence',51],[1,'Part Two',101]]); d.save(${JSON.stringify(source)})`]);
+ const hash = () => createHash('sha256').update(readFileSync(source)).digest('hex');
+ 
+ test('packaged app opens and exports without external Python configuration', async () => {
+-  const app = await electron.launch({ executablePath: path.join(root, 'release/win-unpacked/Enlumor.exe'), args: [`--user-data-dir=${path.join(folder, 'no-python')}`], env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
++  const app = await electron.launch({ executablePath: path.resolve(process.env.ENLUMOR_TEST_APP || 'release/win-unpacked/Enlumor.exe'), args: [`--user-data-dir=${path.join(folder, 'no-python')}`], env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
+   try {
+     await app.evaluate(({ dialog }, files) => {
+       dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [files.source] });
+@@ -61,6 +61,22 @@ async function launch(data: string, scale = 1) {
+   return app;
+ }
+ 
++test('PDF directory resolves nested entries to source pages', async () => {
++  const app = await launch(path.join(folder, 'outline'));
++  try {
++    const page = await app.firstWindow();
++    await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
++    await expect(page.locator('.textLayer span').first()).toBeVisible();
++    await page.getByRole('tab', { name: '目录', exact: true }).click();
++    await page.getByRole('button', { name: 'Evidence', exact: true }).click();
++    await expect(page.getByLabel('跳转页码')).toHaveValue('51');
++    await page.getByRole('button', { name: 'Part Two', exact: true }).click();
++    await expect(page.getByLabel('跳转页码')).toHaveValue('101');
++    await page.getByRole('button', { name: 'Part One', exact: true }).click();
++    await expect(page.getByLabel('跳转页码')).toHaveValue('1');
++  } finally { await app.close(); }
++});
++
+ for (const scale of [1, 1.5, 2]) test(`selection stays anchored across view rotation and zoom at Windows scale ${scale}`, async () => {
+   const app = await launch(path.join(folder, `scale-${scale}`), scale);
+   try {
+diff --git a/tests/performance.test.ts b/tests/performance.test.ts
+new file mode 100644
+index 0000000..ae885f9
+--- /dev/null
++++ b/tests/performance.test.ts
+@@ -0,0 +1,36 @@
++import { it, expect, vi } from 'vitest';
++vi.mock('node:fs', async original => {
++  const actual = await original<typeof import('node:fs')>();
++  return { ...actual, readFileSync: vi.fn(actual.readFileSync) };
++});
++import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import path from 'node:path';
++import { Workspace } from '../src/main/workspace';
++
++it('reading-position autosave does not re-read an unchanged PDF after full verification', () => {
++  const folder = mkdtempSync(path.join(tmpdir(), 'enlumor-perf-'));
++  const source = path.join(folder, 'large.pdf'); writeFileSync(source, Buffer.alloc(8 * 1024 * 1024, 65));
++  const workspace = new Workspace(path.join(folder, 'state.sqlite'));
++  try {
++    const doc = workspace.register(source, 200); workspace.verified(doc.id);
++    vi.mocked(readFileSync).mockClear();
++    for (let i = 0; i < 20; i++) workspace.saveReading({ documentId: doc.id, fingerprint: doc.fingerprint, pageIndex: i, offset: .2, zoom: 1, rotation: 0 });
++    expect(workspace.reading(doc.id)?.pageIndex).toBe(19);
++    expect(vi.mocked(readFileSync).mock.calls.filter(call => call[0] === source)).toHaveLength(0);
++    writeFileSync(source, 'changed');
++    expect(() => workspace.saveReading({ documentId: doc.id, fingerprint: doc.fingerprint, pageIndex: 0, offset: 0, zoom: 1, rotation: 0 })).toThrow(/SOURCE_CHANGED/);
++  } finally { workspace.close(); rmSync(folder, { recursive: true, force: true }); }
++});
++
++it('annotation commits still verify complete PDF bytes even when metadata was cached', () => {
++  const folder = mkdtempSync(path.join(tmpdir(), 'enlumor-perf-'));
++  const source = path.join(folder, 'source.pdf'); writeFileSync(source, 'original');
++  const workspace = new Workspace(path.join(folder, 'state.sqlite'));
++  try {
++    const doc = workspace.register(source, 1); workspace.verified(doc.id);
++    vi.mocked(readFileSync).mockClear();
++    workspace.apply({ documentId: doc.id, upserts: [], deletes: [] });
++    expect(vi.mocked(readFileSync).mock.calls.filter(call => call[0] === source)).toHaveLength(1);
++  } finally { workspace.close(); rmSync(folder, { recursive: true, force: true }); }
++});
+diff --git a/tests/release.test.ts b/tests/release.test.ts
+new file mode 100644
+index 0000000..9b6409f
+--- /dev/null
++++ b/tests/release.test.ts
+@@ -0,0 +1,7 @@
++import { expect, it } from 'vitest';
++import { assertPerformance } from '../scripts/performance-gate.mjs';
++const good = { portableStartupMs: [400,500,600], scrolling: {frameP95Ms:16,retainedCanvases:8}, readingSave:{p95Ms:2} };
++it('release performance gate accepts the measured budget', () => expect(() => assertPerformance(good)).not.toThrow());
++it('release performance gate blocks slow, missing and nonfinite measurements', () => {
++  for (const bad of [{}, {...good,readingSave:{p95Ms:30}}, {...good,portableStartupMs:[2000,3000,4000]}, {...good,scrolling:{frameP95Ms:60,retainedCanvases:8}}, {...good,readingSave:{p95Ms:NaN}}]) expect(() => assertPerformance(bad)).toThrow();
++});
+diff --git "a/\345\220\257\345\212\250 Enlumor.cmd" "b/\345\220\257\345\212\250 Enlumor.cmd"
+index da1512c..641aeb6 100644
+--- "a/\345\220\257\345\212\250 Enlumor.cmd"	
++++ "b/\345\220\257\345\212\250 Enlumor.cmd"	
+@@ -1,2 +1,2 @@
+ @echo off
+-start "" "%~dp0release\Enlumor 0.1.1.exe"
++powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0launch-enlumor.ps1"

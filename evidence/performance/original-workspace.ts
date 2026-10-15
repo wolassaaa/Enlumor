@@ -1,0 +1,88 @@
+import { DatabaseSync } from 'node:sqlite';
+import { createHash, randomUUID } from 'node:crypto';
+import { readFileSync, existsSync, copyFileSync } from 'node:fs';
+import path from 'node:path';
+import type { Annotation, AnnotationChange, CommitResult, DocumentInfo, ReadingState } from '../shared/model';
+import { validateAnnotation } from '../shared/geometry';
+
+export function fingerprint(file: string): string { return createHash('sha256').update(readFileSync(file)).digest('hex'); }
+export class Workspace {
+  readonly db: DatabaseSync;
+  private closed = false;
+  constructor(file: string) {
+    this.db = new DatabaseSync(file);
+    this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000');
+    const version = Number(this.db.prepare('PRAGMA user_version').get()!.user_version);
+    if (version > 1) { this.db.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
+    if (version === 0) {
+      const tables = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+      if (tables.length) { this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); copyFileSync(file, `${file}.pre-v1.bak`); }
+      this.db.exec(`BEGIN; CREATE TABLE IF NOT EXISTS documents (
+        id TEXT PRIMARY KEY, path TEXT NOT NULL, name TEXT NOT NULL, fingerprint TEXT NOT NULL UNIQUE, pageCount INTEGER NOT NULL, updatedAt INTEGER NOT NULL);
+        CREATE TABLE IF NOT EXISTS annotations (id TEXT PRIMARY KEY, documentId TEXT NOT NULL REFERENCES documents(id), payload TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS reading (documentId TEXT PRIMARY KEY REFERENCES documents(id), payload TEXT NOT NULL);
+        PRAGMA user_version=1; COMMIT;`);
+    }
+  }
+  close() { if (!this.closed) { this.db.close(); this.closed = true; } }
+  list(): DocumentInfo[] { return this.db.prepare('SELECT * FROM documents ORDER BY updatedAt DESC').all() as DocumentInfo[]; }
+  document(id: string): DocumentInfo {
+    if (typeof id !== 'string' || id.length > 100) throw new Error('INVALID_ID');
+    const doc = this.db.prepare('SELECT * FROM documents WHERE id=?').get(id) as DocumentInfo | undefined;
+    if (!doc) throw new Error('DOCUMENT_NOT_FOUND: 找不到工作区文档');
+    return doc;
+  }
+  verified(id: string): DocumentInfo {
+    const doc = this.document(id);
+    if (!existsSync(doc.path)) throw new Error('SOURCE_MISSING: 原文件已移动，请重新关联');
+    if (fingerprint(doc.path) !== doc.fingerprint) throw new Error('SOURCE_CHANGED: 文件内容已改变，旧批注未应用；请打开新版本或重新关联原文件');
+    return doc;
+  }
+  register(file: string, pageCount: number): DocumentInfo {
+    if (!Number.isInteger(pageCount) || pageCount < 1) throw new Error('INVALID_PDF');
+    const hash = fingerprint(file);
+    const old = this.db.prepare('SELECT * FROM documents WHERE fingerprint=?').get(hash) as DocumentInfo | undefined;
+    if (old) return this.rebind(old.id, file);
+    const doc: DocumentInfo = { id: randomUUID(), path: path.resolve(file), name: path.basename(file), fingerprint: hash, pageCount, updatedAt: Date.now() };
+    this.db.prepare('INSERT INTO documents VALUES (?,?,?,?,?,?)').run(doc.id, doc.path, doc.name, hash, pageCount, doc.updatedAt);
+    return doc;
+  }
+  rebind(id: string, file: string): DocumentInfo {
+    const doc = this.document(id);
+    if (fingerprint(file) !== doc.fingerprint) throw new Error('SOURCE_CHANGED: 请选择与原文档内容相同的 PDF');
+    this.db.prepare('UPDATE documents SET path=?, name=?, updatedAt=? WHERE id=?').run(path.resolve(file), path.basename(file), Date.now(), id);
+    return this.document(id);
+  }
+  annotations(id: string): Annotation[] { this.document(id); return this.db.prepare('SELECT payload FROM annotations WHERE documentId=? ORDER BY rowid').all(id).map(row => JSON.parse(row.payload as string)); }
+  reading(id: string): ReadingState | null { this.document(id); const row = this.db.prepare('SELECT payload FROM reading WHERE documentId=?').get(id); return row ? JSON.parse(row.payload as string) : null; }
+  saveReading(state: ReadingState) {
+    const doc = this.verified(state.documentId);
+    if (state.fingerprint !== doc.fingerprint || !Number.isInteger(state.pageIndex) || state.pageIndex < 0 || state.pageIndex >= doc.pageCount ||
+        !Number.isFinite(state.offset) || state.offset < 0 || state.offset > 1 || !Number.isFinite(state.zoom) || state.zoom < .25 || state.zoom > 4 || ![0, 90, 180, 270].includes(state.rotation)) throw new Error('INVALID_READING_STATE');
+    this.db.prepare('INSERT INTO reading VALUES (?,?) ON CONFLICT(documentId) DO UPDATE SET payload=excluded.payload').run(state.documentId, JSON.stringify(state));
+  }
+  apply(change: AnnotationChange): CommitResult {
+    if (!change || !Array.isArray(change.upserts) || !Array.isArray(change.deletes) || change.upserts.length + change.deletes.length > 10000) throw new Error('INVALID_CHANGE');
+    const doc = this.verified(change.documentId);
+    const seen = new Set<string>();
+    for (const a of change.upserts) {
+      validateAnnotation(a, doc.pageCount);
+      if (a.documentId !== doc.id || a.fingerprint !== doc.fingerprint || seen.has(a.id)) throw new Error('INVALID_CHANGE');
+      seen.add(a.id);
+    }
+    for (const id of change.deletes) { if (typeof id !== 'string' || !/^[\w-]{1,100}$/.test(id) || seen.has(id)) throw new Error('INVALID_CHANGE'); seen.add(id); }
+    const inverse: AnnotationChange = { documentId: doc.id, upserts: [], deletes: [] };
+    this.db.exec('BEGIN IMMEDIATE');
+    try {
+      for (const id of seen) {
+        const row = this.db.prepare('SELECT documentId,payload FROM annotations WHERE id=?').get(id);
+        if (row && row.documentId !== doc.id) throw new Error('INVALID_CHANGE: 批注属于其他文档');
+        if (row) inverse.upserts.push(JSON.parse(row.payload as string)); else inverse.deletes.push(id);
+      }
+      for (const a of change.upserts) this.db.prepare('INSERT INTO annotations VALUES (?,?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload').run(a.id, doc.id, JSON.stringify(a));
+      for (const id of change.deletes) this.db.prepare('DELETE FROM annotations WHERE id=? AND documentId=?').run(id, doc.id);
+      this.db.exec('COMMIT');
+    } catch (error) { this.db.exec('ROLLBACK'); throw error; }
+    return { annotations: this.annotations(doc.id), inverse };
+  }
+}

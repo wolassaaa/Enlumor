@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client';
 import { useEffect, useRef, useState } from 'react';
-import { PdfReader, type SelectionPart } from './pdf-reader';
+import { PdfReader, type SelectionPart, type OutlineEntry } from './pdf-reader';
 import { unwrap, type Annotation, type AnnotationChange, type Bridge, type DocumentInfo, type OpenedDocument, type ReadingState } from '../shared/model';
 import './style.css';
 declare global { interface Window { enlumor: Bridge } }
@@ -8,6 +8,9 @@ declare global { interface Window { enlumor: Bridge } }
 function Glyph({ name }: { name: 'library' | 'notes' | 'open' | 'export' | 'mark' | 'close' }) {
   const paths = { library: 'M4 4h5v16H4z M12 4h4v16h-4z M19 5l3 14', notes: 'M5 3h14v18H5z M8 8h8 M8 12h8 M8 16h5', open: 'M3 8h7l2-3h8v5 M3 8v12h16l3-10H7l-4 10', export: 'M13 3h8v8 M21 3L10 14 M9 5H4v15h15v-5', mark: 'M5 15l9-11 5 4-9 11H5z M4 22h16', close: 'M6 6l12 12 M18 6L6 18' };
   return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>;
+}
+function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id: string) => void }) {
+  return <ul className="outline-tree">{items.map(item => <li key={item.id}><button disabled={!item.navigable} onClick={() => navigate(item.id)}>{item.title}</button>{item.children.length > 0 && <OutlineTree items={item.children} navigate={navigate}/>}</li>)}</ul>;
 }
 
 function App() {
@@ -19,6 +22,7 @@ function App() {
   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
   const [history, setHistory] = useState({ undo: [] as AnnotationChange[], redo: [] as AnnotationChange[] });
   const [libraryOpen, setLibraryOpen] = useState(true), [notesOpen, setNotesOpen] = useState(true);
+  const [libraryView, setLibraryView] = useState<'documents' | 'outline'>('documents'), [outline, setOutline] = useState<OutlineEntry[] | null>([]);
   const [selectionPosition, setSelectionPosition] = useState({ left: 0, top: 0 });
   const current = useRef<ReadingState | null>(null), timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pending = useRef<{ change: AnnotationChange; kind: 'new' | 'undo' | 'redo' } | null>(null), flight = useRef<Promise<unknown> | null>(null), locked = useRef(false);
@@ -35,7 +39,7 @@ function App() {
       current.current = state; setPage(String(state.pageIndex + 1)); setZoom(state.zoom);
       clearTimeout(timer.current); timer.current = setTimeout(() => { void flush().catch(fail); }, 500);
     }, selected => {
-      setParts(selected);
+      setParts(old => !selected.length && !old.length ? old : selected);
       const selection = window.getSelection();
       if (selected.length && selection?.rangeCount) {
         const rect = selection.getRangeAt(0).getBoundingClientRect();
@@ -43,7 +47,7 @@ function App() {
         const top = rect.top >= bounds.top + 64 ? rect.top - 52 : rect.bottom + 10;
         setSelectionPosition({ left: Math.max(bounds.left + 12, Math.min(bounds.right - 310, rect.left)), top: Math.max(bounds.top + 12, Math.min(bounds.bottom - 60, top)) });
       }
-    }, setNotice);
+    }, setNotice, setOutline);
     const off = window.enlumor.onFlush(flush);
     void (async () => {
       try { const list = unwrap(await window.enlumor.listDocuments()); setRecent(list); if (list.length) await load(list[0].id); }
@@ -105,7 +109,13 @@ function App() {
       <div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}><Glyph name="open"/>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <Glyph name="export"/></button></div>
     </header>
     <div className="workspace">
-      <aside className="library" hidden={!libraryOpen}><div className="section-label">LIBRARY / 你的阅读空间</div><h2>文档<span className="section-count">{recent.length.toString().padStart(2, '0')}</span></h2><p className="muted">原文不动，思考留下。</p><div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div><div className="library-footer"><span className="online-dot"/> 离线可用<span>所有阅读痕迹保存在这台电脑</span></div></aside>
+      <aside className="library" hidden={!libraryOpen}>
+        <div className="section-label">LIBRARY / 你的阅读空间</div>
+        <h2>{libraryView === 'documents' ? '文档' : '目录'}<span className="section-count">{(libraryView === 'documents' ? recent.length : outline?.length || 0).toString().padStart(2, '0')}</span></h2>
+        <div className="library-tabs" role="tablist" aria-label="文档导航"><button role="tab" aria-selected={libraryView === 'documents'} onClick={() => setLibraryView('documents')}>文档</button><button role="tab" aria-selected={libraryView === 'outline'} disabled={!doc} onClick={() => setLibraryView('outline')}>目录</button></div>
+        {libraryView === 'documents' ? <div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div> : <div className="recent-list" aria-label="PDF 目录">{outline === null ? <p className="library-empty">正在读取目录…</p> : outline.length ? <OutlineTree items={outline} navigate={id => void reader.current?.goToOutline(id)}/> : <p className="library-empty">此 PDF 没有目录，可使用页码跳转。</p>}</div>}
+        <div className="library-footer"><span className="online-dot"/> 离线可用<span>所有阅读痕迹保存在这台电脑</span></div>
+      </aside>
       <main className="reading"><div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
         <div className="toolbar"><div className="toolbar-group"><button aria-label="上一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) - 1)}>‹</button><input aria-label="跳转页码" className="page-input" disabled={!doc} value={page} onChange={event => setPage(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') reader.current?.go(Number(page)); }}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) + 1)}>›</button></div>
           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>

@@ -1,0 +1,66 @@
+Enlumor 0.1.3 — 2026-10-15
+BRANCH=feat/performance-gates; baseline commit=7d38685
+Changed fields/branches: Workspace.readingChecks/sourceStamp/saveReading metadata-only position-save branch (annotation/export/open still full SHA256); renderer empty-selection reuse; pagerendered page-scoped overlay; PDF outline navigation; tested staged-release gate/default ZIP.
+
+Four artifacts (all reopened after creation):
+MODIFIED_FILE=D:\codex project\Enlumor\evidence\performance\MODIFIED_FILE.ts
+DIFF_FILE=D:\codex project\Enlumor\evidence\performance\DIFF.patch
+VERIFICATION=D:\codex project\Enlumor\evidence\performance\VERIFICATION.txt
+ROLLBACK=D:\codex project\Enlumor\evidence\performance\ROLLBACK.sh (git mode 100755)
+Live changed source=D:\codex project\Enlumor\src\main\workspace.ts
+Original preserved SHA256=126de1ef6fc5ffb04b4e1e84d75aea366587878453df95f14132d81aacbdd5e1
+
+CWD for commands: D:\codex project\Enlumor
+BASELINE command: node scripts/check-autosave.mjs evidence/performance/original-workspace.ts 0
+Input: actual SQLite, 8MiB file, initial full verification, 20 sequential reading-position saves.
+Literal stdout: AUTOSAVE_FULL_READS=20; LAST_PAGE=19; EXPECTED=0
+Exit=1 (performance regression reproduced, all positions still saved).
+MODIFIED command: node scripts/check-autosave.mjs src/main/workspace.ts 0
+Same input. Literal stdout: AUTOSAVE_FULL_READS=0; LAST_PAGE=19; EXPECTED=0
+Exit=0.
+ROLLBACK command: "C:/Program Files/Git/bin/bash.exe" evidence/performance/ROLLBACK.sh
+Input: source copy under .cache/performance-rollback, restored from preserved original; same 20-save workload, expected baseline count=20.
+Literal stdout:
+evidence/performance/original-workspace.ts: OK
+AUTOSAVE_FULL_READS=20; LAST_PAGE=19; EXPECTED=20
+ROLLBACK_RESTORED_BASELINE=PASS; LIVE_SOURCE_UNCHANGED=YES
+Exit=0. Restored behavior: 20 full PDF reads on rollback copy; live source remains optimized (cmp verified). User database untouched.
+Node commands additionally emit the Node ExperimentalWarning for SQLite on stderr.
+
+TDD evidence:
+- Autosave contract RED: expected 0 reads, received 20; GREEN after metadata cache.
+- Directory E2E RED: role tab 目录 missing; GREEN: nested destinations 51,101,1.
+- Release-budget test RED: missing performance-gate module; GREEN: valid accepted, slow/missing/nonfinite rejected.
+- Final independent review found release scrolling/saving benchmark launched developer app. RED: artifact-launch helper missing; GREEN: supplied EXE selected and checkout absent from args. Fixed benchmark now measures actual staged EXE for all phases.
+- Deferred minor: interrupted publication copy may leave an incomplete version directory; latest remains previous, but same-version retry requires resolving leftover directory. No architectural changes made.
+
+Full MODIFIED release command: npm run release:verified
+Input: source 0.1.3, own temporary user profiles, real PDF.js/SQLite, embedded PyMuPDF, staged Windows EXE, no external Python for smoke.
+Literal key output:
+Tests 18 passed (18)
+Ran 3 tests
+OK
+12 passed (29.7s)
+PACKAGED_READER: PASS
+{"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
+EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.3 D:\codex project\Enlumor\release\Enlumor-0.1.3-win.zip SHA256=44b4e3f24c1a0540ec1d91e369d9f3300492001b761075d42025acf5fc7027a1
+Exit=0; full command output in release-0.1.3.log. Total 33 tests, typecheck/build and package smoke additionally passed.
+Visual inspection: reader.png and edge-export.png opened; highlight aligns with same original sentence, pre-existing source note remains visible in exported PDF. Standalone Acrobat Reader not tested.
+
+Measured baseline command: node scripts/benchmark.mjs baseline
+Exit=0. Developer process scroll/save; old self-extracting 0.1.1 EXE startup.
+Measured final command (executed by release script): node scripts/benchmark.mjs release <staged-0.1.3-EXE>
+Exit=0. Actual packaged process for startup, scrolling and save; see release.json for literal JSON.
+Baseline: position-save p95=29.5ms; scroll p95=15.5ms, 0 long tasks; portable startup samples=3329.3954,3609.8006,3440.3012ms.
+Final: position-save p95=2.100000001490116ms; scroll p95=10.599999994039536ms, 0 long tasks, 8 canvases; extracted startup samples=427.1468,438.9872,440.8913ms.
+Distribution startup comparison includes removed self-extraction, not an Electron-vs-Rust/Python comparison. Sample is synthetic 200 pages / 32MiB unused stream / 1000 annotations. User's complex-document lag not yet reproduced; general performance guarantee not claimed.
+
+Release: D:\codex project\Enlumor\release\Enlumor-0.1.3-win-x64\Enlumor.exe
+ZIP: D:\codex project\Enlumor\release\Enlumor-0.1.3-win.zip
+Latest manifest: D:\codex project\Enlumor\release\latest.json
+Feature-by-feature status: D:\codex project\Enlumor\docs\FEATURES.md
+Reusable next-step prompt:
+按 docs/FEATURES.md 实现下一个阅读器子项（缩略图），先写失败测试再实现；保持源 PDF 只读，按需渲染；用 npm run release:verified 验证实际打包程序，全部门禁通过才更新 latest.json。
