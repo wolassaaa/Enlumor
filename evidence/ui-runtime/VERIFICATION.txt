@@ -1,0 +1,89 @@
+Enlumor 0.1.1 / UI + bundled PDF runtime / 2026-10-15 Asia/Taipei
+Project: D:\codex project\Enlumor
+Branch: feat/reader-ui-runtime
+Runtime commit: bef62e0
+UI commit: 5654f5d
+
+FOUR ARTIFACTS
+MODIFIED_FILE: D:\codex project\Enlumor\src\main\python.ts
+DIFF_FILE: D:\codex project\Enlumor\evidence\ui-runtime\DIFF.patch
+VERIFICATION: D:\codex project\Enlumor\evidence\ui-runtime\VERIFICATION.txt
+ROLLBACK: D:\codex project\Enlumor\evidence\ui-runtime\ROLLBACK.sh (Git executable 100755)
+Original snapshots: original-python.ts, original-main.tsx, original-style.css in this evidence directory; exact git-show bytes from 3490561.
+Original python.ts SHA256: 03ad0a550125e16fdf3c6c773bcb68c4e14967bc73338cb527ab820a55aaaf34
+Modified python.ts SHA256: 64e49a1d5d6ee61a6f870a223290487a16804cb7372b17cf507f059c8cc9e09d
+
+ROOT CAUSE / CHANGED BRANCH
+Confirmed user symptom: double-clicked portable app starts, but adding a PDF reports PYTHON_MISSING twice.
+Original packaged branch looked for .venv beside the extracted temporary Electron executable; no interpreter/worker was included in 0.1.0.
+New branch resolves resources/pdf-worker/enlumor-pdf-worker.exe first in packaged builds. The onedir bundle contains the Python interpreter and PyMuPDF libraries. Development still uses its own venv.
+Process close (not exit) is used before JSON parsing so stdout is completely drained.
+Error formatting no longer repeats an already-prefixed error code.
+Choice: retain TypeScript/Electron UI and Python/PyMuPDF document processing; fix distribution rather than rewrite the pipeline in Rust.
+Reference: https://pyinstaller.org/en/stable/operating-mode.html
+
+BASELINE
+CWD for all commands: D:\codex project\Enlumor
+Command: node scripts/check-runtime.mjs evidence/ui-runtime/original-python.ts
+Input: {"operation":"inspect","source":"D:\\codex project\\Enlumor\\.cache\\utf8-check\\中文.pdf"}, valid one-page PDF.
+Context: packaged Electron-context fixture pointing at extracted/resources directories; real bundled worker present; ENLUMOR_PYTHON deleted and PATH limited to SystemRoot/System32 before the PDF request.
+Literal output: PDF_RUNTIME: PYTHON_MISSING
+Exit status: 1
+Separate real packaged-app regression before fixing also failed to open the PDF with PYTHON_MISSING; the original 0.1.0 EXE is retained with its original hash below.
+
+MODIFIED
+Command: node scripts/check-runtime.mjs src/main/python.ts
+Input/context: identical to BASELINE; real standalone PDF worker executes the request.
+Literal output: PDF_RUNTIME: PASS
+Exit status: 0
+Result: metadata pageCount=1; no external Python path used.
+
+ROLLBACK / COPY ONLY
+Preparation: Copy-Item -LiteralPath 'src/main/python.ts' -Destination '.cache/ui-runtime-rollback/python.ts'
+Command: & 'C:\Program Files\Git\bin\bash.exe' evidence/ui-runtime/ROLLBACK.sh .cache/ui-runtime-rollback/python.ts
+Input: modified-source copy with SHA256 64e49a1d5d6ee61a6f870a223290487a16804cb7372b17cf507f059c8cc9e09d; target verified within project.
+Literal output: ROLLBACK: RESTORED 3490561 src/main/python.ts
+Exit status: 0
+Command: node scripts/check-runtime.mjs .cache/ui-runtime-rollback/python.ts
+Input/context: identical to BASELINE.
+Literal output: PDF_RUNTIME: PYTHON_MISSING
+Exit status: 1 (expected restored baseline failure on the copy)
+Literal byte comparison: RESTORED_BYTES_MATCH=true
+Restored behavior/status: missing-external-Python failure restored only on the test copy. Real src/main/python.ts remains modified and bundled-runtime-first. No userData rollback or deletion.
+
+FRESH VERIFICATION
+npm run typecheck -> tsc --noEmit, no diagnostics; exit 0.
+npm test -> Tests 13 passed (13); exit 0.
+npm run test:python -> Ran 3 tests; OK; exit 0.
+npx playwright test -> 11 passed (48.3s); exit 0.
+npm run portable -> 0.1.1 build with standalone PDF worker; exit 0.
+Final UI repack: npx electron-builder --win portable -> Enlumor 0.1.1.exe built; exit 0.
+node scripts/check-dev.mjs -> DEV_RENDERER: PASS; exit 0.
+node scripts/check-package.mjs -> PACKAGED_READER: PASS and EDGE_PDF_OPEN: PASS (visual screenshot requires inspection); exit 0.
+Packaged runtime: {"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
+node scripts/check-portable.mjs -> PORTABLE_STARTUP_SQLITE: PASS; PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS; exit 0.
+Both packaged and actual portable-wrapper probes unset ENLUMOR_PYTHON and limit PATH to Windows System32. The portable probe uses local test-only inspectors to substitute file dialogs, then opens, highlights and exports through real IPC and the bundled worker. Application source bytes remain unchanged.
+
+UI ACCEPTANCE / REVIEW
+User approved warm paper + dark ink, collapsible sidebars, contextual selection tools.
+Added real Electron regression for folding panels and floating-toolbar placement.
+Independent review caught stale screen coordinates after scrolling/layout changes; regression failed first and passed after dismissal on scroll/scale/rotation/resize/sidebar changes.
+Placement test failed when toolbar appeared below the selected text; changed to prefer available space above.
+A subsequent full regression found 3 rotation/scale cases where floating tools intercepted sidebar clicks. Root cause: clamping against window bounds instead of PDF bounds. Fixed by clamping to reader bounds; all 11 E2E cases now pass and selection helpers assert both toolbar edges remain inside the reader.
+Existing search, cross-page undo, invalid PDF handling, crash recovery, stale-source protection, 200-page rendering and export checks remain green.
+Visual inspection completed: welcome.png, reader.png, selection.png and edge-export.png show the new interface and correct native export alignment. No remote fonts or new UI framework added.
+
+DELIVERABLE
+D:\codex project\Enlumor\release\Enlumor 0.1.1.exe
+Size: 547275686 bytes
+SHA256: 9db1ce76dc5def4df37f42dc7878c47a0257ea42e08ba1598678d892506726a3
+Double-click EXE directly; Python installation / environment-variable configuration is not required.
+Launchers now target 0.1.1 and no longer require or set a Python venv path.
+Original 0.1.0 EXE retained: SHA256 0b1875d9c0d7be4559c32e2a4c55388a65ac797fb93cfd9ad00d49280785f3bc.
+Working data schema is unchanged; personal workspace/database was not edited or migrated.
+
+REMAINING
+Windows release only. macOS requires its own worker build; iPad requires a separate client. Rust migration was not performed.
+Standalone Acrobat Reader remains unverified; Edge PDF output was inspected.
+Existing Node SQLite experimental warning, large PDF.js bundle warning and 8 moderate development-toolchain advisories remain as recorded in initial verification. Production dependency audit previously reported 0.
+Phase-2 directory/thumbnails and additional drawing tools, AI, whiteboard and cruise are subsequent work; not claimed implemented here.
