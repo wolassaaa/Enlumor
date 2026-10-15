@@ -71,6 +71,20 @@ class ExportTests(unittest.TestCase):
                         self.assertEqual(line.vertices,[(40.0,45.0),(160.0,65.0)])
                 self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(),fingerprint)
 
+    def test_arrow_ends_crop_rotation_repeat(self):
+        for rotation in (0,90,180,270):
+            with self.subTest(rotation=rotation), tempfile.TemporaryDirectory() as folder:
+                source=Path(folder)/'source.pdf';doc=fitz.open();page=doc.new_page(width=300,height=400)
+                page.set_cropbox(fitz.Rect(20,30,280,370));page.set_rotation(rotation);page.add_text_annot((40,100),'existing')
+                doc.save(source);doc.close();fingerprint=hashlib.sha256(source.read_bytes()).hexdigest()
+                mark={'id':'arrow','type':'arrow','pageIndex':0,'quads':[[59,326,181,326,59,304,181,304]],'points':[180,305,60,325],'color':'#335588'}
+                for i in range(2):
+                    target=Path(folder)/f'out-{i}.pdf';export_pdf(source,target,fingerprint,[mark])
+                    with fitz.open(target) as d:
+                        page=d[0];items=list(page.annots());self.assertEqual(len(items),2);a=next(a for a in items if a.type[0]==3)
+                        self.assertEqual(a.line_ends,(0,5));self.assertEqual(a.vertices,[(160.0,65.0),(40.0,45.0)])
+                self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(),fingerprint)
+
     def test_rejects_overwrite_stale_and_invalid_without_output(self):
         with tempfile.TemporaryDirectory() as folder:
             source = Path(folder) / 'source.pdf'; out = Path(folder) / 'out.pdf'

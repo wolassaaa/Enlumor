@@ -6,3 +6,5 @@
 evidence/layout-tabs/original-* -text
 evidence/reading-tools/originals/* -text
 evidence/strikeout-lines/originals/* -text
+
+evidence/arrows-ink/originals/* -text

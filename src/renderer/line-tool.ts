@@ -1,8 +1,9 @@
 import { inverse, lineAnchor, transform } from '../shared/geometry';
-export type DrawnLine = { pageIndex:number; points:number[]; quads:number[][] };
+export type DrawnLine = { pageIndex:number; points:number[]; quads:number[][]; type:'line'|'arrow' };
 type PageView = {div:HTMLElement;viewport:{width:number;height:number;transform:number[]}};
 export class LineTool {
  private enabled=false;
+ private mode:'line'|'arrow'='line';
  private gesture?:{id:number;index:number;view:PageView;start:[number,number];svg:SVGSVGElement;line:SVGLineElement};
  constructor(private container:HTMLElement, private page:(index:number)=>PageView|undefined, private ready:()=>boolean, private created:(line:DrawnLine)=>void) {
   container.addEventListener('pointerdown',event=>{
@@ -19,12 +20,13 @@ export class LineTool {
    if(!this.ready()){this.cancel();return;}const g=this.gesture;if(!g||g.id!==event.pointerId)return;
    const end=this.point(event,g.view),valid=Math.hypot(end[0]-g.start[0],end[1]-g.start[1])>=3;
    const matrix=inverse(g.view.viewport.transform),points=[...transform(...g.start,matrix),...transform(...end,matrix)];
-   this.cancel();if(valid){this.setEnabled(false);this.created({pageIndex:g.index,points,quads:[lineAnchor(points)]});}
+   this.cancel();if(valid){this.setEnabled(false);this.created({pageIndex:g.index,points,quads:[lineAnchor(points)],type:this.mode});}
   });
   container.addEventListener('pointercancel',()=>this.cancel());
   container.addEventListener('lostpointercapture',()=>this.cancel());
   container.addEventListener('scroll',()=>this.cancel(),{passive:true});
  }
+ setMode(mode:'line'|'arrow'|null){this.mode=mode||'line';this.setEnabled(mode!==null);}
  setEnabled(enabled:boolean){this.cancel();this.enabled=enabled;this.container.classList.toggle('drawing-line',enabled);}
  cancel(){const g=this.gesture;this.gesture=undefined;if(g){g.svg.remove();if(this.container.hasPointerCapture(g.id))this.container.releasePointerCapture(g.id);}}
  private point(event:PointerEvent,view:PageView):[number,number]{const rect=view.div.getBoundingClientRect();return[Math.max(0,Math.min(view.viewport.width,event.clientX-rect.left-view.div.clientLeft)),Math.max(0,Math.min(view.viewport.height,event.clientY-rect.top-view.div.clientTop))];}

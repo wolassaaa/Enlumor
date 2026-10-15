@@ -20,14 +20,14 @@ export function quadToScreen(q: Quad, m: number[]): [number, number, number, num
 }
 export function validateAnnotation(value: unknown, pageCount: number): asserts value is Annotation {
   const a = value as Annotation;
-  if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !/^[\w-]{1,100}$/.test(a.id) || typeof a.documentId !== 'string' || typeof a.fingerprint !== 'string' || !['highlight', 'underline', 'strikeout', 'line', 'note'].includes(a.type) || a.author !== 'user' ||
+  if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !/^[\w-]{1,100}$/.test(a.id) || typeof a.documentId !== 'string' || typeof a.fingerprint !== 'string' || !['highlight', 'underline', 'strikeout', 'line', 'arrow', 'note'].includes(a.type) || a.author !== 'user' ||
       !Number.isInteger(a.pageIndex) || a.pageIndex < 0 || a.pageIndex >= pageCount ||
       typeof a.quote !== 'string' || a.quote.length > 100000 || typeof a.note !== 'string' || a.note.length > 100000 ||
       !/^#[0-9a-f]{6}$/i.test(a.color) || !Array.isArray(a.quads) || !a.quads.length || a.quads.length > 10000 ||
       a.quads.some(q => !Array.isArray(q) || q.length !== 8 || q.some(v => typeof v !== 'number' || !Number.isFinite(v) || Math.abs(v) > 1e7) || q[2] <= q[0] || q[1] <= q[5])) {
     throw new Error('INVALID_ANNOTATION: 批注类型、页码或坐标无效');
   }
-  if(a.type==='line') {
+  if((a.type==='line'||a.type==='arrow')) {
     const p=a.points,q=a.quads[0];
     if(!Array.isArray(p)||p.length!==4||p.some(n=>typeof n!=='number'||!Number.isFinite(n)||Math.abs(n)>1e7)||a.quads.length!==1||Math.hypot(p[2]-p[0],p[3]-p[1])<1e-6||[0,2].some(i=>p[i]<q[0]||p[i]>q[2]||p[i+1]<q[5]||p[i+1]>q[1]))throw new Error('INVALID_ANNOTATION: 直线端点无效');
   }
