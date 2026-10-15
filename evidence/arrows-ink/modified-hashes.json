@@ -1,0 +1,30 @@
+[
+  {
+    "target": "src/renderer/main.tsx",
+    "sha256": "77c7fa1e51fe54af94491ab99c2a3d07d9595fb7722d53e6ae5825305a2a464c"
+  },
+  {
+    "target": "src/renderer/line-tool.ts",
+    "sha256": "08bb6b1563f47718b620d7d423bcd273d232a2c5655daac63e38c75c3cadd3cb"
+  },
+  {
+    "target": "src/renderer/drawing-svg.ts",
+    "sha256": "a2d36d408356fa6486973a6b470faa0a97887ac0de091d0a31b8e18cd1f5e1bd"
+  },
+  {
+    "target": "src/renderer/pdf-reader.ts",
+    "sha256": "4989c72b728f109b6545d0dd6d75f38ac8c71b8c3e626d1382b406ba4d5dc25a"
+  },
+  {
+    "target": "src/shared/geometry.ts",
+    "sha256": "fb75c054e001dce3fbda9482909bd044446fc7455e22c573c7020bff06635006"
+  },
+  {
+    "target": "src/shared/model.ts",
+    "sha256": "57176d0e85caa7508e6840f4458a459970975cfe345bf8daff89d269daaee157"
+  },
+  {
+    "target": "python/export_pdf.py",
+    "sha256": "f96347dc28d0fd826c2e45394b5c8a9314956a1b16759fd8b12c498e9d9fd764"
+  }
+]

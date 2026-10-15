@@ -1,0 +1,37 @@
+
+Running 1 test using 1 worker
+
+(node:16304) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\arrows-ink.spec.ts:35:1 › ink keeps an ordered closed stroke through cancel undo restart and native export (3.9s)
+
+
+  1) tests\e2e\arrows-ink.spec.ts:35:1 › ink keeps an ordered closed stroke through cancel undo restart and native export 
+
+    TimeoutError: locator.click: Timeout 3000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '绘制画笔', exact: true })
+
+
+      38 |  let page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
+      39 |  let box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;const tool=page.getByRole('button',{name:'绘制画笔',exact:true});
+    > 40 |  await tool.click({timeout:3000});await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+180,box.y+200);await page.keyboard.press('Escape');await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+         |             ^
+      41 |  await tool.click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+180,box.y+200,{steps:5});await page.mouse.move(box.x+100,box.y+250,{steps:5});await page.mouse.move(box.x+80,box.y+160,{steps:5});await page.mouse.up();
+      42 |  await expect(page.locator('.drawn-ink polyline')).toHaveCount(1);await expect(page.locator('.annotation-source')).toContainText('画笔');await expect(tool).toHaveAttribute('aria-pressed','false');
+      43 |  const stored=await page.evaluate(async()=>{const d=await window.enlumor.listDocuments();if(!d.ok)throw Error('docs');const a=await window.enlumor.getAnnotations(d.value[0].id);if(!a.ok)throw Error('marks');return a.value[0];});
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:40:13
+
+    Error Context: test-results\arrows-ink-ink-keeps-an-or-dfd63-o-restart-and-native-export\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-ink-keeps-an-or-dfd63-o-restart-and-native-export\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-ink-keeps-an-or-dfd63-o-restart-and-native-export\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\arrows-ink.spec.ts:35:1 › ink keeps an ordered closed stroke through cancel undo restart and native export 

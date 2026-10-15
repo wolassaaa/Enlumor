@@ -1,0 +1,10 @@
+
+Running 2 tests using 1 worker
+
+(node:44640) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\arrows-ink.spec.ts:15:1 › arrow direction and Escape cancellation preserve native endpoints through rotation restart and standard export (2.4s)
+  ok 2 tests\e2e\arrows-ink.spec.ts:35:1 › ink keeps an ordered closed stroke through cancel undo restart and native export (2.5s)
+
+  2 passed (5.9s)

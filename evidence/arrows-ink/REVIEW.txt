@@ -1,0 +1,11 @@
+Round4 independent final reviewer, range48ab539..ee57b8b.
+Critical: none.
+Important: layout visibility/persistLayout/right divider fail to cancel drawing before page movement. Actual Electron reproduced draft1 and saved1 after toggle.
+Minor deferred: workspace arrow triangle filled vs exported hollow ClosedArrow; head proportions differ. Endpoints and direction are tested and retained, but appearances not pixel-identical.
+Findings regraded: unintended persisted geometry remains Important; head styling is Minor.
+Declined/rulings:
+1. Pressure, smoothing, grouping, persistent mode remain excluded by approved minimal scope; cost: repeated activation/no pressure-sensitive handwriting.
+2. Eraser/direct saved-shape manipulation remain next roadmap; cost: current deletion operates on whole annotation only.
+3. Standalone Acrobat remains untested; use real Edge viewing plus standard structure tests; cost: independent Acrobat rendering compatibility not confirmed.
+4. Packaged runtime/performance withheld until full release gate, not inferred from development tests.
+Fix gate: RED/GREEN evidence and full release are recorded in VERIFICATION.txt.

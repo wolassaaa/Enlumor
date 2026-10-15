@@ -1,0 +1,37 @@
+
+Running 1 test using 1 worker
+
+(node:17936) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\arrows-ink.spec.ts:15:1 › arrow direction and Escape cancellation preserve native endpoints through rotation restart and standard export (30.9s)
+
+
+  1) tests\e2e\arrows-ink.spec.ts:15:1 › arrow direction and Escape cancellation preserve native endpoints through rotation restart and standard export 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '绘制箭头', exact: true })
+
+
+      18 |  let page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
+      19 |  const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;
+    > 20 |  await page.getByRole('button',{name:'绘制箭头',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+230,box.y+210);await page.keyboard.press('Escape');await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+         |                                                          ^
+      21 |  await page.getByRole('button',{name:'绘制箭头',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+230,box.y+210,{steps:8});await page.mouse.up();
+      22 |  await expect(page.locator('.annotation-source')).toContainText('箭头');await expect(page.locator('.drawn-arrow')).toHaveCount(1);
+      23 |  const stored=await page.evaluate(async()=>{const docs=await window.enlumor.listDocuments();if(!docs.ok)throw Error('docs');const marks=await window.enlumor.getAnnotations(docs.value[0].id);if(!marks.ok)throw Error('marks');return marks.value[0];});
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:20:58
+
+    Error Context: test-results\arrows-ink-arrow-direction-e8139-restart-and-standard-export\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-arrow-direction-e8139-restart-and-standard-export\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-arrow-direction-e8139-restart-and-standard-export\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\arrows-ink.spec.ts:15:1 › arrow direction and Escape cancellation preserve native endpoints through rotation restart and standard export 

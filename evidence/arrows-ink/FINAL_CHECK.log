@@ -1,0 +1,6 @@
+  ok 27 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (after-render) (964ms)
+  ok 28 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (after-render) (1.5s)
+  ok 29 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (after-render) (989ms)
+
+  29 passed (49.3s)
+ledger: Task 2: complete (commits 4886736..0733495, tests: npx playwright test arrows-ink.spec.ts →   29 passed (49.3s))

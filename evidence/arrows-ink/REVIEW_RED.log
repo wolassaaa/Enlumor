@@ -1,0 +1,646 @@
+
+Running 16 tests using 1 worker
+
+(node:49488) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x   1 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (same-turn) (6.1s)
+(node:45108) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x   2 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (same-turn) (6.0s)
+(node:19544) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x   3 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (same-turn) (6.1s)
+(node:16148) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x   4 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (same-turn) (6.0s)
+(node:29892) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x   5 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (after-render) (6.0s)
+(node:36364) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x   6 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (after-render) (6.0s)
+(node:46096) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x   7 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (after-render) (6.6s)
+(node:49460) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x   8 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (after-render) (6.0s)
+(node:16272) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x   9 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (same-turn) (6.0s)
+(node:49384) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  10 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (same-turn) (6.0s)
+(node:49184) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  11 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (same-turn) (6.8s)
+(node:29828) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  12 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (same-turn) (6.6s)
+(node:27584) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  13 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (after-render) (6.5s)
+(node:40244) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  14 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (after-render) (6.5s)
+(node:46076) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  15 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (after-render) (6.5s)
+(node:18272) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  16 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (after-render) (6.0s)
+
+
+  1) tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (same-turn) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                                                                                                                               ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:143
+
+    Error Context: test-results\arrows-ink-arrow-gesture-c-2d11e--the-page-layout-same-turn-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-arrow-gesture-c-2d11e--the-page-layout-same-turn-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-arrow-gesture-c-2d11e--the-page-layout-same-turn-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (same-turn) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                                                                                                                               ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:143
+
+    Error Context: test-results\arrows-ink-arrow-gesture-c-b0354--the-page-layout-same-turn-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-arrow-gesture-c-b0354--the-page-layout-same-turn-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-arrow-gesture-c-b0354--the-page-layout-same-turn-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (same-turn) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                                                                                                                               ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:143
+
+    Error Context: test-results\arrows-ink-arrow-gesture-c-a9d4a--the-page-layout-same-turn-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-arrow-gesture-c-a9d4a--the-page-layout-same-turn-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-arrow-gesture-c-a9d4a--the-page-layout-same-turn-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (same-turn) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                                                                                                                               ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:143
+
+    Error Context: test-results\arrows-ink-arrow-gesture-c-7b506--the-page-layout-same-turn-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-arrow-gesture-c-7b506--the-page-layout-same-turn-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-arrow-gesture-c-7b506--the-page-layout-same-turn-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (after-render) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.line-draft')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.line-draft') with timeout 5000ms
+      - waiting for locator('.line-draft')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                            ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:44
+
+    Error Context: test-results\arrows-ink-arrow-gesture-c-ebe31-e-page-layout-after-render-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-arrow-gesture-c-ebe31-e-page-layout-after-render-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-arrow-gesture-c-ebe31-e-page-layout-after-render-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (after-render) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.line-draft')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.line-draft') with timeout 5000ms
+      - waiting for locator('.line-draft')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                            ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:44
+
+    Error Context: test-results\arrows-ink-arrow-gesture-c-a3b27-e-page-layout-after-render-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-arrow-gesture-c-a3b27-e-page-layout-after-render-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-arrow-gesture-c-a3b27-e-page-layout-after-render-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  7) tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (after-render) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.line-draft')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.line-draft') with timeout 5000ms
+      - waiting for locator('.line-draft')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                            ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:44
+
+    Error Context: test-results\arrows-ink-arrow-gesture-c-2b225-e-page-layout-after-render-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-arrow-gesture-c-2b225-e-page-layout-after-render-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-arrow-gesture-c-2b225-e-page-layout-after-render-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  8) tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (after-render) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.line-draft')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.line-draft') with timeout 5000ms
+      - waiting for locator('.line-draft')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                            ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:44
+
+    Error Context: test-results\arrows-ink-arrow-gesture-c-bbc1a-e-page-layout-after-render-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-arrow-gesture-c-bbc1a-e-page-layout-after-render-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-arrow-gesture-c-bbc1a-e-page-layout-after-render-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  9) tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (same-turn) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                                                                                                                               ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:143
+
+    Error Context: test-results\arrows-ink-ink-gesture-can-a828f--the-page-layout-same-turn-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-ink-gesture-can-a828f--the-page-layout-same-turn-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-ink-gesture-can-a828f--the-page-layout-same-turn-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  10) tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (same-turn) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                                                                                                                               ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:143
+
+    Error Context: test-results\arrows-ink-ink-gesture-can-cda06--the-page-layout-same-turn-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-ink-gesture-can-cda06--the-page-layout-same-turn-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-ink-gesture-can-cda06--the-page-layout-same-turn-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  11) tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (same-turn) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                                                                                                                               ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:143
+
+    Error Context: test-results\arrows-ink-ink-gesture-can-8e0fd--the-page-layout-same-turn-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-ink-gesture-can-8e0fd--the-page-layout-same-turn-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-ink-gesture-can-8e0fd--the-page-layout-same-turn-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  12) tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (same-turn) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                                                                                                                               ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:143
+
+    Error Context: test-results\arrows-ink-ink-gesture-can-23914--the-page-layout-same-turn-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-ink-gesture-can-23914--the-page-layout-same-turn-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-ink-gesture-can-23914--the-page-layout-same-turn-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  13) tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (after-render) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.line-draft')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.line-draft') with timeout 5000ms
+      - waiting for locator('.line-draft')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                            ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:44
+
+    Error Context: test-results\arrows-ink-ink-gesture-can-e3d7f-e-page-layout-after-render-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-ink-gesture-can-e3d7f-e-page-layout-after-render-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-ink-gesture-can-e3d7f-e-page-layout-after-render-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  14) tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (after-render) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.line-draft')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.line-draft') with timeout 5000ms
+      - waiting for locator('.line-draft')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                            ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:44
+
+    Error Context: test-results\arrows-ink-ink-gesture-can-3c10e-e-page-layout-after-render-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-ink-gesture-can-3c10e-e-page-layout-after-render-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-ink-gesture-can-3c10e-e-page-layout-after-render-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  15) tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (after-render) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.line-draft')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.line-draft') with timeout 5000ms
+      - waiting for locator('.line-draft')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                            ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:44
+
+    Error Context: test-results\arrows-ink-ink-gesture-can-31152-e-page-layout-after-render-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-ink-gesture-can-31152-e-page-layout-after-render-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-ink-gesture-can-31152-e-page-layout-after-render-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16) tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (after-render) 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.line-draft')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.line-draft') with timeout 5000ms
+      - waiting for locator('.line-draft')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      104 |   if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
+      105 |  },{action,timing,x:box.x+200,y:box.y+210});
+    > 106 |  await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','false');
+          |                                            ^
+      107 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      108 | });
+      109 |
+        at D:\codex project\Enlumor\tests\e2e\arrows-ink.spec.ts:106:44
+
+    Error Context: test-results\arrows-ink-ink-gesture-can-e578d-e-page-layout-after-render-\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\arrows-ink-ink-gesture-can-e578d-e-page-layout-after-render-\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\arrows-ink-ink-gesture-can-e578d-e-page-layout-after-render-\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  16 failed
+    tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (same-turn) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (same-turn) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (same-turn) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (same-turn) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (after-render) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (after-render) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (after-render) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (after-render) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (same-turn) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (same-turn) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (same-turn) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (same-turn) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (after-render) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (after-render) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (after-render) 
+    tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (after-render) 

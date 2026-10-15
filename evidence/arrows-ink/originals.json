@@ -1,0 +1,37 @@
+[
+  {
+    "name": "src__shared__model.ts",
+    "target": "src/shared/model.ts",
+    "sha256": "a27ed9a0cc2bdd39ba57e71d1b6f239b81328b42ad309939830510d3feb2fa61"
+  },
+  {
+    "name": "src__shared__geometry.ts",
+    "target": "src/shared/geometry.ts",
+    "sha256": "02d0f1f3063fd778bd3fc06a0c69b1ca92d2becf9211f270ab8d47820105e337"
+  },
+  {
+    "name": "src__renderer__main.tsx",
+    "target": "src/renderer/main.tsx",
+    "sha256": "fd427606def25b2d9480ee6b2638a519efcd518d17e1d996ddc5bf0d92bcf7d0"
+  },
+  {
+    "name": "src__renderer__pdf-reader.ts",
+    "target": "src/renderer/pdf-reader.ts",
+    "sha256": "59f69ee8e2ec2f29e5358d7cd2e3dd35e76ba4ecd2d97500bbbbf618f8abc6c5"
+  },
+  {
+    "name": "src__renderer__line-tool.ts",
+    "target": "src/renderer/line-tool.ts",
+    "sha256": "0400931200733b2c5723eef8edd2dcfa19fceace9db79bad03c516a971f42476"
+  },
+  {
+    "name": "src__renderer__style.css",
+    "target": "src/renderer/style.css",
+    "sha256": "71a27b931d5bf45485ea00cfbf98f4b031de9d330dcc82538fea9a38e6a7eb8a"
+  },
+  {
+    "name": "python__export_pdf.py",
+    "target": "python/export_pdf.py",
+    "sha256": "95d7bee4b8b35e17ecb7e15a2035a0666fd790a32535110ddcb694e52870107e"
+  }
+]

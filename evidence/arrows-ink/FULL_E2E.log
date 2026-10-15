@@ -1,0 +1,58 @@
+(node:48220) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 42 tests using 1 worker
+
+(node:48548) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\arrows-ink.spec.ts:15:1 › arrow direction and Escape cancellation preserve native endpoints through rotation restart and standard export (2.3s)
+  ok  2 tests\e2e\arrows-ink.spec.ts:35:1 › ink keeps an ordered closed stroke through cancel undo restart and native export (2.9s)
+  ok  3 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 0 degrees and display scale 1 matches native SVG and PDF coordinates (1.5s)
+  ok  4 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 90 degrees and display scale 1.5 matches native SVG and PDF coordinates (2.1s)
+  ok  5 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 180 degrees and display scale 1 matches native SVG and PDF coordinates (1.6s)
+  ok  6 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 270 degrees and display scale 2 matches native SVG and PDF coordinates (1.6s)
+  ok  7 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 0 degrees and display scale 1 matches native SVG and PDF coordinates (2.1s)
+  ok  8 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 90 degrees and display scale 1.5 matches native SVG and PDF coordinates (1.5s)
+  ok  9 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 180 degrees and display scale 1 matches native SVG and PDF coordinates (1.5s)
+  ok 10 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 270 degrees and display scale 2 matches native SVG and PDF coordinates (1.6s)
+  ok 11 tests\e2e\arrows-ink.spec.ts:73:1 › long ink gesture bounds stored samples and preserves first and terminal coordinates (1.0s)
+  ok 12 tests\e2e\arrows-ink.spec.ts:84:44 › arrow draft uses selected color and cancels on rotation without saving (940ms)
+  ok 13 tests\e2e\arrows-ink.spec.ts:84:44 › ink draft uses selected color and cancels on rotation without saving (908ms)
+(node:48548) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 14 tests\e2e\reader.spec.ts:17:1 › packaged app opens and exports without external Python configuration (2.7s)
+  ok 15 tests\e2e\reader.spec.ts:33:1 › reading layout collapses panels and keeps selection tools near the text (982ms)
+  ok 16 tests\e2e\reader.spec.ts:64:1 › PDF directory resolves nested entries to source pages (1.6s)
+  ok 17 tests\e2e\reader.spec.ts:80:1 › PDF thumbnails render on demand, navigate and release offscreen canvases (1.4s)
+
+  ok 18 tests\e2e\reader.spec.ts:117:1 › PDF thumbnail jobs cancel on rapid scroll and document replacement (1.8s)
+  ok 19 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1 (1.9s)
+  ok 20 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1.5 (1.4s)
+  ok 21 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 2 (1.4s)
+  ok 22 tests\e2e\reader.spec.ts:163:1 › failed undo retries as undo and preserves the redo action (1.0s)
+  ok 23 tests\e2e\reader.spec.ts:183:1 › search markup does not duplicate selected text or quads (1.7s)
+  ok 24 tests\e2e\reader.spec.ts:197:1 › cross-page multiline selection is one undo step (1.1s)
+
+  ok 25 tests\e2e\reader.spec.ts:221:1 › cancel, corrupt, encrypted and image-only PDFs have explicit outcomes (1.8s)
+  ok 26 tests\e2e\reader.spec.ts:262:1 › offline reading, selected highlight, note, undo/redo, export and crash recovery (5.7s)
+  ok 27 tests\e2e\reader.spec.ts:300:1 › rejects replaced source and permits same-content relocation (1.9s)
+
+  ok 28 tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages (1.8s)
+  ok 29 tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source (2.3s)
+  ok 30 tests\e2e\reading-tools.spec.ts:47:1 › single-page cached overlays reflect offscreen deletion and undo when pages remount (1.8s)
+
+  ok 31 tests\e2e\strikeout-lines.spec.ts:15:1 › strikeout persists rotates and exports a native StrikeOut annotation (2.4s)
+  ok 32 tests\e2e\strikeout-lines.spec.ts:29:1 › line drag and Escape cancellation preserve native endpoints through rotation restart and standard export (2.4s)
+  ok 33 tests\e2e\strikeout-lines.spec.ts:48:1 › short line click stays armed and the next drag draws without extra toggles (904ms)
+  ok 34 tests\e2e\strikeout-lines.spec.ts:56:1 › armed line tool cancels and cannot draw while an export is pending (1.2s)
+  ok 35 tests\e2e\strikeout-lines.spec.ts:66:1 › failed annotation remains retryable and cannot be replaced by an armed line gesture (989ms)
+  ok 36 tests\e2e\strikeout-lines.spec.ts:76:1 › viewport rotation during a drag cancels it before a same-turn pointer release can persist wrong coordinates (1.4s)
+  ok 37 tests\e2e\strikeout-lines.spec.ts:85:57 › line creation at rotation 90 and display scale 1.5 retains native and exported endpoints (1.5s)
+  ok 38 tests\e2e\strikeout-lines.spec.ts:85:57 › line creation at rotation 270 and display scale 2 retains native and exported endpoints (1.6s)
+
+  ok 39 tests\e2e\workspace.spec.ts:18:1 › adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport (1.8s)
+  ok 40 tests\e2e\workspace.spec.ts:41:1 › document tabs isolate progress and undo, deduplicate opens, restore session and close without deleting data (3.2s)
+  ok 41 tests\e2e\workspace.spec.ts:63:1 › note drafts block tab navigation and close shortcuts until saved or cancelled (1.8s)
+  ok 42 tests\e2e\workspace.spec.ts:79:1 › failed PDF renderer opening restores prior document, undo history and persisted active session (2.2s)
+
+  42 passed (1.3m)

@@ -1,0 +1,21 @@
+
+> enlumor@0.1.7 test
+> vitest run
+
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+(node:45556) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:47024) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:40156) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:46912) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  10 passed (10)
+      Tests  31 passed (31)
+   Start at  23:32:48
+   Duration  279ms (tests 43%, import 26%, transform 24%, worker 8%)
+

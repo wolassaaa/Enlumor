@@ -1,0 +1,100 @@
+Enlumor 0.1.8 verification
+Branch: feat/arrows-ink. Baseline: 48ab539.
+Changed fields: Annotation.type adds arrow|ink; points directed native endpoints or ordered flat native path (4..8192 values, <=4096 point pairs); quads one padded bbox.
+Changed branches: shared page-scoped draw mode, bounded sampling/thinning, rAF draft refresh, native SVG rendering; cancel synchronously before layout geometry changes; standard Line ClosedArrow and Ink export.
+MODIFIED_FILE: D:\codex project\Enlumor\evidence\arrows-ink\MODIFIED_FILE.ts
+DIFF_FILE: D:\codex project\Enlumor\evidence\arrows-ink\DIFF.patch
+VERIFICATION: D:\codex project\Enlumor\evidence\arrows-ink\VERIFICATION.txt
+ROLLBACK: D:\codex project\Enlumor\evidence\arrows-ink\ROLLBACK.sh
+Original seven raw files/SHA256: originals.json and originals/. Git -text preserves bytes; staged originals verified.
+Snapshot is src/renderer/line-tool.ts. Live modified files stay changed, originals are preserved copies.
+
+BASELINE
+Command: npx playwright test arrows-ink.spec.ts
+Input: 0.1.7 implementation, first new arrow test only, fresh profile, synthetic 200-page text PDF.
+Literal result: 1 failed
+Exit status: 1
+Evidence: BASELINE.log. Missing draw-arrow control.
+Additional ink baseline: npx playwright test arrows-ink.spec.ts --grep 'ink keeps'
+Literal result: 1 failed; exit 1; INK_RED.log (missing draw-ink control).
+Arrow validator RED: 1 failed; Python RED: Ran 6 tests / FAILED (errors=4).
+Ink validator RED: 1 failed | 1 passed; Python RED: Ran 7 tests / FAILED (errors=4).
+Tests were added/expanded incrementally; baseline one feature test is not the final full suite.
+
+MODIFIED
+Command (PowerShell):
+$env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.8-win-x64/Enlumor.exe).Path
+$env:ENLUMOR_EVIDENCE_DIR='evidence/arrows-ink'
+npx playwright test arrows-ink.spec.ts
+Actual final invocation used executing-plans/scripts/task-done docs/plans/2026-10-15-arrows-ink.md 2 4886736 -- npx playwright test arrows-ink.spec.ts with those environment variables.
+Input: published 0.1.8 real EXE, fresh profiles, synthetic 200-page text PDF.
+Literal result: 29 passed (49.3s)
+Exit status: 0
+Evidence: FINAL_CHECK.log.
+Validated ordered closed ink, arrow terminal direction, native/SVG/PDF coordinates, all four rotations with scale1/1.5/2, source hash unchanged, cancel/undo/redo/restart, long stroke <=4096 samples preserving first and terminal points.
+Shared existing busy/pending-save guards remain covered by prior line regressions in full suite.
+New tools use one-shot commit, short clicks stay armed, Escape cancels; one stroke one annotation, no simulated pressure.
+
+ROLLBACK
+Command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' evidence/arrows-ink/ROLLBACK.sh
+Input: isolated .cache/arrows-ink-rollback/run-* source copy, seven originals restored after SHA256 verification, independent new Electron profile.
+Literal output: ROLLBACK: ARROW_BUTTON=0; INK_BUTTON=0; LINE_BUTTON=1; MODE_SELECTOR=1; LIVE_SOURCE_UNCHANGED=YES
+Exit status: 0
+Restored behavior/status: copy has prior line/strikeout/mode/tabs and no arrow/ink controls; live code remains modified and personal data untouched. No downgrade of databases containing new annotation types is claimed.
+Evidence: ROLLBACK.log.
+
+ROUND FOUR REVIEW
+Independent read-only branch review: 48ab539..ee57b8b. Important: live gestures survive geometry-changing layout actions, mixing old samples with moved-page coordinates.
+Command: npx playwright test arrows-ink.spec.ts --grep 'gesture cancels before'
+RED: 16 failed; exit 1 (REVIEW_RED.log).
+Fix: resetDrawing before persistLayout, both panel visibility toggles and right divider start; left divider already cancels.
+GREEN: 16 passed (20.2s); exit 0 (REVIEW_GREEN.log).
+Coverage: arrow/ink x same-turn/after-render release x left hide/right hide/spacing/right divider.
+Intermediate 12 pass/4 fail: assertions reached cancellation but default role locator excludes deliberately hidden sidebar tools; includeHidden checks state, no production workaround. REVIEW_INTERMEDIATE.log.
+One independent review, one author fix pass; no re-review.
+Minor deferred: SVG filled arrow triangle vs exported hollow ClosedArrow and differing proportions. Direction/endpoints are correct, not a pixel-identical appearance claim.
+Prior minors: page boundary buttons enabled/no-op; closed-tab focus; divider grip. Previous fixed-green draft now uses selected color through the shared drawing renderer.
+Rulings:
+1. Pressure, smoothing, grouping, persistent draw mode excluded from minimal batch; cost: repeated activation/no pressure-sensitive handwriting.
+2. Eraser/direct manipulation remain subsequent work; cost: deleting whole annotations rather than fine-grained path editing.
+3. Standalone Acrobat not exercised; Edge + standard structure used; cost: independent Acrobat-specific display differences remain unconfirmed.
+Review deferred packaged/performance judgment resolved by real release gate below.
+Sources: https://helpx.adobe.com/acrobat/desktop/share-and-review-documents/review-documents/add-shapes-drawings.html
+https://pymupdf.readthedocs.io/en/latest/annot.html
+https://pymupdf.readthedocs.io/en/latest/page.html
+
+FULL RELEASE
+Command (PowerShell): $env:ENLUMOR_EVIDENCE_DIR='evidence/arrows-ink'; npm run release:verified
+Input: 0.1.8 source, bundled PyMuPDF1.28.2 worker, staged actual Windows EXE, fresh profiles, text/scanned pressure samples.
+Exit status: 0.
+32 Vitest + 7 Python unittest + 58 actual staged Electron E2E = 97 passed.
+Literal outputs:
+58 passed (1.7m)
+PACKAGED_READER: PASS
+{"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
+EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.8 D:\codex project\Enlumor\release\Enlumor-0.1.8-win.zip SHA256=f51ed298be1a5b958dcc26148e10277e580570bbd04803e7849ccf356685a574
+latest.json updated to0.1.8 only after all gates. ZIP SHA256 independently rechecked:
+f51ed298be1a5b958dcc26148e10277e580570bbd04803e7849ccf356685a574
+Build emits known >500kB bundle-size and experimental SQLite warnings; gates passed, not a claim of warning-free tooling.
+No dependency changes or DB schema version bump.
+
+PERFORMANCE
+200 pages / approximately32MB / 1000 real highlight annotations; continuous reading with thumbnail rail.
+Text: extracted startup median363.8589ms; frame p95=13.900000000372529ms; save IPC p95=8.099999999627471ms; main/thumbnail canvases8/5.
+Scanned: extracted startup median490.9337999999998ms; frame p95=13.900000000372529ms; save IPC p95=7.2000000001862645ms; canvases8/3.
+Both measured zero >50ms long tasks.
+Passed budgets: startup1500ms; frame34ms; save20ms; main canvases30; thumbnails8.
+Raw: release.json / scanned.json. Synthetic benchmark does not establish performance of all real PDFs or1000 complex ink annotations.
+
+VISUAL / EXPORT
+App screenshots: arrow.png and ink.png.
+UI-generated PDF exports: arrow-export.pdf / ink-export.pdf; actual Edge screenshots edge-arrow.png / edge-ink.png inspected.
+Arrow geometry appears under original text pointing at terminal end; ink closed triangular stroke remains in page position.
+Python independently tests all source rotations, cropped origins, ordered vertices, retained original note, repeated export count and unchanged source hash.
+Ink adapter first exposed PyMuPDF's numeric-pair sequence contract; installed code inspected, Point converted to tuple, tests passed.
+
+NEXT REUSABLE PROMPT
+按 Enlumor docs/FEATURES.md 顺序先完成擦除：明确整条/局部擦除交互，先写红测试，再验证原生坐标、事务、撤销、重启与标准PDF导出。保留原PDF与个人工作区，维持两项一review，发布前运行完整release:verified与200页性能门禁，不提前扩展AI。

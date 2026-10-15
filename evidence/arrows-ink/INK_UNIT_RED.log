@@ -1,0 +1,33 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+ ❯ tests/arrows-ink.test.ts (2 tests | 1 failed) 5ms
+   × ink accepts an ordered closed path but rejects malformed or unbounded samples 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/arrows-ink.test.ts > ink accepts an ordered closed path but rejects malformed or unbounded samples
+AssertionError: expected [Function] to not throw an error but 'Error: INVALID_ANNOTATION: 批注类型、页码或坐标…' was thrown
+
+- Expected:
+undefined
+
++ Received:
+"Error: INVALID_ANNOTATION: 批注类型、页码或坐标无效"
+
+ ❯ tests/arrows-ink.test.ts:12:42
+     10| it('ink accepts an ordered closed path but rejects malformed or unboun…
+     11|  const a={...base,type:'ink',points:[10,20,80,90,10,20],quads:[[9,91,8…
+     12|  expect(()=>validateAnnotation(a,1)).not.toThrow();
+       |                                          ^
+     13|  for(const points of [undefined,[],[10,20,30],[10,20,10,20],[NaN,20,80…
+     14| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  23:34:18
+   Duration  139ms (transform 48%, import 27%, tests 16%, worker 9%)
+

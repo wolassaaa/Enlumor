@@ -1,0 +1,692 @@
+diff --git a/.gitattributes b/.gitattributes
+index 2d089c4..934468e 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -6,3 +6,5 @@
+ evidence/layout-tabs/original-* -text
+ evidence/reading-tools/originals/* -text
+ evidence/strikeout-lines/originals/* -text
++
++evidence/arrows-ink/originals/* -text
+diff --git a/docs/plans/2026-10-15-arrows-ink.md b/docs/plans/2026-10-15-arrows-ink.md
+new file mode 100644
+index 0000000..d60e2cd
+--- /dev/null
++++ b/docs/plans/2026-10-15-arrows-ink.md
+@@ -0,0 +1,27 @@
++# Enlumor arrows and ink implementation plan
++Spec: docs/FEATURES.md; user-approved reading/annotation roadmap and two-task review cadence.
++Baseline: 48ab539. Release target: 0.1.8.
++## Global Constraints
++Keep original PDF read-only, SQLite authoritative, native unrotated PDF coordinates.
++Reuse page-scoped gesture guards, atomic save, session undo/redo, export verification.
++One valid drag/stroke creates one annotation and exits to selection, matching existing line tool.
++Arrow points start to end; exported standard Line with ClosedArrow end. Ink stores ordered native path (one stroke per annotation) exported as standard Ink. No pressure simulation or smoothing that changes saved geometry.
++Cancel on Escape, scrolling, scale/rotation, document/layout change; clamp to starting page.
++Bound ink sampling to 4096 points, skip subpixel duplicate moves. Imperative SVG draft, no React per move.
++## Task 1: Arrow annotation
++Interfaces: Annotation.type arrow; points[4]; existing quads bbox; UI draw mode; export line endings.
++1. Add failing validator, Python crop/rotation export, real Electron arrow persistence/export tests.
++2. Implement arrow mode via existing line gesture, render head at terminal endpoint, persist/undo/recolor/delete through existing transaction.
++3. Verify whole unit/Python suites plus new arrow E2E.
++Expected: standard Line subtype3 ending (None,ClosedArrow); endpoints match native coordinates.
++## Task 2: Ink annotation
++Interfaces: Annotation.type ink; points flat ordered pairs length4..8192; shared page-scoped tool and export.
++1. Add failing ordered path/invalid geometry tests; Python Ink export; Electron cancel/persistence/undo/export tests.
++2. Implement bounded sampled native path, SVG polyline, standard Ink subtype15.
++3. Verify whole suites, two-task independent final review and fixes red-to-green, then release:verified.
++Expected: order preserved (including closed strokes); short clicks do not persist, one stroke one annotation.
++## Review Focus
++Check native endpoint/path transforms under four rotations, cropped origins and display scaling.
++Check same-turn cancel, pending-save guards, page clamp, secondary pointers, tool state and color.
++Check bounded sampling preserves terminal point, annotation shape/export consistency, old types and cached pages.
++Check no per-move React work, source PDF unchanged, old data retained; no DB schema bump.
+diff --git a/package-lock.json b/package-lock.json
+index 82957c9..1b4792b 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "enlumor",
+-  "version": "0.1.7",
++  "version": "0.1.8",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "enlumor",
+-      "version": "0.1.7",
++      "version": "0.1.8",
+       "dependencies": {
+         "pdfjs-dist": "6.4.299",
+         "react": "19.3.1",
+diff --git a/package.json b/package.json
+index 2432cf4..0524af4 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "enlumor",
+-  "version": "0.1.7",
++  "version": "0.1.8",
+   "private": true,
+   "type": "module",
+   "description": "Local-first PDF reading workspace",
+diff --git a/python/export_pdf.py b/python/export_pdf.py
+index 74bf8dc..c7c094d 100644
+--- a/python/export_pdf.py
++++ b/python/export_pdf.py
+@@ -45,7 +45,7 @@ def export_pdf(source, target, fingerprint, annotations):
+                 index = item['pageIndex']
+                 if type(index) is not int or not 0 <= index < len(doc):
+                     raise ValueError('INVALID_PAGE')
+-                if item['type'] not in ('highlight', 'underline', 'strikeout', 'line', 'note') or not item['quads']:
++                if item['type'] not in ('highlight', 'underline', 'strikeout', 'line', 'arrow', 'ink', 'note') or not item['quads']:
+                     raise ValueError('INVALID_ANNOTATION')
+                 page = doc[index]
+                 # PyMuPDF's rotated-page transformation_matrix loses crop translation.
+@@ -70,11 +70,20 @@ def export_pdf(source, target, fingerprint, annotations):
+                     annotation = page.add_underline_annot(quads)
+                 elif item['type'] == 'strikeout':
+                     annotation = page.add_strikeout_annot(quads)
+-                elif item['type'] == 'line':
++                elif item['type'] in ('line', 'arrow'):
+                     points = item.get('points')
+                     if not isinstance(points, list) or len(points) != 4 or any(type(n) not in (int,float) or not math.isfinite(n) for n in points) or math.hypot(points[2]-points[0],points[3]-points[1]) < 1e-6:
+                         raise ValueError('INVALID_GEOMETRY')
+                     annotation = page.add_line_annot(fitz.Point(points[0],points[1])*matrix, fitz.Point(points[2],points[3])*matrix)
++                    if item['type'] == 'arrow':
++                        annotation.set_line_ends(0,5)
++                        annotation.set_border(width=1.125)
++                elif item['type'] == 'ink':
++                    points=item.get('points')
++                    if not isinstance(points,list) or not 4 <= len(points) <= 8192 or len(points)%2 or any(type(n) not in (int,float) or not math.isfinite(n) for n in points) or not any(abs(n-points[i%2])>=1e-6 for i,n in enumerate(points) if i>=2):
++                        raise ValueError('INVALID_GEOMETRY')
++                    annotation=page.add_ink_annot([[tuple(fitz.Point(points[i],points[i+1])*matrix) for i in range(0,len(points),2)]])
++                    annotation.set_border(width=1.125)
+                 else:
+                     annotation = page.add_text_annot(quads[0].ul, item.get('note', ''))
+                 annotation.set_colors(stroke=rgb)
+diff --git a/src/renderer/drawing-svg.ts b/src/renderer/drawing-svg.ts
+new file mode 100644
+index 0000000..6990587
+--- /dev/null
++++ b/src/renderer/drawing-svg.ts
+@@ -0,0 +1,16 @@
++export type DrawingMode='line'|'arrow'|'ink';
++const ns='http://www.w3.org/2000/svg';
++// Imperative SVG is shared by the draft and saved geometry; points are viewport CSS coordinates.
++export function paintDrawing(svg:SVGSVGElement,mode:DrawingMode,points:number[],color:string,width:number) {
++ svg.replaceChildren();
++ const line=document.createElementNS(ns,mode==='ink'?'polyline':'line');
++ if(mode==='ink')line.setAttribute('points',points.reduce((s,n,i)=>s+(i%2?',':' ')+n,'').trim());
++ else for(const [key,value]of Object.entries({x1:points[0],y1:points[1],x2:points[2],y2:points[3]}))line.setAttribute(key,String(value));
++ line.setAttribute('stroke',color);line.setAttribute('stroke-width',String(width));line.setAttribute('fill','none');line.setAttribute('stroke-linecap','round');line.setAttribute('stroke-linejoin','round');svg.append(line);
++ if(mode==='arrow'){
++  const [x1,y1,x2,y2]=points,dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy);if(len<1e-6)return;
++  const size=9*width,head=document.createElementNS(ns,'polygon');
++  head.setAttribute('points',`${x2},${y2} ${x2-size*dx/len+size/3*dy/len},${y2-size*dy/len-size/3*dx/len} ${x2-size*dx/len-size/3*dy/len},${y2-size*dy/len+size/3*dx/len}`);
++  head.setAttribute('fill',color);svg.append(head);
++ }
++}
+diff --git a/src/renderer/line-tool.ts b/src/renderer/line-tool.ts
+index b160e28..00a0240 100644
+--- a/src/renderer/line-tool.ts
++++ b/src/renderer/line-tool.ts
+@@ -1,32 +1,47 @@
+ import { inverse, lineAnchor, transform } from '../shared/geometry';
+-export type DrawnLine = { pageIndex:number; points:number[]; quads:number[][] };
+-type PageView = {div:HTMLElement;viewport:{width:number;height:number;transform:number[]}};
++import { paintDrawing, type DrawingMode } from './drawing-svg';
++export type DrawnLine = { pageIndex:number; points:number[]; quads:number[][]; type:DrawingMode };
++type PageView = {div:HTMLElement;viewport:{width:number;height:number;scale:number;transform:number[]}};
+ export class LineTool {
+- private enabled=false;
+- private gesture?:{id:number;index:number;view:PageView;start:[number,number];svg:SVGSVGElement;line:SVGLineElement};
+- constructor(private container:HTMLElement, private page:(index:number)=>PageView|undefined, private ready:()=>boolean, private created:(line:DrawnLine)=>void) {
++ private mode:DrawingMode|null=null;
++ private frame=0;
++ private gesture?:{id:number;index:number;view:PageView;mode:DrawingMode;color:string;start:[number,number];samples:number[];svg:SVGSVGElement};
++ constructor(private container:HTMLElement, private page:(index:number)=>PageView|undefined, private ready:()=>boolean, private created:(line:DrawnLine)=>void,private color:()=>string=()=> '#5a7350') {
+   container.addEventListener('pointerdown',event=>{
+-   if(!this.enabled||!this.ready()||event.button!==0||this.gesture)return;
++   if(!this.mode||!this.ready()||event.button!==0||!event.isPrimary||this.gesture)return;
+    const target=(event.target as Element).closest<HTMLElement>('.page');if(!target)return;
+    const index=Number(target.dataset.pageNumber)-1,view=this.page(index);if(!view)return;
+    event.preventDefault();getSelection()?.removeAllRanges();
+-   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('line-draft');
+-   const line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('stroke','#5a7350');line.setAttribute('stroke-width','1.5');svg.append(line);target.append(svg);
+-   this.gesture={id:event.pointerId,index,view,start:this.point(event,view),svg,line};this.update(event);container.setPointerCapture(event.pointerId);
++   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('line-draft');target.append(svg);
++   const start=this.point(event,view);this.gesture={id:event.pointerId,index,view,mode:this.mode,color:this.color(),start,samples:[...start],svg};
++   this.preview();container.setPointerCapture(event.pointerId);
+   },{capture:true});
+-  container.addEventListener('pointermove',event=>{if(!this.ready()){this.cancel();return;}if(this.gesture?.id===event.pointerId)this.update(event);});
++  container.addEventListener('pointermove',event=>{
++   if(!this.ready()){this.cancel();return;}if(this.gesture?.id!==event.pointerId)return;
++   this.sample(this.point(event,this.gesture.view));if(!this.frame)this.frame=requestAnimationFrame(()=>{this.frame=0;this.preview();});
++  });
+   container.addEventListener('pointerup',event=>{
+    if(!this.ready()){this.cancel();return;}const g=this.gesture;if(!g||g.id!==event.pointerId)return;
+-   const end=this.point(event,g.view),valid=Math.hypot(end[0]-g.start[0],end[1]-g.start[1])>=3;
+-   const matrix=inverse(g.view.viewport.transform),points=[...transform(...g.start,matrix),...transform(...end,matrix)];
+-   this.cancel();if(valid){this.setEnabled(false);this.created({pageIndex:g.index,points,quads:[lineAnchor(points)]});}
++   const end=this.point(event,g.view);this.sample(end,true);
++   const screen=g.mode==='ink'?g.samples:[...g.start,...end];
++   const valid=g.mode==='ink'?screen.some((_,i)=>i%2===0&&Math.hypot(screen[i]-g.start[0],screen[i+1]-g.start[1])>=3):Math.hypot(end[0]-g.start[0],end[1]-g.start[1])>=3;
++   const matrix=inverse(g.view.viewport.transform),points=screen.flatMap((_,i)=>i%2===0?transform(screen[i],screen[i+1],matrix):[]);
++   this.cancel();if(valid){this.setMode(null);this.created({pageIndex:g.index,points,quads:[lineAnchor(points)],type:g.mode});}
+   });
+-  container.addEventListener('pointercancel',()=>this.cancel());
+-  container.addEventListener('lostpointercapture',()=>this.cancel());
++  container.addEventListener('pointercancel',event=>{if(this.gesture?.id===event.pointerId)this.cancel();});
++  container.addEventListener('lostpointercapture',event=>{if(this.gesture?.id===event.pointerId)this.cancel();});
+   container.addEventListener('scroll',()=>this.cancel(),{passive:true});
+  }
+- setEnabled(enabled:boolean){this.cancel();this.enabled=enabled;this.container.classList.toggle('drawing-line',enabled);}
+- cancel(){const g=this.gesture;this.gesture=undefined;if(g){g.svg.remove();if(this.container.hasPointerCapture(g.id))this.container.releasePointerCapture(g.id);}}
++ setMode(mode:DrawingMode|null){this.cancel();this.mode=mode;this.container.classList.toggle('drawing-line',mode!==null);}
++ setEnabled(enabled:boolean){this.setMode(enabled?'line':null);}
++ cancel(){cancelAnimationFrame(this.frame);this.frame=0;const g=this.gesture;this.gesture=undefined;if(g){g.svg.remove();if(this.container.hasPointerCapture(g.id))this.container.releasePointerCapture(g.id);}}
+  private point(event:PointerEvent,view:PageView):[number,number]{const rect=view.div.getBoundingClientRect();return[Math.max(0,Math.min(view.viewport.width,event.clientX-rect.left-view.div.clientLeft)),Math.max(0,Math.min(view.viewport.height,event.clientY-rect.top-view.div.clientTop))];}
+- private update(event:PointerEvent){const g=this.gesture!;const end=this.point(event,g.view);for(const [key,value]of Object.entries({x1:g.start[0],y1:g.start[1],x2:end[0],y2:end[1]}))g.line.setAttribute(key,String(value));}
++ private sample(point:[number,number],terminal=false){
++  const g=this.gesture!;if(g.mode!=='ink'){g.samples=[...g.start,...point];return;}
++  const p=g.samples,d=Math.hypot(point[0]-p[p.length-2],point[1]-p[p.length-1]);if(d===0||(!terminal&&d<.75))return;
++  // Thin only at the cap; retain ordering, first sample and the new terminal sample.
++  if(p.length>=8192)g.samples=p.filter((_,i)=>Math.floor(i/2)%2===0);
++  g.samples.push(...point);
++ }
++ private preview(){const g=this.gesture;if(!g)return;paintDrawing(g.svg,g.mode,g.mode==='ink'?g.samples:g.samples.length===4?g.samples:[...g.start,...g.start],g.color,1.125*g.view.viewport.scale);}
+ }
+diff --git a/src/renderer/main.tsx b/src/renderer/main.tsx
+index 7fbea96..56d1614 100644
+--- a/src/renderer/main.tsx
++++ b/src/renderer/main.tsx
+@@ -23,7 +23,7 @@ function App() {
+   const [layout, setLayout] = useState<LayoutPreferences>(defaultLayout), [layoutOpen, setLayoutOpen] = useState(false), [workspaceWidth, setWorkspaceWidth] = useState(window.innerWidth);
+   const layoutRef = useRef(layout), layoutFlight = useRef<Promise<void> | null>(null), [layoutError, setLayoutError] = useState(false);
+   function persistLayout(next: LayoutPreferences) {
+-    setLayout(next); layoutRef.current = next; setParts([]);
++    resetDrawing();setLayout(next); layoutRef.current = next; setParts([]);
+     const job = (layoutFlight.current || Promise.resolve()).catch(() => {}).then(async () => { unwrap(await window.enlumor.saveLayout(next)); setLayoutError(false); });
+     layoutFlight.current = job;
+     void job.catch(reason => { setLayoutError(true); fail(reason); });
+@@ -33,8 +33,8 @@ function App() {
+   const [marks, setMarks] = useState<Annotation[]>([]), [parts, setParts] = useState<SelectionPart[]>([]);
+   const [status, setStatus] = useState('本地工作区就绪'), [error, setError] = useState(''), [notice, setNotice] = useState('');
+   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
+-  const [lineActive,setLineActive]=useState(false);
+-  function resetDrawing(){reader.current?.setLineEnabled(false);setLineActive(false);}
++  const [drawMode,setDrawMode]=useState<'line'|'arrow'|'ink'|null>(null);
++  function resetDrawing(){reader.current?.setDrawingTool(null);setDrawMode(null);}
+   const [readingLayout,setReadingLayout]=useState<'continuous'|'single'>('continuous');
+   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
+   const colorRef=useRef(color);colorRef.current=color;
+@@ -68,9 +68,9 @@ function App() {
+     }, selected => {
+       setParts(old => !selected.length && !old.length ? old : selected);
+     }, setNotice, setOutline, line=>{
+-      setLineActive(false);const opened=activeDocument.current;if(!opened)return;
+-      void commit({documentId:opened.id,upserts:[{...line,id:crypto.randomUUID(),documentId:opened.id,fingerprint:opened.fingerprint,type:'line',author:'user',color:colorRef.current,quote:'',note:''}],deletes:[]});
+-    }, ()=>!locked.current&&!pending.current&&!noteOpen.current);
++      setDrawMode(null);const opened=activeDocument.current;if(!opened)return;
++      void commit({documentId:opened.id,upserts:[{...line,id:crypto.randomUUID(),documentId:opened.id,fingerprint:opened.fingerprint,type:line.type,author:'user',color:colorRef.current,quote:'',note:''}],deletes:[]});
++    }, ()=>!locked.current&&!pending.current&&!noteOpen.current,()=>colorRef.current);
+     const off = window.enlumor.onFlush(flush);
+     void (async () => {
+       try { const savedLayout = unwrap(await window.enlumor.getLayout()); setLayout(savedLayout); layoutRef.current = savedLayout; const list = unwrap(await window.enlumor.listDocuments()); setRecent(list);
+@@ -208,7 +208,7 @@ function App() {
+   const commitPanel = (side:'left'|'right', value:number) => persistLayout({...layoutRef.current,[side]:value});
+   return <div className="app" style={{'--ui-spacing':layout.spacing+'px'} as CSSProperties}>
+     <header className="topbar"><div className="wordmark"><span className="brand-dot">e</span>enlumor</div><span className="edition">YOUR QUIET READING ROOM</span>
+-      <div className="panel-toggles"><button className={libraryOpen ? 'is-active' : ''} aria-label={libraryOpen ? '收起文档栏' : '展开文档栏'} aria-expanded={libraryOpen} onClick={() => { setParts([]); setLibraryOpen(!libraryOpen); }}><Glyph name="library"/></button><button className={notesOpen ? 'is-active' : ''} aria-label={notesOpen ? '收起批注栏' : '展开批注栏'} aria-expanded={notesOpen} onClick={() => { setParts([]); setNotesOpen(!notesOpen); }}><Glyph name="notes"/></button></div>
++      <div className="panel-toggles"><button className={libraryOpen ? 'is-active' : ''} aria-label={libraryOpen ? '收起文档栏' : '展开文档栏'} aria-expanded={libraryOpen} onClick={() => { resetDrawing();setParts([]); setLibraryOpen(!libraryOpen); }}><Glyph name="library"/></button><button className={notesOpen ? 'is-active' : ''} aria-label={notesOpen ? '收起批注栏' : '展开批注栏'} aria-expanded={notesOpen} onClick={() => { resetDrawing();setParts([]); setNotesOpen(!notesOpen); }}><Glyph name="notes"/></button></div>
+       <button aria-label="布局设置" aria-expanded={layoutOpen} onClick={() => setLayoutOpen(!layoutOpen)}>布局</button><div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}><Glyph name="open"/>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <Glyph name="export"/></button></div>
+     </header>
+     {layoutOpen && <div className="layout-popover" role="region" aria-label="布局设置"><label>阅读间距 <select aria-label="阅读间距" value={layout.spacing} onChange={event=>persistLayout({...layoutRef.current,spacing:Number(event.target.value) as 12|16|24})}><option value="12">紧凑</option><option value="16">标准</option><option value="24">宽松</option></select></label><p>拖动侧栏边缘调宽；方向键微调，双击恢复宽度。</p><button onClick={()=>persistLayout(defaultLayout)}>恢复默认布局</button><button aria-label="关闭布局设置" onClick={()=>setLayoutOpen(false)}>完成</button></div>}
+@@ -242,12 +242,12 @@ function App() {
+         </div>
+         <footer className="statusbar"><span role="status">{status}</span><span>{doc ? `${marks.length} 条批注` : 'ENLUMOR / FOUNDATION'}</span></footer>
+       </main>
+-      {notesOpen && <PanelDivider side="right" size={panels.right} max={Math.min(460,workspaceWidth-400-(libraryOpen?panels.left+12:6))} start={()=>setParts([])} preview={value=>previewPanel('right',value)} commit={value=>commitPanel('right',value)} reset={()=>persistLayout({...layoutRef.current,right:282})}/>}
++      {notesOpen && <PanelDivider side="right" size={panels.right} max={Math.min(460,workspaceWidth-400-(libraryOpen?panels.left+12:6))} start={()=>{resetDrawing();setParts([]);}} preview={value=>previewPanel('right',value)} commit={value=>commitPanel('right',value)} reset={()=>persistLayout({...layoutRef.current,right:282})}/>}
+       <aside className="annotations" hidden={!notesOpen}><div className="section-label">MARGINALIA / 页边思考</div><h2>批注 <span>{marks.length.toString().padStart(2, '0')}</span></h2>
+-        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length||busy||!!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('strikeout')}>删除线选区</button><button aria-label="绘制直线" aria-pressed={lineActive} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);reader.current?.setLineEnabled(!lineActive);setLineActive(!lineActive);}}>直线</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => { setEditing(null); setNote(''); }}>添加便签</button></div>
++        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length||busy||!!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('strikeout')}>删除线选区</button><button aria-label="绘制直线" aria-pressed={drawMode==='line'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='line'?null:'line';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>直线</button><button aria-label="绘制箭头" aria-pressed={drawMode==='arrow'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='arrow'?null:'arrow';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>箭头</button><button aria-label="绘制画笔" aria-pressed={drawMode==='ink'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='ink'?null:'ink';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>画笔</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => { setEditing(null); setNote(''); }}>添加便签</button></div>
+         <div className="history"><button disabled={!history.undo.length || busy || !!pending.current} onClick={() => void commit(history.undo.at(-1)!, 'undo')}>撤销</button><button disabled={!history.redo.length || busy || !!pending.current} onClick={() => void commit(history.redo.at(-1)!, 'redo')}>重做</button></div>
+         {parts.length > 0 && <div className="selection-preview">已选 {parts.length} 页原文<p>{parts.map(part => part.quote).join(' ').slice(0, 180)}</p></div>}
+-        <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':mark.type==='strikeout'?'删除线':mark.type==='line'?'直线':'高亮'}</span><p>{mark.quote || (mark.type==='line'?'页面直线':'页面便签')}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}<div className="card-actions"><button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current} onClick={() => { setEditing(mark); setNote(mark.note); }}>编辑</button>}<button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
++        <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':mark.type==='strikeout'?'删除线':mark.type==='ink'?'画笔':mark.type==='arrow'?'箭头':mark.type==='line'?'直线':'高亮'}</span><p>{mark.quote || (mark.type==='ink'?'页面笔迹':mark.type==='arrow'?'页面箭头':mark.type==='line'?'页面直线':'页面便签')}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}<div className="card-actions"><button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current} onClick={() => { setEditing(mark); setNote(mark.note); }}>编辑</button>}<button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
+         {!marks.length && <div className="annotation-empty"><span>〰</span><p>选中一段原文<br/>留下你的第一个标记。</p><small>批注自动保存到本地工作区</small></div>}
+       </aside>
+     </div>
+diff --git a/src/renderer/pdf-reader.ts b/src/renderer/pdf-reader.ts
+index cc60dcf..47f7c7b 100644
+--- a/src/renderer/pdf-reader.ts
++++ b/src/renderer/pdf-reader.ts
+@@ -1,3 +1,4 @@
++import { paintDrawing, type DrawingMode } from './drawing-svg';
+ import { LineTool, type DrawnLine } from './line-tool';
+ import { drawPageThumbnail } from './thumbnail-render';
+ import { getDocument, GlobalWorkerOptions, type PDFDocumentLoadingTask } from 'pdfjs-dist';
+@@ -23,12 +24,12 @@ export class PdfReader {
+   private ready = false;
+   private lineTool: LineTool;
+   private outlineTargets = new Map<string, string | any[]>();
+-  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true) {
++  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true, drawingColor:()=>string=()=> '#5a7350') {
+     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
+     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
+     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
+     this.link.setViewer(this.viewer);
+-    this.lineTool=new LineTool(container,index=>this.viewer.getPageView(index),()=>this.ready&&canDraw(),onLine);
++    this.lineTool=new LineTool(container,index=>this.viewer.getPageView(index),()=>this.ready&&canDraw(),onLine,drawingColor);
+     this.bus.on('pagechanging', ({pageNumber}:{pageNumber:number}) => {
+       const generation=this.generation;
+       requestAnimationFrame(()=>{if(generation===this.generation&&this.ready)this.paint(pageNumber-1);});
+@@ -115,6 +116,7 @@ export class PdfReader {
+     return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
+   }
+   setMarks(marks: Annotation[]) { this.marks = marks; this.paint(); }
++  setDrawingTool(mode:DrawingMode|null) {this.lineTool.setMode(mode);}
+   setLineEnabled(enabled:boolean) { this.lineTool.setEnabled(enabled); }
+   clear() {
+     this.lineTool.setEnabled(false);
+@@ -185,13 +187,15 @@ export class PdfReader {
+       for (const mark of [...this.marks, ...(this.flash ? [this.flash] : [])].filter(a => a.pageIndex === index)) {
+         for (const quad of mark.quads) {
+           const [left, top, right, bottom] = quadToScreen(quad, view.viewport.transform);
+-          if(['underline','strikeout','line'].includes(mark.type) && mark!==this.flash) {
+-            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add(mark.type==='line'?'drawn-line':mark.type==='strikeout'?'strikeout-line':'underline-line');
+-            const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+-            const endpoints=mark.type==='line'?mark.points!:mark.type==='strikeout'?[quad[0],(quad[1]+quad[5])/2,quad[2],(quad[3]+quad[7])/2]:[quad[4],quad[5],quad[6],quad[7]];
+-            const [x1,y1]=transform(endpoints[0],endpoints[1],view.viewport.transform),[x2,y2]=transform(endpoints[2],endpoints[3],view.viewport.transform);
+-            for(const [key,value] of Object.entries({x1,y1,x2,y2}))line.setAttribute(key,String(value));
+-            line.setAttribute('stroke',mark.color);line.setAttribute('stroke-width','1.5');svg.append(line);overlay.append(svg);continue;
++          if(['line','arrow','ink'].includes(mark.type)&&mark!==this.flash) {
++            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('drawn-'+mark.type);
++            const points=mark.points!.flatMap((_,i,p)=>i%2===0?transform(p[i],p[i+1],view.viewport.transform):[]);
++            paintDrawing(svg,mark.type as DrawingMode,points,mark.color,(mark.type==='line'?1.5/view.viewport.scale:1.125)*view.viewport.scale);overlay.append(svg);continue;
++          }
++          if(['underline','strikeout'].includes(mark.type)&&mark!==this.flash){
++            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add(mark.type==='strikeout'?'strikeout-line':'underline-line');
++            const p=mark.type==='strikeout'?[quad[0],(quad[1]+quad[5])/2,quad[2],(quad[3]+quad[7])/2]:[quad[4],quad[5],quad[6],quad[7]];
++            paintDrawing(svg,'line',[...transform(p[0],p[1],view.viewport.transform),...transform(p[2],p[3],view.viewport.transform)],mark.color,1.5);overlay.append(svg);continue;
+           }
+           const block = document.createElement('div'); block.className = mark === this.flash ? 'mark flash' : `mark ${mark.type}`;
+           Object.assign(block.style, { left: `${left}px`, top: `${top}px`, width: `${right - left}px`, height: `${bottom - top}px`, backgroundColor: mark.color });
+diff --git a/src/renderer/style.css b/src/renderer/style.css
+index fa8d67b..ef00e98 100644
+--- a/src/renderer/style.css
++++ b/src/renderer/style.css
+@@ -57,3 +57,8 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
+ .line-draft{z-index:5}.drawing-line,.drawing-line .textLayer,.drawing-line .textLayer span{cursor:crosshair!important}
+ .annotation-tools button[aria-pressed="true"]{background:#d5dfc8;border-color:#81946c}
+ .selection-popover{flex-wrap:wrap}
++
++.drawn-arrow{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;opacity:.95}
++
++.drawn-ink{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;opacity:.95}
++#viewerContainer.drawing-line{touch-action:none}
+diff --git a/src/shared/geometry.ts b/src/shared/geometry.ts
+index f5f7f99..6bb23ce 100644
+--- a/src/shared/geometry.ts
++++ b/src/shared/geometry.ts
+@@ -20,20 +20,25 @@ export function quadToScreen(q: Quad, m: number[]): [number, number, number, num
+ }
+ export function validateAnnotation(value: unknown, pageCount: number): asserts value is Annotation {
+   const a = value as Annotation;
+-  if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !/^[\w-]{1,100}$/.test(a.id) || typeof a.documentId !== 'string' || typeof a.fingerprint !== 'string' || !['highlight', 'underline', 'strikeout', 'line', 'note'].includes(a.type) || a.author !== 'user' ||
++  if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !/^[\w-]{1,100}$/.test(a.id) || typeof a.documentId !== 'string' || typeof a.fingerprint !== 'string' || !['highlight', 'underline', 'strikeout', 'line', 'arrow', 'ink', 'note'].includes(a.type) || a.author !== 'user' ||
+       !Number.isInteger(a.pageIndex) || a.pageIndex < 0 || a.pageIndex >= pageCount ||
+       typeof a.quote !== 'string' || a.quote.length > 100000 || typeof a.note !== 'string' || a.note.length > 100000 ||
+       !/^#[0-9a-f]{6}$/i.test(a.color) || !Array.isArray(a.quads) || !a.quads.length || a.quads.length > 10000 ||
+       a.quads.some(q => !Array.isArray(q) || q.length !== 8 || q.some(v => typeof v !== 'number' || !Number.isFinite(v) || Math.abs(v) > 1e7) || q[2] <= q[0] || q[1] <= q[5])) {
+     throw new Error('INVALID_ANNOTATION: 批注类型、页码或坐标无效');
+   }
+-  if(a.type==='line') {
++  if((a.type==='line'||a.type==='arrow')) {
+     const p=a.points,q=a.quads[0];
+     if(!Array.isArray(p)||p.length!==4||p.some(n=>typeof n!=='number'||!Number.isFinite(n)||Math.abs(n)>1e7)||a.quads.length!==1||Math.hypot(p[2]-p[0],p[3]-p[1])<1e-6||[0,2].some(i=>p[i]<q[0]||p[i]>q[2]||p[i+1]<q[5]||p[i+1]>q[1]))throw new Error('INVALID_ANNOTATION: 直线端点无效');
+   }
++  if(a.type==='ink') {
++    const p=a.points,q=a.quads[0];
++    if(!Array.isArray(p)||p.length<4||p.length>8192||p.length%2||p.some(n=>typeof n!=='number'||!Number.isFinite(n)||Math.abs(n)>1e7)||a.quads.length!==1||!p.some((n,i)=>i>=2&&Math.abs(n-p[i%2])>=1e-6)||p.some((n,i)=>i%2?n<q[5]||n>q[1]:n<q[0]||n>q[2]))throw new Error('INVALID_ANNOTATION: 画笔路径无效');
++  }
+ }
+ 
+ export function lineAnchor(points: number[]): Quad {
+-  const [x1,y1,x2,y2]=points;const l=Math.min(x1,x2)-.25,r=Math.max(x1,x2)+.25,t=Math.max(y1,y2)+.25,b=Math.min(y1,y2)-.25;
++  const xs=points.filter((_,i)=>i%2===0),ys=points.filter((_,i)=>i%2===1);
++  const l=Math.min(...xs)-.25,r=Math.max(...xs)+.25,t=Math.max(...ys)+.25,b=Math.min(...ys)-.25;
+   return [l,t,r,t,l,b,r,b];
+ }
+diff --git a/src/shared/model.ts b/src/shared/model.ts
+index d72401c..ed96fa6 100644
+--- a/src/shared/model.ts
++++ b/src/shared/model.ts
+@@ -1,6 +1,6 @@
+ export type Quad = number[];
+ export type Annotation = {
+-  id: string; documentId: string; fingerprint: string; type: 'highlight' | 'underline' | 'strikeout' | 'line' | 'note';
++  id: string; documentId: string; fingerprint: string; type: 'highlight' | 'underline' | 'strikeout' | 'line' | 'arrow' | 'ink' | 'note';
+   pageIndex: number; quote: string; quads: Quad[]; points?: number[]; color: string; note: string; author: 'user';
+ };
+ export type AnnotationChange = { documentId: string; upserts: Annotation[]; deletes: string[] };
+diff --git a/tests/arrows-ink.test.ts b/tests/arrows-ink.test.ts
+new file mode 100644
+index 0000000..a9ee2b9
+--- /dev/null
++++ b/tests/arrows-ink.test.ts
+@@ -0,0 +1,14 @@
++import { it, expect } from 'vitest';
++import { validateAnnotation, lineAnchor } from '../src/shared/geometry';
++const base={id:'draw-test',documentId:'d',fingerprint:'h',pageIndex:0,author:'user',color:'#335588',quote:'',note:''};
++it('arrow keeps directed native endpoints and rejects coincident or missing points',()=>{
++ const a={...base,type:'arrow',points:[80,30,10,90],quads:[lineAnchor([80,30,10,90])]};
++ expect(()=>validateAnnotation(a,1)).not.toThrow();
++ for(const points of [undefined,[10,20,10,20],[NaN,20,80,30],[1,2,3]])expect(()=>validateAnnotation({...a,points},1)).toThrow();
++});
++
++it('ink accepts an ordered closed path but rejects malformed or unbounded samples',()=>{
++ const a={...base,type:'ink',points:[10,20,80,90,10,20],quads:[[9,91,81,91,9,19,81,19]]};
++ expect(()=>validateAnnotation(a,1)).not.toThrow();
++ for(const points of [undefined,[],[10,20,30],[10,20,10,20],[NaN,20,80,30],[10,20,90,100],Array(8194).fill(20)])expect(()=>validateAnnotation({...a,points},1)).toThrow();
++});
+diff --git a/tests/e2e/arrows-ink.spec.ts b/tests/e2e/arrows-ink.spec.ts
+new file mode 100644
+index 0000000..5722fa2
+--- /dev/null
++++ b/tests/e2e/arrows-ink.spec.ts
+@@ -0,0 +1,108 @@
++import { test, expect, _electron as electron } from '@playwright/test';
++import { mkdtempSync, readFileSync, copyFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { execFileSync } from 'node:child_process';
++import path from 'node:path';
++const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-arrows-ink-')),python=path.join(root,'.venv/Scripts/python.exe');
++const source=path.join(folder,'reading tools.pdf'),output=path.join(folder,'drawing.pdf');
++execFileSync(python,['-c',`import pymupdf as f;d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence page '+str(i+1),fontsize=16);p.insert_text((48,105),'Second line of original evidence.',fontsize=12)\nd.save(${JSON.stringify(source)})`]);
++async function launch(profile:string,scale=1){
++ const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+profile,'--force-device-scale-factor='+scale],env:{...process.env,ENLUMOR_PYTHON:python}});
++ await app.evaluate(({dialog},files)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[files.source]});dialog.showSaveDialog=async()=>({canceled:false,filePath:files.output});},{source,output});return app;
++}
++async function select(app:Awaited<ReturnType<typeof launch>>){const page=await app.firstWindow();await page.locator('.page[data-page-number="1"] .textLayer span').first().evaluate(item=>{const range=document.createRange();range.selectNodeContents(item);const selection=getSelection()!;selection.removeAllRanges();selection.addRange(range);document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});}
++
++test('arrow direction and Escape cancellation preserve native endpoints through rotation restart and standard export',async()=>{
++ const profile=path.join(folder,'arrow');let app=await launch(profile);
++ try{
++ let page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;
++ await page.getByRole('button',{name:'绘制箭头',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+230,box.y+210);await page.keyboard.press('Escape');await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ await page.getByRole('button',{name:'绘制箭头',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+230,box.y+210,{steps:8});await page.mouse.up();
++ await expect(page.locator('.annotation-source')).toContainText('箭头');await expect(page.locator('.drawn-arrow')).toHaveCount(1);
++ const stored=await page.evaluate(async()=>{const docs=await window.enlumor.listDocuments();if(!docs.ok)throw Error('docs');const marks=await window.enlumor.getAnnotations(docs.value[0].id);if(!marks.ok)throw Error('marks');return marks.value[0];});
++ expect(stored.type).toBe('arrow');expect(stored.points).toHaveLength(4);
++ for(let i=0;i<4;i++){await page.getByRole('button',{name:'旋转页面',exact:true}).click();await expect(page.locator('.drawn-arrow')).toHaveCount(1);}
++ await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await page.getByRole('button',{name:'重做',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
++ await app.close();app=await launch(profile);page=await app.firstWindow();await expect(page.locator('.drawn-arrow')).toHaveCount(1);
++ await page.getByRole('button',{name:'导出批注 PDF',exact:true}).click();await expect(page.getByRole('status')).toContainText('导出完成');
++ expect(execFileSync(python,['-c',`import pymupdf as f;d=f.open(${JSON.stringify(output)});print([(a.type[0],a.line_ends) for a in d[0].annots()])`],{encoding:'utf8'}).trim()).toBe('[(3, (0, 5))]');
++ copyFileSync(output,path.join(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/arrows-ink','arrow-export.pdf'));await page.screenshot({path:(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/arrows-ink')+'/arrow.png'});
++ }finally{await app.close();}
++});
++
++
++test('ink keeps an ordered closed stroke through cancel undo restart and native export',async()=>{
++ const profile=path.join(folder,'ink');let app=await launch(profile);const original=readFileSync(source);
++ try{
++ let page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ let box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;const tool=page.getByRole('button',{name:'绘制画笔',exact:true});
++ await tool.click({timeout:3000});await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+180,box.y+200);await page.keyboard.press('Escape');await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ await tool.click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+180,box.y+200,{steps:5});await page.mouse.move(box.x+100,box.y+250,{steps:5});await page.mouse.move(box.x+80,box.y+160,{steps:5});await page.mouse.up();
++ await expect(page.locator('.drawn-ink polyline')).toHaveCount(1);await expect(page.locator('.annotation-source')).toContainText('画笔');await expect(tool).toHaveAttribute('aria-pressed','false');
++ const stored=await page.evaluate(async()=>{const d=await window.enlumor.listDocuments();if(!d.ok)throw Error('docs');const a=await window.enlumor.getAnnotations(d.value[0].id);if(!a.ok)throw Error('marks');return a.value[0];});
++ expect(stored.type).toBe('ink');expect(stored.points!.length).toBeGreaterThan(6);expect(stored.points!.slice(-2)).toEqual(stored.points!.slice(0,2));
++ await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(0);await page.getByRole('button',{name:'重做',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(1);
++ for(let i=0;i<4;i++){await page.getByRole('button',{name:'旋转页面',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(1);}
++ await app.close();app=await launch(profile);page=await app.firstWindow();await expect(page.locator('.drawn-ink polyline')).toHaveCount(1);
++ await page.getByRole('button',{name:'导出批注 PDF',exact:true}).click();await expect(page.getByRole('status')).toContainText('导出完成');
++ const vertices=JSON.parse(execFileSync(python,['-c',`import pymupdf as f,json;d=f.open(${JSON.stringify(output)});p=d[0];a=next(p.annots());print(json.dumps({'type':a.type[0],'points':a.vertices[0]}))`],{encoding:'utf8'}));
++ expect(vertices.type).toBe(15);vertices.points.flatMap((p:number[])=>[p[0],640-p[1]]).forEach((n:number,i:number)=>expect(n).toBeCloseTo(stored.points![i],1));
++ expect(readFileSync(source).equals(original)).toBe(true);copyFileSync(output,path.join(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/arrows-ink','ink-export.pdf'));await page.screenshot({path:(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/arrows-ink')+'/ink.png'});
++ }finally{await app.close();}
++});
++
++for(const mode of ['arrow','ink'] as const)for(const [rotation,scale]of [[0,1],[90,1.5],[180,1],[270,2]]as const)test(`${mode} creation at ${rotation} degrees and display scale ${scale} matches native SVG and PDF coordinates`,async()=>{
++ const app=await launch(path.join(folder,mode+'-rot-'+rotation),scale);
++ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();for(let i=0;i<rotation/90;i++)await page.getByRole('button',{name:'旋转页面',exact:true}).click();
++ const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;
++ await page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+170,box.y+200);await page.mouse.move(box.x+230,box.y+210);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
++ const stored=await page.evaluate(async()=>{const d=await window.enlumor.listDocuments();if(!d.ok)throw Error('docs');const a=await window.enlumor.getAnnotations(d.value[0].id);if(!a.ok)throw Error('marks');return a.value[0];});
++ const expectedScreen=mode==='arrow'?[80,160,230,210]:[80,160,170,200,230,210],r=96/72;
++ const native=(x:number,y:number)=>rotation===0?[x/r,640-y/r]:rotation===90?[y/r,x/r]:rotation===180?[480-x/r,y/r]:[480-y/r,640-x/r];
++ const expected=expectedScreen.flatMap((n,i,p)=>i%2===0?native(n,p[i+1]):[]);expect(stored.points).toHaveLength(expected.length);stored.points!.forEach((n,i)=>expect(Math.abs(n-expected[i])).toBeLessThan(.75));
++ const svg=page.locator('.drawn-'+mode);const displayed=mode==='arrow'?await svg.locator('line').evaluate(l=>['x1','y1','x2','y2'].map(k=>Number(l.getAttribute(k)))):await svg.locator('polyline').evaluate(l=>(l.getAttribute('points')||'').trim().split(/[ ,]+/).map(Number));
++ displayed.forEach((n,i)=>expect(Math.abs(n-expectedScreen[i])).toBeLessThan(1));
++ if(mode==='arrow'){const head=await svg.locator('polygon').getAttribute('points');expect(head).toBeTruthy();const tip=head!.split(' ')[0].split(',').map(Number);expect(tip[0]).toBeCloseTo(displayed[2]);expect(tip[1]).toBeCloseTo(displayed[3]);}
++ await page.getByRole('button',{name:'导出批注 PDF',exact:true}).click();await expect(page.getByRole('status')).toContainText('导出完成');
++ const exported=JSON.parse(execFileSync(python,['-c',`import pymupdf as f,json;d=f.open(${JSON.stringify(output)});p=d[0];a=next(p.annots());print(json.dumps(a.vertices if a.type[0]==3 else a.vertices[0]))`],{encoding:'utf8'}));
++ exported.flatMap((p:number[])=>[p[0],640-p[1]]).forEach((n:number,i:number)=>expect(n).toBeCloseTo(stored.points![i],1));
++ }finally{await app.close();}
++});
++
++test('long ink gesture bounds stored samples and preserves first and terminal coordinates',async()=>{
++ const app=await launch(path.join(folder,'ink-cap'));
++ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;
++ await page.getByRole('button',{name:'绘制画笔',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();
++ await page.evaluate(({x,y})=>{const c=document.querySelector('#viewerContainer')!;for(let i=0;i<9000;i++)c.dispatchEvent(new PointerEvent('pointermove',{pointerId:1,isPrimary:true,clientX:x+80+(i%2)*100,clientY:y+160+(i%2)*40,bubbles:true}));},{x:box.x,y:box.y});
++ await page.mouse.move(box.x+230,box.y+250);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
++ const p=await page.evaluate(async()=>{const d=await window.enlumor.listDocuments();if(!d.ok)throw Error('docs');const a=await window.enlumor.getAnnotations(d.value[0].id);if(!a.ok)throw Error('marks');return a.value[0].points!;});
++ expect(p.length).toBeLessThanOrEqual(8192);expect(p[0]).toBeCloseTo(60,0);expect(p[1]).toBeCloseTo(520,0);expect(p.at(-2)).toBeCloseTo(172.5,0);expect(p.at(-1)).toBeCloseTo(452.5,0);
++ }finally{await app.close();}
++});
++
++for(const mode of ['arrow','ink'] as const)test(`${mode} draft uses selected color and cancels on rotation without saving`,async()=>{
++ const app=await launch(path.join(folder,mode+'-draft'));
++ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();await page.getByLabel('批注颜色',{exact:true}).fill('#335588');const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;
++ await page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+200,box.y+210);await expect(page.locator('.line-draft '+(mode==='ink'?'polyline':'line'))).toHaveAttribute('stroke','#335588');
++ if(mode==='arrow')await expect(page.locator('.line-draft polygon')).toHaveCount(1);
++ await page.evaluate(({x,y})=>{(document.querySelector('[aria-label="旋转页面"]') as HTMLButtonElement).click();document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));},{x:box.x+200,y:box.y+210});
++ await expect(page.locator('.line-draft')).toHaveCount(0);await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ }finally{await (await app.firstWindow()).mouse.up();await app.close();}
++});
++
++for(const mode of ['arrow','ink'] as const)for(const timing of ['same-turn','after-render'] as const)for(const action of ['hide-library','hide-notes','spacing','right-divider'] as const)test(`${mode} gesture cancels before ${action} changes the page layout (${timing})`,async()=>{
++ const app=await launch(path.join(folder,'layout-'+mode+'-'+action+'-'+timing));
++ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ if(action==='spacing')await page.getByRole('button',{name:'布局设置',exact:true}).click();
++ const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;await page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+200,box.y+210);await expect(page.locator('.line-draft')).toHaveCount(1);
++ await page.evaluate(({action,timing,x,y})=>{
++  if(action==='hide-library')(document.querySelector('[aria-label="收起文档栏"]') as HTMLButtonElement).click();
++  else if(action==='hide-notes')(document.querySelector('[aria-label="收起批注栏"]') as HTMLButtonElement).click();
++  else if(action==='spacing'){const select=document.querySelector('[aria-label="阅读间距"]') as HTMLSelectElement;select.value='24';select.dispatchEvent(new Event('change',{bubbles:true}));}
++  else document.querySelector('[aria-label="调整批注栏宽度"]')!.dispatchEvent(new KeyboardEvent('keydown',{key:'ArrowLeft',bubbles:true}));
++  if(timing==='same-turn')document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));
++ },{action,timing,x:box.x+200,y:box.y+210});
++ await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:mode==='arrow'?'绘制箭头':'绘制画笔',exact:true,includeHidden:true})).toHaveAttribute('aria-pressed','false');
++ }finally{await (await app.firstWindow()).mouse.up();await app.close();}
++});
+diff --git a/tests/python/test_export.py b/tests/python/test_export.py
+index 6516cd9..ea891ed 100644
+--- a/tests/python/test_export.py
++++ b/tests/python/test_export.py
+@@ -71,6 +71,35 @@ class ExportTests(unittest.TestCase):
+                         self.assertEqual(line.vertices,[(40.0,45.0),(160.0,65.0)])
+                 self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(),fingerprint)
+ 
++    def test_arrow_ends_crop_rotation_repeat(self):
++        for rotation in (0,90,180,270):
++            with self.subTest(rotation=rotation), tempfile.TemporaryDirectory() as folder:
++                source=Path(folder)/'source.pdf';doc=fitz.open();page=doc.new_page(width=300,height=400)
++                page.set_cropbox(fitz.Rect(20,30,280,370));page.set_rotation(rotation);page.add_text_annot((40,100),'existing')
++                doc.save(source);doc.close();fingerprint=hashlib.sha256(source.read_bytes()).hexdigest()
++                mark={'id':'arrow','type':'arrow','pageIndex':0,'quads':[[59,326,181,326,59,304,181,304]],'points':[180,305,60,325],'color':'#335588'}
++                for i in range(2):
++                    target=Path(folder)/f'out-{i}.pdf';export_pdf(source,target,fingerprint,[mark])
++                    with fitz.open(target) as d:
++                        page=d[0];items=list(page.annots());self.assertEqual(len(items),2);a=next(a for a in items if a.type[0]==3)
++                        self.assertEqual(a.line_ends,(0,5));self.assertEqual(a.vertices,[(160.0,65.0),(40.0,45.0)])
++                self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(),fingerprint)
++
++    def test_ink_crop_rotation_order_repeat(self):
++        for rotation in (0,90,180,270):
++            with self.subTest(rotation=rotation), tempfile.TemporaryDirectory() as folder:
++                source=Path(folder)/'source.pdf';doc=fitz.open();page=doc.new_page(width=300,height=400)
++                page.set_cropbox(fitz.Rect(20,30,280,370));page.set_rotation(rotation);page.add_text_annot((40,100),'existing')
++                doc.save(source);doc.close();fingerprint=hashlib.sha256(source.read_bytes()).hexdigest()
++                mark={'id':'ink','type':'ink','pageIndex':0,'quads':[[59,326,181,326,59,304,181,304]],'points':[60,325,180,305,90,315,60,325],'color':'#335588'}
++                for i in range(2):
++                    target=Path(folder)/f'out-{i}.pdf';export_pdf(source,target,fingerprint,[mark])
++                    with fitz.open(target) as d:
++                        page=d[0];items=list(page.annots());self.assertEqual(len(items),2);a=next(a for a in items if a.type[0]==15)
++                        self.assertEqual(a.vertices,[[(40.0,45.0),(160.0,65.0),(70.0,55.0),(40.0,45.0)]])
++                        for actual,want in zip(a.colors['stroke'],[.2,1/3,8/15]): self.assertAlmostEqual(actual,want,places=5)
++                self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(),fingerprint)
++
+     def test_rejects_overwrite_stale_and_invalid_without_output(self):
+         with tempfile.TemporaryDirectory() as folder:
+             source = Path(folder) / 'source.pdf'; out = Path(folder) / 'out.pdf'
+diff --git a/README.md b/README.md
+index 7f13ee1..b405c6c 100644
+--- a/README.md
++++ b/README.md
+@@ -20,7 +20,7 @@ npm start          # 启动已构建的桌面应用
+ 
+ 仅开发/重新构建需要 Node 和 Python。`setup.ps1` 安装 requirements-build.txt；打包命令通过 PyInstaller 收集解释器、PyMuPDF 和依赖到应用资源目录，运行时优先使用内置程序。Windows 构建不作为 macOS/iPad 的二进制包使用。
+ 
+-0.1.7 新增删除线选区和直线拖拽（含标准 PDF 导出）；点击右栏“直线”后页内拖动，Esc 取消，有效绘制完成后退出；短点击可继续绘制。保留连续/单页模式、下划线及每文档恢复。保留 0.1.5 的侧栏调宽/间距与多文档标签。拖动侧栏边缘或聚焦后按方向键；顶栏“布局”选择阅读间距。Ctrl+Tab 切换标签、Ctrl+W 关闭当前标签；关闭标签不删除文档。便签编辑时先保存/取消再切换。保留此前按需缩略图、目录与性能优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
++0.1.8 新增箭头与画笔（标准PDF批注导出）。右栏选择工具后页内拖动，一次笔迹保存后恢复文字选择；Esc或布局改变取消。画笔每条最多4096采样点，长笔迹抽样降密度，不模拟压感。箭头头部应用内实心、导出空心，端点方向保持一致。保留删除线、直线、下划线、高亮、便签、侧栏调宽/间距、多标签及按需渲染。完整清单与每两项review见 [docs/FEATURES.md](docs/FEATURES.md)、[docs/REVIEW-CADENCE.md](docs/REVIEW-CADENCE.md)。
+ 
+ ## 已有功能
+ 
+diff --git a/docs/FEATURES.md b/docs/FEATURES.md
+index 12a404b..ef27bda 100644
+--- a/docs/FEATURES.md
++++ b/docs/FEATURES.md
+@@ -12,9 +12,20 @@
+ ## 每完成两个任务做一次整体 Review
+ 
+ 用户新增要求（2026-10-15）：每完成两个独立功能任务，先审查程序与操作体验，再推进下两项；对照成熟工作台/阅读器的官方设计，修正实际问题，不仅装修界面。轮次、发现与修复记录见 [REVIEW-CADENCE.md](REVIEW-CADENCE.md)。
+-第1轮：侧栏/标签；第2轮：单页/下划线；第3轮：删除线/直线。三轮 Review 已完成，Important 均以失败→成功测试验证；计数清零。
++第1轮：侧栏/标签；第2轮：单页/下划线；第3轮：删除线/直线；第4轮：箭头/画笔。四轮 Review 已完成，Important 均以失败→成功测试验证；计数清零。
+ 
+-## 当前 0.1.7
++## 当前 0.1.8
++- ANN-01 / SAVE-03：箭头（有向原生端点）与画笔（有序原生点路径），改色、删除、保存、撤销/重做、重启恢复及标准 PDF 导出。箭头为 Line3 + ClosedArrow 端点；画笔为 Ink15。
++- 页内拖拽/落笔，一次有效手势创建一条批注后恢复文字选择；短点击不保存且保持待绘；Esc 取消。端点限起始页，不生成跨页笔迹。
++- 画笔忽略小于0.75 CSS像素的连续移动，4096点上限触发隔点抽样；保持首点、顺序和最终端点。长笔迹会降低采样密度，不模拟压感，不做多笔合并。
++- 草稿使用所选颜色；命令式 SVG 草稿每帧最多刷新一次，不逐指针事件更新 React。导出与视图按相同原生路径转换。
++- 第4轮 Review Important：改变侧栏显隐、阅读间距/恢复默认、右侧分隔线前同步取消手势；16个箭头/画笔×同回合/渲染后松手回归失败→成功。
++- 四种旋转下实际创建箭头/画笔并对照原生坐标、SVG及导出坐标；含150%/200%显示缩放。Python验证四种源旋转、裁剪偏移、原批注保留、重复导出和原文件哈希。
++- 验收：32 Vitest + 7 unittest + 58 实际打包 Electron E2E = 97 项通过；发布EXE本轮29项再测通过。双样本启动中位数364/491ms，滚动帧P95均13.9ms，门禁通过后latest更新0.1.8。原始证据见 evidence/arrows-ink/VERIFICATION.txt。
++- Minor暂缓：应用内箭头实心头与导出空心头/比例尚未统一，原生端点与方向一致。上一轮固定绿色草稿已随共享绘制层统一为所选颜色。
++- 第4轮计数清零。下一项：擦除，继续维持两项后review；AI仍未提前进入本轮。
++
++## 上轮 0.1.7
+ 
+ - ANN-01 / SAVE-03：新增删除线（文字锚点）和直线（页内拖拽、PDF 原生端点）批注，支持改色、删除、保存、撤销/重做及标准 PDF 导出（StrikeOut11 / Line3）。
+ - 直线：Esc 取消；短点击保持工具待绘；有效拖动完成后恢复文字选择。跨出页面的端点限制在起始页，不创建跨页直线。
+@@ -67,7 +78,7 @@
+ | RDR-01 | 本地打开、最近文件、目录、按需缩略图、多标签页、页码、全文搜索、位置/缩放恢复 | 复杂文档兼容回归 |
+ | RDR-02 | 连续/单页模式、适宽/适页、滚轮、Ctrl+滚轮缩放 | 单页边界翻页按钮反馈 |
+ | RDR-03 | 搜索命中定位与强调 | 更复杂 PDF 的兼容回归持续补充 |
+-| ANN-01 | 高亮、下划线、删除线、直线、便签、缩放旋转锚定 | 箭头→画笔→擦除，每种连同导出独立验收 |
++| ANN-01 | 高亮、下划线、删除线、直线、箭头、画笔、便签、缩放旋转锚定 | 擦除（含保存/撤销/导出独立验收） |
+ | ANN-02 | 手动编辑、删除/改色、当前会话撤销/重做、持久化 | 可见修改历史、AI 来源/逐个接受撤销 |
+ | ANN-03 | — | AI 永久批注预览、匹配范围及确认 |
+ | AI-01/02 | 底层文字选区与临时强调可复用 | 引文验证、点击回跳、解释/举例/画图/标记 |
+@@ -78,7 +89,7 @@
+ | CRU-01/02/03 | — | 文本分块、分步解释、继续/暂停/后退/略过/调速、手动接管 |
+ | SAVE-01 | 批注及阅读位置恢复、写入失败重试、强退恢复测试 | 白板/AI 引文恢复（对应功能实现时加入） |
+ | SAVE-02 | 另存带批注 PDF，源文件保持不变 | 备份后显式写回源 PDF（后期） |
+-| SAVE-03 | 标准高亮/下划线/删除线/直线/便签、保留原有批注、重复导出不叠加 | 新批注类型、白板来源静态快照/说明 |
++| SAVE-03 | 标准高亮/下划线/删除线/直线/箭头/画笔/便签、保留原有批注、重复导出不叠加 | 新批注类型、白板来源静态快照/说明 |
+ 
+ 顺序遵循已批准计划：阅读器完整化 → 可信 AI → 注意力工具 → 白板 → 巡航/完整保存 → 发布加固。
+ 每个子项必须先通过对应失败→成功小测试，再通过整个已有套件与打包检查；不把占位按钮当功能上线。
+diff --git a/docs/REVIEW-CADENCE.md b/docs/REVIEW-CADENCE.md
+index 1188db9..5842093 100644
+--- a/docs/REVIEW-CADENCE.md
++++ b/docs/REVIEW-CADENCE.md
+@@ -1,6 +1,6 @@
+ # Enlumor 两项一 Review 记录
+ 
+-当前执行位置：第3轮已完成，计数0。下一轮箭头、画笔，完成后第4轮 Review。
++当前执行位置：第4轮已完成，计数0。下一项擦除，继续两项一 Review。
+ 
+ ## 第1轮：侧栏与标签
+ 
+@@ -71,3 +71,27 @@ Deferred minor：页1的上一页与末页的下一页仍可点击但不跳转
+ Deferred minor：直线草稿固定绿色，保存颜色使用当前选择器，后续统一草稿色与实际色。此前页边界按钮、关闭标签焦点、分隔线握柄继续记录。未做第二轮审查，修复以小测试及全套结果为准。
+ 
+ 新增类型由新版本处理，代码回退仅在独立副本验证，不以旧程序覆盖新版工作区。第3轮完成，计数0；下一轮箭头、画笔，之后第4轮 Review。
++
++## 第4轮：箭头与画笔
++日期：2026-10-15；基线48ab539；分支feat/arrows-ink；版本0.1.8。
++两个任务：原生箭头 + 标准Line/ClosedArrow导出；有界有序画笔 + 标准Ink导出。复用SQLite事务/撤销/重试，不新增存储权威源或数据库版本。
++成熟设计参考：[Adobe shapes and drawings](https://helpx.adobe.com/acrobat/desktop/share-and-review-documents/review-documents/add-shapes-drawings.html)、[PyMuPDF Annot](https://pymupdf.readthedocs.io/en/latest/annot.html)、[Page](https://pymupdf.readthedocs.io/en/latest/page.html)。
++保留简单“选工具—页内拖动—一次提交—恢复选择”、Esc取消、当前工具pressed反馈。画笔暂为单笔独立操作，不做压感/平滑/多笔合并。
++
++### 独立 Review 与修复
++只进行一次整分支只读独立review（48ab539..ee57b8b），作者一轮修复，不对修复再派审查。
++Important：布局变更未取消正在进行的绘制。布局变化使页面DOM原点移动，旧采样与新端点混合；审查实际复现仍有草稿且松手保存1条错误笔迹。
++作者新增16条真实Electron测试，箭头/画笔×同一回合/渲染后松手×左右侧栏收起/间距/右分隔线，全部RED（REVIEW_RED.log）。
++修复：persistLayout、两侧显隐和右divider start在改变几何前同步resetDrawing；左divider已有同等取消。
++首次修复测试12通过、4失败于收起批注栏后默认role查询排除隐藏工具；草稿与批注数断言已通过。改为includeHidden检查真实工具状态，不改产品以迎合测试。
++最终16通过（REVIEW_GREEN.log）。全量发布、实际EXE与性能结果在VERIFICATION.txt。
++另：Ink初次导出受PyMuPDF参数契约拒绝Point对象；检查安装版原生sequence检查后转换为数值对，现有Python/Electron导出测试转绿。不是改坐标算法掩盖问题。
++
++### 判定与暂缓
++- Minor deferred：SVG实心三角头与标准PDF空心ClosedArrow的填充及头部比例不同。端点/方向有独立测试；本轮不宣称像素级外观一致。
++- Ruling：压感、平滑、多笔合并与保持工具选中不加入此批；代价是连续手写需重新选工具、没有压感。
++- Ruling：擦除/已保存图形直接拖动仍按后续清单；代价是本版删除整条批注而非局部路径。
++- Ruling：未运行独立Acrobat；采用实际Edge视觉核验和标准PDF结构测试，代价是尚未确认独立Acrobat特有显示差异。
++- 审查暂缓的实际打包/性能判断通过最终release门禁补齐，不能用开发版结果代替。
++- 旧minor（页边界按钮、关闭标签焦点、分隔握柄）仍暂缓；上一轮固定绿色草稿已随共享渲染修正。
++- rollback仅在隔离副本恢复原代码与新测试profile；个人数据库不降级或清除。旧版本不保证理解新arrow/ink载荷。
+diff --git a/scripts/check-arrows-ink-rollback.mjs b/scripts/check-arrows-ink-rollback.mjs
+new file mode 100644
+index 0000000..9e14774
+--- /dev/null
++++ b/scripts/check-arrows-ink-rollback.mjs
+@@ -0,0 +1,38 @@
++import { build } from 'esbuild';
++import { build as viteBuild } from 'vite';
++import react from '@vitejs/plugin-react';
++import { _electron as electron, expect } from '@playwright/test';
++import { mkdirSync, mkdtempSync, cpSync, copyFileSync, readFileSync } from 'node:fs';
++import { createHash } from 'node:crypto';
++import path from 'node:path';
++import { copyAssets } from './assets.mjs';
++const root=path.resolve('.');
++const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex');
++const live=sha('src/renderer/main.tsx');
++const base=path.join(root,'.cache/arrows-ink-rollback');mkdirSync(base,{recursive:true});
++const copy=mkdtempSync(path.join(base,'run-'));
++if(!copy.startsWith(base+path.sep))throw Error('Unexpected rollback target');
++cpSync('src',path.join(copy,'src'),{recursive:true});
++cpSync('python',path.join(copy,'python'),{recursive:true});
++for(const file of ['package.json','index.html'])copyFileSync(file,path.join(copy,file));
++const originals=JSON.parse(readFileSync('evidence/arrows-ink/originals.json','utf8'));
++for(const {name,target,sha256} of originals){const file=path.join(root,'evidence/arrows-ink/originals',name);if(sha(file)!==sha256)throw Error('Original hash mismatch');copyFileSync(file,path.join(copy,target));}
++await build({entryPoints:[path.join(copy,'src/main/index.ts'),path.join(copy,'src/main/preload.ts')],outdir:path.join(copy,'dist/main'),bundle:true,platform:'node',format:'cjs',outExtension:{'.js':'.cjs'},external:['electron']});
++await viteBuild({configFile:false,root:copy,plugins:[react()],base:'./',build:{outDir:path.join(copy,'dist/renderer')}});
++copyAssets(path.join(copy,'dist/renderer/pdf-assets'));
++const app=await electron.launch({args:[copy,`--user-data-dir=${path.join(copy,'profile')}`],env:{...process.env,ENLUMOR_PYTHON:path.join(root,'.venv/Scripts/python.exe')}});
++try{
++ const page=await app.firstWindow();
++ const source=path.join(root,'.cache/benchmark/200-pages-32MiB.pdf');
++ await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);
++ await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();
++ await expect(page.locator('.textLayer span').first()).toBeVisible();
++ await expect(page.getByLabel('阅读模式')).toHaveCount(1);
++ await expect(page.getByRole('button',{name:'删除线选区',exact:true})).toHaveCount(1);
++ await expect(page.getByRole('button',{name:'绘制直线',exact:true})).toHaveCount(1);
++ await expect(page.getByRole('tablist',{name:'已打开文档'}).getByRole('tab')).toHaveCount(1);
++ await expect(page.getByRole('button',{name:'绘制箭头',exact:true})).toHaveCount(0);
++ await expect(page.getByRole('button',{name:'绘制画笔',exact:true})).toHaveCount(0);
++ if(sha('src/renderer/main.tsx')!==live)throw Error('Live source changed');
++ console.log('ROLLBACK: ARROW_BUTTON=0; INK_BUTTON=0; LINE_BUTTON=1; MODE_SELECTOR=1; LIVE_SOURCE_UNCHANGED=YES');
++}finally{await app.close();}

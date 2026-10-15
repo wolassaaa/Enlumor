@@ -1,6 +1,6 @@
 # Enlumor 两项一 Review 记录
 
-当前执行位置：第3轮已完成，计数0。下一轮箭头、画笔，完成后第4轮 Review。
+当前执行位置：第4轮已完成，计数0。下一项擦除，继续两项一 Review。
 
 ## 第1轮：侧栏与标签
 
@@ -71,3 +71,27 @@ Deferred minor：页1的上一页与末页的下一页仍可点击但不跳转�
 Deferred minor：直线草稿固定绿色，保存颜色使用当前选择器，后续统一草稿色与实际色。此前页边界按钮、关闭标签焦点、分隔线握柄继续记录。未做第二轮审查，修复以小测试及全套结果为准。
 
 新增类型由新版本处理，代码回退仅在独立副本验证，不以旧程序覆盖新版工作区。第3轮完成，计数0；下一轮箭头、画笔，之后第4轮 Review。
+
+## 第4轮：箭头与画笔
+日期：2026-10-15；基线48ab539；分支feat/arrows-ink；版本0.1.8。
+两个任务：原生箭头 + 标准Line/ClosedArrow导出；有界有序画笔 + 标准Ink导出。复用SQLite事务/撤销/重试，不新增存储权威源或数据库版本。
+成熟设计参考：[Adobe shapes and drawings](https://helpx.adobe.com/acrobat/desktop/share-and-review-documents/review-documents/add-shapes-drawings.html)、[PyMuPDF Annot](https://pymupdf.readthedocs.io/en/latest/annot.html)、[Page](https://pymupdf.readthedocs.io/en/latest/page.html)。
+保留简单“选工具—页内拖动—一次提交—恢复选择”、Esc取消、当前工具pressed反馈。画笔暂为单笔独立操作，不做压感/平滑/多笔合并。
+
+### 独立 Review 与修复
+只进行一次整分支只读独立review（48ab539..ee57b8b），作者一轮修复，不对修复再派审查。
+Important：布局变更未取消正在进行的绘制。布局变化使页面DOM原点移动，旧采样与新端点混合；审查实际复现仍有草稿且松手保存1条错误笔迹。
+作者新增16条真实Electron测试，箭头/画笔×同一回合/渲染后松手×左右侧栏收起/间距/右分隔线，全部RED（REVIEW_RED.log）。
+修复：persistLayout、两侧显隐和右divider start在改变几何前同步resetDrawing；左divider已有同等取消。
+首次修复测试12通过、4失败于收起批注栏后默认role查询排除隐藏工具；草稿与批注数断言已通过。改为includeHidden检查真实工具状态，不改产品以迎合测试。
+最终16通过（REVIEW_GREEN.log）。全量发布、实际EXE与性能结果在VERIFICATION.txt。
+另：Ink初次导出受PyMuPDF参数契约拒绝Point对象；检查安装版原生sequence检查后转换为数值对，现有Python/Electron导出测试转绿。不是改坐标算法掩盖问题。
+
+### 判定与暂缓
+- Minor deferred：SVG实心三角头与标准PDF空心ClosedArrow的填充及头部比例不同。端点/方向有独立测试；本轮不宣称像素级外观一致。
+- Ruling：压感、平滑、多笔合并与保持工具选中不加入此批；代价是连续手写需重新选工具、没有压感。
+- Ruling：擦除/已保存图形直接拖动仍按后续清单；代价是本版删除整条批注而非局部路径。
+- Ruling：未运行独立Acrobat；采用实际Edge视觉核验和标准PDF结构测试，代价是尚未确认独立Acrobat特有显示差异。
+- 审查暂缓的实际打包/性能判断通过最终release门禁补齐，不能用开发版结果代替。
+- 旧minor（页边界按钮、关闭标签焦点、分隔握柄）仍暂缓；上一轮固定绿色草稿已随共享渲染修正。
+- rollback仅在隔离副本恢复原代码与新测试profile；个人数据库不降级或清除。旧版本不保证理解新arrow/ink载荷。

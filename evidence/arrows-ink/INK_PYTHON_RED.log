@@ -1,0 +1,64 @@
+
+> enlumor@0.1.7 test:python
+> node scripts/python.mjs -m unittest discover -s tests/python -v
+
+test_arrow_ends_crop_rotation_repeat (test_export.ExportTests.test_arrow_ends_crop_rotation_repeat) ... ok
+test_cli_accepts_utf8_chinese_paths_with_windows_legacy_encoding (test_export.ExportTests.test_cli_accepts_utf8_chinese_paths_with_windows_legacy_encoding) ... ok
+test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) ... 
+  test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) (rotation=0) ... ERROR
+  test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) (rotation=90) ... ERROR
+  test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) (rotation=180) ... ERROR
+  test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) (rotation=270) ... ERROR
+test_rejects_overwrite_stale_and_invalid_without_output (test_export.ExportTests.test_rejects_overwrite_stale_and_invalid_without_output) ... ok
+test_rotation_crop_native_marks_and_repeat_exports (test_export.ExportTests.test_rotation_crop_native_marks_and_repeat_exports) ... ok
+test_strikeout_and_line_crop_rotation_repeat_exports (test_export.ExportTests.test_strikeout_and_line_crop_rotation_repeat_exports) ... ok
+test_underline_standard_subtype_crop_rotation_and_repeat_export (test_export.ExportTests.test_underline_standard_subtype_crop_rotation_and_repeat_export) ... ok
+
+======================================================================
+ERROR: test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) (rotation=0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\tests\python\test_export.py", line 96, in test_ink_crop_rotation_order_repeat
+    target=Path(folder)/f'out-{i}.pdf';export_pdf(source,target,fingerprint,[mark])
+                                       ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\codex project\Enlumor\python\export_pdf.py", line 49, in export_pdf
+    raise ValueError('INVALID_ANNOTATION')
+ValueError: INVALID_ANNOTATION
+
+======================================================================
+ERROR: test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) (rotation=90)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\tests\python\test_export.py", line 96, in test_ink_crop_rotation_order_repeat
+    target=Path(folder)/f'out-{i}.pdf';export_pdf(source,target,fingerprint,[mark])
+                                       ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\codex project\Enlumor\python\export_pdf.py", line 49, in export_pdf
+    raise ValueError('INVALID_ANNOTATION')
+ValueError: INVALID_ANNOTATION
+
+======================================================================
+ERROR: test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) (rotation=180)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\tests\python\test_export.py", line 96, in test_ink_crop_rotation_order_repeat
+    target=Path(folder)/f'out-{i}.pdf';export_pdf(source,target,fingerprint,[mark])
+                                       ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\codex project\Enlumor\python\export_pdf.py", line 49, in export_pdf
+    raise ValueError('INVALID_ANNOTATION')
+ValueError: INVALID_ANNOTATION
+
+======================================================================
+ERROR: test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) (rotation=270)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\tests\python\test_export.py", line 96, in test_ink_crop_rotation_order_repeat
+    target=Path(folder)/f'out-{i}.pdf';export_pdf(source,target,fingerprint,[mark])
+                                       ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "D:\codex project\Enlumor\python\export_pdf.py", line 49, in export_pdf
+    raise ValueError('INVALID_ANNOTATION')
+ValueError: INVALID_ANNOTATION
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.508s
+
+FAILED (errors=4)

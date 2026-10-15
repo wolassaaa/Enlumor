@@ -1,0 +1,21 @@
+
+Running 13 tests using 1 worker
+
+(node:45712) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\arrows-ink.spec.ts:15:1 › arrow direction and Escape cancellation preserve native endpoints through rotation restart and standard export (2.5s)
+  ok  2 tests\e2e\arrows-ink.spec.ts:35:1 › ink keeps an ordered closed stroke through cancel undo restart and native export (2.5s)
+  ok  3 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 0 degrees and display scale 1 matches native SVG and PDF coordinates (1.5s)
+  ok  4 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 90 degrees and display scale 1.5 matches native SVG and PDF coordinates (1.5s)
+  ok  5 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 180 degrees and display scale 1 matches native SVG and PDF coordinates (1.5s)
+  ok  6 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 270 degrees and display scale 2 matches native SVG and PDF coordinates (2.2s)
+  ok  7 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 0 degrees and display scale 1 matches native SVG and PDF coordinates (2.0s)
+  ok  8 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 90 degrees and display scale 1.5 matches native SVG and PDF coordinates (2.1s)
+  ok  9 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 180 degrees and display scale 1 matches native SVG and PDF coordinates (2.1s)
+  ok 10 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 270 degrees and display scale 2 matches native SVG and PDF coordinates (2.3s)
+  ok 11 tests\e2e\arrows-ink.spec.ts:73:1 › long ink gesture bounds stored samples and preserves first and terminal coordinates (1.6s)
+  ok 12 tests\e2e\arrows-ink.spec.ts:84:44 › arrow draft uses selected color and cancels on rotation without saving (1.5s)
+  ok 13 tests\e2e\arrows-ink.spec.ts:84:44 › ink draft uses selected color and cancels on rotation without saving (963ms)
+
+  13 passed (25.5s)
