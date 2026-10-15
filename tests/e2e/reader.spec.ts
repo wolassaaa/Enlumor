@@ -110,7 +110,7 @@ test('PDF thumbnails render on demand, navigate and release offscreen canvases',
     expect(hash()).toBe(before);
     await page.getByRole('tab', { name: '缩略图', exact: true }).click();
     await expect(rail.locator('canvas[data-rendered="true"]').first()).toBeVisible();
-    await page.screenshot({ path: 'evidence/thumbnails/thumbnails.png' });
+    await page.screenshot({ path: (process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/thumbnails') + '/thumbnails.png' });
   } finally { await app.close(); }
 });
 

@@ -1,0 +1,56 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+(node:38740) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/layout-tabs.test.ts (3 tests | 3 failed) 37ms
+   × layout preferences persist in SQLite and reject malformed values without changing saved state 10ms
+   × v1 migration creates a verified backup and preserves documents, annotations and reading state 18ms
+   × tab session persists only registered unique IDs with a valid active member 8ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/layout-tabs.test.ts > layout preferences persist in SQLite and reject malformed values without changing saved state
+TypeError: w.saveLayout is not a function
+ ❯ tests/layout-tabs.test.ts:9:53
+      7| it('layout preferences persist in SQLite and reject malformed values w…
+      8|  const {file}=setup();const w=new Workspace(file);
+      9|  try{const layout={left:280,right:310,spacing:24};w.saveLayout(layout)…
+       |                                                     ^
+     10|  for(const bad of [{...layout,left:NaN},{...layout,right:9999},{...lay…
+     11|  expect(w.layout()).toEqual(layout);w.close();const restored=new Works…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/layout-tabs.test.ts > v1 migration creates a verified backup and preserves documents, annotations and reading state
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ tests/layout-tabs.test.ts:17:204
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/layout-tabs.test.ts > tab session persists only registered unique IDs with a valid active member
+TypeError: w.saveTabs is not a function
+ ❯ tests/layout-tabs.test.ts:22:86
+     20| it('tab session persists only registered unique IDs with a valid activ…
+     21|  const {dir,file}=setup();const source=path.join(dir,'source.pdf');wri…
+     22|  try{const doc=w.register(source,1);const state={openIds:[doc.id],acti…
+       |                                                                                      ^
+     23|  for(const bad of [{openIds:[doc.id,doc.id],activeId:doc.id},{openIds:…
+     24|  expect(w.tabs()).toEqual(state);w.saveTabs({openIds:[],activeId:null}…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed (3)
+   Start at  10:58:10
+   Duration  205ms (tests 47%, transform 30%, import 18%, worker 5%)
+

@@ -1,0 +1,58 @@
+Enlumor 0.1.5 / 2026-10-15
+Branch=feat/layout-tabs; baseline=0192aaa.
+Changed branches/fields: UX-01 PanelDivider / LayoutPreferences(left,right,spacing), SQLite preferences schema v2 + backup; RDR-01 TabSession(openIds,activeId), per-tab history, single viewer; modal navigation guard; reader-open rollback restoration.
+
+Four artifacts:
+MODIFIED_FILE=D:\codex project\Enlumor\evidence\layout-tabs\MODIFIED_FILE.tsx
+DIFF_FILE=D:\codex project\Enlumor\evidence\layout-tabs\DIFF.patch
+VERIFICATION=D:\codex project\Enlumor\evidence\layout-tabs\VERIFICATION.txt
+ROLLBACK=D:\codex project\Enlumor\evidence\layout-tabs\ROLLBACK.sh (git mode 100755)
+Live changed file=D:\codex project\Enlumor\src\renderer\main.tsx
+Original files and preserved SHA256=originals.json (six renderer/main/preload/model/workspace files); rollback validates each before restoring its copy.
+
+CWD=D:\codex project\Enlumor
+BASELINE command: npx playwright test workspace.spec.ts
+Input: original renderer, new sidebar/tab contracts, real Electron, temp profiles, 80-page alpha.pdf + 3-page beta.pdf.
+Literal output: 2 failed
+Exit=1. Missing adjustable separator and opened-document tablist. Full output=UI_RED.log. At first attempt, typecheck also caught a malformed test fixture spacing type; corrected fixture then build passed. Storage tests independently failed 3/3 before API/migration implementation (STORAGE_RED.log).
+MODIFIED command (PowerShell): $env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.5-win-x64/Enlumor.exe).Path; npx playwright test workspace.spec.ts
+Input: actual released 0.1.5 EXE with same real PDF/profile setup; dragging, keyboard, spacing save/restart, narrow viewport, per-document reading position/undo, duplicate-open, session restart, closing without deleting workspace data, plus two important-review regressions.
+Literal output: 4 passed (14.3s)
+Exit=0. Full output=FINAL_CHECK.log. Initial two-task milestone was 2 passed (6.9s), preserved in TWO_TASKS.log.
+ROLLBACK command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' evidence/layout-tabs/ROLLBACK.sh
+Input: fresh source copy in .cache/layout-tabs-rollback/run-*, original six files restored after SHA checks; actual rebuilt copy, own profile, 200-page PDF. Current live files are not restored or deleted.
+Literal result: ROLLBACK: RESIZERS=0; DOCUMENT_TABS=0; THUMBNAILS=200; LIVE_SOURCE_UNCHANGED=YES
+Exit=0. Restored behavior: v0.1.4 layout without resizers/document tabs, existing thumbnail functionality retained. User database untouched; upgraded v2 data and pre-v2 backup remain intact.
+
+Two-task review cadence: user requested review after every two functional tasks. This batch is (1) sidebars/spacing and (2) document tabs. One independent review (retry after capacity error before work), code + actual layout.png/tabs.png, official VS Code/Acrobat references. Review is recorded in docs/REVIEW-CADENCE.md and future rule in docs/FEATURES.md. Counter reset to0; next pair single-page mode + underline/export, then review again.
+Important fixes:
+- Note editor allowed Ctrl+Tab/Ctrl+W to switch/close attached document. RED with visible beta.pdf instead of alpha; GREEN blocks navigation and retains draft; commit checks active document ID, flush requires resolving unsaved note.
+- Failed reader.open corrupted visible document/history/session relationship. RED old annotation count0; GREEN restores old reader/marks/history/progress/session and permits correct undo; next restart restores alpha.
+REVIEW_RED command: npx playwright test workspace.spec.ts --grep 'note drafts|failed PDF renderer'
+Literal result: 2 failed; Exit=1.
+REVIEW_GREEN same command after fix: 2 passed (6.3s); Exit=0.
+Deferred minors: closing focused tab does not proactively focus next tab; divider grip is subtle until hover/focus. No extra feature expansion in this fix pass.
+Early TASK1 run had 14 passed +1 identity timeout while second-task build work proceeded. Fresh isolated identity recheck: 1 passed (3.4s); final fixed artifact full E2E below includes successful identity test. Completion is based on final fixed-artifact suite, not that partial run.
+
+Full release command (PowerShell): $env:ENLUMOR_EVIDENCE_DIR='evidence/layout-tabs'; npm run release:verified
+Input: 0.1.5 build, staged EXE for all E2Es, embedded PyMuPDF, true SQLite/PDF.js, new temp profiles, both 200-page stress fixtures with 1000 annotations and thumbnail rail active.
+Literal key output:
+Tests 24 passed (24)
+Ran 3 tests
+OK
+18 passed (47.3s)
+PACKAGED_READER: PASS
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.5 D:\codex project\Enlumor\release\Enlumor-0.1.5-win.zip SHA256=0bc0c4e7a67299934c1d651dda53023aa89de1610622b008e7470ca4ba34a7cd
+Exit=0. Total=45 tests plus typecheck/build, package smoke and dual performance gates. Full output=RELEASE.log.
+Text stress: scroll p95=14.699999995529652ms; save p95=6.399999998509884ms; startup median=415.4644ms; snapshot正文/thumbnail canvases=8/4.
+Image stress: 200 image pages, 32,101,181 bytes; scroll p95=15.399999998509884ms; save p95=5.100000001490116ms; startup median=445.7594ms; snapshot正文/thumbnail canvases=8/3.
+Both samples=0 long tasks>50ms. Synthetic budget regressions are not a guarantee for all real PDFs/hardware.
+Migration test proves v1 backup readable at user_version1 with old marks, new v2 retains documents/annotations/reading; bad UI state rejected without overwriting saved values. Code rollback doesn't downgrade or delete a personal v2 database. Old binaries require a separate copy of pre-v2 data, preserving v2 for recovery; no silent overwrite of new annotations.
+
+Release EXE=D:\codex project\Enlumor\release\Enlumor-0.1.5-win-x64\Enlumor.exe
+ZIP=D:\codex project\Enlumor\release\Enlumor-0.1.5-win.zip
+Latest manifest=D:\codex project\Enlumor\release\latest.json
+Reusable next-step prompt:
+按 docs/FEATURES.md 顺序推进；每两项独立功能后做代码/交互 review，对照官方成熟设计。Important 先写失败测试再修复；全部真实打包回归与性能门禁通过后才更新最新版。当前计数0，下一项单页模式，再下划线与导出，然后 Review 第2轮。

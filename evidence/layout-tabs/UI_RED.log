@@ -1,0 +1,77 @@
+
+Running 2 tests using 1 worker
+
+(node:39716) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\workspace.spec.ts:18:1 › adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport (31.1s)
+(node:58716) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  2 tests\e2e\workspace.spec.ts:40:1 › document tabs isolate progress and undo, deduplicate opens, restore session and close without deleting data (6.6s)
+
+
+  1) tests\e2e\workspace.spec.ts:18:1 › adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport 
+
+    TimeoutError: locator.boundingBox: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('separator', { name: '调整文档栏宽度' })
+
+
+      21 |  const page=await app.firstWindow();await open(app);
+      22 |  const before=(await page.locator('.library').boundingBox())!.width;
+    > 23 |  const handle=page.getByRole('separator',{name:'调整文档栏宽度'});const box=(await handle.boundingBox())!;
+         |                                                                                    ^
+      24 |  await page.mouse.move(box.x+box.width/2,box.y+80);await page.mouse.down();await page.mouse.move(box.x+box.width/2+90,box.y+80,{steps:12});await page.mouse.up();
+      25 |  expect((await page.locator('.library').boundingBox())!.width).toBeGreaterThan(before+70);
+      26 |  const right=page.getByRole('separator',{name:'调整批注栏宽度'});await right.focus();await page.keyboard.press('ArrowLeft');
+        at D:\codex project\Enlumor\tests\e2e\workspace.spec.ts:23:84
+
+    Error Context: test-results\workspace-adjustable-sideb-93666-ble-narrow-reading-viewport\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\workspace-adjustable-sideb-93666-ble-narrow-reading-viewport\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\workspace-adjustable-sideb-93666-ble-narrow-reading-viewport\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\workspace.spec.ts:40:1 › document tabs isolate progress and undo, deduplicate opens, restore session and close without deleting data 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByRole('tablist', { name: '已打开文档' }).getByRole('tab')
+    Expected: 2
+    Received: 0
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" getByRole('tablist', { name: '已打开文档' }).getByRole('tab') with timeout 5000ms
+      - waiting for getByRole('tablist', { name: '已打开文档' }).getByRole('tab')
+        14 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      46 |  await page.locator('.textLayer span').filter({hasText:'Reading page 51'}).first().evaluate(item=>{const range=document.createRange();range.selectNodeContents(item);const selection=getSelection()!;selection.removeAllRanges();selection.addRange(range);document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});
+      47 |  await page.getByRole('button',{name:'高亮选区',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
+    > 48 |  await open(app,beta);const tabs=page.getByRole('tablist',{name:'已打开文档'});await expect(tabs.getByRole('tab')).toHaveCount(2);
+         |                                                                                                               ^
+      49 |  await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+      50 |  await tabs.getByRole('tab',{name:'alpha.pdf',exact:true}).click();await expect(page.getByLabel('跳转页码')).toHaveValue('51');
+      51 |  await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);await expect(page.getByRole('button',{name:'撤销',exact:true})).toBeEnabled();
+        at D:\codex project\Enlumor\tests\e2e\workspace.spec.ts:48:111
+
+    Error Context: test-results\workspace-document-tabs-is-eb557-close-without-deleting-data\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\workspace-document-tabs-is-eb557-close-without-deleting-data\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\workspace-document-tabs-is-eb557-close-without-deleting-data\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests\e2e\workspace.spec.ts:18:1 › adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport 
+    tests\e2e\workspace.spec.ts:40:1 › document tabs isolate progress and undo, deduplicate opens, restore session and close without deleting data 

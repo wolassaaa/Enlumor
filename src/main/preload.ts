@@ -1,6 +1,10 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Bridge } from '../shared/model';
 const bridge: Bridge = {
+  getLayout: () => ipcRenderer.invoke('layout:get'),
+  saveLayout: layout => ipcRenderer.invoke('layout:save', layout),
+  getTabs: () => ipcRenderer.invoke('tabs:get'),
+  saveTabs: session => ipcRenderer.invoke('tabs:save', session),
   openDocument: () => ipcRenderer.invoke('document:open'),
   restoreDocument: id => ipcRenderer.invoke('document:restore', id),
   rebindDocument: id => ipcRenderer.invoke('document:rebind', id),

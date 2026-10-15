@@ -33,3 +33,20 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
 .thumbnail-number{font-size:11px;font-variant-numeric:tabular-nums;color:#686d63}
 .thumbnail[aria-current="page"] .thumbnail-number{color:#35422e;font-weight:600}
 .library-tabs button{padding:7px 2px;font-size:11px}
+.workspace>.library{width:var(--library-width);padding:calc(var(--ui-spacing) + 10px) var(--ui-spacing) var(--ui-spacing)}
+.workspace>.annotations{width:var(--notes-width);padding:calc(var(--ui-spacing) + 10px) var(--ui-spacing) var(--ui-spacing)}
+.panel-divider{width:6px;flex:none;cursor:col-resize;touch-action:none;background:var(--surface);position:relative;z-index:5}
+.panel-divider:hover,.panel-divider:focus-visible{background:#aab69c;outline:none}
+.panel-divider:active{background:#718262}
+.layout-popover{position:absolute;right:170px;top:56px;z-index:60;width:290px;padding:18px;background:var(--paper);border:1px solid var(--line);border-radius:7px;box-shadow:0 9px 30px #242b2926}
+.layout-popover label{display:flex;align-items:center;justify-content:space-between}.layout-popover select{font:inherit;padding:5px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
+.layout-popover p{font-size:11px;color:var(--muted)}.layout-popover button{font-size:11px;margin-right:8px}
+#viewer{padding-top:calc(var(--ui-spacing) * 1.5)}.pdfViewer .page{margin-bottom:calc(var(--ui-spacing) * 1.5)}
+.annotation-card{margin-bottom:var(--ui-spacing)}
+.document-tabs{display:flex;flex:none;min-height:38px;max-width:100%;overflow-x:auto;scrollbar-width:thin;background:#eeebe3;border-bottom:1px solid var(--line)}
+.document-tab{display:flex;flex:none;max-width:240px;align-items:stretch;border-right:1px solid var(--line);border-bottom:2px solid transparent}
+.document-tab.active{background:var(--paper);border-bottom-color:#80956c}
+.document-tab>button{background:transparent;border:0;border-radius:0;font-size:11px;padding:9px 10px}
+.document-tab>button[role="tab"]{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;max-width:210px}
+.document-tab>button:last-child{padding:6px 9px;color:#777f70}
+.document-tabs+.document-bar{height:32px}

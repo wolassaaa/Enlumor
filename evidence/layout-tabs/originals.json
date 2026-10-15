@@ -1,0 +1,32 @@
+[
+  {
+    "name": "original-main.tsx",
+    "target": "src/renderer/main.tsx",
+    "sha256": "cccb4f9b2fe57fc00745607a3f21ec11f020dd048f311cf4aa2c774cbdedefc0"
+  },
+  {
+    "name": "original-style.css",
+    "target": "src/renderer/style.css",
+    "sha256": "01a963da2f6480012962d33d42bdeaa79d8fb52bb89d8dea0639893dcadefb14"
+  },
+  {
+    "name": "original-workspace.ts",
+    "target": "src/main/workspace.ts",
+    "sha256": "5a64fda4c68fd3d0a8d3ab49e691aba9db7a367b4f654d88e783f1eb1a71ee44"
+  },
+  {
+    "name": "original-index.ts",
+    "target": "src/main/index.ts",
+    "sha256": "31772e871022577742f2f5ff940c6640799b3088bdd8ce61a7820150e769d7bf"
+  },
+  {
+    "name": "original-preload.ts",
+    "target": "src/main/preload.ts",
+    "sha256": "a63a7423174a223c5855616faf9716eef95f913abef6247bfa6bd87138e972ba"
+  },
+  {
+    "name": "original-model.ts",
+    "target": "src/shared/model.ts",
+    "sha256": "a07d1b7c8870903785d64778f38bf93fda3bf2e7232056626e4e6df01ae43b94"
+  }
+]

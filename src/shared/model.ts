@@ -10,7 +10,13 @@ export type DocumentInfo = { id: string; path: string; name: string; fingerprint
 export type OpenedDocument = DocumentInfo & { data: Uint8Array; reading: ReadingState | null };
 export type ExportResult = { cancelled: boolean; path?: string; annotationCount?: number };
 export type Reply<T> = { ok: true; value: T } | { ok: false; error: { code: string; message: string } };
+export type LayoutPreferences = { left: number; right: number; spacing: 12 | 16 | 24 };
+export type TabSession = { openIds: string[]; activeId: string | null };
 export type Bridge = {
+  getLayout(): Promise<Reply<LayoutPreferences>>;
+  saveLayout(layout: LayoutPreferences): Promise<Reply<void>>;
+  getTabs(): Promise<Reply<TabSession | null>>;
+  saveTabs(session: TabSession): Promise<Reply<void>>;
   openDocument(): Promise<Reply<OpenedDocument | null>>;
   restoreDocument(id: string): Promise<Reply<OpenedDocument>>;
   rebindDocument(id: string): Promise<Reply<OpenedDocument | null>>;

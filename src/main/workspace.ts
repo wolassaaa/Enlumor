@@ -1,8 +1,8 @@
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomUUID } from 'node:crypto';
-import { readFileSync, existsSync, copyFileSync, statSync } from 'node:fs';
+import { readFileSync, existsSync, copyFileSync, statSync, constants } from 'node:fs';
 import path from 'node:path';
-import type { Annotation, AnnotationChange, CommitResult, DocumentInfo, ReadingState } from '../shared/model';
+import type { Annotation, AnnotationChange, CommitResult, DocumentInfo, ReadingState, LayoutPreferences, TabSession } from '../shared/model';
 import { validateAnnotation } from '../shared/geometry';
 
 export function fingerprint(file: string): string { return createHash('sha256').update(readFileSync(file)).digest('hex'); }
@@ -20,7 +20,7 @@ export class Workspace {
     this.db = new DatabaseSync(file);
     this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000');
     const version = Number(this.db.prepare('PRAGMA user_version').get()!.user_version);
-    if (version > 1) { this.db.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
+    if (version > 2) { this.db.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
     if (version === 0) {
       const tables = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
       if (tables.length) { this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); copyFileSync(file, `${file}.pre-v1.bak`); }
@@ -30,6 +30,37 @@ export class Workspace {
         CREATE TABLE IF NOT EXISTS reading (documentId TEXT PRIMARY KEY REFERENCES documents(id), payload TEXT NOT NULL);
         PRAGMA user_version=1; COMMIT;`);
     }
+    if (version < 2) {
+      try {
+        if (version === 1) {
+          const checkpoint = this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get();
+          if (Number(checkpoint?.busy)) throw new Error('BACKUP_BUSY: 请关闭其他 Enlumor 窗口后重试升级');
+          const backup = existsSync(`${file}.pre-v2.bak`) ? `${file}.pre-v2.${Date.now()}.bak` : `${file}.pre-v2.bak`;
+          copyFileSync(file, backup, constants.COPYFILE_EXCL);
+        }
+        this.db.exec('BEGIN IMMEDIATE; CREATE TABLE preferences(key TEXT PRIMARY KEY,payload TEXT NOT NULL); PRAGMA user_version=2; COMMIT;');
+      } catch (error) { this.db.close(); this.closed = true; throw error; }
+    }
+  }
+  layout(): LayoutPreferences {
+    const row = this.db.prepare("SELECT payload FROM preferences WHERE key='layout'").get();
+    return row ? JSON.parse(row.payload as string) : { left: 208, right: 282, spacing: 16 };
+  }
+  saveLayout(layout: LayoutPreferences) {
+    if (!layout || !Number.isFinite(layout.left) || layout.left < 176 || layout.left > 420 || !Number.isFinite(layout.right) || layout.right < 220 || layout.right > 460 || ![12,16,24].includes(layout.spacing)) throw new Error('INVALID_LAYOUT');
+    this.preference('layout', { left: layout.left, right: layout.right, spacing: layout.spacing });
+  }
+  tabs(): TabSession | null {
+    const row = this.db.prepare("SELECT payload FROM preferences WHERE key='tabs'").get();
+    return row ? JSON.parse(row.payload as string) : null;
+  }
+  saveTabs(session: TabSession) {
+    if (!session || !Array.isArray(session.openIds) || session.openIds.length > 100 || new Set(session.openIds).size !== session.openIds.length || (session.activeId !== null && !session.openIds.includes(session.activeId))) throw new Error('INVALID_TABS');
+    for (const id of session.openIds) this.document(id);
+    this.preference('tabs', { openIds: session.openIds, activeId: session.activeId });
+  }
+  private preference(key: string, value: unknown) {
+    this.db.prepare('INSERT INTO preferences VALUES(?,?) ON CONFLICT(key) DO UPDATE SET payload=excluded.payload').run(key,JSON.stringify(value));
   }
   close() { if (!this.closed) { this.db.close(); this.closed = true; } }
   list(): DocumentInfo[] { return this.db.prepare('SELECT * FROM documents ORDER BY updatedAt DESC').all() as DocumentInfo[]; }

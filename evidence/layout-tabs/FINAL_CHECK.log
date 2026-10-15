@@ -1,0 +1,12 @@
+
+Running 4 tests using 1 worker
+
+(node:51596) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\workspace.spec.ts:18:1 › adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport (4.1s)
+  ok 2 tests\e2e\workspace.spec.ts:41:1 › document tabs isolate progress and undo, deduplicate opens, restore session and close without deleting data (4.2s)
+  ok 3 tests\e2e\workspace.spec.ts:63:1 › note drafts block tab navigation and close shortcuts until saved or cancelled (2.0s)
+  ok 4 tests\e2e\workspace.spec.ts:79:1 › failed PDF renderer opening restores prior document, undo history and persisted active session (2.7s)
+
+  4 passed (14.3s)

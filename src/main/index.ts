@@ -50,6 +50,10 @@ app.whenReady().then(() => {
     }
   });
   handle('document:list', () => workspace.list());
+  handle('layout:get', () => workspace.layout());
+  handle('layout:save', layout => workspace.saveLayout(layout));
+  handle('tabs:get', () => workspace.tabs());
+  handle('tabs:save', session => workspace.saveTabs(session));
   handle('document:open', async () => {
     const file = await choosePdf(); if (!file) return null;
     const meta = await runPdfTask<{ pageCount: number }>({ operation: 'inspect', source: file });

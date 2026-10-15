@@ -1,0 +1,61 @@
+(node:61916) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 15 tests using 1 worker
+
+(node:12620) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12620) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  1 tests\e2e\reader.spec.ts:17:1 › packaged app opens and exports without external Python configuration (2.6s)
+  ok  2 tests\e2e\reader.spec.ts:33:1 › reading layout collapses panels and keeps selection tools near the text (1.8s)
+  ok  3 tests\e2e\reader.spec.ts:64:1 › PDF directory resolves nested entries to source pages (1.8s)
+  ok  4 tests\e2e\reader.spec.ts:80:1 › PDF thumbnails render on demand, navigate and release offscreen canvases (2.2s)
+
+  ok  5 tests\e2e\reader.spec.ts:117:1 › PDF thumbnail jobs cancel on rapid scroll and document replacement (2.1s)
+  ok  6 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1 (2.4s)
+  ok  7 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1.5 (2.5s)
+  ok  8 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 2 (2.3s)
+  ok  9 tests\e2e\reader.spec.ts:163:1 › failed undo retries as undo and preserves the redo action (1.7s)
+  ok 10 tests\e2e\reader.spec.ts:183:1 › search markup does not duplicate selected text or quads (1.9s)
+  ok 11 tests\e2e\reader.spec.ts:197:1 › cross-page multiline selection is one undo step (1.8s)
+
+  ok 12 tests\e2e\reader.spec.ts:221:1 › cancel, corrupt, encrypted and image-only PDFs have explicit outcomes (2.1s)
+  ok 13 tests\e2e\reader.spec.ts:262:1 › offline reading, selected highlight, note, undo/redo, export and crash recovery (6.3s)
+  x  14 tests\e2e\reader.spec.ts:300:1 › rejects replaced source and permits same-content relocation (1.0m)
+Worker teardown timeout of 60000ms exceeded.
+
+Failed worker ran 14 tests, last 10 tests were:
+tests\e2e\reader.spec.ts:117:1 › PDF thumbnail jobs cancel on rapid scroll and document replacement
+tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1
+tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1.5
+tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 2
+tests\e2e\reader.spec.ts:163:1 › failed undo retries as undo and preserves the redo action
+tests\e2e\reader.spec.ts:183:1 › search markup does not duplicate selected text or quads
+tests\e2e\reader.spec.ts:197:1 › cross-page multiline selection is one undo step
+tests\e2e\reader.spec.ts:221:1 › cancel, corrupt, encrypted and image-only PDFs have explicit outcomes
+tests\e2e\reader.spec.ts:262:1 › offline reading, selected highlight, note, undo/redo, export and crash recovery
+tests\e2e\reader.spec.ts:300:1 › rejects replaced source and permits same-content relocation
+(node:14040) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 15 tests\e2e\workspace.spec.ts:18:1 › adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport (2.3s)
+
+
+  1) tests\e2e\reader.spec.ts:300:1 › rejects replaced source and permits same-content relocation ──
+
+    Test timeout of 60000ms exceeded.
+
+    Error Context: test-results\reader-rejects-replaced-so-6514d-its-same-content-relocation\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\reader-rejects-replaced-so-6514d-its-same-content-relocation\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\reader-rejects-replaced-so-6514d-its-same-content-relocation\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\reader.spec.ts:300:1 › rejects replaced source and permits same-content relocation ───
+  14 passed (2.6m)
+  1 error was not a part of any test, see above for details

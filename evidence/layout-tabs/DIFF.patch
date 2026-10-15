@@ -1,0 +1,740 @@
+diff --git a/.gitattributes b/.gitattributes
+index 378348b..fcfdbba 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -3,3 +3,4 @@
+ *.ts text eol=lf
+ *.tsx text eol=lf
+ *.css text eol=lf
++evidence/layout-tabs/original-* -text
+diff --git a/README.md b/README.md
+index 87695b6..d0c6de3 100644
+--- a/README.md
++++ b/README.md
+@@ -20,7 +20,7 @@ npm start          # 启动已构建的桌面应用
+ 
+ 仅开发/重新构建需要 Node 和 Python。`setup.ps1` 安装 requirements-build.txt；打包命令通过 PyInstaller 收集解释器、PyMuPDF 和依赖到应用资源目录，运行时优先使用内置程序。Windows 构建不作为 macOS/iPad 的二进制包使用。
+ 
+-0.1.4 新增按需缩略图导航（左栏“缩略图”），保留 0.1.3 的嵌套目录与保存/滚动优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
++0.1.5 新增侧栏调宽/间距与多文档标签。拖动侧栏边缘或聚焦后按方向键；顶栏“布局”选择阅读间距。Ctrl+Tab 切换标签、Ctrl+W 关闭当前标签；关闭标签不删除文档。便签编辑时先保存/取消再切换。保留此前按需缩略图、目录与性能优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
+ 
+ ## 已有功能
+ 
+@@ -55,3 +55,5 @@ macOS 后续可复用桌面与文档逻辑，但尚未构建/验收。iPad 需
+ PyMuPDF 使用 AGPL/商业双许可，当前仓库用于个人开发；分发前需按实际分发方式处理其许可。第三方依赖版本锁定在 package-lock.json / requirements.txt。
+ 
+ 初始底座证据见 `VERIFICATION.txt`；0.1.1 UI 与内置运行时修复证据见 `evidence/ui-runtime/VERIFICATION.txt`。整体实施进度见 `docs/IMPLEMENTATION.md`。
++
++SQLite v1 升级到 v2 前创建 workspace.sqlite.pre-v2.bak（已有同名备份则追加时间戳，不覆盖）。旧程序不直接读取 v2 数据；代码回退时保留当前工作区及备份，不以旧备份静默覆盖新批注。每两项功能一次整体 Review，见 docs/REVIEW-CADENCE.md。
+diff --git a/docs/FEATURES.md b/docs/FEATURES.md
+index 2491bc5..2cf9ea8 100644
+--- a/docs/FEATURES.md
++++ b/docs/FEATURES.md
+@@ -6,10 +6,26 @@
+ 
+ 使用 Superpowers：systematic-debugging → test-driven-development（先见失败）→ verification-before-completion。
+ `npm run release:verified` 顺序执行类型检查、Vitest、Python unittest、构建内置 PDF 程序、暂存 ZIP、真实 Electron E2E、无外部 Python 的打开/导出、实际暂存 EXE 性能测试。
+-任一步失败不更新 release/latest.json。成功后才生成不可变版本文件与最新版本指针；工作区数据不迁移、不删除。
++任一步失败不更新 release/latest.json。成功后才生成不可变版本文件与最新版本指针；发布测试仅使用独立临时工作区，不修改个人数据。新版首次运行涉及数据库升级时先备份，不删除原批注。
+ 合成压力样本：200 页 + 32MiB 流 + 1000 个真实批注；滚动 p95≤34ms、保存 IPC p95≤20ms、解压后启动三次中位数≤1500ms、正文保留 canvas≤30、缩略图 canvas≤8。这是本机回归预算，不是所有电脑/所有 PDF 的性能保证。
+ 
+-## 当前 0.1.4
++## 每完成两个任务做一次整体 Review
++
++用户新增要求（2026-10-15）：每完成两个独立功能任务，先审查程序与操作体验，再推进下两项；对照成熟工作台/阅读器的官方设计，修正实际问题，不仅装修界面。轮次、发现与修复记录见 [REVIEW-CADENCE.md](REVIEW-CADENCE.md)。
++本轮任务：① UX-01 侧栏尺寸/间距；② RDR-01 多文档标签。Review 已完成，两条 Important 已经失败→成功验证；计数清零。
++
++## 当前 0.1.5
++
++验收：24 项 Vitest + 3 项 unittest + 18 项真实 Electron E2E = 45 项，通过双样本性能/打包门禁；最终 EXE 新增流程再复测 4 项通过。
++
++- UX-01：左右侧栏可拖动调宽，支持方向键/Shift/Home/End、双击恢复单栏宽度、整体恢复默认；布局菜单提供紧凑/标准/宽松间距。
++- 宽度与间距保存在 SQLite；窄窗口自动压缩侧栏，保留至少 400 CSS 像素正文区域（支持窗口最小宽度 940）。布局保存失败有重试入口；关闭前等待写入。
++- RDR-01：多文档标签、同文件去重、阅读位置/缩放隔离、每标签会话撤销历史、关闭标签不删除文档、重启恢复标签及活动文档。
++- 单一 PDF viewer；非活动标签只保存元数据与操作历史，避免多份渲染器增加负担。
++- 便签编辑时阻止 Ctrl+Tab/Ctrl+W；PDF 渲染打开失败恢复原视图、历史及会话。
++- SQLite v1→v2 增加 preferences；升级前校验 WAL checkpoint 并创建 pre-v2 备份，保留文档/批注/阅读进度。旧版本 v1 程序不直接读取 v2 工作区；回退代码不删除新版数据。
++
++## 上轮 0.1.4
+ 
+ - RDR-01 子项：缩略图导航、当前页标记、点击跳转；离屏/收起/切换文档取消预览任务并释放画布。只预览源 PDF，Enlumor 工作区批注仍在正文显示。
+ - 每次只执行一个预览任务，缩略图最大 120×160 CSS 像素，设备像素倍率上限 2。渲染成功、取消、文档切换后调用 PDF.js 页面资源清理，避免只清空 canvas 而遗留解码对象。
+@@ -28,8 +44,9 @@
+ 
+ | 需求 | 已实现并有回归覆盖 | 待交付 |
+ |---|---|---|
+-| RDR-01 | 本地打开、最近文件、目录、按需缩略图、页码、全文搜索、位置/缩放恢复 | 多标签页（下一项） |
+-| RDR-02 | 连续滚动、适宽/适页、滚轮、Ctrl+滚轮缩放 | 单页模式 |
++| UX-01（新增） | 侧栏宽度、间距、重置、键盘调节、布局恢复 | 静态拖动握柄提示、键盘焦点细节 |
++| RDR-01 | 本地打开、最近文件、目录、按需缩略图、多标签页、页码、全文搜索、位置/缩放恢复 | 复杂文档兼容回归 |
++| RDR-02 | 连续滚动、适宽/适页、滚轮、Ctrl+滚轮缩放 | 单页模式（下一项） |
+ | RDR-03 | 搜索命中定位与强调 | 更复杂 PDF 的兼容回归持续补充 |
+ | ANN-01 | 高亮、便签、缩放旋转锚定 | 下划线→删除线→直线/箭头→画笔→擦除，每种连同导出独立验收 |
+ | ANN-02 | 手动编辑、删除/改色、当前会话撤销/重做、持久化 | 可见修改历史、AI 来源/逐个接受撤销 |
+diff --git a/docs/REVIEW-CADENCE.md b/docs/REVIEW-CADENCE.md
+new file mode 100644
+index 0000000..4fefcde
+--- /dev/null
++++ b/docs/REVIEW-CADENCE.md
+@@ -0,0 +1,41 @@
++# Enlumor 两项一 Review：第 1 轮
++
++日期：2026-10-15；基线 0192aaa；分支 feat/layout-tabs。
++
++## 本轮两个任务
++
++1. UX-01：左右侧栏拖动调宽、键盘微调、双击恢复、紧凑/标准/宽松间距、SQLite 保存、窄窗口正文宽度保底。
++2. RDR-01：多文档标签、同文档去重、切换前保存阅读状态、每标签撤销/重做、关闭不删除工作区、重启恢复、Ctrl+Tab / Ctrl+Shift+Tab / Ctrl+W。
++
++采用单个 PDF viewer，只保存非活动标签的 DocumentInfo 与本会话操作历史，不保留所有 PDF 字节或给每个标签复制一个 viewer。
++
++## 成熟设计参考与本轮操作逻辑
++
++- [VS Code Custom Layout](https://code.visualstudio.com/docs/configure/custom-layout)：参考可调整、可恢复的工作台与侧栏，保留正文优先，而非引入可随意拆分的布局框架。
++- [Adobe Acrobat viewing preferences](https://helpx.adobe.com/acrobat/using/viewing-pdfs-viewing-preferences.html)：参考同窗口多 PDF 标签与会话恢复。关闭标签只关闭视图，不等于删除文档或批注。
++- 操作采用可预测的单击切换、独立关闭按钮、当前标签标记、方向键/Home/End 标签导航；左右分隔线支持方向键、Shift 大步、Home/End。
++- 宽度设置与实际窄窗口显示尺寸分离；宽度、间距写入 SQLite，不另建 sidecar。间距仅作用界面留白与页面间隔，不修改 PDF 正文、坐标或导出。
++
++## 实际 Review 与修复
++
++使用一次独立只读代码/截图审查（首次模型容量错误后重试；不是对修复的二次审查）。检查 shared/main/preload、迁移、异步状态、标签历史、分隔线及两张真实界面截图。
++
++Important 1：便签模态编辑期间 Ctrl+Tab/Ctrl+W 可切换/关闭文档，随后保存会让文档 A 的批注显示在 B 上。
++- RED：note drafts block tab navigation and close shortcuts until saved or cancelled 失败，活动文档变成 beta.pdf。
++- GREEN：模态编辑期间阻断导航/关闭、保留草稿；关闭应用的刷新也要求先保存或取消便签。业务提交另校验批注 documentId 等于活动文档。
++
++Important 2：reader.open 失败后文档标签、撤销历史和 SQLite 活动会话不一致。
++- RED：failed PDF renderer opening restores prior document, undo history and persisted active session 失败，旧批注数量变成 0。
++- GREEN：新 PDF 成功渲染后再写会话；加载失败恢复旧 PDF、位置/缩放、批注、历史及会话。恢复失败时清空活动视图，避免挂着旧文档标题继续编辑另一个文档。
++
++两条修复以测试失败→成功验证；最终全套及实际打包门禁结果见 evidence/layout-tabs/VERIFICATION.txt。
++
++## Deferred minors
++
++- 关闭被聚焦的标签后，尚未主动把键盘焦点移到下一标签；可再次 Tab 定位。下一轮键盘体验完善时处理。
++- 分隔线有悬停/焦点态和说明，但静止状态缺少明显拖动握柄。保留克制界面，本轮不追加视觉重做。
++
++## 后续规则
++
++两个独立功能任务记为一轮；完成后必须 review 再继续。每个任务先失败测试→实现→回归；Review 同时检查代码/数据安全与操作逻辑，参考官方成熟产品设计，不能只看视觉。Important/Critical 必须修复并补测试；Minor 如暂缓则记录。
++本轮 Review 已完成，计数清零。下一轮：① RDR-02 单页模式；② ANN-01 下划线（包括标准 PDF 导出）。两项后执行第 2 轮 Review，继续不提前引入 AI/白板。
+diff --git a/package-lock.json b/package-lock.json
+index d4257d9..4b89098 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "enlumor",
+-  "version": "0.1.4",
++  "version": "0.1.5",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "enlumor",
+-      "version": "0.1.4",
++      "version": "0.1.5",
+       "dependencies": {
+         "pdfjs-dist": "6.4.299",
+         "react": "19.3.1",
+diff --git a/package.json b/package.json
+index 1f565f5..3471cca 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "enlumor",
+-  "version": "0.1.4",
++  "version": "0.1.5",
+   "private": true,
+   "type": "module",
+   "description": "Local-first PDF reading workspace",
+diff --git a/scripts/check-layout-tabs-rollback.mjs b/scripts/check-layout-tabs-rollback.mjs
+new file mode 100644
+index 0000000..0bc38fe
+--- /dev/null
++++ b/scripts/check-layout-tabs-rollback.mjs
+@@ -0,0 +1,36 @@
++import { build } from 'esbuild';
++import { build as viteBuild } from 'vite';
++import react from '@vitejs/plugin-react';
++import { _electron as electron, expect } from '@playwright/test';
++import { mkdirSync, mkdtempSync, cpSync, copyFileSync, readFileSync } from 'node:fs';
++import { createHash } from 'node:crypto';
++import path from 'node:path';
++import { copyAssets } from './assets.mjs';
++const root=path.resolve('.');
++const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex');
++const live=sha('src/renderer/main.tsx');
++const base=path.join(root,'.cache/layout-tabs-rollback');mkdirSync(base,{recursive:true});
++const copy=mkdtempSync(path.join(base,'run-'));
++if(!copy.startsWith(base+path.sep))throw Error('Unexpected rollback target');
++cpSync('src',path.join(copy,'src'),{recursive:true});
++cpSync('python',path.join(copy,'python'),{recursive:true});
++for(const file of ['package.json','index.html'])copyFileSync(file,path.join(copy,file));
++const originals=JSON.parse(readFileSync('evidence/layout-tabs/originals.json','utf8'));
++for(const {name,target,sha256} of originals){const file=path.join(root,'evidence/layout-tabs',name);if(sha(file)!==sha256)throw Error('Original hash mismatch');copyFileSync(file,path.join(copy,target));}
++await build({entryPoints:[path.join(copy,'src/main/index.ts'),path.join(copy,'src/main/preload.ts')],outdir:path.join(copy,'dist/main'),bundle:true,platform:'node',format:'cjs',outExtension:{'.js':'.cjs'},external:['electron']});
++await viteBuild({configFile:false,root:copy,plugins:[react()],base:'./',build:{outDir:path.join(copy,'dist/renderer')}});
++copyAssets(path.join(copy,'dist/renderer/pdf-assets'));
++const app=await electron.launch({args:[copy,`--user-data-dir=${path.join(copy,'profile')}`],env:{...process.env,ENLUMOR_PYTHON:path.join(root,'.venv/Scripts/python.exe')}});
++try{
++ const page=await app.firstWindow();
++ const source=path.join(root,'.cache/benchmark/200-pages-32MiB.pdf');
++ await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);
++ await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();
++ await expect(page.locator('.textLayer span').first()).toBeVisible();
++ await expect(page.getByRole('separator')).toHaveCount(0);
++ await expect(page.getByRole('tablist',{name:'已打开文档'})).toHaveCount(0);
++ await page.getByRole('tab',{name:'缩略图',exact:true}).click();
++ await expect(page.getByRole('region',{name:'PDF 缩略图'}).getByRole('button')).toHaveCount(200);
++ if(sha('src/renderer/main.tsx')!==live)throw Error('Live source changed');
++ console.log('ROLLBACK: RESIZERS=0; DOCUMENT_TABS=0; THUMBNAILS=200; LIVE_SOURCE_UNCHANGED=YES');
++}finally{await app.close();}
+diff --git a/src/main/index.ts b/src/main/index.ts
+index ec3d871..d501937 100644
+--- a/src/main/index.ts
++++ b/src/main/index.ts
+@@ -50,6 +50,10 @@ app.whenReady().then(() => {
+     }
+   });
+   handle('document:list', () => workspace.list());
++  handle('layout:get', () => workspace.layout());
++  handle('layout:save', layout => workspace.saveLayout(layout));
++  handle('tabs:get', () => workspace.tabs());
++  handle('tabs:save', session => workspace.saveTabs(session));
+   handle('document:open', async () => {
+     const file = await choosePdf(); if (!file) return null;
+     const meta = await runPdfTask<{ pageCount: number }>({ operation: 'inspect', source: file });
+diff --git a/src/main/preload.ts b/src/main/preload.ts
+index 72fed52..3280ba0 100644
+--- a/src/main/preload.ts
++++ b/src/main/preload.ts
+@@ -1,6 +1,10 @@
+ import { contextBridge, ipcRenderer } from 'electron';
+ import type { Bridge } from '../shared/model';
+ const bridge: Bridge = {
++  getLayout: () => ipcRenderer.invoke('layout:get'),
++  saveLayout: layout => ipcRenderer.invoke('layout:save', layout),
++  getTabs: () => ipcRenderer.invoke('tabs:get'),
++  saveTabs: session => ipcRenderer.invoke('tabs:save', session),
+   openDocument: () => ipcRenderer.invoke('document:open'),
+   restoreDocument: id => ipcRenderer.invoke('document:restore', id),
+   rebindDocument: id => ipcRenderer.invoke('document:rebind', id),
+diff --git a/src/main/workspace.ts b/src/main/workspace.ts
+index d6a81e4..554fabc 100644
+--- a/src/main/workspace.ts
++++ b/src/main/workspace.ts
+@@ -1,8 +1,8 @@
+ import { DatabaseSync } from 'node:sqlite';
+ import { createHash, randomUUID } from 'node:crypto';
+-import { readFileSync, existsSync, copyFileSync, statSync } from 'node:fs';
++import { readFileSync, existsSync, copyFileSync, statSync, constants } from 'node:fs';
+ import path from 'node:path';
+-import type { Annotation, AnnotationChange, CommitResult, DocumentInfo, ReadingState } from '../shared/model';
++import type { Annotation, AnnotationChange, CommitResult, DocumentInfo, ReadingState, LayoutPreferences, TabSession } from '../shared/model';
+ import { validateAnnotation } from '../shared/geometry';
+ 
+ export function fingerprint(file: string): string { return createHash('sha256').update(readFileSync(file)).digest('hex'); }
+@@ -20,7 +20,7 @@ export class Workspace {
+     this.db = new DatabaseSync(file);
+     this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000');
+     const version = Number(this.db.prepare('PRAGMA user_version').get()!.user_version);
+-    if (version > 1) { this.db.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
++    if (version > 2) { this.db.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
+     if (version === 0) {
+       const tables = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+       if (tables.length) { this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); copyFileSync(file, `${file}.pre-v1.bak`); }
+@@ -30,6 +30,37 @@ export class Workspace {
+         CREATE TABLE IF NOT EXISTS reading (documentId TEXT PRIMARY KEY REFERENCES documents(id), payload TEXT NOT NULL);
+         PRAGMA user_version=1; COMMIT;`);
+     }
++    if (version < 2) {
++      try {
++        if (version === 1) {
++          const checkpoint = this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get();
++          if (Number(checkpoint?.busy)) throw new Error('BACKUP_BUSY: 请关闭其他 Enlumor 窗口后重试升级');
++          const backup = existsSync(`${file}.pre-v2.bak`) ? `${file}.pre-v2.${Date.now()}.bak` : `${file}.pre-v2.bak`;
++          copyFileSync(file, backup, constants.COPYFILE_EXCL);
++        }
++        this.db.exec('BEGIN IMMEDIATE; CREATE TABLE preferences(key TEXT PRIMARY KEY,payload TEXT NOT NULL); PRAGMA user_version=2; COMMIT;');
++      } catch (error) { this.db.close(); this.closed = true; throw error; }
++    }
++  }
++  layout(): LayoutPreferences {
++    const row = this.db.prepare("SELECT payload FROM preferences WHERE key='layout'").get();
++    return row ? JSON.parse(row.payload as string) : { left: 208, right: 282, spacing: 16 };
++  }
++  saveLayout(layout: LayoutPreferences) {
++    if (!layout || !Number.isFinite(layout.left) || layout.left < 176 || layout.left > 420 || !Number.isFinite(layout.right) || layout.right < 220 || layout.right > 460 || ![12,16,24].includes(layout.spacing)) throw new Error('INVALID_LAYOUT');
++    this.preference('layout', { left: layout.left, right: layout.right, spacing: layout.spacing });
++  }
++  tabs(): TabSession | null {
++    const row = this.db.prepare("SELECT payload FROM preferences WHERE key='tabs'").get();
++    return row ? JSON.parse(row.payload as string) : null;
++  }
++  saveTabs(session: TabSession) {
++    if (!session || !Array.isArray(session.openIds) || session.openIds.length > 100 || new Set(session.openIds).size !== session.openIds.length || (session.activeId !== null && !session.openIds.includes(session.activeId))) throw new Error('INVALID_TABS');
++    for (const id of session.openIds) this.document(id);
++    this.preference('tabs', { openIds: session.openIds, activeId: session.activeId });
++  }
++  private preference(key: string, value: unknown) {
++    this.db.prepare('INSERT INTO preferences VALUES(?,?) ON CONFLICT(key) DO UPDATE SET payload=excluded.payload').run(key,JSON.stringify(value));
+   }
+   close() { if (!this.closed) { this.db.close(); this.closed = true; } }
+   list(): DocumentInfo[] { return this.db.prepare('SELECT * FROM documents ORDER BY updatedAt DESC').all() as DocumentInfo[]; }
+diff --git a/src/renderer/layout.ts b/src/renderer/layout.ts
+new file mode 100644
+index 0000000..bba45d6
+--- /dev/null
++++ b/src/renderer/layout.ts
+@@ -0,0 +1,10 @@
++import type { LayoutPreferences } from '../shared/model';
++export const defaultLayout: LayoutPreferences = { left:208, right:282, spacing:16 };
++export function fitPanels(layout: LayoutPreferences, width: number, leftOpen=true, rightOpen=true) {
++  let left=Math.max(176,Math.min(420,layout.left)),right=Math.max(220,Math.min(460,layout.right));
++  const budget=Math.max(396,width-400-(Number(leftOpen)+Number(rightOpen))*6);
++  if(leftOpen&&rightOpen&&left+right>budget){right=Math.max(220,budget-left);left=Math.max(176,budget-right);}
++  else if(leftOpen&&!rightOpen)left=Math.min(left,Math.max(176,budget));
++  else if(rightOpen&&!leftOpen)right=Math.min(right,Math.max(220,budget));
++  return {left,right};
++}
+diff --git a/src/renderer/main.tsx b/src/renderer/main.tsx
+index 5dbc84c..6c5ffb2 100644
+--- a/src/renderer/main.tsx
++++ b/src/renderer/main.tsx
+@@ -1,3 +1,7 @@
++import { PanelDivider } from './panel-divider';
++import { defaultLayout, fitPanels } from './layout';
++import type { CSSProperties } from 'react';
++import type { LayoutPreferences } from '../shared/model';
+ import { ThumbnailRail } from './thumbnails';
+ import { createRoot } from 'react-dom/client';
+ import { useEffect, useRef, useState } from 'react';
+@@ -15,12 +19,27 @@ function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id
+ }
+ 
+ function App() {
++  const workspaceElement = useRef<HTMLDivElement>(null);
++  const [layout, setLayout] = useState<LayoutPreferences>(defaultLayout), [layoutOpen, setLayoutOpen] = useState(false), [workspaceWidth, setWorkspaceWidth] = useState(window.innerWidth);
++  const layoutRef = useRef(layout), layoutFlight = useRef<Promise<void> | null>(null), [layoutError, setLayoutError] = useState(false);
++  function persistLayout(next: LayoutPreferences) {
++    setLayout(next); layoutRef.current = next; setParts([]);
++    const job = (layoutFlight.current || Promise.resolve()).catch(() => {}).then(async () => { unwrap(await window.enlumor.saveLayout(next)); setLayoutError(false); });
++    layoutFlight.current = job;
++    void job.catch(reason => { setLayoutError(true); fail(reason); });
++  }
+   const container = useRef<HTMLDivElement>(null), reader = useRef<PdfReader | null>(null);
+   const [doc, setDoc] = useState<OpenedDocument | null>(null), [recent, setRecent] = useState<DocumentInfo[]>([]);
+   const [marks, setMarks] = useState<Annotation[]>([]), [parts, setParts] = useState<SelectionPart[]>([]);
+   const [status, setStatus] = useState('本地工作区就绪'), [error, setError] = useState(''), [notice, setNotice] = useState('');
+   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
+   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
++  const noteOpen = useRef(false); noteOpen.current = note !== null;
++  const activeDocument = useRef<OpenedDocument | null>(null), activeMarks = useRef<Annotation[]>([]);
++  const [tabs, setTabs] = useState<DocumentInfo[]>([]);
++  const tabsRef = useRef<DocumentInfo[]>([]), activeId = useRef<string | null>(null);
++  const histories = useRef(new Map<string, {undo:AnnotationChange[];redo:AnnotationChange[]}>());
++  const emptyHistory = () => ({undo:[] as AnnotationChange[],redo:[] as AnnotationChange[]});
+   const [history, setHistory] = useState({ undo: [] as AnnotationChange[], redo: [] as AnnotationChange[] });
+   const [libraryOpen, setLibraryOpen] = useState(true), [notesOpen, setNotesOpen] = useState(true);
+   const [libraryView, setLibraryView] = useState<'documents' | 'outline' | 'thumbnails'>('documents'), [outline, setOutline] = useState<OutlineEntry[] | null>([]);
+@@ -31,7 +50,9 @@ function App() {
+   const fail = (reason: unknown) => { setError(reason instanceof Error ? reason.message : String(reason)); setStatus('尚未保存 / 操作未完成'); };
+   async function flush() {
+     clearTimeout(timer.current);
++    if(noteOpen.current) throw new Error('UNSAVED_NOTE: 请先保存或取消便签');
+     await flight.current;
++    await layoutFlight.current;
+     if (pending.current) throw new Error('UNSAVED_CHANGE');
+     if (current.current) unwrap(await window.enlumor.saveReadingState(current.current));
+   }
+@@ -51,48 +72,111 @@ function App() {
+     }, setNotice, setOutline);
+     const off = window.enlumor.onFlush(flush);
+     void (async () => {
+-      try { const list = unwrap(await window.enlumor.listDocuments()); setRecent(list); if (list.length) await load(list[0].id); }
++      try { const savedLayout = unwrap(await window.enlumor.getLayout()); setLayout(savedLayout); layoutRef.current = savedLayout; const list = unwrap(await window.enlumor.listDocuments()); setRecent(list);
++        const session = unwrap(await window.enlumor.getTabs());
++        if (session) {
++          const restored = session.openIds.map(id=>list.find(item=>item.id===id)).filter((item):item is DocumentInfo=>!!item);
++          tabsRef.current=restored;setTabs(restored);
++          if(session.activeId && restored.some(item=>item.id===session.activeId)) await load(session.activeId);
++        } else if(list.length) await load(list[0].id); }
+       catch (reason) { fail(reason); }
+     })();
+     const keyboard = (event: KeyboardEvent) => {
+-      if (event.key === 'Escape') { setParts([]); setNote(null); window.getSelection()?.removeAllRanges(); }
++      if (noteOpen.current && event.ctrlKey && (event.key === 'Tab' || event.key.toLowerCase() === 'w')) { event.preventDefault(); return; }
++      if (event.ctrlKey && event.key === 'Tab') {
++        event.preventDefault(); const list=tabsRef.current; const index=list.findIndex(tab=>tab.id===activeId.current);
++        const next=list[(index+(event.shiftKey?-1:1)+list.length)%list.length];if(next)void load(next.id);return;
++      }
++      if (event.ctrlKey && event.key.toLowerCase()==='w') { event.preventDefault(); if(activeId.current)void closeTab(activeId.current);return; }
++      if (event.key === 'Escape') { setParts([]); setNote(null); setLayoutOpen(false); window.getSelection()?.removeAllRanges(); }
+     };
+     window.addEventListener('keydown', keyboard);
++    const observer = new ResizeObserver(entries => setWorkspaceWidth(entries[0].contentRect.width));
++    observer.observe(workspaceElement.current!);
+     const resized = () => setParts([]);
+     window.addEventListener('resize', resized);
+-    return () => { off(); clearTimeout(timer.current); window.removeEventListener('keydown', keyboard); window.removeEventListener('resize', resized); };
++    return () => { observer.disconnect(); off(); clearTimeout(timer.current); window.removeEventListener('keydown', keyboard); window.removeEventListener('resize', resized); };
+   }, []);
+-  async function load(id?: string, rebind = false) {
+-    if (locked.current || pending.current) return;
++  async function load(id?: string, rebind = false, replacementTabs?: DocumentInfo[]) {
++    if (locked.current || pending.current || noteOpen.current) return false;
+     locked.current = true; setBusy(true); setError('');
++    let replacing = false;
++    const previous = { document:activeDocument.current, marks:activeMarks.current, reading:current.current, tabs:[...tabsRef.current], activeId:activeId.current };
+     const job = (async () => {
+       await flush();
+       const opened = unwrap(await (id ? rebind ? window.enlumor.rebindDocument(id) : window.enlumor.restoreDocument(id) : window.enlumor.openDocument()));
+-      if (!opened) return;
++      if (!opened) return false;
+       const annotations = unwrap(await window.enlumor.getAnnotations(opened.id));
+-      current.current = null; setParts([]); setNotice(''); setMarks([]); setQuery(''); setHistory({ undo: [], redo: [] });
++      const baseTabs=replacementTabs || tabsRef.current;
++      const nextTabs=baseTabs.some(tab=>tab.id===opened.id) ? baseTabs.map(tab=>tab.id===opened.id?opened:tab) : [...baseTabs,opened];
++      previous.reading = current.current;
++      replacing = true; current.current=null;setParts([]);setNotice('');
+       await reader.current!.open(opened);
++      unwrap(await window.enlumor.saveTabs({openIds:nextTabs.map(tab=>tab.id),activeId:opened.id}));
++      setQuery('');setHistory(histories.current.get(opened.id) || emptyHistory());
++      tabsRef.current=nextTabs.map(({id,path,name,fingerprint,pageCount,updatedAt})=>({id,path,name,fingerprint,pageCount,updatedAt}));setTabs(tabsRef.current);activeId.current=opened.id;
++      activeDocument.current=opened;activeMarks.current=annotations;
+       setDoc(opened); setPage(String((opened.reading?.pageIndex || 0) + 1)); setZoom(opened.reading?.zoom || 1);
+       setMarks(annotations); reader.current!.setMarks(annotations);
+       current.current = opened.reading || { documentId: opened.id, fingerprint: opened.fingerprint, pageIndex: 0, offset: 0, zoom: 1, rotation: 0 };
+-      setStatus('已恢复 · 原 PDF 只读'); await refresh();
++      replacing=false;setStatus('已恢复 · 原 PDF 只读'); await refresh(); return true;
+     })();
+     // load calls flush before assigning this job; no self-await cycle.
+     flight.current = job;
+-    try { await job; } catch (reason) { fail(reason); } finally { flight.current = null; locked.current = false; setBusy(false); }
++    try { return await job; } catch (reason) {
++      if(replacing) {
++        try {
++          unwrap(await window.enlumor.saveTabs({openIds:previous.tabs.map(tab=>tab.id),activeId:previous.activeId}));
++          if(previous.document) {
++            await reader.current!.open({...previous.document,reading:previous.reading});reader.current!.setMarks(previous.marks);
++            current.current=previous.reading;activeDocument.current=previous.document;activeMarks.current=previous.marks;activeId.current=previous.activeId;
++            setDoc(previous.document);setMarks(previous.marks);setHistory(histories.current.get(previous.document.id)||emptyHistory());
++            setPage(String((previous.reading?.pageIndex||0)+1));setZoom(previous.reading?.zoom||1);
++          } else clearCurrent();
++        } catch(recovery) { clearCurrent();fail(new Error(`打开失败，恢复阅读视图也失败：${String(recovery)}`));return false; }
++      }
++      fail(reason); return false;
++    } finally { flight.current = null; locked.current = false; setBusy(false); }
+   }
+   async function commit(change: AnnotationChange, kind: 'new' | 'undo' | 'redo' = 'new') {
+     if (locked.current) return;
++    if(change.documentId!==activeId.current){fail(new Error('DOCUMENT_MISMATCH: 批注不属于当前文档'));return;}
+     locked.current = true; setBusy(true); setError(''); setStatus('正在保存…'); pending.current = { change, kind };
+     const job = (async () => {
+       const result = unwrap(await window.enlumor.applyAnnotationChange(change));
+-      pending.current = null; setMarks(result.annotations); reader.current!.setMarks(result.annotations); setParts([]);
+-      setHistory(old => kind === 'undo' ? { undo: old.undo.slice(0, -1), redo: [...old.redo, result.inverse] } : kind === 'redo' ? { undo: [...old.undo, result.inverse], redo: old.redo.slice(0, -1) } : { undo: [...old.undo, result.inverse], redo: [] });
++      pending.current = null;activeMarks.current=result.annotations; setMarks(result.annotations); reader.current!.setMarks(result.annotations); setParts([]);
++      setHistory(old => {
++        const next=kind==='undo'?{undo:old.undo.slice(0,-1),redo:[...old.redo,result.inverse]}:kind==='redo'?{undo:[...old.undo,result.inverse],redo:old.redo.slice(0,-1)}:{undo:[...old.undo,result.inverse],redo:[]};
++        histories.current.set(change.documentId,next);return next;
++      });
+       setStatus('已保存 · 本地 SQLite');
+     })();
+     flight.current = job;
+     try { await job; } catch (reason) { fail(reason); } finally { flight.current = null; locked.current = false; setBusy(false); }
+   }
++  function clearCurrent() {
++    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setPage('1');setZoom(1);
++  }
++  async function closeTab(id:string) {
++    if(locked.current || pending.current || noteOpen.current)return;
++    const index=tabsRef.current.findIndex(tab=>tab.id===id);if(index<0)return;
++    const remaining=tabsRef.current.filter(tab=>tab.id!==id);
++    if(id===activeId.current && remaining.length) {
++      if(await load(remaining[Math.min(index,remaining.length-1)].id,false,remaining))histories.current.delete(id);
++      return;
++    }
++    locked.current=true;setBusy(true);setError('');
++    const job=(async()=>{
++      await flush();
++      const nextActive=id===activeId.current?null:activeId.current;
++      unwrap(await window.enlumor.saveTabs({openIds:remaining.map(tab=>tab.id),activeId:nextActive}));
++      tabsRef.current=remaining;setTabs(remaining);histories.current.delete(id);
++      if(id===activeId.current)clearCurrent();
++      setStatus('已关闭标签 · 文档与批注保留');
++    })();
++    flight.current=job;
++    try{await job;}catch(reason){fail(reason);}finally{flight.current=null;locked.current=false;setBusy(false);}
++  }
+   function add(type: 'highlight' | 'note', text = '') {
+     if (!doc || !parts.length) return;
+     const upserts: Annotation[] = parts.map(part => ({ ...part, id: crypto.randomUUID(), documentId: doc.id, fingerprint: doc.fingerprint, type, note: text, color, author: 'user' }));
+@@ -104,12 +188,20 @@ function App() {
+     try { await flush(); const result = unwrap(await window.enlumor.exportAnnotatedPdf(doc.id)); setStatus(result.cancelled ? '已取消导出' : `导出完成 · ${result.path}`); }
+     catch (reason) { fail(reason); } finally { locked.current = false; setBusy(false); }
+   }
+-  return <div className="app">
++  const panels = fitPanels(layout, workspaceWidth, libraryOpen, notesOpen);
++  const previewPanel = (side:'left'|'right', value:number) => {
++    const sizes=fitPanels({...layoutRef.current,[side]:value},workspaceWidth,libraryOpen,notesOpen);
++    workspaceElement.current!.style.setProperty('--library-width', sizes.left+'px');
++    workspaceElement.current!.style.setProperty('--notes-width', sizes.right+'px');
++  };
++  const commitPanel = (side:'left'|'right', value:number) => persistLayout({...layoutRef.current,[side]:value});
++  return <div className="app" style={{'--ui-spacing':layout.spacing+'px'} as CSSProperties}>
+     <header className="topbar"><div className="wordmark"><span className="brand-dot">e</span>enlumor</div><span className="edition">YOUR QUIET READING ROOM</span>
+       <div className="panel-toggles"><button className={libraryOpen ? 'is-active' : ''} aria-label={libraryOpen ? '收起文档栏' : '展开文档栏'} aria-expanded={libraryOpen} onClick={() => { setParts([]); setLibraryOpen(!libraryOpen); }}><Glyph name="library"/></button><button className={notesOpen ? 'is-active' : ''} aria-label={notesOpen ? '收起批注栏' : '展开批注栏'} aria-expanded={notesOpen} onClick={() => { setParts([]); setNotesOpen(!notesOpen); }}><Glyph name="notes"/></button></div>
+-      <div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}><Glyph name="open"/>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <Glyph name="export"/></button></div>
++      <button aria-label="布局设置" aria-expanded={layoutOpen} onClick={() => setLayoutOpen(!layoutOpen)}>布局</button><div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}><Glyph name="open"/>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <Glyph name="export"/></button></div>
+     </header>
+-    <div className="workspace">
++    {layoutOpen && <div className="layout-popover" role="region" aria-label="布局设置"><label>阅读间距 <select aria-label="阅读间距" value={layout.spacing} onChange={event=>persistLayout({...layoutRef.current,spacing:Number(event.target.value) as 12|16|24})}><option value="12">紧凑</option><option value="16">标准</option><option value="24">宽松</option></select></label><p>拖动侧栏边缘调宽；方向键微调，双击恢复宽度。</p><button onClick={()=>persistLayout(defaultLayout)}>恢复默认布局</button><button aria-label="关闭布局设置" onClick={()=>setLayoutOpen(false)}>完成</button></div>}
++    <div className="workspace" ref={workspaceElement} style={{'--library-width':panels.left+'px','--notes-width':panels.right+'px'} as CSSProperties}>
+       <aside className="library" hidden={!libraryOpen}>
+         <div className="section-label">LIBRARY / 你的阅读空间</div>
+         <h2>{libraryView === 'documents' ? '文档' : libraryView === 'outline' ? '目录' : '缩略图'}<span className="section-count">{(libraryView === 'documents' ? recent.length : libraryView === 'thumbnails' ? doc?.pageCount || 0 : outline?.length || 0).toString().padStart(2, '0')}</span></h2>
+@@ -117,18 +209,29 @@ function App() {
+         {libraryView === 'documents' ? <div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div> : libraryView === 'thumbnails' ? libraryOpen && doc && reader.current && <ThumbnailRail key={doc.id} reader={reader.current} documentId={doc.id} pageCount={doc.pageCount} currentPage={Number(page)}/> : <div className="recent-list" aria-label="PDF 目录">{outline === null ? <p className="library-empty">正在读取目录…</p> : outline.length ? <OutlineTree items={outline} navigate={id => void reader.current?.goToOutline(id)}/> : <p className="library-empty">此 PDF 没有目录，可使用页码跳转。</p>}</div>}
+         <div className="library-footer"><span className="online-dot"/> 离线可用<span>所有阅读痕迹保存在这台电脑</span></div>
+       </aside>
+-      <main className="reading"><div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
++      {libraryOpen && <PanelDivider side="left" size={panels.left} max={Math.min(420,workspaceWidth-400-(notesOpen?panels.right+12:6))} start={()=>setParts([])} preview={value=>previewPanel('left',value)} commit={value=>commitPanel('left',value)} reset={()=>persistLayout({...layoutRef.current,left:208})}/>}
++      <main className="reading">
++        {tabs.length>0 && <div className="document-tabs" role="tablist" aria-label="已打开文档" onKeyDown={event=>{
++          if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
++          event.preventDefault();const index=tabs.findIndex(tab=>tab.id===activeId.current);
++          const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;
++          const buttons=event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="tab"]');buttons[next]?.focus();void load(tabs[next].id);
++        }}>{tabs.map(tab=><div className={`document-tab ${doc?.id===tab.id?'active':''}`} key={tab.id}>
++          <button role="tab" aria-label={tab.name} aria-selected={doc?.id===tab.id} tabIndex={doc?.id===tab.id?0:-1} title={tab.path} disabled={busy||!!pending.current} onClick={()=>void load(tab.id)}>{tab.name}</button>
++          <button aria-label={`关闭 ${tab.name}`} title="关闭标签（Ctrl+W）" disabled={busy||!!pending.current} onClick={()=>void closeTab(tab.id)} onKeyDown={event=>event.stopPropagation()}>×</button>
++        </div>)}</div>}<div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
+         <div className="toolbar"><div className="toolbar-group"><button aria-label="上一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) - 1)}>‹</button><input aria-label="跳转页码" className="page-input" disabled={!doc} value={page} onChange={event => setPage(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') reader.current?.go(Number(page)); }}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) + 1)}>›</button></div>
+           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
+           <form className="search" onSubmit={event => { event.preventDefault(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
+         </div>
+-        {error && <div className="error" role="alert">{error}{pending.current && <button onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && <button disabled={busy} onClick={() => { clearTimeout(timer.current); pending.current = null; current.current = null; reader.current?.clear(); setDoc(null); setMarks([]); setParts([]); setHistory({ undo: [], redo: [] }); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
++        {error && <div className="error" role="alert">{error}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && <button onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
+         {notice && <div className="notice">{notice}</div>}
+         <div className="reader-stage"><div id="viewerContainer" ref={container} tabIndex={0}><div id="viewer" className="pdfViewer"/></div>
+           {!doc && <div className="empty"><div className="paper-emblem" aria-hidden="true"><svg viewBox="0 0 140 100" fill="none"><path d="M70 21C50 9 25 10 12 16v64c20-7 38-6 58 4 20-10 38-11 58-4V16c-13-6-38-7-58 5Zm0 0v63M25 33l30 4M25 45l30 4M25 57l22 3M85 37l29-4M85 49l29-4M85 61l21-3"/></svg></div><span className="empty-index">A QUIETER PLACE TO READ</span><h1>让理解，<br/>留在原文旁。</h1><p>打开一本书、一篇论文，或今天的讲义。<br/>选中，标记，下次从这里继续。</p><button className="primary" disabled={busy} onClick={() => void load()}>打开 PDF <Glyph name="open"/></button><small>无需账户 · 离线可用 · 原文件保持不变</small><div className="empty-footnote"><span>01 — 阅读原文</span><span>02 — 留下思考</span><span>03 — 从这里继续</span></div></div>}
+         </div>
+         <footer className="statusbar"><span role="status">{status}</span><span>{doc ? `${marks.length} 条批注` : 'ENLUMOR / FOUNDATION'}</span></footer>
+       </main>
++      {notesOpen && <PanelDivider side="right" size={panels.right} max={Math.min(460,workspaceWidth-400-(libraryOpen?panels.left+12:6))} start={()=>setParts([])} preview={value=>previewPanel('right',value)} commit={value=>commitPanel('right',value)} reset={()=>persistLayout({...layoutRef.current,right:282})}/>}
+       <aside className="annotations" hidden={!notesOpen}><div className="section-label">MARGINALIA / 页边思考</div><h2>批注 <span>{marks.length.toString().padStart(2, '0')}</span></h2>
+         <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => { setEditing(null); setNote(''); }}>添加便签</button></div>
+         <div className="history"><button disabled={!history.undo.length || busy || !!pending.current} onClick={() => void commit(history.undo.at(-1)!, 'undo')}>撤销</button><button disabled={!history.redo.length || busy || !!pending.current} onClick={() => void commit(history.redo.at(-1)!, 'redo')}>重做</button></div>
+diff --git a/src/renderer/panel-divider.tsx b/src/renderer/panel-divider.tsx
+new file mode 100644
+index 0000000..87a2951
+--- /dev/null
++++ b/src/renderer/panel-divider.tsx
+@@ -0,0 +1,15 @@
++import { useRef } from 'react';
++export function PanelDivider({ side, size, max, preview, commit, reset, start }: { side:'left'|'right';size:number;max:number;preview:(value:number)=>void;commit:(value:number)=>void;reset:()=>void;start:()=>void }) {
++ const drag=useRef<{x:number;size:number}|null>(null),min=side==='left'?176:220;
++ const value=(x:number)=>Math.max(min,Math.min(max,drag.current!.size+(x-drag.current!.x)*(side==='left'?1:-1)));
++ return <div className="panel-divider" role="separator" aria-label={side==='left'?'调整文档栏宽度':'调整批注栏宽度'} aria-orientation="vertical" aria-valuemin={min} aria-valuemax={max} aria-valuenow={Math.round(size)} tabIndex={0}
++ onPointerDown={event=>{if(event.button!==0)return;event.preventDefault();start();event.currentTarget.focus();drag.current={x:event.clientX,size};event.currentTarget.setPointerCapture(event.pointerId);}}
++ onPointerMove={event=>{if(drag.current)preview(value(event.clientX));}}
++ onPointerUp={event=>{if(!drag.current)return;const next=value(event.clientX);drag.current=null;event.currentTarget.releasePointerCapture(event.pointerId);commit(next);}}
++ onPointerCancel={()=>{drag.current=null;preview(size);}}
++ onLostPointerCapture={()=>{if(drag.current){drag.current=null;preview(size);}}}
++ onDoubleClick={reset}
++ onKeyDown={event=>{let next=size;const step=event.shiftKey?32:8;
++ if(event.key==='ArrowLeft')next+=side==='left'?-step:step;else if(event.key==='ArrowRight')next+=side==='left'?step:-step;else if(event.key==='Home')next=min;else if(event.key==='End')next=max;else return;
++ event.preventDefault();start();commit(Math.max(min,Math.min(max,next)));}}/>
++}
+diff --git a/src/renderer/style.css b/src/renderer/style.css
+index 7d02aae..0bf9233 100644
+--- a/src/renderer/style.css
++++ b/src/renderer/style.css
+@@ -33,3 +33,20 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
+ .thumbnail-number{font-size:11px;font-variant-numeric:tabular-nums;color:#686d63}
+ .thumbnail[aria-current="page"] .thumbnail-number{color:#35422e;font-weight:600}
+ .library-tabs button{padding:7px 2px;font-size:11px}
++.workspace>.library{width:var(--library-width);padding:calc(var(--ui-spacing) + 10px) var(--ui-spacing) var(--ui-spacing)}
++.workspace>.annotations{width:var(--notes-width);padding:calc(var(--ui-spacing) + 10px) var(--ui-spacing) var(--ui-spacing)}
++.panel-divider{width:6px;flex:none;cursor:col-resize;touch-action:none;background:var(--surface);position:relative;z-index:5}
++.panel-divider:hover,.panel-divider:focus-visible{background:#aab69c;outline:none}
++.panel-divider:active{background:#718262}
++.layout-popover{position:absolute;right:170px;top:56px;z-index:60;width:290px;padding:18px;background:var(--paper);border:1px solid var(--line);border-radius:7px;box-shadow:0 9px 30px #242b2926}
++.layout-popover label{display:flex;align-items:center;justify-content:space-between}.layout-popover select{font:inherit;padding:5px;border:1px solid var(--line);background:var(--paper);color:var(--ink)}
++.layout-popover p{font-size:11px;color:var(--muted)}.layout-popover button{font-size:11px;margin-right:8px}
++#viewer{padding-top:calc(var(--ui-spacing) * 1.5)}.pdfViewer .page{margin-bottom:calc(var(--ui-spacing) * 1.5)}
++.annotation-card{margin-bottom:var(--ui-spacing)}
++.document-tabs{display:flex;flex:none;min-height:38px;max-width:100%;overflow-x:auto;scrollbar-width:thin;background:#eeebe3;border-bottom:1px solid var(--line)}
++.document-tab{display:flex;flex:none;max-width:240px;align-items:stretch;border-right:1px solid var(--line);border-bottom:2px solid transparent}
++.document-tab.active{background:var(--paper);border-bottom-color:#80956c}
++.document-tab>button{background:transparent;border:0;border-radius:0;font-size:11px;padding:9px 10px}
++.document-tab>button[role="tab"]{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:left;max-width:210px}
++.document-tab>button:last-child{padding:6px 9px;color:#777f70}
++.document-tabs+.document-bar{height:32px}
+diff --git a/src/shared/model.ts b/src/shared/model.ts
+index 6448154..dcb0f0a 100644
+--- a/src/shared/model.ts
++++ b/src/shared/model.ts
+@@ -10,7 +10,13 @@ export type DocumentInfo = { id: string; path: string; name: string; fingerprint
+ export type OpenedDocument = DocumentInfo & { data: Uint8Array; reading: ReadingState | null };
+ export type ExportResult = { cancelled: boolean; path?: string; annotationCount?: number };
+ export type Reply<T> = { ok: true; value: T } | { ok: false; error: { code: string; message: string } };
++export type LayoutPreferences = { left: number; right: number; spacing: 12 | 16 | 24 };
++export type TabSession = { openIds: string[]; activeId: string | null };
+ export type Bridge = {
++  getLayout(): Promise<Reply<LayoutPreferences>>;
++  saveLayout(layout: LayoutPreferences): Promise<Reply<void>>;
++  getTabs(): Promise<Reply<TabSession | null>>;
++  saveTabs(session: TabSession): Promise<Reply<void>>;
+   openDocument(): Promise<Reply<OpenedDocument | null>>;
+   restoreDocument(id: string): Promise<Reply<OpenedDocument>>;
+   rebindDocument(id: string): Promise<Reply<OpenedDocument | null>>;
+diff --git a/tests/e2e/reader.spec.ts b/tests/e2e/reader.spec.ts
+index 43533f5..85c5503 100644
+--- a/tests/e2e/reader.spec.ts
++++ b/tests/e2e/reader.spec.ts
+@@ -110,7 +110,7 @@ test('PDF thumbnails render on demand, navigate and release offscreen canvases',
+     expect(hash()).toBe(before);
+     await page.getByRole('tab', { name: '缩略图', exact: true }).click();
+     await expect(rail.locator('canvas[data-rendered="true"]').first()).toBeVisible();
+-    await page.screenshot({ path: 'evidence/thumbnails/thumbnails.png' });
++    await page.screenshot({ path: (process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/thumbnails') + '/thumbnails.png' });
+   } finally { await app.close(); }
+ });
+ 
+diff --git a/tests/e2e/workspace.spec.ts b/tests/e2e/workspace.spec.ts
+new file mode 100644
+index 0000000..17d7e8b
+--- /dev/null
++++ b/tests/e2e/workspace.spec.ts
+@@ -0,0 +1,95 @@
++import { test, expect, _electron as electron } from '@playwright/test';
++import { mkdtempSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { execFileSync } from 'node:child_process';
++import path from 'node:path';
++const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-layout-tabs-')),python=path.join(root,'.venv/Scripts/python.exe');
++const alpha=path.join(folder,'alpha.pdf'),beta=path.join(folder,'beta.pdf');
++for(const [file,count] of [[alpha,80],[beta,3]] as const)execFileSync(python,['-c',`import pymupdf as f;d=f.open();\nfor i in range(${count}):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Reading page '+str(i+1),fontsize=16)\nd.save(${JSON.stringify(file)})`]);
++async function launch(profile:string) {
++ const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),`--user-data-dir=${profile}`],env:{...process.env,ENLUMOR_PYTHON:python}});
++ return app;
++}
++async function open(app:Awaited<ReturnType<typeof launch>>,file=alpha){
++ await app.evaluate(({dialog},file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},file);
++ const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.document-name')).toContainText(path.basename(file));await expect(page.getByRole('status')).toContainText('已恢复');
++}
++
++test('adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport',async()=>{
++ const profile=path.join(folder,'layout');let app=await launch(profile);
++ try{
++ const page=await app.firstWindow();await open(app);
++ const before=(await page.locator('.library').boundingBox())!.width;
++ const handle=page.getByRole('separator',{name:'调整文档栏宽度'});const box=(await handle.boundingBox())!;
++ await page.mouse.move(box.x+box.width/2,box.y+80);await page.mouse.down();await page.mouse.move(box.x+box.width/2+90,box.y+80,{steps:12});await page.mouse.up();
++ expect((await page.locator('.library').boundingBox())!.width).toBeGreaterThan(before+70);
++ const right=page.getByRole('separator',{name:'调整批注栏宽度'});await right.focus();await page.keyboard.press('ArrowLeft');
++ await page.getByRole('button',{name:'布局设置',exact:true}).click();await page.getByLabel('阅读间距').selectOption('24');
++ await expect.poll(()=>page.evaluate(()=>getComputedStyle(document.querySelector('.app')!).getPropertyValue('--ui-spacing').trim())).toBe('24px');
++ await page.getByRole('button',{name:'关闭布局设置'}).click();await page.screenshot({path:'evidence/layout-tabs/layout.png'});
++ const leftWidth=(await page.locator('.library').boundingBox())!.width;await app.close();app=await launch(profile);
++ const reopened=await app.firstWindow();await expect(reopened.locator('.document-name')).toContainText('alpha.pdf');
++ await expect.poll(async()=>(await reopened.locator('.library').boundingBox())!.width).toBeCloseTo(leftWidth,0);
++ await reopened.setViewportSize({width:940,height:720});
++ await reopened.getByRole('separator',{name:'调整文档栏宽度'}).focus();await reopened.keyboard.press('End');
++ expect((await reopened.locator('.reading').boundingBox())!.width).toBeGreaterThanOrEqual(399);
++ await reopened.getByRole('button',{name:'布局设置',exact:true}).click();await reopened.getByRole('button',{name:'恢复默认布局',exact:true}).click();
++ await expect.poll(()=>reopened.evaluate(()=>getComputedStyle(document.querySelector('.app')!).getPropertyValue('--ui-spacing').trim())).toBe('16px');
++ }finally{await app.close();}
++});
++
++test('document tabs isolate progress and undo, deduplicate opens, restore session and close without deleting data',async()=>{
++ const profile=path.join(folder,'tabs');let app=await launch(profile);
++ try{
++ let page=await app.firstWindow();await open(app);
++ await page.getByLabel('跳转页码').fill('51');await page.getByLabel('跳转页码').press('Enter');await expect(page.getByLabel('跳转页码')).toHaveValue('51');
++ await page.getByRole('button',{name:'放大',exact:true}).click();
++ await page.locator('.textLayer span').filter({hasText:'Reading page 51'}).first().evaluate(item=>{const range=document.createRange();range.selectNodeContents(item);const selection=getSelection()!;selection.removeAllRanges();selection.addRange(range);document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});
++ await page.getByRole('button',{name:'高亮选区',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
++ await open(app,beta);const tabs=page.getByRole('tablist',{name:'已打开文档'});await expect(tabs.getByRole('tab')).toHaveCount(2);
++ await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ await tabs.getByRole('tab',{name:'alpha.pdf',exact:true}).click();await expect(page.getByLabel('跳转页码')).toHaveValue('51');
++ await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);await expect(page.getByRole('button',{name:'撤销',exact:true})).toBeEnabled();
++ await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ await open(app);await expect(tabs.getByRole('tab')).toHaveCount(2);await page.screenshot({path:'evidence/layout-tabs/tabs.png'});
++ await app.close();app=await launch(profile);page=await app.firstWindow();await expect(page.locator('.document-name')).toContainText('alpha.pdf');
++ const restored=page.getByRole('tablist',{name:'已打开文档'});await expect(restored.getByRole('tab')).toHaveCount(2);await expect(page.getByLabel('跳转页码')).toHaveValue('51');
++ await page.getByRole('button',{name:'关闭 beta.pdf',exact:true}).click();await expect(restored.getByRole('tab')).toHaveCount(1);
++ await page.getByRole('button',{name:'关闭 alpha.pdf',exact:true}).click();await expect(page.locator('.empty')).toBeVisible();
++ await app.close();app=await launch(profile);page=await app.firstWindow();await expect(page.locator('.empty')).toBeVisible();await expect(page.locator('.recent')).toHaveCount(2);
++ }finally{await app.close();}
++});
++
++test('note drafts block tab navigation and close shortcuts until saved or cancelled',async()=>{
++ const app=await launch(path.join(folder,'draft-guard'));
++ try{
++ const page=await app.firstWindow();await open(app);
++ await page.locator('.textLayer span').first().evaluate(item=>{const range=document.createRange();range.selectNodeContents(item);const s=getSelection()!;s.removeAllRanges();s.addRange(range);document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});
++ await page.getByRole('button',{name:'添加便签',exact:true}).click();await page.getByLabel('便签内容').fill('original');await page.getByRole('button',{name:'保存便签',exact:true}).click();
++ await open(app,beta);await page.getByRole('tab',{name:'alpha.pdf',exact:true}).click();
++ await page.getByRole('button',{name:'编辑',exact:true}).click();await page.getByLabel('便签内容').fill('retained draft');
++ await page.keyboard.press('Control+Tab');await expect(page.locator('.document-name')).toHaveText('alpha.pdf');
++ await page.keyboard.press('Control+w');await expect(page.getByRole('tablist',{name:'已打开文档'}).getByRole('tab')).toHaveCount(2);
++ await expect(page.getByLabel('便签内容')).toHaveValue('retained draft');await page.getByRole('button',{name:'保存便签',exact:true}).click();
++ await expect(page.locator('.note-content')).toHaveText('retained draft');
++ await page.getByRole('tab',{name:'beta.pdf',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ }finally{await app.close();}
++});
++
++test('failed PDF renderer opening restores prior document, undo history and persisted active session',async()=>{
++ const profile=path.join(folder,'renderer-failure');let app=await launch(profile);
++ try{
++ let page=await app.firstWindow();await open(app);
++ await page.locator('.textLayer span').first().evaluate(item=>{const r=document.createRange();r.selectNodeContents(item);const s=getSelection()!;s.removeAllRanges();s.addRange(r);document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});
++ await page.getByRole('button',{name:'高亮选区',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
++ await open(app,beta);await page.getByRole('tab',{name:'alpha.pdf',exact:true}).click();
++ await app.evaluate(({ipcMain})=>{
++ const original=(ipcMain as any)._invokeHandlers.get('document:restore');ipcMain.removeHandler('document:restore');
++ ipcMain.handle('document:restore',async(event,id)=>{const reply=await original(event,id);if(reply.ok&&reply.value.name==='beta.pdf')reply.value.data=new Uint8Array([37,80,68,70,45,10]);return reply;});
++ });
++ await page.getByRole('tab',{name:'beta.pdf',exact:true}).click();await expect(page.getByRole('alert')).toBeVisible();
++ await expect(page.locator('.document-name')).toHaveText('alpha.pdf');await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);await expect(page.getByRole('button',{name:'撤销',exact:true})).toBeEnabled();
++ await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ await app.close();app=await launch(profile);page=await app.firstWindow();await expect(page.locator('.document-name')).toHaveText('alpha.pdf');
++ }finally{await app.close();}
++});
+diff --git a/tests/layout-tabs.test.ts b/tests/layout-tabs.test.ts
+new file mode 100644
+index 0000000..4308fea
+--- /dev/null
++++ b/tests/layout-tabs.test.ts
+@@ -0,0 +1,26 @@
++import { it, expect } from 'vitest';
++import { DatabaseSync } from 'node:sqlite';
++import { mkdtempSync, writeFileSync, existsSync } from 'node:fs';
++import path from 'node:path';
++import type { LayoutPreferences } from '../src/shared/model';
++import { Workspace } from '../src/main/workspace';
++const setup=()=>{const dir=mkdtempSync(path.resolve('.cache/layout-test-'));return {dir,file:path.join(dir,'state.sqlite')};};
++it('layout preferences persist in SQLite and reject malformed values without changing saved state',()=>{
++ const {file}=setup();const w=new Workspace(file);
++ try{const layout={left:280,right:310,spacing:24 as const};w.saveLayout(layout);expect(w.layout()).toEqual(layout);
++ for(const bad of [{...layout,left:NaN},{...layout,right:9999},{...layout,spacing:8}]) expect(()=>w.saveLayout(bad as LayoutPreferences)).toThrow(/INVALID_LAYOUT/);
++ expect(w.layout()).toEqual(layout);w.close();const restored=new Workspace(file);expect(restored.layout()).toEqual(layout);restored.close();}finally{w.close();}
++});
++it('v1 migration creates a verified backup and preserves documents, annotations and reading state',()=>{
++ const {dir,file}=setup();const old=new DatabaseSync(file);
++ old.exec("CREATE TABLE documents(id TEXT PRIMARY KEY,path TEXT,name TEXT,fingerprint TEXT,pageCount INTEGER,updatedAt INTEGER); CREATE TABLE annotations(id TEXT PRIMARY KEY,documentId TEXT,payload TEXT); CREATE TABLE reading(documentId TEXT PRIMARY KEY,payload TEXT); PRAGMA user_version=1;");
++ old.prepare('INSERT INTO documents VALUES(?,?,?,?,?,?)').run('kept','source.pdf','source.pdf','fingerprint',3,1);old.prepare('INSERT INTO annotations VALUES(?,?,?)').run('a','kept','{"id":"a"}');old.prepare('INSERT INTO reading VALUES(?,?)').run('kept','{"pageIndex":2}');old.close();
++ const w=new Workspace(file);try{expect(w.list()[0].id).toBe('kept');expect(w.annotations('kept')).toEqual([{id:'a'}]);expect(w.reading('kept')?.pageIndex).toBe(2);expect(existsSync(file+'.pre-v2.bak')).toBe(true);
++ const backup=new DatabaseSync(file+'.pre-v2.bak');expect(backup.prepare('PRAGMA user_version').get()?.user_version).toBe(1);expect(backup.prepare('SELECT COUNT(*) n FROM annotations').get()?.n).toBe(1);backup.close();expect(w.db.prepare('PRAGMA user_version').get()?.user_version).toBe(2);}finally{w.close();}
++});
++it('tab session persists only registered unique IDs with a valid active member',()=>{
++ const {dir,file}=setup();const source=path.join(dir,'source.pdf');writeFileSync(source,'one');const w=new Workspace(file);
++ try{const doc=w.register(source,1);const state={openIds:[doc.id],activeId:doc.id};w.saveTabs(state);expect(w.tabs()).toEqual(state);
++ for(const bad of [{openIds:[doc.id,doc.id],activeId:doc.id},{openIds:['missing'],activeId:'missing'},{openIds:[],activeId:doc.id}]) expect(()=>w.saveTabs(bad)).toThrow();
++ expect(w.tabs()).toEqual(state);w.saveTabs({openIds:[],activeId:null});expect(w.tabs()).toEqual({openIds:[],activeId:null});}finally{w.close();}
++});

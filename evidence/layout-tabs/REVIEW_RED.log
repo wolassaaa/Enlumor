@@ -1,0 +1,84 @@
+
+Running 2 tests using 1 worker
+
+(node:59308) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\workspace.spec.ts:63:1 › note drafts block tab navigation and close shortcuts until saved or cancelled (7.0s)
+(node:13484) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  2 tests\e2e\workspace.spec.ts:79:1 › failed PDF renderer opening restores prior document, undo history and persisted active session (7.5s)
+
+
+  1) tests\e2e\workspace.spec.ts:63:1 › note drafts block tab navigation and close shortcuts until saved or cancelled 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator: locator('.note-content')
+    Expected: "retained draft"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toHaveText" locator('.note-content') with timeout 5000ms
+      - waiting for locator('.note-content')
+
+
+      72 |  await page.keyboard.press('Control+w');await expect(page.getByRole('tablist',{name:'已打开文档'}).getByRole('tab')).toHaveCount(2);
+      73 |  await expect(page.getByLabel('便签内容')).toHaveValue('retained draft');await page.getByRole('button',{name:'保存便签',exact:true}).click();
+    > 74 |  await expect(page.locator('.note-content')).toHaveText('retained draft');
+         |                                              ^
+      75 |  await page.getByRole('tab',{name:'beta.pdf',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+      76 |  }finally{await app.close();}
+      77 | });
+        at D:\codex project\Enlumor\tests\e2e\workspace.spec.ts:74:46
+
+    Error Context: test-results\workspace-note-drafts-bloc-5130e-ts-until-saved-or-cancelled\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\workspace-note-drafts-bloc-5130e-ts-until-saved-or-cancelled\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\workspace-note-drafts-bloc-5130e-ts-until-saved-or-cancelled\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\workspace.spec.ts:79:1 › failed PDF renderer opening restores prior document, undo history and persisted active session 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 1
+    Received: 0
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      89 |  });
+      90 |  await page.getByRole('tab',{name:'beta.pdf',exact:true}).click();await expect(page.getByRole('alert')).toBeVisible();
+    > 91 |  await expect(page.locator('.document-name')).toHaveText('alpha.pdf');await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);await expect(page.getByRole('button',{name:'撤销',exact:true})).toBeEnabled();
+         |                                                                                                                                     ^
+      92 |  await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+      93 |  await app.close();app=await launch(profile);page=await app.firstWindow();await expect(page.locator('.document-name')).toHaveText('alpha.pdf');
+      94 |  }finally{await app.close();}
+        at D:\codex project\Enlumor\tests\e2e\workspace.spec.ts:91:133
+
+    Error Context: test-results\workspace-failed-PDF-rende-a4261-nd-persisted-active-session\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\workspace-failed-PDF-rende-a4261-nd-persisted-active-session\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\workspace-failed-PDF-rende-a4261-nd-persisted-active-session\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests\e2e\workspace.spec.ts:63:1 › note drafts block tab navigation and close shortcuts until saved or cancelled 
+    tests\e2e\workspace.spec.ts:79:1 › failed PDF renderer opening restores prior document, undo history and persisted active session 

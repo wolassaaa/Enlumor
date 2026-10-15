@@ -20,7 +20,7 @@ npm start          # 启动已构建的桌面应用
 
 仅开发/重新构建需要 Node 和 Python。`setup.ps1` 安装 requirements-build.txt；打包命令通过 PyInstaller 收集解释器、PyMuPDF 和依赖到应用资源目录，运行时优先使用内置程序。Windows 构建不作为 macOS/iPad 的二进制包使用。
 
-0.1.4 新增按需缩略图导航（左栏“缩略图”），保留 0.1.3 的嵌套目录与保存/滚动优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
+0.1.5 新增侧栏调宽/间距与多文档标签。拖动侧栏边缘或聚焦后按方向键；顶栏“布局”选择阅读间距。Ctrl+Tab 切换标签、Ctrl+W 关闭当前标签；关闭标签不删除文档。便签编辑时先保存/取消再切换。保留此前按需缩略图、目录与性能优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
 
 ## 已有功能
 
@@ -55,3 +55,5 @@ macOS 后续可复用桌面与文档逻辑，但尚未构建/验收。iPad 需�
 PyMuPDF 使用 AGPL/商业双许可，当前仓库用于个人开发；分发前需按实际分发方式处理其许可。第三方依赖版本锁定在 package-lock.json / requirements.txt。
 
 初始底座证据见 `VERIFICATION.txt`；0.1.1 UI 与内置运行时修复证据见 `evidence/ui-runtime/VERIFICATION.txt`。整体实施进度见 `docs/IMPLEMENTATION.md`。
+
+SQLite v1 升级到 v2 前创建 workspace.sqlite.pre-v2.bak（已有同名备份则追加时间戳，不覆盖）。旧程序不直接读取 v2 数据；代码回退时保留当前工作区及备份，不以旧备份静默覆盖新批注。每两项功能一次整体 Review，见 docs/REVIEW-CADENCE.md。
