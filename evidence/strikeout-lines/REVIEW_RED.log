@@ -1,0 +1,124 @@
+
+Running 3 tests using 1 worker
+
+(node:40336) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\strikeout-lines.spec.ts:48:1 › short line click stays armed and the next drag draws without extra toggles (6.1s)
+(node:26304) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  2 tests\e2e\strikeout-lines.spec.ts:56:1 › armed line tool cancels and cannot draw while an export is pending (6.7s)
+(node:4788) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  3 tests\e2e\strikeout-lines.spec.ts:66:1 › failed annotation remains retryable and cannot be replaced by an armed line gesture (6.7s)
+
+
+  1) tests\e2e\strikeout-lines.spec.ts:48:1 › short line click stays armed and the next drag draws without extra toggles 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 1
+    Received: 0
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      50 |  try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
+      51 |  const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;const tool=page.getByRole('button',{name:'绘制直线',exact:true});await tool.click();await page.mouse.click(box.x+80,box.y+160);
+    > 52 |  await expect(tool).toHaveAttribute('aria-pressed','true');await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+220,box.y+220);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
+         |                                                                                                                                                                                                                                                             ^
+      53 |  }finally{await app.close();}
+      54 | });
+      55 |
+        at D:\codex project\Enlumor\tests\e2e\strikeout-lines.spec.ts:52:253
+
+    Error Context: test-results\strikeout-lines-short-line-fa690-draws-without-extra-toggles\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\strikeout-lines-short-line-fa690-draws-without-extra-toggles\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\strikeout-lines-short-line-fa690-draws-without-extra-toggles\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\strikeout-lines.spec.ts:56:1 › armed line tool cancels and cannot draw while an export is pending 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.line-draft')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.line-draft') with timeout 5000ms
+      - waiting for locator('.line-draft')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      59 |  await app.evaluate(({ipcMain})=>{const original=(ipcMain as any)._invokeHandlers.get('document:export');ipcMain.removeHandler('document:export');ipcMain.handle('document:export',async(e,id)=>{await new Promise<void>(resolve=>(globalThis as any).releaseTestExport=resolve);return original(e,id);});});
+      60 |  const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.getByRole('button',{name:'导出批注 PDF',exact:true}).click();await expect(page.getByRole('status')).toContainText('正在导出');
+    > 61 |  await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+220,box.y+220);await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+         |                                                                                                                                                         ^
+      62 |  await app.evaluate(()=>(globalThis as any).releaseTestExport?.());await expect(page.getByRole('status')).toContainText('导出完成');
+      63 |  }finally{await (await app.firstWindow()).mouse.up();await app.evaluate(()=>(globalThis as any).releaseTestExport?.());await app.close();}
+      64 | });
+        at D:\codex project\Enlumor\tests\e2e\strikeout-lines.spec.ts:61:153
+
+    Error Context: test-results\strikeout-lines-armed-line-65b63--while-an-export-is-pending\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\strikeout-lines-armed-line-65b63--while-an-export-is-pending\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\strikeout-lines-armed-line-65b63--while-an-export-is-pending\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests\e2e\strikeout-lines.spec.ts:66:1 › failed annotation remains retryable and cannot be replaced by an armed line gesture 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByRole('button', { name: '重试保存', exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByRole('button', { name: '重试保存', exact: true }) with timeout 5000ms
+      - waiting for getByRole('button', { name: '重试保存', exact: true })
+
+
+      69 |  await app.evaluate(({ipcMain})=>{const original=(ipcMain as any)._invokeHandlers.get('annotation:change');let fail=true;ipcMain.removeHandler('annotation:change');ipcMain.handle('annotation:change',(e,change)=>{if(fail){fail=false;return{ok:false,error:{code:'WRITE_TEST',message:'write failed'}};}return original(e,change);});});
+      70 |  const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.getByRole('button',{name:'删除',exact:true}).click();await expect(page.getByRole('button',{name:'重试保存',exact:true})).toBeVisible();
+    > 71 |  await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+220,box.y+220);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);await expect(page.getByRole('button',{name:'重试保存',exact:true})).toBeVisible();
+         |                                                                                                                                                                                                                                                                                  ^
+      72 |  await page.getByRole('button',{name:'重试保存',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+      73 |  }finally{await app.close();}
+      74 | });
+        at D:\codex project\Enlumor\tests\e2e\strikeout-lines.spec.ts:71:274
+
+    Error Context: test-results\strikeout-lines-failed-ann-dd1d7-ed-by-an-armed-line-gesture\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\strikeout-lines-failed-ann-dd1d7-ed-by-an-armed-line-gesture\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\strikeout-lines-failed-ann-dd1d7-ed-by-an-armed-line-gesture\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    tests\e2e\strikeout-lines.spec.ts:48:1 › short line click stays armed and the next drag draws without extra toggles 
+    tests\e2e\strikeout-lines.spec.ts:56:1 › armed line tool cancels and cannot draw while an export is pending 
+    tests\e2e\strikeout-lines.spec.ts:66:1 › failed annotation remains retryable and cannot be replaced by an armed line gesture 

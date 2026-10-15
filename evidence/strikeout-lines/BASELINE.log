@@ -1,0 +1,68 @@
+
+Running 2 tests using 1 worker
+
+(node:45712) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\strikeout-lines.spec.ts:15:1 › strikeout persists rotates and exports a native StrikeOut annotation (32.8s)
+(node:47432) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  2 tests\e2e\strikeout-lines.spec.ts:29:1 › line drag and Escape cancellation preserve native endpoints through rotation restart and standard export (31.1s)
+
+
+  1) tests\e2e\strikeout-lines.spec.ts:15:1 › strikeout persists rotates and exports a native StrikeOut annotation 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '删除线选区', exact: true })
+
+
+      17 |  try{
+      18 |  let page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();await select(app);
+    > 19 |  await page.getByRole('button',{name:'删除线选区',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);await expect(page.locator('.annotation-source')).toContainText('删除线');
+         |                                                           ^
+      20 |  await expect(page.locator('.strikeout-line')).toHaveCount(1);
+      21 |  for(let i=0;i<4;i++)await page.getByRole('button',{name:'旋转页面',exact:true}).click();
+      22 |  await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await page.getByRole('button',{name:'重做',exact:true}).click();
+        at D:\codex project\Enlumor\tests\e2e\strikeout-lines.spec.ts:19:59
+
+    Error Context: test-results\strikeout-lines-strikeout--877c9-native-StrikeOut-annotation\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\strikeout-lines-strikeout--877c9-native-StrikeOut-annotation\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\strikeout-lines-strikeout--877c9-native-StrikeOut-annotation\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\strikeout-lines.spec.ts:29:1 › line drag and Escape cancellation preserve native endpoints through rotation restart and standard export 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '绘制直线', exact: true })
+
+
+      32 |  let page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
+      33 |  const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;
+    > 34 |  await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+230,box.y+210);await page.keyboard.press('Escape');await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+         |                                                          ^
+      35 |  await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+230,box.y+210,{steps:8});await page.mouse.up();
+      36 |  await expect(page.locator('.annotation-source')).toContainText('直线');await expect(page.locator('.drawn-line')).toHaveCount(1);
+      37 |  const stored=await page.evaluate(async()=>{const docs=await window.enlumor.listDocuments();if(!docs.ok)throw Error('docs');const marks=await window.enlumor.getAnnotations(docs.value[0].id);if(!marks.ok)throw Error('marks');return marks.value[0];});
+        at D:\codex project\Enlumor\tests\e2e\strikeout-lines.spec.ts:34:58
+
+    Error Context: test-results\strikeout-lines-line-drag--d51c1-restart-and-standard-export\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\strikeout-lines-line-drag--d51c1-restart-and-standard-export\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\strikeout-lines-line-drag--d51c1-restart-and-standard-export\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests\e2e\strikeout-lines.spec.ts:15:1 › strikeout persists rotates and exports a native StrikeOut annotation 
+    tests\e2e\strikeout-lines.spec.ts:29:1 › line drag and Escape cancellation preserve native endpoints through rotation restart and standard export 

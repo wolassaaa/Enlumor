@@ -1,0 +1,82 @@
+Enlumor 0.1.7 verification
+Branch: feat/strikeout-lines; baseline commit: 10aa805.
+Changed fields: Annotation.type adds strikeout|line; points stores four unrotated native PDF endpoint values.
+Changed branches: line readiness/pending guards; short click remains armed; viewport rotation cancels gesture; selection popup measured/clamped to reader.
+Original raw SHA256 values: originals.json. Six originals preserved in originals/ without text normalization.
+
+MODIFIED_FILE: D:/codex project/Enlumor/evidence/strikeout-lines/MODIFIED_FILE.ts
+DIFF_FILE: D:/codex project/Enlumor/evidence/strikeout-lines/DIFF.patch
+VERIFICATION: D:/codex project/Enlumor/evidence/strikeout-lines/VERIFICATION.txt
+ROLLBACK: D:/codex project/Enlumor/evidence/strikeout-lines/ROLLBACK.sh
+
+BASELINE
+Command: npx playwright test strikeout-lines.spec.ts
+Input: baseline 0.1.6 implementation; two new strikeout/line feature tests; fresh profiles and synthetic text PDF.
+Literal result: 2 failed
+Exit status: 1
+Evidence: BASELINE.log. Missing new controls exposes absent features.
+UNIT_RED.log and PYTHON_RED.log expose unsupported model/export types; Python reports FAILED (errors=4).
+
+MODIFIED
+Command (PowerShell):
+$env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.7-win-x64/Enlumor.exe).Path; $env:ENLUMOR_EVIDENCE_DIR='evidence/strikeout-lines'; npx playwright test strikeout-lines.spec.ts
+Input: published 0.1.7 EXE, fresh profiles, synthetic 200-page text PDF.
+Literal result: 8 passed (16.0s)
+Exit status: 0
+Evidence: FINAL_CHECK.log.
+Tests: strikeout/line persistence, undo/redo, rotation, restart, source hash unchanged, standard PDF subtype 11/3 export; short-click arming; export busy guard; failed save retry preservation; same-turn rotation cancel; rotated creation at 90/270 degrees and display scales 1.5/2.
+
+ROLLBACK
+Command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' evidence/strikeout-lines/ROLLBACK.sh
+Input: current source copied into isolated .cache/strikeout-lines-rollback/run-*; six preserved originals verified against originals.json; fresh user profile.
+Literal output: ROLLBACK: STRIKEOUT_BUTTON=0; LINE_BUTTON=0; MODE_SELECTOR=1; LIVE_SOURCE_UNCHANGED=YES
+Exit status: 0
+Restored behavior/status: isolated copy has no strikeout or line controls; prior mode selector and tabs remain. Live source stays modified. Personal database is untouched. This is not a downgrade migration for new annotation data.
+Evidence: ROLLBACK.log.
+
+ROUND THREE REVIEW
+Two completed features: strikeout text annotations and page straight-line drawing.
+Independent final reviewer findings: short-click state mismatch and drawing bypass of locked/pending state.
+REVIEW_RED.log: three regression tests failed before fixes; REVIEW_GREEN.log: eight passed after fixes.
+Rotation cancellation was promoted to correctness-important: ROTATION_RED.log fails with unintended persistence, then explicit rotationchanging cancellation passes.
+Native endpoint expectations use 96/72 CSS px per PDF point, not rounded DOM width.
+Primary design references:
+https://helpx.adobe.com/acrobat/web/share-review-and-export/review-pdfs/markup-document-redlining.html
+https://pymupdf.readthedocs.io/en/latest/page.html
+Deferred minor: drawing draft remains green while committed line uses selected color.
+Prior deferred minors: boundary page buttons enabled/no-op, closed-tab focus, divider grip.
+
+FULL RELEASE
+Command (PowerShell): $env:ENLUMOR_EVIDENCE_DIR='evidence/strikeout-lines'; npm run release:verified
+Input: 0.1.7 source, embedded PyMuPDF worker, staged real Windows EXE; synthetic text and scanned stress PDFs.
+First attempt: RELEASE_RED.log; 26 passed, 3 failed. Added popup action exceeded hardcoded width at display scales 1/1.5/2; latest stayed 0.1.6.
+Fix: measure actual popup size, clamp/wrap within reader.
+Command: npx playwright test --grep 'selection stays anchored'
+Literal result: 3 passed (7.5s)
+Exit status: 0; POPOVER_GREEN.log.
+Second full release: exit status 0; RELEASE.log.
+30 Vitest + 5 Python unittest + 29 staged Electron E2E = 64 passed.
+Literal outputs:
+29 passed (1.1m)
+PACKAGED_READER: PASS
+{"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
+EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.7 D:\codex project\Enlumor\release\Enlumor-0.1.7-win.zip SHA256=ee29dc0c64ab27804ed4124c579343a509f3e15e39ef3f6f95bfa9171555944a
+
+PERFORMANCE
+200 pages / approximately 32MB / 1000 annotations; text and scanned samples.
+Text extracted startup median 358.5676ms; scroll frame p95 15.5ms; reading save IPC p95 5.6ms; retained main/thumbnail canvases 8/3.
+Scanned extracted startup median 371.2994ms; scroll frame p95 13.6ms; reading save IPC p95 6.4ms; retained main/thumbnail canvases 8/4.
+Both zero measured >50ms long tasks. Budgets passed: startup <=1500ms, frame p95 <=34ms, save p95 <=20ms, main canvases <=30, thumbnails <=8.
+These are synthetic continuous-reading benchmarks with thumbnails, not all real-world PDFs or line-gesture timing.
+Raw measurements: release.json and scanned.json.
+
+VISUAL
+Real UI-generated exports: strikeout-export.pdf and line-export.pdf.
+Edge screenshots edge-strikeout.png and edge-line.png visually inspected: strike through text and line endpoint placement visible. No standalone Acrobat verification.
+Original PDFs retained unchanged by export tests; repeated export tests preserve existing annotations without duplicating new marks.
+
+NEXT PROMPT
+按 Enlumor docs/FEATURES.md 顺序继续箭头与画笔；每项先写红测试，再实现并验证原生坐标、持久化、撤销与标准 PDF 导出。两项完成后进行第四轮独立 review，先修重要问题，再跑完整发布与200页性能门禁。保留原 PDF、个人工作区与历史证据，不提前扩展 AI。

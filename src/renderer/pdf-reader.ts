@@ -1,3 +1,4 @@
+import { LineTool, type DrawnLine } from './line-tool';
 import { drawPageThumbnail } from './thumbnail-render';
 import { getDocument, GlobalWorkerOptions, type PDFDocumentLoadingTask } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
@@ -20,19 +21,21 @@ export class PdfReader {
   private flash?: Annotation;
   private flashTimer?: ReturnType<typeof setTimeout>;
   private ready = false;
+  private lineTool: LineTool;
   private outlineTargets = new Map<string, string | any[]>();
-  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}) {
+  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true) {
     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
     this.link.setViewer(this.viewer);
+    this.lineTool=new LineTool(container,index=>this.viewer.getPageView(index),()=>this.ready&&canDraw(),onLine);
     this.bus.on('pagechanging', ({pageNumber}:{pageNumber:number}) => {
       const generation=this.generation;
       requestAnimationFrame(()=>{if(generation===this.generation&&this.ready)this.paint(pageNumber-1);});
     });
     this.bus.on('pagerendered', ({ pageNumber }: { pageNumber: number }) => this.paint(pageNumber - 1));
-    this.bus.on('scalechanging', () => { this.paint(); onSelection([]); });
-    this.bus.on('rotationchanging', () => { this.paint(); onSelection([]); });
+    this.bus.on('scalechanging', () => { this.lineTool.cancel(); this.paint(); onSelection([]); });
+    this.bus.on('rotationchanging', () => { this.lineTool.cancel(); this.paint(); onSelection([]); });
     this.bus.on('textlayerrendered', async ({ pageNumber }: { pageNumber: number }) => {
       const document = this.viewer.pdfDocument;
       if (!document || !this.ready || pageNumber !== this.viewer.currentPageNumber) return;
@@ -56,6 +59,7 @@ export class PdfReader {
     }, { passive: false });
   }
   async open(doc: OpenedDocument) {
+    this.lineTool.setEnabled(false);
     const generation = ++this.generation;
     this.outlineTargets.clear(); this.onOutline(null);
     this.ready = false; this.active = doc; this.marks = []; this.flash = undefined;
@@ -111,7 +115,9 @@ export class PdfReader {
     return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
   }
   setMarks(marks: Annotation[]) { this.marks = marks; this.paint(); }
+  setLineEnabled(enabled:boolean) { this.lineTool.setEnabled(enabled); }
   clear() {
+    this.lineTool.setEnabled(false);
     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
     this.outlineTargets.clear(); this.onOutline([]);
     this.viewer.setDocument(null); this.link.setDocument(null); void this.task?.destroy(); this.task = undefined;
@@ -179,10 +185,11 @@ export class PdfReader {
       for (const mark of [...this.marks, ...(this.flash ? [this.flash] : [])].filter(a => a.pageIndex === index)) {
         for (const quad of mark.quads) {
           const [left, top, right, bottom] = quadToScreen(quad, view.viewport.transform);
-          if(mark.type==='underline' && mark!==this.flash) {
-            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('underline-line');
+          if(['underline','strikeout','line'].includes(mark.type) && mark!==this.flash) {
+            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add(mark.type==='line'?'drawn-line':mark.type==='strikeout'?'strikeout-line':'underline-line');
             const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-            const [x1,y1]=transform(quad[4],quad[5],view.viewport.transform),[x2,y2]=transform(quad[6],quad[7],view.viewport.transform);
+            const endpoints=mark.type==='line'?mark.points!:mark.type==='strikeout'?[quad[0],(quad[1]+quad[5])/2,quad[2],(quad[3]+quad[7])/2]:[quad[4],quad[5],quad[6],quad[7]];
+            const [x1,y1]=transform(endpoints[0],endpoints[1],view.viewport.transform),[x2,y2]=transform(endpoints[2],endpoints[3],view.viewport.transform);
             for(const [key,value] of Object.entries({x1,y1,x2,y2}))line.setAttribute(key,String(value));
             line.setAttribute('stroke',mark.color);line.setAttribute('stroke-width','1.5');svg.append(line);overlay.append(svg);continue;
           }

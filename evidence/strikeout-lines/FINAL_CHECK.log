@@ -1,0 +1,16 @@
+
+Running 8 tests using 1 worker
+
+(node:46176) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\strikeout-lines.spec.ts:15:1 › strikeout persists rotates and exports a native StrikeOut annotation (2.5s)
+  ok 2 tests\e2e\strikeout-lines.spec.ts:29:1 › line drag and Escape cancellation preserve native endpoints through rotation restart and standard export (2.9s)
+  ok 3 tests\e2e\strikeout-lines.spec.ts:48:1 › short line click stays armed and the next drag draws without extra toggles (1.5s)
+  ok 4 tests\e2e\strikeout-lines.spec.ts:56:1 › armed line tool cancels and cannot draw while an export is pending (1.3s)
+  ok 5 tests\e2e\strikeout-lines.spec.ts:66:1 › failed annotation remains retryable and cannot be replaced by an armed line gesture (1.6s)
+  ok 6 tests\e2e\strikeout-lines.spec.ts:76:1 › viewport rotation during a drag cancels it before a same-turn pointer release can persist wrong coordinates (963ms)
+  ok 7 tests\e2e\strikeout-lines.spec.ts:85:57 › line creation at rotation 90 and display scale 1.5 retains native and exported endpoints (2.1s)
+  ok 8 tests\e2e\strikeout-lines.spec.ts:85:57 › line creation at rotation 270 and display scale 2 retains native and exported endpoints (2.1s)
+
+  8 passed (16.0s)

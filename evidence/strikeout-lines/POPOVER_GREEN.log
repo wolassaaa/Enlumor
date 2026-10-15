@@ -1,0 +1,13 @@
+(node:29864) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:47028) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:47028) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 1 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1 (2.1s)
+  ok 2 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1.5 (1.6s)
+  ok 3 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 2 (1.6s)
+
+  3 passed (7.5s)

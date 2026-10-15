@@ -1,0 +1,46 @@
+
+Running 1 test using 1 worker
+
+(node:32464) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\strikeout-lines.spec.ts:76:1 › viewport rotation during a drag cancels it before a same-turn pointer release can persist wrong coordinates (6.6s)
+
+
+  1) tests\e2e\strikeout-lines.spec.ts:76:1 › viewport rotation during a drag cancels it before a same-turn pointer release can persist wrong coordinates 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('[data-testid="annotation-item"]')
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('[data-testid="annotation-item"]') with timeout 5000ms
+      - waiting for locator('[data-testid="annotation-item"]')
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      79 |  const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+220,box.y+220);
+      80 |  await page.evaluate(({x,y})=>{(document.querySelector('[aria-label="旋转页面"]') as HTMLButtonElement).click();document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));},{x:box.x+220,y:box.y+220});
+    > 81 |  await page.getByRole('button',{name:'打开 PDF',exact:true}).first().waitFor({state:'visible'});await expect(page.getByRole('button',{name:'打开 PDF',exact:true}).first()).toBeEnabled();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+         |                                                                                                                                                                                                                                                     ^
+      82 |  }finally{await (await app.firstWindow()).mouse.up();await app.close();}
+      83 | });
+      84 |
+        at D:\codex project\Enlumor\tests\e2e\strikeout-lines.spec.ts:81:245
+
+    Error Context: test-results\strikeout-lines-viewport-r-1cd1d-n-persist-wrong-coordinates\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\strikeout-lines-viewport-r-1cd1d-n-persist-wrong-coordinates\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\strikeout-lines-viewport-r-1cd1d-n-persist-wrong-coordinates\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\strikeout-lines.spec.ts:76:1 › viewport rotation during a drag cancels it before a same-turn pointer release can persist wrong coordinates 

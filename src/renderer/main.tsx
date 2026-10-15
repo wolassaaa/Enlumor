@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
 import type { LayoutPreferences } from '../shared/model';
 import { ThumbnailRail } from './thumbnails';
 import { createRoot } from 'react-dom/client';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PdfReader, type SelectionPart, type OutlineEntry } from './pdf-reader';
 import { unwrap, type Annotation, type AnnotationChange, type Bridge, type DocumentInfo, type OpenedDocument, type ReadingState } from '../shared/model';
 import './style.css';
@@ -33,8 +33,11 @@ function App() {
   const [marks, setMarks] = useState<Annotation[]>([]), [parts, setParts] = useState<SelectionPart[]>([]);
   const [status, setStatus] = useState('本地工作区就绪'), [error, setError] = useState(''), [notice, setNotice] = useState('');
   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
+  const [lineActive,setLineActive]=useState(false);
+  function resetDrawing(){reader.current?.setLineEnabled(false);setLineActive(false);}
   const [readingLayout,setReadingLayout]=useState<'continuous'|'single'>('continuous');
   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
+  const colorRef=useRef(color);colorRef.current=color;
   const noteOpen = useRef(false); noteOpen.current = note !== null;
   const activeDocument = useRef<OpenedDocument | null>(null), activeMarks = useRef<Annotation[]>([]);
   const [tabs, setTabs] = useState<DocumentInfo[]>([]);
@@ -44,6 +47,7 @@ function App() {
   const [history, setHistory] = useState({ undo: [] as AnnotationChange[], redo: [] as AnnotationChange[] });
   const [libraryOpen, setLibraryOpen] = useState(true), [notesOpen, setNotesOpen] = useState(true);
   const [libraryView, setLibraryView] = useState<'documents' | 'outline' | 'thumbnails'>('documents'), [outline, setOutline] = useState<OutlineEntry[] | null>([]);
+  const selectionPopover=useRef<HTMLDivElement>(null);
   const [selectionPosition, setSelectionPosition] = useState({ left: 0, top: 0 });
   const current = useRef<ReadingState | null>(null), timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pending = useRef<{ change: AnnotationChange; kind: 'new' | 'undo' | 'redo' } | null>(null), flight = useRef<Promise<unknown> | null>(null), locked = useRef(false);
@@ -63,14 +67,10 @@ function App() {
       clearTimeout(timer.current); timer.current = setTimeout(() => { void flush().catch(fail); }, 500);
     }, selected => {
       setParts(old => !selected.length && !old.length ? old : selected);
-      const selection = window.getSelection();
-      if (selected.length && selection?.rangeCount) {
-        const rect = selection.getRangeAt(0).getBoundingClientRect();
-        const bounds = container.current!.getBoundingClientRect();
-        const top = rect.top >= bounds.top + 64 ? rect.top - 52 : rect.bottom + 10;
-        setSelectionPosition({ left: Math.max(bounds.left + 12, Math.min(bounds.right - 310, rect.left)), top: Math.max(bounds.top + 12, Math.min(bounds.bottom - 60, top)) });
-      }
-    }, setNotice, setOutline);
+    }, setNotice, setOutline, line=>{
+      setLineActive(false);const opened=activeDocument.current;if(!opened)return;
+      void commit({documentId:opened.id,upserts:[{...line,id:crypto.randomUUID(),documentId:opened.id,fingerprint:opened.fingerprint,type:'line',author:'user',color:colorRef.current,quote:'',note:''}],deletes:[]});
+    }, ()=>!locked.current&&!pending.current&&!noteOpen.current);
     const off = window.enlumor.onFlush(flush);
     void (async () => {
       try { const savedLayout = unwrap(await window.enlumor.getLayout()); setLayout(savedLayout); layoutRef.current = savedLayout; const list = unwrap(await window.enlumor.listDocuments()); setRecent(list);
@@ -89,18 +89,28 @@ function App() {
         const next=list[(index+(event.shiftKey?-1:1)+list.length)%list.length];if(next)void load(next.id);return;
       }
       if (event.ctrlKey && event.key.toLowerCase()==='w') { event.preventDefault(); if(activeId.current)void closeTab(activeId.current);return; }
-      if (event.key === 'Escape') { setParts([]); setNote(null); setLayoutOpen(false); window.getSelection()?.removeAllRanges(); }
+      if (event.key === 'Escape') { resetDrawing(); setParts([]); setNote(null); setLayoutOpen(false); window.getSelection()?.removeAllRanges(); }
     };
     window.addEventListener('keydown', keyboard);
     const observer = new ResizeObserver(entries => setWorkspaceWidth(entries[0].contentRect.width));
     observer.observe(workspaceElement.current!);
-    const resized = () => setParts([]);
+    const resized = () => {resetDrawing();setParts([]);};
     window.addEventListener('resize', resized);
     return () => { observer.disconnect(); off(); clearTimeout(timer.current); window.removeEventListener('keydown', keyboard); window.removeEventListener('resize', resized); };
   }, []);
+  useLayoutEffect(()=>{
+    if(!parts.length||!container.current||!selectionPopover.current)return;
+    const bounds=container.current.getBoundingClientRect(),popup=selectionPopover.current.getBoundingClientRect();
+    const selection=getSelection();if(!selection?.rangeCount)return;
+    const rect=selection.getRangeAt(0).getBoundingClientRect();
+    const left=Math.max(bounds.left+12,Math.min(bounds.right-popup.width-12,rect.left));
+    const candidate=rect.top-bounds.top>=popup.height+12?rect.top-popup.height-12:rect.bottom+10;
+    const top=Math.max(bounds.top+12,Math.min(bounds.bottom-popup.height-12,candidate));
+    setSelectionPosition(old=>Math.abs(old.left-left)<.1&&Math.abs(old.top-top)<.1?old:{left,top});
+  },[parts]);
   async function load(id?: string, rebind = false, replacementTabs?: DocumentInfo[]) {
     if (locked.current || pending.current || noteOpen.current) return false;
-    locked.current = true; setBusy(true); setError('');
+    resetDrawing();locked.current = true; setBusy(true); setError('');
     let replacing = false;
     const previous = { document:activeDocument.current, marks:activeMarks.current, reading:current.current, tabs:[...tabsRef.current], activeId:activeId.current };
     const job = (async () => {
@@ -110,7 +120,7 @@ function App() {
       const annotations = unwrap(await window.enlumor.getAnnotations(opened.id));
       const baseTabs=replacementTabs || tabsRef.current;
       const nextTabs=baseTabs.some(tab=>tab.id===opened.id) ? baseTabs.map(tab=>tab.id===opened.id?opened:tab) : [...baseTabs,opened];
-      previous.reading = current.current;
+      resetDrawing();previous.reading = current.current;
       replacing = true; current.current=null;setParts([]);setNotice('');
       await reader.current!.open(opened);
       unwrap(await window.enlumor.saveTabs({openIds:nextTabs.map(tab=>tab.id),activeId:opened.id}));
@@ -140,9 +150,9 @@ function App() {
     } finally { flight.current = null; locked.current = false; setBusy(false); }
   }
   async function commit(change: AnnotationChange, kind: 'new' | 'undo' | 'redo' = 'new') {
-    if (locked.current) return;
+    if (locked.current || (pending.current && pending.current.change!==change)) return;
     if(change.documentId!==activeId.current){fail(new Error('DOCUMENT_MISMATCH: 批注不属于当前文档'));return;}
-    locked.current = true; setBusy(true); setError(''); setStatus('正在保存…'); pending.current = { change, kind };
+    resetDrawing();locked.current = true; setBusy(true); setError(''); setStatus('正在保存…'); pending.current = { change, kind };
     const job = (async () => {
       const result = unwrap(await window.enlumor.applyAnnotationChange(change));
       pending.current = null;activeMarks.current=result.annotations; setMarks(result.annotations); reader.current!.setMarks(result.annotations); setParts([]);
@@ -156,7 +166,7 @@ function App() {
     try { await job; } catch (reason) { fail(reason); } finally { flight.current = null; locked.current = false; setBusy(false); }
   }
   function clearCurrent() {
-    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setPage('1');setZoom(1);setReadingLayout('continuous');
+    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');resetDrawing();setPage('1');setZoom(1);setReadingLayout('continuous');
   }
   async function closeTab(id:string) {
     if(locked.current || pending.current || noteOpen.current)return;
@@ -166,7 +176,7 @@ function App() {
       if(await load(remaining[Math.min(index,remaining.length-1)].id,false,remaining))histories.current.delete(id);
       return;
     }
-    locked.current=true;setBusy(true);setError('');
+    resetDrawing();locked.current=true;setBusy(true);setError('');
     const job=(async()=>{
       await flush();
       const nextActive=id===activeId.current?null:activeId.current;
@@ -178,14 +188,14 @@ function App() {
     flight.current=job;
     try{await job;}catch(reason){fail(reason);}finally{flight.current=null;locked.current=false;setBusy(false);}
   }
-  function add(type: 'highlight' | 'underline' | 'note', text = '') {
+  function add(type: 'highlight' | 'underline' | 'strikeout' | 'note', text = '') {
     if (!doc || !parts.length) return;
     const upserts: Annotation[] = parts.map(part => ({ ...part, id: crypto.randomUUID(), documentId: doc.id, fingerprint: doc.fingerprint, type, note: text, color, author: 'user' }));
     void commit({ documentId: doc.id, upserts, deletes: [] });
   }
   async function exportPdf() {
     if (!doc || locked.current || pending.current) return;
-    locked.current = true; setBusy(true); setError(''); setStatus('正在导出…');
+    resetDrawing();locked.current = true; setBusy(true); setError(''); setStatus('正在导出…');
     try { await flush(); const result = unwrap(await window.enlumor.exportAnnotatedPdf(doc.id)); setStatus(result.cancelled ? '已取消导出' : `导出完成 · ${result.path}`); }
     catch (reason) { fail(reason); } finally { locked.current = false; setBusy(false); }
   }
@@ -210,7 +220,7 @@ function App() {
         {libraryView === 'documents' ? <div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div> : libraryView === 'thumbnails' ? libraryOpen && doc && reader.current && <ThumbnailRail key={doc.id} reader={reader.current} documentId={doc.id} pageCount={doc.pageCount} currentPage={Number(page)}/> : <div className="recent-list" aria-label="PDF 目录">{outline === null ? <p className="library-empty">正在读取目录…</p> : outline.length ? <OutlineTree items={outline} navigate={id => void reader.current?.goToOutline(id)}/> : <p className="library-empty">此 PDF 没有目录，可使用页码跳转。</p>}</div>}
         <div className="library-footer"><span className="online-dot"/> 离线可用<span>所有阅读痕迹保存在这台电脑</span></div>
       </aside>
-      {libraryOpen && <PanelDivider side="left" size={panels.left} max={Math.min(420,workspaceWidth-400-(notesOpen?panels.right+12:6))} start={()=>setParts([])} preview={value=>previewPanel('left',value)} commit={value=>commitPanel('left',value)} reset={()=>persistLayout({...layoutRef.current,left:208})}/>}
+      {libraryOpen && <PanelDivider side="left" size={panels.left} max={Math.min(420,workspaceWidth-400-(notesOpen?panels.right+12:6))} start={()=>{resetDrawing();setParts([]);}} preview={value=>previewPanel('left',value)} commit={value=>commitPanel('left',value)} reset={()=>persistLayout({...layoutRef.current,left:208})}/>}
       <main className="reading">
         {tabs.length>0 && <div className="document-tabs" role="tablist" aria-label="已打开文档" onKeyDown={event=>{
           if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
@@ -221,7 +231,7 @@ function App() {
           <button role="tab" aria-label={tab.name} aria-selected={doc?.id===tab.id} tabIndex={doc?.id===tab.id?0:-1} title={tab.path} disabled={busy||!!pending.current} onClick={()=>void load(tab.id)}>{tab.name}</button>
           <button aria-label={`关闭 ${tab.name}`} title="关闭标签（Ctrl+W）" disabled={busy||!!pending.current} onClick={()=>void closeTab(tab.id)} onKeyDown={event=>event.stopPropagation()}>×</button>
         </div>)}</div>}<div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
-        <div className="toolbar"><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) - 1)}>‹</button><input aria-label="跳转页码" className="page-input" disabled={!doc} value={page} onChange={event => setPage(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') reader.current?.go(Number(page)); }}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) + 1)}>›</button></div>
+        <div className="toolbar"><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) - 1)}>‹</button><input aria-label="跳转页码" className="page-input" disabled={!doc} value={page} onChange={event => setPage(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') reader.current?.go(Number(page)); }}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) + 1)}>›</button></div>
           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
           <form className="search" onSubmit={event => { event.preventDefault(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
         </div>
@@ -234,14 +244,14 @@ function App() {
       </main>
       {notesOpen && <PanelDivider side="right" size={panels.right} max={Math.min(460,workspaceWidth-400-(libraryOpen?panels.left+12:6))} start={()=>setParts([])} preview={value=>previewPanel('right',value)} commit={value=>commitPanel('right',value)} reset={()=>persistLayout({...layoutRef.current,right:282})}/>}
       <aside className="annotations" hidden={!notesOpen}><div className="section-label">MARGINALIA / 页边思考</div><h2>批注 <span>{marks.length.toString().padStart(2, '0')}</span></h2>
-        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => { setEditing(null); setNote(''); }}>添加便签</button></div>
+        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length||busy||!!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('strikeout')}>删除线选区</button><button aria-label="绘制直线" aria-pressed={lineActive} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);reader.current?.setLineEnabled(!lineActive);setLineActive(!lineActive);}}>直线</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => { setEditing(null); setNote(''); }}>添加便签</button></div>
         <div className="history"><button disabled={!history.undo.length || busy || !!pending.current} onClick={() => void commit(history.undo.at(-1)!, 'undo')}>撤销</button><button disabled={!history.redo.length || busy || !!pending.current} onClick={() => void commit(history.redo.at(-1)!, 'redo')}>重做</button></div>
         {parts.length > 0 && <div className="selection-preview">已选 {parts.length} 页原文<p>{parts.map(part => part.quote).join(' ').slice(0, 180)}</p></div>}
-        <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':'高亮'}</span><p>{mark.quote || '页面便签'}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}<div className="card-actions"><button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current} onClick={() => { setEditing(mark); setNote(mark.note); }}>编辑</button>}<button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
+        <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':mark.type==='strikeout'?'删除线':mark.type==='line'?'直线':'高亮'}</span><p>{mark.quote || (mark.type==='line'?'页面直线':'页面便签')}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}<div className="card-actions"><button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current} onClick={() => { setEditing(mark); setNote(mark.note); }}>编辑</button>}<button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
         {!marks.length && <div className="annotation-empty"><span>〰</span><p>选中一段原文<br/>留下你的第一个标记。</p><small>批注自动保存到本地工作区</small></div>}
       </aside>
     </div>
-    {parts.length > 0 && doc && <div className="selection-popover" role="toolbar" aria-label="选区工具" style={selectionPosition} onMouseDown={event => event.preventDefault()}><span>{parts.length > 1 ? `${parts.length} 页选区` : '原文选区'}</span><button disabled={busy || !!pending.current} onClick={() => add('highlight')}><Glyph name="mark"/>高亮</button><button disabled={busy||!!pending.current} onClick={()=>add('underline')}>下划线</button><button disabled={busy || !!pending.current} onClick={() => { setEditing(null); setNote(''); }}>写便签</button><button className="popover-close" aria-label="取消选区" onClick={() => { setParts([]); window.getSelection()?.removeAllRanges(); }}><Glyph name="close"/></button></div>}
+    {parts.length > 0 && doc && <div ref={selectionPopover} className="selection-popover" role="toolbar" aria-label="选区工具" style={{...selectionPosition,maxWidth:Math.max(200,(container.current?.clientWidth||400)-24)}} onMouseDown={event => event.preventDefault()}><span>{parts.length > 1 ? `${parts.length} 页选区` : '原文选区'}</span><button disabled={busy || !!pending.current} onClick={() => add('highlight')}><Glyph name="mark"/>高亮</button><button disabled={busy||!!pending.current} onClick={()=>add('underline')}>下划线</button><button disabled={busy||!!pending.current} onClick={()=>add('strikeout')}>删除线</button><button disabled={busy || !!pending.current} onClick={() => { setEditing(null); setNote(''); }}>写便签</button><button className="popover-close" aria-label="取消选区" onClick={() => { setParts([]); window.getSelection()?.removeAllRanges(); }}><Glyph name="close"/></button></div>}
     {note !== null && <div className="modal-backdrop"><form className="note-modal" onSubmit={event => { event.preventDefault(); if (editing) void commit({ documentId: editing.documentId, upserts: [{ ...editing, note }], deletes: [] }); else add('note', note); setNote(null); }}><div className="section-label">NOTE / 原文旁的想法</div><h2>{editing ? '编辑便签' : '添加便签'}</h2><textarea autoFocus aria-label="便签内容" value={note} maxLength={100000} onChange={event => setNote(event.target.value)}/><div><button type="button" onClick={() => setNote(null)}>取消</button><button className="primary" type="submit" disabled={!note.trim()}>保存便签</button></div></form></div>}
   </div>;
 }

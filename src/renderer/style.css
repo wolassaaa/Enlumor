@@ -53,3 +53,7 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
 .underline-line{position:absolute;inset:0;width:100%;height:100%;overflow:visible;opacity:.95}
 .reading-layout select{font:inherit;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:4px;background:var(--paper);color:var(--ink)}
 .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.strikeout-line,.drawn-line,.line-draft{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;opacity:.95}
+.line-draft{z-index:5}.drawing-line,.drawing-line .textLayer,.drawing-line .textLayer span{cursor:crosshair!important}
+.annotation-tools button[aria-pressed="true"]{background:#d5dfc8;border-color:#81946c}
+.selection-popover{flex-wrap:wrap}

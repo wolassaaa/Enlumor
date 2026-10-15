@@ -1,0 +1,685 @@
+diff --git a/.gitattributes b/.gitattributes
+index d73024e..2d089c4 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -5,3 +5,4 @@
+ *.css text eol=lf
+ evidence/layout-tabs/original-* -text
+ evidence/reading-tools/originals/* -text
++evidence/strikeout-lines/originals/* -text
+diff --git a/README.md b/README.md
+index 474017b..7f13ee1 100644
+--- a/README.md
++++ b/README.md
+@@ -20,7 +20,7 @@ npm start          # 启动已构建的桌面应用
+ 
+ 仅开发/重新构建需要 Node 和 Python。`setup.ps1` 安装 requirements-build.txt；打包命令通过 PyInstaller 收集解释器、PyMuPDF 和依赖到应用资源目录，运行时优先使用内置程序。Windows 构建不作为 macOS/iPad 的二进制包使用。
+ 
+-0.1.6 新增连续/单页模式与下划线批注（含标准 PDF 导出）；阅读模式按文档恢复。保留 0.1.5 的侧栏调宽/间距与多文档标签。拖动侧栏边缘或聚焦后按方向键；顶栏“布局”选择阅读间距。Ctrl+Tab 切换标签、Ctrl+W 关闭当前标签；关闭标签不删除文档。便签编辑时先保存/取消再切换。保留此前按需缩略图、目录与性能优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
++0.1.7 新增删除线选区和直线拖拽（含标准 PDF 导出）；点击右栏“直线”后页内拖动，Esc 取消，有效绘制完成后退出；短点击可继续绘制。保留连续/单页模式、下划线及每文档恢复。保留 0.1.5 的侧栏调宽/间距与多文档标签。拖动侧栏边缘或聚焦后按方向键；顶栏“布局”选择阅读间距。Ctrl+Tab 切换标签、Ctrl+W 关闭当前标签；关闭标签不删除文档。便签编辑时先保存/取消再切换。保留此前按需缩略图、目录与性能优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
+ 
+ ## 已有功能
+ 
+diff --git a/docs/FEATURES.md b/docs/FEATURES.md
+index a2aafd5..12a404b 100644
+--- a/docs/FEATURES.md
++++ b/docs/FEATURES.md
+@@ -12,9 +12,19 @@
+ ## 每完成两个任务做一次整体 Review
+ 
+ 用户新增要求（2026-10-15）：每完成两个独立功能任务，先审查程序与操作体验，再推进下两项；对照成熟工作台/阅读器的官方设计，修正实际问题，不仅装修界面。轮次、发现与修复记录见 [REVIEW-CADENCE.md](REVIEW-CADENCE.md)。
+-第1轮：侧栏尺寸/间距 + 多文档标签。第2轮：单页模式 + 下划线/导出。两轮 Review 均已完成，Important 已经失败→成功验证；计数清零。
++第1轮：侧栏/标签；第2轮：单页/下划线；第3轮：删除线/直线。三轮 Review 已完成，Important 均以失败→成功测试验证；计数清零。
+ 
+-## 当前 0.1.6
++## 当前 0.1.7
++
++- ANN-01 / SAVE-03：新增删除线（文字锚点）和直线（页内拖拽、PDF 原生端点）批注，支持改色、删除、保存、撤销/重做及标准 PDF 导出（StrikeOut11 / Line3）。
++- 直线：Esc 取消；短点击保持工具待绘；有效拖动完成后恢复文字选择。跨出页面的端点限制在起始页，不创建跨页直线。
++- 第3轮 Review：修复短点击工具状态不同步、忙碌/待重试期间绘图覆盖操作、旋转中的坐标失效。后者从 Minor 重评为 Important，测试复现后取消未完成手势。
++- 额外完整回归拦住了新增按钮导致的浮动工具栏越界：按实际 DOM 尺寸定位并在窄视窗换行，三个显示缩放的既有测试失败→成功；失败发布未更新 latest.json。
++- 验收：30 Vitest + 5 unittest + 29 实际 Electron E2E = 64 项；两种200页压力样本通过门禁。
++- 显示缩放150%/200%下分别在90°/270°页面创建直线，验证原生端点、SVG 端点和导出端点。Python 还验证原 PDF 四种旋转/裁剪页、重复导出及原文件哈希。
++- 第3轮完成，计数0。下一轮：箭头、画笔，两项后第4轮 Review。
++
++## 上轮 0.1.6
+ 
+ - RDR-02：阅读模式菜单切换连续/单页，保持当前页与缩放；单页只挂载当前页面，支持页码、上一页/下一页、搜索定位与每文档模式恢复。
+ - ANN-01 / SAVE-03：下划线选区、颜色修改、删除、撤销/重做、SQLite 保存；导出标准 PDF Underline 批注（subtype9），保留源文件既有批注。
+@@ -57,7 +67,7 @@
+ | RDR-01 | 本地打开、最近文件、目录、按需缩略图、多标签页、页码、全文搜索、位置/缩放恢复 | 复杂文档兼容回归 |
+ | RDR-02 | 连续/单页模式、适宽/适页、滚轮、Ctrl+滚轮缩放 | 单页边界翻页按钮反馈 |
+ | RDR-03 | 搜索命中定位与强调 | 更复杂 PDF 的兼容回归持续补充 |
+-| ANN-01 | 高亮、下划线、便签、缩放旋转锚定 | 删除线→直线/箭头→画笔→擦除，每种连同导出独立验收 |
++| ANN-01 | 高亮、下划线、删除线、直线、便签、缩放旋转锚定 | 箭头→画笔→擦除，每种连同导出独立验收 |
+ | ANN-02 | 手动编辑、删除/改色、当前会话撤销/重做、持久化 | 可见修改历史、AI 来源/逐个接受撤销 |
+ | ANN-03 | — | AI 永久批注预览、匹配范围及确认 |
+ | AI-01/02 | 底层文字选区与临时强调可复用 | 引文验证、点击回跳、解释/举例/画图/标记 |
+@@ -68,7 +78,7 @@
+ | CRU-01/02/03 | — | 文本分块、分步解释、继续/暂停/后退/略过/调速、手动接管 |
+ | SAVE-01 | 批注及阅读位置恢复、写入失败重试、强退恢复测试 | 白板/AI 引文恢复（对应功能实现时加入） |
+ | SAVE-02 | 另存带批注 PDF，源文件保持不变 | 备份后显式写回源 PDF（后期） |
+-| SAVE-03 | 标准高亮/下划线/便签、保留原有批注、重复导出不叠加 | 新批注类型、白板来源静态快照/说明 |
++| SAVE-03 | 标准高亮/下划线/删除线/直线/便签、保留原有批注、重复导出不叠加 | 新批注类型、白板来源静态快照/说明 |
+ 
+ 顺序遵循已批准计划：阅读器完整化 → 可信 AI → 注意力工具 → 白板 → 巡航/完整保存 → 发布加固。
+ 每个子项必须先通过对应失败→成功小测试，再通过整个已有套件与打包检查；不把占位按钮当功能上线。
+diff --git a/docs/REVIEW-CADENCE.md b/docs/REVIEW-CADENCE.md
+index f006a89..1188db9 100644
+--- a/docs/REVIEW-CADENCE.md
++++ b/docs/REVIEW-CADENCE.md
+@@ -1,6 +1,6 @@
+ # Enlumor 两项一 Review 记录
+ 
+-当前执行位置：第2轮已完成，计数0。下一轮删除线、直线，完成后第3轮 Review。
++当前执行位置：第3轮已完成，计数0。下一轮箭头、画笔，完成后第4轮 Review。
+ 
+ ## 第1轮：侧栏与标签
+ 
+@@ -55,3 +55,19 @@ Deferred minor：页1的上一页与末页的下一页仍可点击但不跳转
+ 阅读模式作为可选 ReadingState.layout 写入 SQLite JSON，旧记录默认连续模式，不迁移 schema。旧程序不识别新的下划线批注类型；回退仅在独立副本验证，保留新版工作区，新批注继续由新版处理。
+ 
+ 第2轮已完成，计数归零。下一轮：删除线（含导出）、直线（含导出），两项完成后 Review；之后再推进箭头、画笔与擦除。
++
++## 第3轮：删除线与直线/导出（0.1.7）
++
++参考 [Acrobat 文本标记](https://helpx.adobe.com/acrobat/web/share-review-and-export/review-pdfs/markup-document-redlining.html)的“选区→标记”操作与 [PyMuPDF 页面批注](https://pymupdf.readthedocs.io/en/latest/page.html)的标准 StrikeOut / Line。直线是可撤销的批注，而不是把图形烧入原 PDF；拖动只在本页进行，Esc 取消，忙碌与未保存操作优先。
++
++一次独立只读源码/截图 Review；作者在同一修复阶段用测试验证：
++- Important：短点击无有效线段时内部工具退出而按钮仍选中。RED，改为短点击保持待绘，下一次拖动可直接完成；GREEN。
++- Important：绘图只检查 viewer ready，可能在导出/锁定期间丢弃操作，或覆盖待重试操作。延迟导出及注入写失败两条 RED；增加 readiness 业务检查、忙碌时取消工具、禁止新提交替换 pending（明确重试仍允许）；GREEN。
++- Minor→Important 重评：旋转时未显式取消手势，可能用新坐标变换解释旧起点。真实事件同一轮释放复现意外写入，RED；rotationchanging 取消草稿，GREEN。
++- 原审查建议补充旋转后“创建”而非只检查数量；已补90°/150%及270°/200%创建，独立比较 PDF 原生端点、SVG 与导出端点。DOM 宽度存在取整，测试按 PDF CSS 单位96/72核算，而非把取整后的宽度当精确比例。
++
++完整发布门禁第一次返回3个失败（既有100%/150%/200%浮栏边界测试），latest仍为0.1.6；根因新增按钮超过旧固定310px宽度假设。改为布局阶段测量实际浮栏尺寸、限制宽度并换行，三个测试 GREEN。重新执行整套：30 Vitest + 5 unittest + 29 E2E=64，打包及双压力样本通过后才更新0.1.7。
++
++Deferred minor：直线草稿固定绿色，保存颜色使用当前选择器，后续统一草稿色与实际色。此前页边界按钮、关闭标签焦点、分隔线握柄继续记录。未做第二轮审查，修复以小测试及全套结果为准。
++
++新增类型由新版本处理，代码回退仅在独立副本验证，不以旧程序覆盖新版工作区。第3轮完成，计数0；下一轮箭头、画笔，之后第4轮 Review。
+diff --git a/package-lock.json b/package-lock.json
+index e8410ed..82957c9 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "enlumor",
+-  "version": "0.1.6",
++  "version": "0.1.7",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "enlumor",
+-      "version": "0.1.6",
++      "version": "0.1.7",
+       "dependencies": {
+         "pdfjs-dist": "6.4.299",
+         "react": "19.3.1",
+diff --git a/package.json b/package.json
+index 0c09a41..2432cf4 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "enlumor",
+-  "version": "0.1.6",
++  "version": "0.1.7",
+   "private": true,
+   "type": "module",
+   "description": "Local-first PDF reading workspace",
+diff --git a/python/export_pdf.py b/python/export_pdf.py
+index 057a9d6..74bf8dc 100644
+--- a/python/export_pdf.py
++++ b/python/export_pdf.py
+@@ -45,7 +45,7 @@ def export_pdf(source, target, fingerprint, annotations):
+                 index = item['pageIndex']
+                 if type(index) is not int or not 0 <= index < len(doc):
+                     raise ValueError('INVALID_PAGE')
+-                if item['type'] not in ('highlight', 'underline', 'note') or not item['quads']:
++                if item['type'] not in ('highlight', 'underline', 'strikeout', 'line', 'note') or not item['quads']:
+                     raise ValueError('INVALID_ANNOTATION')
+                 page = doc[index]
+                 # PyMuPDF's rotated-page transformation_matrix loses crop translation.
+@@ -68,6 +68,13 @@ def export_pdf(source, target, fingerprint, annotations):
+                     annotation = page.add_highlight_annot(quads)
+                 elif item['type'] == 'underline':
+                     annotation = page.add_underline_annot(quads)
++                elif item['type'] == 'strikeout':
++                    annotation = page.add_strikeout_annot(quads)
++                elif item['type'] == 'line':
++                    points = item.get('points')
++                    if not isinstance(points, list) or len(points) != 4 or any(type(n) not in (int,float) or not math.isfinite(n) for n in points) or math.hypot(points[2]-points[0],points[3]-points[1]) < 1e-6:
++                        raise ValueError('INVALID_GEOMETRY')
++                    annotation = page.add_line_annot(fitz.Point(points[0],points[1])*matrix, fitz.Point(points[2],points[3])*matrix)
+                 else:
+                     annotation = page.add_text_annot(quads[0].ul, item.get('note', ''))
+                 annotation.set_colors(stroke=rgb)
+diff --git a/scripts/check-strikeout-lines-rollback.mjs b/scripts/check-strikeout-lines-rollback.mjs
+new file mode 100644
+index 0000000..12e105d
+--- /dev/null
++++ b/scripts/check-strikeout-lines-rollback.mjs
+@@ -0,0 +1,36 @@
++import { build } from 'esbuild';
++import { build as viteBuild } from 'vite';
++import react from '@vitejs/plugin-react';
++import { _electron as electron, expect } from '@playwright/test';
++import { mkdirSync, mkdtempSync, cpSync, copyFileSync, readFileSync } from 'node:fs';
++import { createHash } from 'node:crypto';
++import path from 'node:path';
++import { copyAssets } from './assets.mjs';
++const root=path.resolve('.');
++const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex');
++const live=sha('src/renderer/main.tsx');
++const base=path.join(root,'.cache/strikeout-lines-rollback');mkdirSync(base,{recursive:true});
++const copy=mkdtempSync(path.join(base,'run-'));
++if(!copy.startsWith(base+path.sep))throw Error('Unexpected rollback target');
++cpSync('src',path.join(copy,'src'),{recursive:true});
++cpSync('python',path.join(copy,'python'),{recursive:true});
++for(const file of ['package.json','index.html'])copyFileSync(file,path.join(copy,file));
++const originals=JSON.parse(readFileSync('evidence/strikeout-lines/originals.json','utf8'));
++for(const {name,target,sha256} of originals){const file=path.join(root,'evidence/strikeout-lines/originals',name);if(sha(file)!==sha256)throw Error('Original hash mismatch');copyFileSync(file,path.join(copy,target));}
++await build({entryPoints:[path.join(copy,'src/main/index.ts'),path.join(copy,'src/main/preload.ts')],outdir:path.join(copy,'dist/main'),bundle:true,platform:'node',format:'cjs',outExtension:{'.js':'.cjs'},external:['electron']});
++await viteBuild({configFile:false,root:copy,plugins:[react()],base:'./',build:{outDir:path.join(copy,'dist/renderer')}});
++copyAssets(path.join(copy,'dist/renderer/pdf-assets'));
++const app=await electron.launch({args:[copy,`--user-data-dir=${path.join(copy,'profile')}`],env:{...process.env,ENLUMOR_PYTHON:path.join(root,'.venv/Scripts/python.exe')}});
++try{
++ const page=await app.firstWindow();
++ const source=path.join(root,'.cache/benchmark/200-pages-32MiB.pdf');
++ await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);
++ await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();
++ await expect(page.locator('.textLayer span').first()).toBeVisible();
++ await expect(page.getByLabel('阅读模式')).toHaveCount(1);
++ await expect(page.getByRole('button',{name:'删除线选区',exact:true})).toHaveCount(0);
++ await expect(page.getByRole('button',{name:'绘制直线',exact:true})).toHaveCount(0);
++ await expect(page.getByRole('tablist',{name:'已打开文档'}).getByRole('tab')).toHaveCount(1);
++ if(sha('src/renderer/main.tsx')!==live)throw Error('Live source changed');
++ console.log('ROLLBACK: STRIKEOUT_BUTTON=0; LINE_BUTTON=0; MODE_SELECTOR=1; LIVE_SOURCE_UNCHANGED=YES');
++}finally{await app.close();}
+diff --git a/src/renderer/line-tool.ts b/src/renderer/line-tool.ts
+new file mode 100644
+index 0000000..b160e28
+--- /dev/null
++++ b/src/renderer/line-tool.ts
+@@ -0,0 +1,32 @@
++import { inverse, lineAnchor, transform } from '../shared/geometry';
++export type DrawnLine = { pageIndex:number; points:number[]; quads:number[][] };
++type PageView = {div:HTMLElement;viewport:{width:number;height:number;transform:number[]}};
++export class LineTool {
++ private enabled=false;
++ private gesture?:{id:number;index:number;view:PageView;start:[number,number];svg:SVGSVGElement;line:SVGLineElement};
++ constructor(private container:HTMLElement, private page:(index:number)=>PageView|undefined, private ready:()=>boolean, private created:(line:DrawnLine)=>void) {
++  container.addEventListener('pointerdown',event=>{
++   if(!this.enabled||!this.ready()||event.button!==0||this.gesture)return;
++   const target=(event.target as Element).closest<HTMLElement>('.page');if(!target)return;
++   const index=Number(target.dataset.pageNumber)-1,view=this.page(index);if(!view)return;
++   event.preventDefault();getSelection()?.removeAllRanges();
++   const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('line-draft');
++   const line=document.createElementNS('http://www.w3.org/2000/svg','line');line.setAttribute('stroke','#5a7350');line.setAttribute('stroke-width','1.5');svg.append(line);target.append(svg);
++   this.gesture={id:event.pointerId,index,view,start:this.point(event,view),svg,line};this.update(event);container.setPointerCapture(event.pointerId);
++  },{capture:true});
++  container.addEventListener('pointermove',event=>{if(!this.ready()){this.cancel();return;}if(this.gesture?.id===event.pointerId)this.update(event);});
++  container.addEventListener('pointerup',event=>{
++   if(!this.ready()){this.cancel();return;}const g=this.gesture;if(!g||g.id!==event.pointerId)return;
++   const end=this.point(event,g.view),valid=Math.hypot(end[0]-g.start[0],end[1]-g.start[1])>=3;
++   const matrix=inverse(g.view.viewport.transform),points=[...transform(...g.start,matrix),...transform(...end,matrix)];
++   this.cancel();if(valid){this.setEnabled(false);this.created({pageIndex:g.index,points,quads:[lineAnchor(points)]});}
++  });
++  container.addEventListener('pointercancel',()=>this.cancel());
++  container.addEventListener('lostpointercapture',()=>this.cancel());
++  container.addEventListener('scroll',()=>this.cancel(),{passive:true});
++ }
++ setEnabled(enabled:boolean){this.cancel();this.enabled=enabled;this.container.classList.toggle('drawing-line',enabled);}
++ cancel(){const g=this.gesture;this.gesture=undefined;if(g){g.svg.remove();if(this.container.hasPointerCapture(g.id))this.container.releasePointerCapture(g.id);}}
++ private point(event:PointerEvent,view:PageView):[number,number]{const rect=view.div.getBoundingClientRect();return[Math.max(0,Math.min(view.viewport.width,event.clientX-rect.left-view.div.clientLeft)),Math.max(0,Math.min(view.viewport.height,event.clientY-rect.top-view.div.clientTop))];}
++ private update(event:PointerEvent){const g=this.gesture!;const end=this.point(event,g.view);for(const [key,value]of Object.entries({x1:g.start[0],y1:g.start[1],x2:end[0],y2:end[1]}))g.line.setAttribute(key,String(value));}
++}
+diff --git a/src/renderer/main.tsx b/src/renderer/main.tsx
+index 9935f07..7fbea96 100644
+--- a/src/renderer/main.tsx
++++ b/src/renderer/main.tsx
+@@ -4,7 +4,7 @@ import type { CSSProperties } from 'react';
+ import type { LayoutPreferences } from '../shared/model';
+ import { ThumbnailRail } from './thumbnails';
+ import { createRoot } from 'react-dom/client';
+-import { useEffect, useRef, useState } from 'react';
++import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+ import { PdfReader, type SelectionPart, type OutlineEntry } from './pdf-reader';
+ import { unwrap, type Annotation, type AnnotationChange, type Bridge, type DocumentInfo, type OpenedDocument, type ReadingState } from '../shared/model';
+ import './style.css';
+@@ -33,8 +33,11 @@ function App() {
+   const [marks, setMarks] = useState<Annotation[]>([]), [parts, setParts] = useState<SelectionPart[]>([]);
+   const [status, setStatus] = useState('本地工作区就绪'), [error, setError] = useState(''), [notice, setNotice] = useState('');
+   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
++  const [lineActive,setLineActive]=useState(false);
++  function resetDrawing(){reader.current?.setLineEnabled(false);setLineActive(false);}
+   const [readingLayout,setReadingLayout]=useState<'continuous'|'single'>('continuous');
+   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
++  const colorRef=useRef(color);colorRef.current=color;
+   const noteOpen = useRef(false); noteOpen.current = note !== null;
+   const activeDocument = useRef<OpenedDocument | null>(null), activeMarks = useRef<Annotation[]>([]);
+   const [tabs, setTabs] = useState<DocumentInfo[]>([]);
+@@ -44,6 +47,7 @@ function App() {
+   const [history, setHistory] = useState({ undo: [] as AnnotationChange[], redo: [] as AnnotationChange[] });
+   const [libraryOpen, setLibraryOpen] = useState(true), [notesOpen, setNotesOpen] = useState(true);
+   const [libraryView, setLibraryView] = useState<'documents' | 'outline' | 'thumbnails'>('documents'), [outline, setOutline] = useState<OutlineEntry[] | null>([]);
++  const selectionPopover=useRef<HTMLDivElement>(null);
+   const [selectionPosition, setSelectionPosition] = useState({ left: 0, top: 0 });
+   const current = useRef<ReadingState | null>(null), timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+   const pending = useRef<{ change: AnnotationChange; kind: 'new' | 'undo' | 'redo' } | null>(null), flight = useRef<Promise<unknown> | null>(null), locked = useRef(false);
+@@ -63,14 +67,10 @@ function App() {
+       clearTimeout(timer.current); timer.current = setTimeout(() => { void flush().catch(fail); }, 500);
+     }, selected => {
+       setParts(old => !selected.length && !old.length ? old : selected);
+-      const selection = window.getSelection();
+-      if (selected.length && selection?.rangeCount) {
+-        const rect = selection.getRangeAt(0).getBoundingClientRect();
+-        const bounds = container.current!.getBoundingClientRect();
+-        const top = rect.top >= bounds.top + 64 ? rect.top - 52 : rect.bottom + 10;
+-        setSelectionPosition({ left: Math.max(bounds.left + 12, Math.min(bounds.right - 310, rect.left)), top: Math.max(bounds.top + 12, Math.min(bounds.bottom - 60, top)) });
+-      }
+-    }, setNotice, setOutline);
++    }, setNotice, setOutline, line=>{
++      setLineActive(false);const opened=activeDocument.current;if(!opened)return;
++      void commit({documentId:opened.id,upserts:[{...line,id:crypto.randomUUID(),documentId:opened.id,fingerprint:opened.fingerprint,type:'line',author:'user',color:colorRef.current,quote:'',note:''}],deletes:[]});
++    }, ()=>!locked.current&&!pending.current&&!noteOpen.current);
+     const off = window.enlumor.onFlush(flush);
+     void (async () => {
+       try { const savedLayout = unwrap(await window.enlumor.getLayout()); setLayout(savedLayout); layoutRef.current = savedLayout; const list = unwrap(await window.enlumor.listDocuments()); setRecent(list);
+@@ -89,18 +89,28 @@ function App() {
+         const next=list[(index+(event.shiftKey?-1:1)+list.length)%list.length];if(next)void load(next.id);return;
+       }
+       if (event.ctrlKey && event.key.toLowerCase()==='w') { event.preventDefault(); if(activeId.current)void closeTab(activeId.current);return; }
+-      if (event.key === 'Escape') { setParts([]); setNote(null); setLayoutOpen(false); window.getSelection()?.removeAllRanges(); }
++      if (event.key === 'Escape') { resetDrawing(); setParts([]); setNote(null); setLayoutOpen(false); window.getSelection()?.removeAllRanges(); }
+     };
+     window.addEventListener('keydown', keyboard);
+     const observer = new ResizeObserver(entries => setWorkspaceWidth(entries[0].contentRect.width));
+     observer.observe(workspaceElement.current!);
+-    const resized = () => setParts([]);
++    const resized = () => {resetDrawing();setParts([]);};
+     window.addEventListener('resize', resized);
+     return () => { observer.disconnect(); off(); clearTimeout(timer.current); window.removeEventListener('keydown', keyboard); window.removeEventListener('resize', resized); };
+   }, []);
++  useLayoutEffect(()=>{
++    if(!parts.length||!container.current||!selectionPopover.current)return;
++    const bounds=container.current.getBoundingClientRect(),popup=selectionPopover.current.getBoundingClientRect();
++    const selection=getSelection();if(!selection?.rangeCount)return;
++    const rect=selection.getRangeAt(0).getBoundingClientRect();
++    const left=Math.max(bounds.left+12,Math.min(bounds.right-popup.width-12,rect.left));
++    const candidate=rect.top-bounds.top>=popup.height+12?rect.top-popup.height-12:rect.bottom+10;
++    const top=Math.max(bounds.top+12,Math.min(bounds.bottom-popup.height-12,candidate));
++    setSelectionPosition(old=>Math.abs(old.left-left)<.1&&Math.abs(old.top-top)<.1?old:{left,top});
++  },[parts]);
+   async function load(id?: string, rebind = false, replacementTabs?: DocumentInfo[]) {
+     if (locked.current || pending.current || noteOpen.current) return false;
+-    locked.current = true; setBusy(true); setError('');
++    resetDrawing();locked.current = true; setBusy(true); setError('');
+     let replacing = false;
+     const previous = { document:activeDocument.current, marks:activeMarks.current, reading:current.current, tabs:[...tabsRef.current], activeId:activeId.current };
+     const job = (async () => {
+@@ -110,7 +120,7 @@ function App() {
+       const annotations = unwrap(await window.enlumor.getAnnotations(opened.id));
+       const baseTabs=replacementTabs || tabsRef.current;
+       const nextTabs=baseTabs.some(tab=>tab.id===opened.id) ? baseTabs.map(tab=>tab.id===opened.id?opened:tab) : [...baseTabs,opened];
+-      previous.reading = current.current;
++      resetDrawing();previous.reading = current.current;
+       replacing = true; current.current=null;setParts([]);setNotice('');
+       await reader.current!.open(opened);
+       unwrap(await window.enlumor.saveTabs({openIds:nextTabs.map(tab=>tab.id),activeId:opened.id}));
+@@ -140,9 +150,9 @@ function App() {
+     } finally { flight.current = null; locked.current = false; setBusy(false); }
+   }
+   async function commit(change: AnnotationChange, kind: 'new' | 'undo' | 'redo' = 'new') {
+-    if (locked.current) return;
++    if (locked.current || (pending.current && pending.current.change!==change)) return;
+     if(change.documentId!==activeId.current){fail(new Error('DOCUMENT_MISMATCH: 批注不属于当前文档'));return;}
+-    locked.current = true; setBusy(true); setError(''); setStatus('正在保存…'); pending.current = { change, kind };
++    resetDrawing();locked.current = true; setBusy(true); setError(''); setStatus('正在保存…'); pending.current = { change, kind };
+     const job = (async () => {
+       const result = unwrap(await window.enlumor.applyAnnotationChange(change));
+       pending.current = null;activeMarks.current=result.annotations; setMarks(result.annotations); reader.current!.setMarks(result.annotations); setParts([]);
+@@ -156,7 +166,7 @@ function App() {
+     try { await job; } catch (reason) { fail(reason); } finally { flight.current = null; locked.current = false; setBusy(false); }
+   }
+   function clearCurrent() {
+-    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setPage('1');setZoom(1);setReadingLayout('continuous');
++    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');resetDrawing();setPage('1');setZoom(1);setReadingLayout('continuous');
+   }
+   async function closeTab(id:string) {
+     if(locked.current || pending.current || noteOpen.current)return;
+@@ -166,7 +176,7 @@ function App() {
+       if(await load(remaining[Math.min(index,remaining.length-1)].id,false,remaining))histories.current.delete(id);
+       return;
+     }
+-    locked.current=true;setBusy(true);setError('');
++    resetDrawing();locked.current=true;setBusy(true);setError('');
+     const job=(async()=>{
+       await flush();
+       const nextActive=id===activeId.current?null:activeId.current;
+@@ -178,14 +188,14 @@ function App() {
+     flight.current=job;
+     try{await job;}catch(reason){fail(reason);}finally{flight.current=null;locked.current=false;setBusy(false);}
+   }
+-  function add(type: 'highlight' | 'underline' | 'note', text = '') {
++  function add(type: 'highlight' | 'underline' | 'strikeout' | 'note', text = '') {
+     if (!doc || !parts.length) return;
+     const upserts: Annotation[] = parts.map(part => ({ ...part, id: crypto.randomUUID(), documentId: doc.id, fingerprint: doc.fingerprint, type, note: text, color, author: 'user' }));
+     void commit({ documentId: doc.id, upserts, deletes: [] });
+   }
+   async function exportPdf() {
+     if (!doc || locked.current || pending.current) return;
+-    locked.current = true; setBusy(true); setError(''); setStatus('正在导出…');
++    resetDrawing();locked.current = true; setBusy(true); setError(''); setStatus('正在导出…');
+     try { await flush(); const result = unwrap(await window.enlumor.exportAnnotatedPdf(doc.id)); setStatus(result.cancelled ? '已取消导出' : `导出完成 · ${result.path}`); }
+     catch (reason) { fail(reason); } finally { locked.current = false; setBusy(false); }
+   }
+@@ -210,7 +220,7 @@ function App() {
+         {libraryView === 'documents' ? <div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div> : libraryView === 'thumbnails' ? libraryOpen && doc && reader.current && <ThumbnailRail key={doc.id} reader={reader.current} documentId={doc.id} pageCount={doc.pageCount} currentPage={Number(page)}/> : <div className="recent-list" aria-label="PDF 目录">{outline === null ? <p className="library-empty">正在读取目录…</p> : outline.length ? <OutlineTree items={outline} navigate={id => void reader.current?.goToOutline(id)}/> : <p className="library-empty">此 PDF 没有目录，可使用页码跳转。</p>}</div>}
+         <div className="library-footer"><span className="online-dot"/> 离线可用<span>所有阅读痕迹保存在这台电脑</span></div>
+       </aside>
+-      {libraryOpen && <PanelDivider side="left" size={panels.left} max={Math.min(420,workspaceWidth-400-(notesOpen?panels.right+12:6))} start={()=>setParts([])} preview={value=>previewPanel('left',value)} commit={value=>commitPanel('left',value)} reset={()=>persistLayout({...layoutRef.current,left:208})}/>}
++      {libraryOpen && <PanelDivider side="left" size={panels.left} max={Math.min(420,workspaceWidth-400-(notesOpen?panels.right+12:6))} start={()=>{resetDrawing();setParts([]);}} preview={value=>previewPanel('left',value)} commit={value=>commitPanel('left',value)} reset={()=>persistLayout({...layoutRef.current,left:208})}/>}
+       <main className="reading">
+         {tabs.length>0 && <div className="document-tabs" role="tablist" aria-label="已打开文档" onKeyDown={event=>{
+           if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+@@ -221,7 +231,7 @@ function App() {
+           <button role="tab" aria-label={tab.name} aria-selected={doc?.id===tab.id} tabIndex={doc?.id===tab.id?0:-1} title={tab.path} disabled={busy||!!pending.current} onClick={()=>void load(tab.id)}>{tab.name}</button>
+           <button aria-label={`关闭 ${tab.name}`} title="关闭标签（Ctrl+W）" disabled={busy||!!pending.current} onClick={()=>void closeTab(tab.id)} onKeyDown={event=>event.stopPropagation()}>×</button>
+         </div>)}</div>}<div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
+-        <div className="toolbar"><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) - 1)}>‹</button><input aria-label="跳转页码" className="page-input" disabled={!doc} value={page} onChange={event => setPage(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') reader.current?.go(Number(page)); }}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) + 1)}>›</button></div>
++        <div className="toolbar"><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) - 1)}>‹</button><input aria-label="跳转页码" className="page-input" disabled={!doc} value={page} onChange={event => setPage(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') reader.current?.go(Number(page)); }}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) + 1)}>›</button></div>
+           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
+           <form className="search" onSubmit={event => { event.preventDefault(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
+         </div>
+@@ -234,14 +244,14 @@ function App() {
+       </main>
+       {notesOpen && <PanelDivider side="right" size={panels.right} max={Math.min(460,workspaceWidth-400-(libraryOpen?panels.left+12:6))} start={()=>setParts([])} preview={value=>previewPanel('right',value)} commit={value=>commitPanel('right',value)} reset={()=>persistLayout({...layoutRef.current,right:282})}/>}
+       <aside className="annotations" hidden={!notesOpen}><div className="section-label">MARGINALIA / 页边思考</div><h2>批注 <span>{marks.length.toString().padStart(2, '0')}</span></h2>
+-        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => { setEditing(null); setNote(''); }}>添加便签</button></div>
++        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length||busy||!!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('strikeout')}>删除线选区</button><button aria-label="绘制直线" aria-pressed={lineActive} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);reader.current?.setLineEnabled(!lineActive);setLineActive(!lineActive);}}>直线</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => { setEditing(null); setNote(''); }}>添加便签</button></div>
+         <div className="history"><button disabled={!history.undo.length || busy || !!pending.current} onClick={() => void commit(history.undo.at(-1)!, 'undo')}>撤销</button><button disabled={!history.redo.length || busy || !!pending.current} onClick={() => void commit(history.redo.at(-1)!, 'redo')}>重做</button></div>
+         {parts.length > 0 && <div className="selection-preview">已选 {parts.length} 页原文<p>{parts.map(part => part.quote).join(' ').slice(0, 180)}</p></div>}
+-        <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':'高亮'}</span><p>{mark.quote || '页面便签'}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}<div className="card-actions"><button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current} onClick={() => { setEditing(mark); setNote(mark.note); }}>编辑</button>}<button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
++        <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':mark.type==='strikeout'?'删除线':mark.type==='line'?'直线':'高亮'}</span><p>{mark.quote || (mark.type==='line'?'页面直线':'页面便签')}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}<div className="card-actions"><button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current} onClick={() => { setEditing(mark); setNote(mark.note); }}>编辑</button>}<button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
+         {!marks.length && <div className="annotation-empty"><span>〰</span><p>选中一段原文<br/>留下你的第一个标记。</p><small>批注自动保存到本地工作区</small></div>}
+       </aside>
+     </div>
+-    {parts.length > 0 && doc && <div className="selection-popover" role="toolbar" aria-label="选区工具" style={selectionPosition} onMouseDown={event => event.preventDefault()}><span>{parts.length > 1 ? `${parts.length} 页选区` : '原文选区'}</span><button disabled={busy || !!pending.current} onClick={() => add('highlight')}><Glyph name="mark"/>高亮</button><button disabled={busy||!!pending.current} onClick={()=>add('underline')}>下划线</button><button disabled={busy || !!pending.current} onClick={() => { setEditing(null); setNote(''); }}>写便签</button><button className="popover-close" aria-label="取消选区" onClick={() => { setParts([]); window.getSelection()?.removeAllRanges(); }}><Glyph name="close"/></button></div>}
++    {parts.length > 0 && doc && <div ref={selectionPopover} className="selection-popover" role="toolbar" aria-label="选区工具" style={{...selectionPosition,maxWidth:Math.max(200,(container.current?.clientWidth||400)-24)}} onMouseDown={event => event.preventDefault()}><span>{parts.length > 1 ? `${parts.length} 页选区` : '原文选区'}</span><button disabled={busy || !!pending.current} onClick={() => add('highlight')}><Glyph name="mark"/>高亮</button><button disabled={busy||!!pending.current} onClick={()=>add('underline')}>下划线</button><button disabled={busy||!!pending.current} onClick={()=>add('strikeout')}>删除线</button><button disabled={busy || !!pending.current} onClick={() => { setEditing(null); setNote(''); }}>写便签</button><button className="popover-close" aria-label="取消选区" onClick={() => { setParts([]); window.getSelection()?.removeAllRanges(); }}><Glyph name="close"/></button></div>}
+     {note !== null && <div className="modal-backdrop"><form className="note-modal" onSubmit={event => { event.preventDefault(); if (editing) void commit({ documentId: editing.documentId, upserts: [{ ...editing, note }], deletes: [] }); else add('note', note); setNote(null); }}><div className="section-label">NOTE / 原文旁的想法</div><h2>{editing ? '编辑便签' : '添加便签'}</h2><textarea autoFocus aria-label="便签内容" value={note} maxLength={100000} onChange={event => setNote(event.target.value)}/><div><button type="button" onClick={() => setNote(null)}>取消</button><button className="primary" type="submit" disabled={!note.trim()}>保存便签</button></div></form></div>}
+   </div>;
+ }
+diff --git a/src/renderer/pdf-reader.ts b/src/renderer/pdf-reader.ts
+index 382078c..cc60dcf 100644
+--- a/src/renderer/pdf-reader.ts
++++ b/src/renderer/pdf-reader.ts
+@@ -1,3 +1,4 @@
++import { LineTool, type DrawnLine } from './line-tool';
+ import { drawPageThumbnail } from './thumbnail-render';
+ import { getDocument, GlobalWorkerOptions, type PDFDocumentLoadingTask } from 'pdfjs-dist';
+ import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
+@@ -20,19 +21,21 @@ export class PdfReader {
+   private flash?: Annotation;
+   private flashTimer?: ReturnType<typeof setTimeout>;
+   private ready = false;
++  private lineTool: LineTool;
+   private outlineTargets = new Map<string, string | any[]>();
+-  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}) {
++  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true) {
+     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
+     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
+     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
+     this.link.setViewer(this.viewer);
++    this.lineTool=new LineTool(container,index=>this.viewer.getPageView(index),()=>this.ready&&canDraw(),onLine);
+     this.bus.on('pagechanging', ({pageNumber}:{pageNumber:number}) => {
+       const generation=this.generation;
+       requestAnimationFrame(()=>{if(generation===this.generation&&this.ready)this.paint(pageNumber-1);});
+     });
+     this.bus.on('pagerendered', ({ pageNumber }: { pageNumber: number }) => this.paint(pageNumber - 1));
+-    this.bus.on('scalechanging', () => { this.paint(); onSelection([]); });
+-    this.bus.on('rotationchanging', () => { this.paint(); onSelection([]); });
++    this.bus.on('scalechanging', () => { this.lineTool.cancel(); this.paint(); onSelection([]); });
++    this.bus.on('rotationchanging', () => { this.lineTool.cancel(); this.paint(); onSelection([]); });
+     this.bus.on('textlayerrendered', async ({ pageNumber }: { pageNumber: number }) => {
+       const document = this.viewer.pdfDocument;
+       if (!document || !this.ready || pageNumber !== this.viewer.currentPageNumber) return;
+@@ -56,6 +59,7 @@ export class PdfReader {
+     }, { passive: false });
+   }
+   async open(doc: OpenedDocument) {
++    this.lineTool.setEnabled(false);
+     const generation = ++this.generation;
+     this.outlineTargets.clear(); this.onOutline(null);
+     this.ready = false; this.active = doc; this.marks = []; this.flash = undefined;
+@@ -111,7 +115,9 @@ export class PdfReader {
+     return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
+   }
+   setMarks(marks: Annotation[]) { this.marks = marks; this.paint(); }
++  setLineEnabled(enabled:boolean) { this.lineTool.setEnabled(enabled); }
+   clear() {
++    this.lineTool.setEnabled(false);
+     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
+     this.outlineTargets.clear(); this.onOutline([]);
+     this.viewer.setDocument(null); this.link.setDocument(null); void this.task?.destroy(); this.task = undefined;
+@@ -179,10 +185,11 @@ export class PdfReader {
+       for (const mark of [...this.marks, ...(this.flash ? [this.flash] : [])].filter(a => a.pageIndex === index)) {
+         for (const quad of mark.quads) {
+           const [left, top, right, bottom] = quadToScreen(quad, view.viewport.transform);
+-          if(mark.type==='underline' && mark!==this.flash) {
+-            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('underline-line');
++          if(['underline','strikeout','line'].includes(mark.type) && mark!==this.flash) {
++            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add(mark.type==='line'?'drawn-line':mark.type==='strikeout'?'strikeout-line':'underline-line');
+             const line=document.createElementNS('http://www.w3.org/2000/svg','line');
+-            const [x1,y1]=transform(quad[4],quad[5],view.viewport.transform),[x2,y2]=transform(quad[6],quad[7],view.viewport.transform);
++            const endpoints=mark.type==='line'?mark.points!:mark.type==='strikeout'?[quad[0],(quad[1]+quad[5])/2,quad[2],(quad[3]+quad[7])/2]:[quad[4],quad[5],quad[6],quad[7]];
++            const [x1,y1]=transform(endpoints[0],endpoints[1],view.viewport.transform),[x2,y2]=transform(endpoints[2],endpoints[3],view.viewport.transform);
+             for(const [key,value] of Object.entries({x1,y1,x2,y2}))line.setAttribute(key,String(value));
+             line.setAttribute('stroke',mark.color);line.setAttribute('stroke-width','1.5');svg.append(line);overlay.append(svg);continue;
+           }
+diff --git a/src/renderer/style.css b/src/renderer/style.css
+index d9d5c00..fa8d67b 100644
+--- a/src/renderer/style.css
++++ b/src/renderer/style.css
+@@ -53,3 +53,7 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
+ .underline-line{position:absolute;inset:0;width:100%;height:100%;overflow:visible;opacity:.95}
+ .reading-layout select{font:inherit;font-size:11px;border:1px solid var(--line);border-radius:4px;padding:4px;background:var(--paper);color:var(--ink)}
+ .sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
++.strikeout-line,.drawn-line,.line-draft{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;opacity:.95}
++.line-draft{z-index:5}.drawing-line,.drawing-line .textLayer,.drawing-line .textLayer span{cursor:crosshair!important}
++.annotation-tools button[aria-pressed="true"]{background:#d5dfc8;border-color:#81946c}
++.selection-popover{flex-wrap:wrap}
+diff --git a/src/shared/geometry.ts b/src/shared/geometry.ts
+index ab0567f..f5f7f99 100644
+--- a/src/shared/geometry.ts
++++ b/src/shared/geometry.ts
+@@ -20,11 +20,20 @@ export function quadToScreen(q: Quad, m: number[]): [number, number, number, num
+ }
+ export function validateAnnotation(value: unknown, pageCount: number): asserts value is Annotation {
+   const a = value as Annotation;
+-  if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !/^[\w-]{1,100}$/.test(a.id) || typeof a.documentId !== 'string' || typeof a.fingerprint !== 'string' || !['highlight', 'underline', 'note'].includes(a.type) || a.author !== 'user' ||
++  if (!a || typeof a !== 'object' || typeof a.id !== 'string' || !/^[\w-]{1,100}$/.test(a.id) || typeof a.documentId !== 'string' || typeof a.fingerprint !== 'string' || !['highlight', 'underline', 'strikeout', 'line', 'note'].includes(a.type) || a.author !== 'user' ||
+       !Number.isInteger(a.pageIndex) || a.pageIndex < 0 || a.pageIndex >= pageCount ||
+       typeof a.quote !== 'string' || a.quote.length > 100000 || typeof a.note !== 'string' || a.note.length > 100000 ||
+       !/^#[0-9a-f]{6}$/i.test(a.color) || !Array.isArray(a.quads) || !a.quads.length || a.quads.length > 10000 ||
+       a.quads.some(q => !Array.isArray(q) || q.length !== 8 || q.some(v => typeof v !== 'number' || !Number.isFinite(v) || Math.abs(v) > 1e7) || q[2] <= q[0] || q[1] <= q[5])) {
+     throw new Error('INVALID_ANNOTATION: 批注类型、页码或坐标无效');
+   }
++  if(a.type==='line') {
++    const p=a.points,q=a.quads[0];
++    if(!Array.isArray(p)||p.length!==4||p.some(n=>typeof n!=='number'||!Number.isFinite(n)||Math.abs(n)>1e7)||a.quads.length!==1||Math.hypot(p[2]-p[0],p[3]-p[1])<1e-6||[0,2].some(i=>p[i]<q[0]||p[i]>q[2]||p[i+1]<q[5]||p[i+1]>q[1]))throw new Error('INVALID_ANNOTATION: 直线端点无效');
++  }
++}
++
++export function lineAnchor(points: number[]): Quad {
++  const [x1,y1,x2,y2]=points;const l=Math.min(x1,x2)-.25,r=Math.max(x1,x2)+.25,t=Math.max(y1,y2)+.25,b=Math.min(y1,y2)-.25;
++  return [l,t,r,t,l,b,r,b];
+ }
+diff --git a/src/shared/model.ts b/src/shared/model.ts
+index 21b4e4a..d72401c 100644
+--- a/src/shared/model.ts
++++ b/src/shared/model.ts
+@@ -1,7 +1,7 @@
+ export type Quad = number[];
+ export type Annotation = {
+-  id: string; documentId: string; fingerprint: string; type: 'highlight' | 'underline' | 'note';
+-  pageIndex: number; quote: string; quads: Quad[]; color: string; note: string; author: 'user';
++  id: string; documentId: string; fingerprint: string; type: 'highlight' | 'underline' | 'strikeout' | 'line' | 'note';
++  pageIndex: number; quote: string; quads: Quad[]; points?: number[]; color: string; note: string; author: 'user';
+ };
+ export type AnnotationChange = { documentId: string; upserts: Annotation[]; deletes: string[] };
+ export type CommitResult = { annotations: Annotation[]; inverse: AnnotationChange };
+diff --git a/tests/e2e/strikeout-lines.spec.ts b/tests/e2e/strikeout-lines.spec.ts
+new file mode 100644
+index 0000000..5bbf6e7
+--- /dev/null
++++ b/tests/e2e/strikeout-lines.spec.ts
+@@ -0,0 +1,97 @@
++import { test, expect, _electron as electron } from '@playwright/test';
++import { mkdtempSync, readFileSync, copyFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { execFileSync } from 'node:child_process';
++import path from 'node:path';
++const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-strikeout-lines-')),python=path.join(root,'.venv/Scripts/python.exe');
++const source=path.join(folder,'reading tools.pdf'),output=path.join(folder,'drawing.pdf');
++execFileSync(python,['-c',`import pymupdf as f;d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence page '+str(i+1),fontsize=16);p.insert_text((48,105),'Second line of original evidence.',fontsize=12)\nd.save(${JSON.stringify(source)})`]);
++async function launch(profile:string,scale=1){
++ const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+profile,'--force-device-scale-factor='+scale],env:{...process.env,ENLUMOR_PYTHON:python}});
++ await app.evaluate(({dialog},files)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[files.source]});dialog.showSaveDialog=async()=>({canceled:false,filePath:files.output});},{source,output});return app;
++}
++async function select(app:Awaited<ReturnType<typeof launch>>){const page=await app.firstWindow();await page.locator('.page[data-page-number="1"] .textLayer span').first().evaluate(item=>{const range=document.createRange();range.selectNodeContents(item);const selection=getSelection()!;selection.removeAllRanges();selection.addRange(range);document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});}
++
++test('strikeout persists rotates and exports a native StrikeOut annotation',async()=>{
++ const profile=path.join(folder,'strikeout');let app=await launch(profile);const before=readFileSync(source);
++ try{
++ let page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();await select(app);
++ await page.getByRole('button',{name:'删除线选区',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);await expect(page.locator('.annotation-source')).toContainText('删除线');
++ await expect(page.locator('.strikeout-line')).toHaveCount(1);
++ for(let i=0;i<4;i++)await page.getByRole('button',{name:'旋转页面',exact:true}).click();
++ await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await page.getByRole('button',{name:'重做',exact:true}).click();
++ await app.close();app=await launch(profile);page=await app.firstWindow();await expect(page.locator('.annotation-source')).toContainText('删除线');
++ await page.getByRole('button',{name:'导出批注 PDF',exact:true}).click();await expect(page.getByRole('status')).toContainText('导出完成');
++ expect(execFileSync(python,['-c',`import pymupdf as f;d=f.open(${JSON.stringify(output)});print([a.type[0] for a in d[0].annots()])`],{encoding:'utf8'}).trim()).toBe('[11]');expect(readFileSync(source).equals(before)).toBe(true);copyFileSync(output,path.join(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/strikeout-lines','strikeout-export.pdf'));await page.screenshot({path:(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/strikeout-lines')+'/strikeout.png'});
++ }finally{await app.close();}
++});
++
++test('line drag and Escape cancellation preserve native endpoints through rotation restart and standard export',async()=>{
++ const profile=path.join(folder,'line');let app=await launch(profile);
++ try{
++ let page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;
++ await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+230,box.y+210);await page.keyboard.press('Escape');await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+230,box.y+210,{steps:8});await page.mouse.up();
++ await expect(page.locator('.annotation-source')).toContainText('直线');await expect(page.locator('.drawn-line')).toHaveCount(1);
++ const stored=await page.evaluate(async()=>{const docs=await window.enlumor.listDocuments();if(!docs.ok)throw Error('docs');const marks=await window.enlumor.getAnnotations(docs.value[0].id);if(!marks.ok)throw Error('marks');return marks.value[0];});
++ expect(stored.type).toBe('line');expect(stored.points).toHaveLength(4);
++ for(let i=0;i<4;i++){await page.getByRole('button',{name:'旋转页面',exact:true}).click();await expect(page.locator('.drawn-line')).toHaveCount(1);}
++ await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await page.getByRole('button',{name:'重做',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
++ await app.close();app=await launch(profile);page=await app.firstWindow();await expect(page.locator('.drawn-line')).toHaveCount(1);
++ await page.getByRole('button',{name:'导出批注 PDF',exact:true}).click();await expect(page.getByRole('status')).toContainText('导出完成');
++ expect(execFileSync(python,['-c',`import pymupdf as f;d=f.open(${JSON.stringify(output)});print([a.type[0] for a in d[0].annots()])`],{encoding:'utf8'}).trim()).toBe('[3]');
++ copyFileSync(output,path.join(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/strikeout-lines','line-export.pdf'));await page.screenshot({path:(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/strikeout-lines')+'/line.png'});
++ }finally{await app.close();}
++});
++
++test('short line click stays armed and the next drag draws without extra toggles',async()=>{
++ const app=await launch(path.join(folder,'short-click'));
++ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;const tool=page.getByRole('button',{name:'绘制直线',exact:true});await tool.click();await page.mouse.click(box.x+80,box.y+160);
++ await expect(tool).toHaveAttribute('aria-pressed','true');await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+220,box.y+220);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
++ }finally{await app.close();}
++});
++
++test('armed line tool cancels and cannot draw while an export is pending',async()=>{
++ const app=await launch(path.join(folder,'busy-export'));
++ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ await app.evaluate(({ipcMain})=>{const original=(ipcMain as any)._invokeHandlers.get('document:export');ipcMain.removeHandler('document:export');ipcMain.handle('document:export',async(e,id)=>{await new Promise<void>(resolve=>(globalThis as any).releaseTestExport=resolve);return original(e,id);});});
++ const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.getByRole('button',{name:'导出批注 PDF',exact:true}).click();await expect(page.getByRole('status')).toContainText('正在导出');
++ await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+220,box.y+220);await expect(page.locator('.line-draft')).toHaveCount(0);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ await app.evaluate(()=>(globalThis as any).releaseTestExport?.());await expect(page.getByRole('status')).toContainText('导出完成');
++ }finally{await (await app.firstWindow()).mouse.up();await app.evaluate(()=>(globalThis as any).releaseTestExport?.());await app.close();}
++});
++
++test('failed annotation remains retryable and cannot be replaced by an armed line gesture',async()=>{
++ const app=await launch(path.join(folder,'pending-line'));
++ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();await select(app);await page.getByRole('button',{name:'高亮选区',exact:true}).click();
++ await app.evaluate(({ipcMain})=>{const original=(ipcMain as any)._invokeHandlers.get('annotation:change');let fail=true;ipcMain.removeHandler('annotation:change');ipcMain.handle('annotation:change',(e,change)=>{if(fail){fail=false;return{ok:false,error:{code:'WRITE_TEST',message:'write failed'}};}return original(e,change);});});
++ const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.getByRole('button',{name:'删除',exact:true}).click();await expect(page.getByRole('button',{name:'重试保存',exact:true})).toBeVisible();
++ await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+220,box.y+220);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);await expect(page.getByRole('button',{name:'重试保存',exact:true})).toBeVisible();
++ await page.getByRole('button',{name:'重试保存',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ }finally{await app.close();}
++});
++
++test('viewport rotation during a drag cancels it before a same-turn pointer release can persist wrong coordinates',async()=>{
++ const app=await launch(path.join(folder,'rotation-draft'));
++ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+220,box.y+220);
++ await page.evaluate(({x,y})=>{(document.querySelector('[aria-label="旋转页面"]') as HTMLButtonElement).click();document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));},{x:box.x+220,y:box.y+220});
++ await page.getByRole('button',{name:'打开 PDF',exact:true}).first().waitFor({state:'visible'});await expect(page.getByRole('button',{name:'打开 PDF',exact:true}).first()).toBeEnabled();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ }finally{await (await app.firstWindow()).mouse.up();await app.close();}
++});
++
++for(const [rotation,scale]of [[90,1.5],[270,2]]as const)test(`line creation at rotation ${rotation} and display scale ${scale} retains native and exported endpoints`,async()=>{
++ const app=await launch(path.join(folder,'create-'+rotation),scale);
++ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();for(let i=0;i<rotation/90;i++)await page.getByRole('button',{name:'旋转页面',exact:true}).click();
++ await expect(page.locator('.page[data-page-number="1"] canvas')).toBeVisible();const box=(await page.locator('.page[data-page-number="1"]').boundingBox())!;const ratio=96/72; // PDF.js zoom=1 uses CSS pixels per PDF point, independent of rounded DOM width.
++ await page.getByRole('button',{name:'绘制直线',exact:true}).click();await page.mouse.move(box.x+80,box.y+160);await page.mouse.down();await page.mouse.move(box.x+230,box.y+210);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
++ const stored=await page.evaluate(async()=>{const docs=await window.enlumor.listDocuments();if(!docs.ok)throw Error('docs');const a=await window.enlumor.getAnnotations(docs.value[0].id);if(!a.ok)throw Error('marks');return a.value[0].points!;});
++ const expected=rotation===90?[160/ratio,80/ratio,210/ratio,230/ratio]:[480-160/ratio,640-80/ratio,480-210/ratio,640-230/ratio];stored.forEach((value,i)=>expect(Math.abs(value-expected[i])).toBeLessThan(.75));
++ const coords=await page.locator('.drawn-line line').evaluate(l=>['x1','y1','x2','y2'].map(key=>Number(l.getAttribute(key))));coords.forEach((value,i)=>expect(Math.abs(value-[80,160,230,210][i])).toBeLessThan(1));
++ await page.getByRole('button',{name:'导出批注 PDF',exact:true}).click();await expect(page.getByRole('status')).toContainText('导出完成');
++ const vertices=JSON.parse(execFileSync(python,['-c',`import pymupdf as f,json;d=f.open(${JSON.stringify(output)});p=d[0];print(json.dumps(next(p.annots()).vertices))`],{encoding:'utf8'}));
++ const exported=[vertices[0][0],640-vertices[0][1],vertices[1][0],640-vertices[1][1]];exported.forEach((value,i)=>expect(value).toBeCloseTo(stored[i],1));
++ }finally{await app.close();}
++});
+diff --git a/tests/python/test_export.py b/tests/python/test_export.py
+index 7054696..6516cd9 100644
+--- a/tests/python/test_export.py
++++ b/tests/python/test_export.py
+@@ -55,6 +55,22 @@ class ExportTests(unittest.TestCase):
+                         self.assertAlmostEqual(underline.vertices[0][0],40,places=2);self.assertAlmostEqual(underline.vertices[0][1],45,places=2)
+                 self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(),fingerprint)
+ 
++    def test_strikeout_and_line_crop_rotation_repeat_exports(self):
++        for rotation in (0,90,180,270):
++            with self.subTest(rotation=rotation), tempfile.TemporaryDirectory() as folder:
++                source=Path(folder)/'source.pdf';doc=fitz.open();page=doc.new_page(width=300,height=400)
++                page.insert_text((60,90),'Marked evidence');page.set_cropbox(fitz.Rect(20,30,280,370));page.set_rotation(rotation)
++                page.add_text_annot((40,100),'existing');doc.save(source);doc.close();fingerprint=hashlib.sha256(source.read_bytes()).hexdigest()
++                marks=[{'id':'s','type':'strikeout','pageIndex':0,'quads':[[60,325,180,325,60,305,180,305]],'color':'#335588'},
++                       {'id':'l','type':'line','pageIndex':0,'quads':[[59,326,181,326,59,304,181,304]],'points':[60,325,180,305],'color':'#335588'}]
++                for index in range(2):
++                    target=Path(folder)/f'out-{index}.pdf';export_pdf(str(source),str(target),fingerprint,marks)
++                    with fitz.open(target) as exported:
++                        page=exported[0];items=list(page.annots());self.assertEqual(len(items),3)
++                        self.assertEqual(sorted(a.type[0] for a in items),[0,3,11]);line=next(a for a in items if a.type[0]==3)
++                        self.assertEqual(line.vertices,[(40.0,45.0),(160.0,65.0)])
++                self.assertEqual(hashlib.sha256(source.read_bytes()).hexdigest(),fingerprint)
++
+     def test_rejects_overwrite_stale_and_invalid_without_output(self):
+         with tempfile.TemporaryDirectory() as folder:
+             source = Path(folder) / 'source.pdf'; out = Path(folder) / 'out.pdf'
+diff --git a/tests/strikeout-lines.test.ts b/tests/strikeout-lines.test.ts
+new file mode 100644
+index 0000000..4b71944
+--- /dev/null
++++ b/tests/strikeout-lines.test.ts
+@@ -0,0 +1,18 @@
++import { it, expect } from 'vitest';
++import { lineAnchor, validateAnnotation, transform, inverse } from '../src/shared/geometry';
++const mark={id:'line-test',documentId:'d',fingerprint:'hash',pageIndex:0,author:'user',color:'#335588',quote:'',note:''};
++it('straight line geometry supports horizontal vertical and reversed endpoints',()=>{
++ for(const points of [[10,20,80,20],[10,20,10,90],[80,90,10,20]]){
++ const a={...mark,type:'line',points,quads:[lineAnchor(points)]};expect(()=>validateAnnotation(a,1)).not.toThrow();
++ }
++});
++it('line endpoints reject missing nonfinite coincident and out-of-anchor points',()=>{
++ const a={...mark,type:'line',points:[10,20,80,30],quads:[[9,31,81,31,9,19,81,19]]};
++ for(const bad of [undefined,[NaN,20,80,30],[10,20,10,20],[10,20,9999,30]])expect(()=>validateAnnotation({...a,points:bad},1)).toThrow();
++});
++it('line coordinate round trips preserve direction through all page rotations and display scales',()=>{
++ for(const m of [[1,0,0,-1,0,100],[0,1,1,0,0,0],[-1,0,0,1,100,0],[0,-1,-1,0,100,100],[2,0,0,-2,-40,240]]){
++ const point=transform(20,70,m);const restored=transform(...point,inverse(m));expect(restored[0]).toBeCloseTo(20);expect(restored[1]).toBeCloseTo(70);
++ }
++});
++it('strikeout accepts native text quads through the shared validator',()=>expect(()=>validateAnnotation({...mark,type:'strikeout',quads:[[10,90,80,90,10,70,80,70]]},1)).not.toThrow());
