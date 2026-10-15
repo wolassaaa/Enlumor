@@ -1,3 +1,4 @@
+import { paintDrawing, type DrawingMode } from './drawing-svg';
 import { LineTool, type DrawnLine } from './line-tool';
 import { drawPageThumbnail } from './thumbnail-render';
 import { getDocument, GlobalWorkerOptions, type PDFDocumentLoadingTask } from 'pdfjs-dist';
@@ -23,12 +24,12 @@ export class PdfReader {
   private ready = false;
   private lineTool: LineTool;
   private outlineTargets = new Map<string, string | any[]>();
-  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true) {
+  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true, drawingColor:()=>string=()=> '#5a7350') {
     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
     this.link.setViewer(this.viewer);
-    this.lineTool=new LineTool(container,index=>this.viewer.getPageView(index),()=>this.ready&&canDraw(),onLine);
+    this.lineTool=new LineTool(container,index=>this.viewer.getPageView(index),()=>this.ready&&canDraw(),onLine,drawingColor);
     this.bus.on('pagechanging', ({pageNumber}:{pageNumber:number}) => {
       const generation=this.generation;
       requestAnimationFrame(()=>{if(generation===this.generation&&this.ready)this.paint(pageNumber-1);});
@@ -115,7 +116,7 @@ export class PdfReader {
     return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
   }
   setMarks(marks: Annotation[]) { this.marks = marks; this.paint(); }
-  setDrawingTool(mode:'line'|'arrow'|null) {this.lineTool.setMode(mode);}
+  setDrawingTool(mode:DrawingMode|null) {this.lineTool.setMode(mode);}
   setLineEnabled(enabled:boolean) { this.lineTool.setEnabled(enabled); }
   clear() {
     this.lineTool.setEnabled(false);
@@ -186,13 +187,15 @@ export class PdfReader {
       for (const mark of [...this.marks, ...(this.flash ? [this.flash] : [])].filter(a => a.pageIndex === index)) {
         for (const quad of mark.quads) {
           const [left, top, right, bottom] = quadToScreen(quad, view.viewport.transform);
-          if(['underline','strikeout','line','arrow'].includes(mark.type) && mark!==this.flash) {
-            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add(mark.type==='arrow'?'drawn-arrow':mark.type==='line'?'drawn-line':mark.type==='strikeout'?'strikeout-line':'underline-line');
-            const line=document.createElementNS('http://www.w3.org/2000/svg','line');
-            const endpoints=(mark.type==='line'||mark.type==='arrow')?mark.points!:mark.type==='strikeout'?[quad[0],(quad[1]+quad[5])/2,quad[2],(quad[3]+quad[7])/2]:[quad[4],quad[5],quad[6],quad[7]];
-            const [x1,y1]=transform(endpoints[0],endpoints[1],view.viewport.transform),[x2,y2]=transform(endpoints[2],endpoints[3],view.viewport.transform);
-            for(const [key,value] of Object.entries({x1,y1,x2,y2}))line.setAttribute(key,String(value));
-            line.setAttribute('stroke',mark.color);line.setAttribute('stroke-width','1.5');svg.append(line);if(mark.type==='arrow'){const dx=x2-x1,dy=y2-y1,len=Math.hypot(dx,dy),size=9*1.125*view.viewport.scale;const head=document.createElementNS('http://www.w3.org/2000/svg','polygon');head.setAttribute('points',`${x2},${y2} ${x2-size*dx/len+size/3*dy/len},${y2-size*dy/len-size/3*dx/len} ${x2-size*dx/len-size/3*dy/len},${y2-size*dy/len+size/3*dx/len}`);head.setAttribute('fill',mark.color);svg.append(head);}overlay.append(svg);continue;
+          if(['line','arrow','ink'].includes(mark.type)&&mark!==this.flash) {
+            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('drawn-'+mark.type);
+            const points=mark.points!.flatMap((_,i,p)=>i%2===0?transform(p[i],p[i+1],view.viewport.transform):[]);
+            paintDrawing(svg,mark.type as DrawingMode,points,mark.color,(mark.type==='line'?1.5/view.viewport.scale:1.125)*view.viewport.scale);overlay.append(svg);continue;
+          }
+          if(['underline','strikeout'].includes(mark.type)&&mark!==this.flash){
+            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add(mark.type==='strikeout'?'strikeout-line':'underline-line');
+            const p=mark.type==='strikeout'?[quad[0],(quad[1]+quad[5])/2,quad[2],(quad[3]+quad[7])/2]:[quad[4],quad[5],quad[6],quad[7]];
+            paintDrawing(svg,'line',[...transform(p[0],p[1],view.viewport.transform),...transform(p[2],p[3],view.viewport.transform)],mark.color,1.5);overlay.append(svg);continue;
           }
           const block = document.createElement('div'); block.className = mark === this.flash ? 'mark flash' : `mark ${mark.type}`;
           Object.assign(block.style, { left: `${left}px`, top: `${top}px`, width: `${right - left}px`, height: `${bottom - top}px`, backgroundColor: mark.color });

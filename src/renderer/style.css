@@ -59,3 +59,6 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
 .selection-popover{flex-wrap:wrap}
 
 .drawn-arrow{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;opacity:.95}
+
+.drawn-ink{position:absolute;inset:0;width:100%;height:100%;overflow:visible;pointer-events:none;opacity:.95}
+#viewerContainer.drawing-line{touch-action:none}

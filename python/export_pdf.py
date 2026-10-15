@@ -45,7 +45,7 @@ def export_pdf(source, target, fingerprint, annotations):
                 index = item['pageIndex']
                 if type(index) is not int or not 0 <= index < len(doc):
                     raise ValueError('INVALID_PAGE')
-                if item['type'] not in ('highlight', 'underline', 'strikeout', 'line', 'arrow', 'note') or not item['quads']:
+                if item['type'] not in ('highlight', 'underline', 'strikeout', 'line', 'arrow', 'ink', 'note') or not item['quads']:
                     raise ValueError('INVALID_ANNOTATION')
                 page = doc[index]
                 # PyMuPDF's rotated-page transformation_matrix loses crop translation.
@@ -78,6 +78,12 @@ def export_pdf(source, target, fingerprint, annotations):
                     if item['type'] == 'arrow':
                         annotation.set_line_ends(0,5)
                         annotation.set_border(width=1.125)
+                elif item['type'] == 'ink':
+                    points=item.get('points')
+                    if not isinstance(points,list) or not 4 <= len(points) <= 8192 or len(points)%2 or any(type(n) not in (int,float) or not math.isfinite(n) for n in points) or not any(abs(n-points[i%2])>=1e-6 for i,n in enumerate(points) if i>=2):
+                        raise ValueError('INVALID_GEOMETRY')
+                    annotation=page.add_ink_annot([[tuple(fitz.Point(points[i],points[i+1])*matrix) for i in range(0,len(points),2)]])
+                    annotation.set_border(width=1.125)
                 else:
                     annotation = page.add_text_annot(quads[0].ul, item.get('note', ''))
                 annotation.set_colors(stroke=rgb)

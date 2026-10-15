@@ -1,6 +1,6 @@
 export type Quad = number[];
 export type Annotation = {
-  id: string; documentId: string; fingerprint: string; type: 'highlight' | 'underline' | 'strikeout' | 'line' | 'arrow' | 'note';
+  id: string; documentId: string; fingerprint: string; type: 'highlight' | 'underline' | 'strikeout' | 'line' | 'arrow' | 'ink' | 'note';
   pageIndex: number; quote: string; quads: Quad[]; points?: number[]; color: string; note: string; author: 'user';
 };
 export type AnnotationChange = { documentId: string; upserts: Annotation[]; deletes: string[] };
