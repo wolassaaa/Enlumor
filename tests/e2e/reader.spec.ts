@@ -14,6 +14,44 @@ const output = path.join(folder, 'annotated.pdf');
 execFileSync(python, ['-c', `import pymupdf as f; d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence for reading page '+str(i+1),fontsize=16);p.insert_text((48,105),'A second line explains the idea.',fontsize=12)\nd[0].add_text_annot((48,160),'Original note'); d.save(${JSON.stringify(source)})`]);
 const hash = () => createHash('sha256').update(readFileSync(source)).digest('hex');
 
+test('packaged app opens and exports without external Python configuration', async () => {
+  const app = await electron.launch({ executablePath: path.join(root, 'release/win-unpacked/Enlumor.exe'), args: [`--user-data-dir=${path.join(folder, 'no-python')}`], env: { ...process.env, ENLUMOR_PYTHON: '', PATH: `${process.env.SystemRoot}\\System32` } });
+  try {
+    await app.evaluate(({ dialog }, files) => {
+      dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [files.source] });
+      dialog.showSaveDialog = async () => ({ canceled: false, filePath: files.output });
+    }, { source, output });
+    const page = await app.firstWindow();
+    await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
+    await expect(page.locator('.document-name')).toContainText('中文 reading sample.pdf');
+    await selectFirst(app); await page.getByRole('button', { name: '高亮选区', exact: true }).click();
+    await page.getByRole('button', { name: '导出批注 PDF', exact: true }).click();
+    await expect(page.getByRole('status')).toContainText('导出完成');
+  } finally { await app.close(); }
+});
+
+test('reading layout collapses panels and keeps selection tools near the text', async () => {
+  const app = await launch(path.join(folder, 'layout'));
+  try {
+    const page = await app.firstWindow();
+    await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
+    await selectFirst(app);
+    await expect(page.locator('.selection-popover')).toBeVisible();
+    const toolPlacement = await page.evaluate(() => ({ bottom: document.querySelector('.selection-popover')!.getBoundingClientRect().bottom, selectionTop: getSelection()!.getRangeAt(0).getBoundingClientRect().top }));
+    expect(toolPlacement.bottom).toBeLessThanOrEqual(toolPlacement.selectionTop);
+    await page.locator('#viewerContainer').evaluate(element => { element.scrollTop += 120; });
+    await expect(page.locator('.selection-popover')).toBeHidden();
+    await selectFirst(app);
+    await page.getByRole('button', { name: '收起文档栏', exact: true }).click();
+    await expect(page.locator('.selection-popover')).toBeHidden();
+    await page.getByRole('button', { name: '收起批注栏', exact: true }).click();
+    await expect(page.locator('.library')).toBeHidden();
+    await expect(page.locator('.annotations')).toBeHidden();
+    await page.getByRole('button', { name: '展开批注栏', exact: true }).click();
+    await expect(page.locator('.annotations')).toBeVisible();
+  } finally { await app.close(); }
+});
+
 async function launch(data: string, scale = 1) {
   const app = await electron.launch({ args: [root, `--user-data-dir=${data}`, `--force-device-scale-factor=${scale}`], env: { ...process.env, ENLUMOR_PYTHON: python, ELECTRON_DISABLE_SECURITY_WARNINGS: 'true' } });
   await app.evaluate(({ dialog }, files) => {
@@ -131,6 +169,13 @@ async function selectFirst(app: ElectronApplication) {
     document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
   });
   await expect(page.getByRole('button', { name: '高亮选区', exact: true })).toBeEnabled();
+  const placement = await page.evaluate(() => {
+    const tool = document.querySelector('.selection-popover')!.getBoundingClientRect();
+    const view = document.querySelector('#viewerContainer')!.getBoundingClientRect();
+    return { left: tool.left, right: tool.right, min: view.left, max: view.right };
+  });
+  expect(placement.left).toBeGreaterThanOrEqual(placement.min);
+  expect(placement.right).toBeLessThanOrEqual(placement.max);
 }
 
 test('offline reading, selected highlight, note, undo/redo, export and crash recovery', async () => {

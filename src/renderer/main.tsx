@@ -5,6 +5,11 @@ import { unwrap, type Annotation, type AnnotationChange, type Bridge, type Docum
 import './style.css';
 declare global { interface Window { enlumor: Bridge } }
 
+function Glyph({ name }: { name: 'library' | 'notes' | 'open' | 'export' | 'mark' | 'close' }) {
+  const paths = { library: 'M4 4h5v16H4z M12 4h4v16h-4z M19 5l3 14', notes: 'M5 3h14v18H5z M8 8h8 M8 12h8 M8 16h5', open: 'M3 8h7l2-3h8v5 M3 8v12h16l3-10H7l-4 10', export: 'M13 3h8v8 M21 3L10 14 M9 5H4v15h15v-5', mark: 'M5 15l9-11 5 4-9 11H5z M4 22h16', close: 'M6 6l12 12 M18 6L6 18' };
+  return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>;
+}
+
 function App() {
   const container = useRef<HTMLDivElement>(null), reader = useRef<PdfReader | null>(null);
   const [doc, setDoc] = useState<OpenedDocument | null>(null), [recent, setRecent] = useState<DocumentInfo[]>([]);
@@ -13,9 +18,10 @@ function App() {
   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
   const [history, setHistory] = useState({ undo: [] as AnnotationChange[], redo: [] as AnnotationChange[] });
+  const [libraryOpen, setLibraryOpen] = useState(true), [notesOpen, setNotesOpen] = useState(true);
+  const [selectionPosition, setSelectionPosition] = useState({ left: 0, top: 0 });
   const current = useRef<ReadingState | null>(null), timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pending = useRef<{ change: AnnotationChange; kind: 'new' | 'undo' | 'redo' } | null>(null), flight = useRef<Promise<unknown> | null>(null), locked = useRef(false);
-  const marksRef = useRef(marks); marksRef.current = marks;
   const refresh = async () => setRecent(unwrap(await window.enlumor.listDocuments()));
   const fail = (reason: unknown) => { setError(reason instanceof Error ? reason.message : String(reason)); setStatus('尚未保存 / 操作未完成'); };
   async function flush() {
@@ -28,7 +34,16 @@ function App() {
     reader.current = new PdfReader(container.current!, state => {
       current.current = state; setPage(String(state.pageIndex + 1)); setZoom(state.zoom);
       clearTimeout(timer.current); timer.current = setTimeout(() => { void flush().catch(fail); }, 500);
-    }, setParts, setNotice);
+    }, selected => {
+      setParts(selected);
+      const selection = window.getSelection();
+      if (selected.length && selection?.rangeCount) {
+        const rect = selection.getRangeAt(0).getBoundingClientRect();
+        const bounds = container.current!.getBoundingClientRect();
+        const top = rect.top >= bounds.top + 64 ? rect.top - 52 : rect.bottom + 10;
+        setSelectionPosition({ left: Math.max(bounds.left + 12, Math.min(bounds.right - 310, rect.left)), top: Math.max(bounds.top + 12, Math.min(bounds.bottom - 60, top)) });
+      }
+    }, setNotice);
     const off = window.enlumor.onFlush(flush);
     void (async () => {
       try { const list = unwrap(await window.enlumor.listDocuments()); setRecent(list); if (list.length) await load(list[0].id); }
@@ -38,7 +53,9 @@ function App() {
       if (event.key === 'Escape') { setParts([]); setNote(null); window.getSelection()?.removeAllRanges(); }
     };
     window.addEventListener('keydown', keyboard);
-    return () => { off(); clearTimeout(timer.current); window.removeEventListener('keydown', keyboard); };
+    const resized = () => setParts([]);
+    window.addEventListener('resize', resized);
+    return () => { off(); clearTimeout(timer.current); window.removeEventListener('keydown', keyboard); window.removeEventListener('resize', resized); };
   }, []);
   async function load(id?: string, rebind = false) {
     if (locked.current || pending.current) return;
@@ -83,11 +100,12 @@ function App() {
     catch (reason) { fail(reason); } finally { locked.current = false; setBusy(false); }
   }
   return <div className="app">
-    <header className="topbar"><div className="wordmark">enlumor<span className="brand-dot">◒</span></div><span className="edition">LOCAL READER / 01</span>
-      <div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <span aria-hidden>↗</span></button></div>
+    <header className="topbar"><div className="wordmark"><span className="brand-dot">e</span>enlumor</div><span className="edition">YOUR QUIET READING ROOM</span>
+      <div className="panel-toggles"><button className={libraryOpen ? 'is-active' : ''} aria-label={libraryOpen ? '收起文档栏' : '展开文档栏'} aria-expanded={libraryOpen} onClick={() => { setParts([]); setLibraryOpen(!libraryOpen); }}><Glyph name="library"/></button><button className={notesOpen ? 'is-active' : ''} aria-label={notesOpen ? '收起批注栏' : '展开批注栏'} aria-expanded={notesOpen} onClick={() => { setParts([]); setNotesOpen(!notesOpen); }}><Glyph name="notes"/></button></div>
+      <div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}><Glyph name="open"/>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <Glyph name="export"/></button></div>
     </header>
     <div className="workspace">
-      <aside className="library"><div className="section-label">你的阅读空间</div><h2>文档</h2><p className="muted">原文不动，思考留下。</p><div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon">▤</span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}</div><div className="library-footer"><span className="online-dot"/> 离线阅读 · 本地保存</div></aside>
+      <aside className="library" hidden={!libraryOpen}><div className="section-label">LIBRARY / 你的阅读空间</div><h2>文档<span className="section-count">{recent.length.toString().padStart(2, '0')}</span></h2><p className="muted">原文不动，思考留下。</p><div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div><div className="library-footer"><span className="online-dot"/> 离线可用<span>所有阅读痕迹保存在这台电脑</span></div></aside>
       <main className="reading"><div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
         <div className="toolbar"><div className="toolbar-group"><button aria-label="上一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) - 1)}>‹</button><input aria-label="跳转页码" className="page-input" disabled={!doc} value={page} onChange={event => setPage(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') reader.current?.go(Number(page)); }}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) + 1)}>›</button></div>
           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
@@ -96,11 +114,11 @@ function App() {
         {error && <div className="error" role="alert">{error}{pending.current && <button onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && <button disabled={busy} onClick={() => { clearTimeout(timer.current); pending.current = null; current.current = null; reader.current?.clear(); setDoc(null); setMarks([]); setParts([]); setHistory({ undo: [], redo: [] }); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
         {notice && <div className="notice">{notice}</div>}
         <div className="reader-stage"><div id="viewerContainer" ref={container} tabIndex={0}><div id="viewer" className="pdfViewer"/></div>
-          {!doc && <div className="empty"><span className="empty-index">01 / A QUIETER PLACE TO READ</span><h1>让理解，<br/>留在原文旁。</h1><p>打开一本书、一篇论文，或今天的讲义。<br/>选中，标记，下次从这里继续。</p><button className="primary" disabled={busy} onClick={() => void load()}>打开 PDF <span>↗</span></button><small>PDF 原文件保持不变 · 无需联网</small></div>}
+          {!doc && <div className="empty"><div className="paper-emblem" aria-hidden="true"><svg viewBox="0 0 140 100" fill="none"><path d="M70 21C50 9 25 10 12 16v64c20-7 38-6 58 4 20-10 38-11 58-4V16c-13-6-38-7-58 5Zm0 0v63M25 33l30 4M25 45l30 4M25 57l22 3M85 37l29-4M85 49l29-4M85 61l21-3"/></svg></div><span className="empty-index">A QUIETER PLACE TO READ</span><h1>让理解，<br/>留在原文旁。</h1><p>打开一本书、一篇论文，或今天的讲义。<br/>选中，标记，下次从这里继续。</p><button className="primary" disabled={busy} onClick={() => void load()}>打开 PDF <Glyph name="open"/></button><small>无需账户 · 离线可用 · 原文件保持不变</small><div className="empty-footnote"><span>01 — 阅读原文</span><span>02 — 留下思考</span><span>03 — 从这里继续</span></div></div>}
         </div>
         <footer className="statusbar"><span role="status">{status}</span><span>{doc ? `${marks.length} 条批注` : 'ENLUMOR / FOUNDATION'}</span></footer>
       </main>
-      <aside className="annotations"><div className="section-label">留下一点理解</div><h2>批注 <span>{marks.length.toString().padStart(2, '0')}</span></h2>
+      <aside className="annotations" hidden={!notesOpen}><div className="section-label">MARGINALIA / 页边思考</div><h2>批注 <span>{marks.length.toString().padStart(2, '0')}</span></h2>
         <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => { setEditing(null); setNote(''); }}>添加便签</button></div>
         <div className="history"><button disabled={!history.undo.length || busy || !!pending.current} onClick={() => void commit(history.undo.at(-1)!, 'undo')}>撤销</button><button disabled={!history.redo.length || busy || !!pending.current} onClick={() => void commit(history.redo.at(-1)!, 'redo')}>重做</button></div>
         {parts.length > 0 && <div className="selection-preview">已选 {parts.length} 页原文<p>{parts.map(part => part.quote).join(' ').slice(0, 180)}</p></div>}
@@ -108,6 +126,7 @@ function App() {
         {!marks.length && <div className="annotation-empty"><span>〰</span><p>选中一段原文<br/>留下你的第一个标记。</p><small>批注自动保存到本地工作区</small></div>}
       </aside>
     </div>
+    {parts.length > 0 && doc && <div className="selection-popover" role="toolbar" aria-label="选区工具" style={selectionPosition} onMouseDown={event => event.preventDefault()}><span>{parts.length > 1 ? `${parts.length} 页选区` : '原文选区'}</span><button disabled={busy || !!pending.current} onClick={() => add('highlight')}><Glyph name="mark"/>高亮</button><button disabled={busy || !!pending.current} onClick={() => { setEditing(null); setNote(''); }}>写便签</button><button className="popover-close" aria-label="取消选区" onClick={() => { setParts([]); window.getSelection()?.removeAllRanges(); }}><Glyph name="close"/></button></div>}
     {note !== null && <div className="modal-backdrop"><form className="note-modal" onSubmit={event => { event.preventDefault(); if (editing) void commit({ documentId: editing.documentId, upserts: [{ ...editing, note }], deletes: [] }); else add('note', note); setNote(null); }}><div className="section-label">NOTE / 原文旁的想法</div><h2>{editing ? '编辑便签' : '添加便签'}</h2><textarea autoFocus aria-label="便签内容" value={note} maxLength={100000} onChange={event => setNote(event.target.value)}/><div><button type="button" onClick={() => setNote(null)}>取消</button><button className="primary" type="submit" disabled={!note.trim()}>保存便签</button></div></form></div>}
   </div>;
 }

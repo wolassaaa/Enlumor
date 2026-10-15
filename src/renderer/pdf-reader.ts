@@ -24,8 +24,8 @@ export class PdfReader {
     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
     this.link.setViewer(this.viewer);
     this.bus.on('pagerendered', () => this.paint());
-    this.bus.on('scalechanging', () => this.paint());
-    this.bus.on('rotationchanging', () => this.paint());
+    this.bus.on('scalechanging', () => { this.paint(); onSelection([]); });
+    this.bus.on('rotationchanging', () => { this.paint(); onSelection([]); });
     this.bus.on('textlayerrendered', async ({ pageNumber }: { pageNumber: number }) => {
       const document = this.viewer.pdfDocument;
       if (!document || !this.ready || pageNumber !== this.viewer.currentPageNumber) return;
@@ -42,6 +42,7 @@ export class PdfReader {
     });
     container.addEventListener('mouseup', () => onSelection(this.selection()));
     container.addEventListener('keyup', () => onSelection(this.selection()));
+    container.addEventListener('scroll', () => onSelection([]), { passive: true });
     container.addEventListener('wheel', event => {
       if (!event.ctrlKey) return; event.preventDefault();
       this.zoom(this.viewer.currentScale * (event.deltaY < 0 ? 1.1 : 1 / 1.1));

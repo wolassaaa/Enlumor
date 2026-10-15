@@ -16,11 +16,14 @@ npm start          # 启动已构建的桌面应用
 
 便携构建：`npm run portable`，然后双击项目目录下的 `启动 Enlumor.cmd`，或运行 `launch-enlumor.ps1`。
 
-此阶段 EXE 不包含 Python。启动脚本会设置 `ENLUMOR_PYTHON` 指向项目 `.venv\Scripts\python.exe`。将 EXE 拷到其他机器时，需要安装 requirements.txt 并设置这一环境变量；不是完整独立安装包。
+**0.1.1 已内置 PDF 处理程序**。可直接双击 `D:\codex project\Enlumor\release\Enlumor 0.1.1.exe`，无需安装 Python、配置环境变量或经过启动脚本。旧的 0.1.0 缺少这一组件，请使用新文件。
+
+仅开发/重新构建需要 Node 和 Python。`setup.ps1` 安装 requirements-build.txt；打包命令通过 PyInstaller 收集解释器、PyMuPDF 和依赖到应用资源目录，运行时优先使用内置程序。Windows 构建不作为 macOS/iPad 的二进制包使用。
 
 ## 已有功能
 
 - 打开文本型 PDF、连续阅读、原文选择、全文搜索与命中定位、页码跳转、缩放、适宽/适页、旋转。
+- 暖白纸面与深墨工具栏；顶栏按钮收起/展开文档与批注侧栏。选区旁提供高亮/便签浮栏；滚动、缩放或布局改变后关闭旧浮栏，避免遮挡无关正文。
 - 多行/跨页选区高亮、选区便签、颜色修改与删除；跨页操作一次撤销，支持重做。
 - 自动保存批注与阅读位置；最近文档、启动恢复、相同文件内容重新关联。
 - 原 PDF 自带批注只读展示。原文件被替换时阻止误用旧批注。
@@ -49,4 +52,4 @@ macOS 后续可复用桌面与文档逻辑，但尚未构建/验收。iPad 需�
 
 PyMuPDF 使用 AGPL/商业双许可，当前仓库用于个人开发；分发前需按实际分发方式处理其许可。第三方依赖版本锁定在 package-lock.json / requirements.txt。
 
-实际测试、构建、已知问题与回退证据见 `VERIFICATION.txt`。整体实施进度见 `docs/IMPLEMENTATION.md`。
+初始底座证据见 `VERIFICATION.txt`；0.1.1 UI 与内置运行时修复证据见 `evidence/ui-runtime/VERIFICATION.txt`。整体实施进度见 `docs/IMPLEMENTATION.md`。

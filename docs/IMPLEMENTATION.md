@@ -36,6 +36,20 @@ Windows first; platform-neutral document models, renderer and coordinate transfo
 ## Completion / handoff
 First-stage application code is implemented. Keep feat/foundation in place; no remote was added and no changes were pushed. Original PDFs and personal userData are not touched by code rollback. Next product milestone is reader completion, not AI.
 
+## 0.1.1 — UI and self-contained PDF runtime
+- User confirmed direct EXE open -> add PDF failed with duplicate PYTHON_MISSING. Reproduced in a real packaged application with ENLUMOR_PYTHON unset.
+- Root cause: portable Electron extracts to a temporary directory, where the old resolver looked for a development .venv. The 0.1.0 package did not include an interpreter/worker.
+- Choice: keep TypeScript/Electron and Python/PyMuPDF. Package a PyInstaller onedir worker including the interpreter and libraries; prefer it in packaged builds. Do not rewrite a working document/annotation pipeline in Rust to solve a missing build resource.
+- Worker build dependencies pinned in requirements-build.txt. Windows worker is built on Windows; future macOS needs its own build. iPad still requires a separate client.
+- User approved warm-paper/dark-ink UI. Implemented collapsible document/annotation panels, contextual selection tools, lighter chrome, clearer typography, revised empty state and inline SVG icons without a new UI framework.
+- Error formatting avoids duplicate codes. Child close event waits for complete stdout before parsing JSON.
+- Independent review identified stale floating-toolbar placement after scroll/layout changes. Regression failed first; fixed by dismissing the contextual toolbar on scroll, scale, rotation, resize and sidebar changes.
+- Selection toolbar prefers space above selected text rather than covering the following sentence; placement regression passed.
+- Rotation regression also caught a toolbar that escaped the PDF viewport and intercepted the annotation-sidebar button. Its position is now clamped to the reader bounds; scale tests assert that both toolbar edges stay inside the reader.
+- Existing workspace schema and persisted document/annotation models unchanged. No personal database modifications or migrations.
+- Release is Enlumor 0.1.1.exe; old 0.1.0.exe retained, not promoted as the fixed build.
+- Fresh results and guarded copy-only rollback: evidence/ui-runtime/VERIFICATION.txt.
+
 ## Pre-flight
 Document fingerprint and canonical quads are shared by renderer, store and exporter; one TypeScript model and explicit Python request schema.
 SQLite operations return committed state; renderer updates saved status only after acknowledgement.
