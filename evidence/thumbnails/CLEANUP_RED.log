@@ -1,0 +1,52 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+ ❯ tests/thumbnails.test.ts (3 tests | 3 failed) 6ms
+   × thumbnail success cleans decoded page resources, not just the output canvas 3ms
+   × cancelled thumbnail waits for render settlement then cleans resources and never reports ready 1ms
+   × document replacement during getPage cleans unused page without starting a render 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/thumbnails.test.ts > thumbnail success cleans decoded page resources, not just the output canvas
+AssertionError: expected "vi.fn()" to be called once, but got 0 times
+ ❯ tests/thumbnails.test.ts:12:23
+     10|  expect(await drawPageThumbnail(pdf,1,canvas,new AbortController().sig…
+     11|  expect(canvas.width).toBe(240);expect(canvas.height).toBe(320);
+     12|  expect(page.cleanup).toHaveBeenCalledOnce();
+       |                       ^
+     13| });
+     14| it('cancelled thumbnail waits for render settlement then cleans resour…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/thumbnails.test.ts > cancelled thumbnail waits for render settlement then cleans resources and never reports ready
+AssertionError: expected "vi.fn()" to be called once, but got 0 times
+ ❯ tests/thumbnails.test.ts:22:61
+     20|  await Promise.resolve();controller.abort();
+     21|  await expect(result).rejects.toThrow('cancelled');
+     22|  expect(cancel).toHaveBeenCalledOnce();expect(page.cleanup).toHaveBeen…
+       |                                                             ^
+     23| });
+     24| it('document replacement during getPage cleans unused page without sta…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/thumbnails.test.ts > document replacement during getPage cleans unused page without starting a render
+AssertionError: expected "vi.fn()" to be called once, but got 0 times
+ ❯ tests/thumbnails.test.ts:27:99
+     25|  const {page,pdf,canvas}=fixture();let current=true;
+     26|  const result=drawPageThumbnail(pdf,1,canvas,new AbortController().sig…
+     27|  expect(await result).toBe(false);expect(page.render).not.toHaveBeenCa…
+       |                                                                                                   ^
+     28| });
+     29|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed (3)
+   Start at  10:31:41
+   Duration  151ms (transform 52%, import 23%, tests 15%, worker 10%)
+

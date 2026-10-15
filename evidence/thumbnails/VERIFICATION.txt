@@ -1,0 +1,64 @@
+Enlumor 0.1.4 — 2026-10-15
+Branch: feat/pdf-thumbnails; baseline=3a6666a.
+Changed branch/field: ThumbnailRail visibility queue / drawThumbnail / drawPageThumbnail finally cleanup; libraryView=thumbnails; staged EXE E2E launch; text+image thumbnail performance gates.
+
+Four artifacts:
+MODIFIED_FILE=D:\codex project\Enlumor\evidence\thumbnails\MODIFIED_FILE.tsx
+DIFF_FILE=D:\codex project\Enlumor\evidence\thumbnails\DIFF.patch
+VERIFICATION=D:\codex project\Enlumor\evidence\thumbnails\VERIFICATION.txt
+ROLLBACK=D:\codex project\Enlumor\evidence\thumbnails\ROLLBACK.sh (git mode 100755)
+Live implementation=D:\codex project\Enlumor\src\renderer\thumbnails.tsx
+Preserved original SHA256:
+main.tsx=b5262bd3876821477a2a95e1df54f765a78630089f953f8695a10d8f3c60f2c6
+pdf-reader.ts=3403a3306517bd7fa507bea470485210068c002ab2e091361d2d7c248e05ace2
+style.css=db36b9bded8bbbb68305e82b0fc78e23cceedc4aa201dc43aafdcf2b468f6af9
+
+CWD=D:\codex project\Enlumor
+BASELINE command: npx playwright test --grep 'PDF thumbnails'
+Input: original 0.1.3 renderer, new thumbnail contract, native Electron with temporary profile; 200-page text PDF fixture.
+Literal result: 1 failed
+Cause: waiting for getByRole('tab', { name: '缩略图', exact: true }), tab absent.
+Exit=1. Full output=BASELINE.log.
+
+MODIFIED command (PowerShell): $env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.4-win-x64/Enlumor.exe).Path; npx playwright test --grep 'PDF thumbnail'
+Input: actual released 0.1.4 EXE, 200 pages plus a different one-page landscape PDF, temporary profiles, scale=1/2; navigation to 120, rendered pixel check, <=8 canvases, hide/reopen, tab switch, rapid scroll, document replacement, source SHA unchanged.
+Literal result: 2 passed (6.6s)
+Exit=0. Full output=FINAL_CHECK.log. Screenshot=thumbnails.png (opened and visually inspected).
+
+ROLLBACK command: "C:/Program Files/Git/bin/bash.exe" evidence/thumbnails/ROLLBACK.sh
+Input: fresh source copy under .cache/thumbnail-rollback/run-*, current sources copied then the three preserved original renderer files restored after SHA checks; independent actual build/Electron/profile; original 200-page source PDF.
+Literal result: ROLLBACK: THUMBNAIL_TAB=0; OUTLINE_PAGE=101; LIVE_SOURCE_UNCHANGED=YES
+Exit=0. Restored behavior: copy has old directory navigation but no thumbnail tab; original Part Two still navigates to page101. Current implementation remains changed; no personal workspace touched. Build output preserved in ROLLBACK.log.
+
+TDD/review ledger:
+- Thumbnail contract RED (tab absent) -> GREEN (actual preview/nav/release).
+- Final independent review Important: removing canvas did not clear PDF.js page objects. Three focused tests RED (cleanup count 0), GREEN after finally page.cleanup(): success, controlled active-task cancellation, document replacement during getPage.
+- Release thumbnail-canvas budget RED (200 accepted), GREEN (now requires <=8, missing/nonfinite rejected).
+- Controlled cancellation test also addresses review suggestion that rapid-scroll E2E alone did not prove active render cancellation.
+- Deferred minor: current-page marker updates as正文 navigates, but rail auto-scrolls to current page only on mount, not on every正文 scroll/search jump. No extra navigation behavior added this milestone.
+- No second review pass; fixes verified by the tests and full suite.
+
+Full release command (PowerShell): $env:ENLUMOR_EVIDENCE_DIR='evidence/thumbnails'; npm run release:verified
+Input: 0.1.4 current build, embedded PyMuPDF, real SQLite/PDF.js, staged Windows EXE for ALL 14 E2Es, fresh profiles; text and 200-image-page stress samples each with 1000 real annotations, both thumbnail rail and正文 scrolling.
+Literal key results:
+Tests 21 passed (21)
+Ran 3 tests
+OK
+14 passed (34.0s)
+PACKAGED_READER: PASS
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.4 D:\codex project\Enlumor\release\Enlumor-0.1.4-win.zip SHA256=7c3137bab55daf1d6103b28eecee069bafec019bd47fbe16b1119c0cd2636370
+Exit=0. Total 38 tests + typecheck/build/package smoke + two performance gates. Full output=RELEASE.log.
+Image PDF=32,101,181 bytes, 200 distinct grayscale noise-image pages. This exercises decoding, not just an unused padding stream; it is synthetic, not a representative real scanned book.
+Text sample: scroll frame p95=14.900000005960464ms; save p95=6ms; measured retained正文 canvases=8, thumbnail canvases=3; extracted startup median=377.3126ms.
+Image sample: scroll frame p95=13.399999998509884ms; save p95=3.0999999940395355ms; measured retained正文 canvases=8, thumbnail canvases=4; extracted startup median=370.4311ms.
+Both measured 0 >50ms long tasks. These are snapshot counts and synthetic timing samples, not universal memory/performance guarantees. Literal JSON in release.json/scanned.json. Older baseline results remain under evidence/performance.
+
+Release EXE=D:\codex project\Enlumor\release\Enlumor-0.1.4-win-x64\Enlumor.exe
+ZIP=D:\codex project\Enlumor\release\Enlumor-0.1.4-win.zip
+Manifest=D:\codex project\Enlumor\release\latest.json
+Manual visual: thumbnails.png shows page120 source thumbnail, current marker and正文 destination; source preview intentionally excludes Enlumor workspace annotations.
+Next feature=RDR-01 multi-document tabs. No AI/whiteboard placeholders added.
+Reusable prompt:
+按 D:\codex project\Enlumor\docs\FEATURES.md 推进下一个独立子项；先失败测试再实现；保持源 PDF 只读与 SQLite 权威存储；使用 npm run release:verified 检查真实打包程序及两种 200 页样本，通过后才更新最新版。

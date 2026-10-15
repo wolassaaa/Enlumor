@@ -20,7 +20,7 @@ npm start          # 启动已构建的桌面应用
 
 仅开发/重新构建需要 Node 和 Python。`setup.ps1` 安装 requirements-build.txt；打包命令通过 PyInstaller 收集解释器、PyMuPDF 和依赖到应用资源目录，运行时优先使用内置程序。Windows 构建不作为 macOS/iPad 的二进制包使用。
 
-0.1.3 新增 PDF 嵌套目录导航与阅读位置保存/滚动优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
+0.1.4 新增按需缩略图导航（左栏“缩略图”），保留 0.1.3 的嵌套目录与保存/滚动优化；最新执行状态与逐项功能清单见 [docs/FEATURES.md](docs/FEATURES.md)。
 
 ## 已有功能
 

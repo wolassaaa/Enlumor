@@ -1,0 +1,13 @@
+(node:59572) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:59584) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:59584) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 1 tests\e2e\reader.spec.ts:80:1 › PDF thumbnails render on demand, navigate and release offscreen canvases (3.3s)
+
+  ok 2 tests\e2e\reader.spec.ts:117:1 › PDF thumbnail jobs cancel on rapid scroll and document replacement (2.0s)
+
+  2 passed (6.6s)

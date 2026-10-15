@@ -1,0 +1,46 @@
+(node:36960) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:40708) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:40708) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  1 tests\e2e\reader.spec.ts:80:1 › PDF thumbnails render on demand, navigate and release offscreen canvases (5.5s)
+
+
+  1) tests\e2e\reader.spec.ts:80:1 › PDF thumbnails render on demand, navigate and release offscreen canvases 
+
+    Error: expect(locator).toBeDisabled() failed
+
+    Locator: getByRole('tab', { name: '缩略图', exact: true })
+    Expected: disabled
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeDisabled" getByRole('tab', { name: '缩略图', exact: true }) with timeout 5000ms
+      - waiting for getByRole('tab', { name: '缩略图', exact: true })
+
+
+      82 |   try {
+      83 |     const page = await app.firstWindow();
+    > 84 |     await expect(page.getByRole('tab', { name: '缩略图', exact: true })).toBeDisabled();
+         |                                                                       ^
+      85 |     await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
+      86 |     await expect(page.locator('.textLayer span').first()).toBeVisible();
+      87 |     const before = hash();
+        at D:\codex project\Enlumor\tests\e2e\reader.spec.ts:84:71
+
+    Error Context: test-results\reader-PDF-thumbnails-rend-155e5--release-offscreen-canvases\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\reader-PDF-thumbnails-rend-155e5--release-offscreen-canvases\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\reader-PDF-thumbnails-rend-155e5--release-offscreen-canvases\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\reader.spec.ts:80:1 › PDF thumbnails render on demand, navigate and release offscreen canvases 

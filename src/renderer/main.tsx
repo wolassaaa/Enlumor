@@ -1,3 +1,4 @@
+import { ThumbnailRail } from './thumbnails';
 import { createRoot } from 'react-dom/client';
 import { useEffect, useRef, useState } from 'react';
 import { PdfReader, type SelectionPart, type OutlineEntry } from './pdf-reader';
@@ -22,7 +23,7 @@ function App() {
   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
   const [history, setHistory] = useState({ undo: [] as AnnotationChange[], redo: [] as AnnotationChange[] });
   const [libraryOpen, setLibraryOpen] = useState(true), [notesOpen, setNotesOpen] = useState(true);
-  const [libraryView, setLibraryView] = useState<'documents' | 'outline'>('documents'), [outline, setOutline] = useState<OutlineEntry[] | null>([]);
+  const [libraryView, setLibraryView] = useState<'documents' | 'outline' | 'thumbnails'>('documents'), [outline, setOutline] = useState<OutlineEntry[] | null>([]);
   const [selectionPosition, setSelectionPosition] = useState({ left: 0, top: 0 });
   const current = useRef<ReadingState | null>(null), timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const pending = useRef<{ change: AnnotationChange; kind: 'new' | 'undo' | 'redo' } | null>(null), flight = useRef<Promise<unknown> | null>(null), locked = useRef(false);
@@ -111,9 +112,9 @@ function App() {
     <div className="workspace">
       <aside className="library" hidden={!libraryOpen}>
         <div className="section-label">LIBRARY / 你的阅读空间</div>
-        <h2>{libraryView === 'documents' ? '文档' : '目录'}<span className="section-count">{(libraryView === 'documents' ? recent.length : outline?.length || 0).toString().padStart(2, '0')}</span></h2>
-        <div className="library-tabs" role="tablist" aria-label="文档导航"><button role="tab" aria-selected={libraryView === 'documents'} onClick={() => setLibraryView('documents')}>文档</button><button role="tab" aria-selected={libraryView === 'outline'} disabled={!doc} onClick={() => setLibraryView('outline')}>目录</button></div>
-        {libraryView === 'documents' ? <div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div> : <div className="recent-list" aria-label="PDF 目录">{outline === null ? <p className="library-empty">正在读取目录…</p> : outline.length ? <OutlineTree items={outline} navigate={id => void reader.current?.goToOutline(id)}/> : <p className="library-empty">此 PDF 没有目录，可使用页码跳转。</p>}</div>}
+        <h2>{libraryView === 'documents' ? '文档' : libraryView === 'outline' ? '目录' : '缩略图'}<span className="section-count">{(libraryView === 'documents' ? recent.length : libraryView === 'thumbnails' ? doc?.pageCount || 0 : outline?.length || 0).toString().padStart(2, '0')}</span></h2>
+        <div className="library-tabs" role="tablist" aria-label="文档导航"><button role="tab" aria-selected={libraryView === 'documents'} onClick={() => setLibraryView('documents')}>文档</button><button role="tab" aria-selected={libraryView === 'outline'} disabled={!doc} onClick={() => setLibraryView('outline')}>目录</button><button role="tab" aria-selected={libraryView === 'thumbnails'} disabled={!doc} onClick={() => setLibraryView('thumbnails')}>缩略图</button></div>
+        {libraryView === 'documents' ? <div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div> : libraryView === 'thumbnails' ? libraryOpen && doc && reader.current && <ThumbnailRail key={doc.id} reader={reader.current} documentId={doc.id} pageCount={doc.pageCount} currentPage={Number(page)}/> : <div className="recent-list" aria-label="PDF 目录">{outline === null ? <p className="library-empty">正在读取目录…</p> : outline.length ? <OutlineTree items={outline} navigate={id => void reader.current?.goToOutline(id)}/> : <p className="library-empty">此 PDF 没有目录，可使用页码跳转。</p>}</div>}
         <div className="library-footer"><span className="online-dot"/> 离线可用<span>所有阅读痕迹保存在这台电脑</span></div>
       </aside>
       <main className="reading"><div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>

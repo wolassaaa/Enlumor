@@ -14,12 +14,16 @@ const task = name => run(process.execPath,[npmCli,'run',name]);
 task('build'); task('test'); task('test:python'); task('build:worker');
 run(process.execPath,['node_modules/electron-builder/cli.js','--win','zip',`--config.directories.output=${stage}`]);
 const exe=path.join(stage,'win-unpacked/Enlumor.exe');
-const env={ENLUMOR_TEST_APP:exe,ENLUMOR_EVIDENCE_DIR:'evidence/performance'};
+const evidence = process.env.ENLUMOR_EVIDENCE_DIR || `evidence/releases/${version}`;
+mkdirSync(evidence,{recursive:true});
+const env={ENLUMOR_TEST_APP:exe,ENLUMOR_EVIDENCE_DIR:evidence};
 run(process.execPath,['node_modules/@playwright/test/cli.js','test'],env);
 run(process.execPath,['scripts/check-package.mjs'],env);
 run(process.execPath,['scripts/check-portable.mjs',exe]);
-run(process.execPath,['scripts/benchmark.mjs','release',exe]);
-assertPerformance(JSON.parse(readFileSync('evidence/performance/release.json','utf8')));
+for (const [label,flags] of [['release',['--thumbnails']],['scanned',['--thumbnails','--scanned']]]) {
+  run(process.execPath,['scripts/benchmark.mjs',label,exe,...flags],env);
+  assertPerformance(JSON.parse(readFileSync(path.join(evidence,`${label}.json`),'utf8')));
+}
 const zip=path.join(stage,`Enlumor-${version}-win.zip`);
 if(!existsSync(zip)) throw Error(`Missing ${zip}`);
 const destination=path.join(root,'release',`Enlumor-${version}-win-x64`);

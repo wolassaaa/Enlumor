@@ -1,3 +1,4 @@
+import { drawPageThumbnail } from './thumbnail-render';
 import { getDocument, GlobalWorkerOptions, type PDFDocumentLoadingTask } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { EventBus, PDFViewer, PDFLinkService, PDFFindController } from 'pdfjs-dist/web/pdf_viewer.mjs';
@@ -98,6 +99,11 @@ export class PdfReader {
       if (!Number.isInteger(index) || index < 0 || index >= pdf.numPages) throw new Error('目录页码无效');
       this.viewer.scrollPageIntoView({ pageNumber: index + 1, destArray: destination, ignoreDestinationZoom: true });
     } catch { if (pdf === this.viewer.pdfDocument) this.onNotice('此目录项无法定位，可使用页码跳转。'); }
+  }
+  async drawThumbnail(pageNumber: number, canvas: HTMLCanvasElement, signal: AbortSignal): Promise<boolean> {
+    const pdf = this.viewer.pdfDocument;
+    if (!pdf || !this.ready) return false;
+    return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
   }
   setMarks(marks: Annotation[]) { this.marks = marks; this.paint(); }
   clear() {

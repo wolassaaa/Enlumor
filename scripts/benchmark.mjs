@@ -6,9 +6,12 @@ import { mkdirSync, mkdtempSync, existsSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 const root = path.resolve('.');
-mkdirSync('.cache/benchmark', { recursive: true }); mkdirSync('evidence/performance', { recursive: true });
-const source = path.join(root, '.cache/benchmark/200-pages-32MiB.pdf');
-if (!existsSync(source)) execFileSync(path.join(root, '.venv/Scripts/python.exe'), ['-c', `import pymupdf as f;d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence page '+str(i+1),fontsize=16);p.insert_text((48,110),'Read the original. Keep the context.',fontsize=12)\nx=d.get_new_xref();d.update_object(x,'<<>>');d.update_stream(x,b'A'*(32*1024*1024),compress=False);d.set_toc([[1,'Part One',1],[2,'Evidence',51],[1,'Part Two',101]]);d.save(${JSON.stringify(source)})`]);
+const evidence = process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/performance';
+mkdirSync('.cache/benchmark', { recursive: true }); mkdirSync(evidence, { recursive: true });
+const scanned = process.argv.includes('--scanned');
+const source = path.join(root, scanned ? '.cache/benchmark/200-scanned-pages.pdf' : '.cache/benchmark/200-pages-32MiB.pdf');
+if (scanned && !existsSync(source)) execFileSync(path.join(root,'.venv/Scripts/python.exe'), ['-c', `import pymupdf as f,random;d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);pix=f.Pixmap(f.csGRAY,400,400,random.Random(i).randbytes(160000),False);p.insert_image(p.rect,stream=pix.tobytes('png'))\nd.save(${JSON.stringify(source)})`]);
+if (!scanned && !existsSync(source)) execFileSync(path.join(root, '.venv/Scripts/python.exe'), ['-c', `import pymupdf as f;d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence page '+str(i+1),fontsize=16);p.insert_text((48,110),'Read the original. Keep the context.',fontsize=12)\nx=d.get_new_xref();d.update_object(x,'<<>>');d.update_stream(x,b'A'*(32*1024*1024),compress=False);d.set_toc([[1,'Part One',1],[2,'Evidence',51],[1,'Part Two',101]]);d.save(${JSON.stringify(source)})`]);
 const label = process.argv[2] || 'baseline';
 const portable = process.argv[3] || 'release/Enlumor 0.1.1.exe';
 const startup = [], portableStartup = [];
@@ -27,7 +30,8 @@ try {
   await app.evaluate(({ dialog }, source) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [source] }); }, source);
   const page = await app.firstWindow();
   await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
-  await expect(page.locator('.textLayer span').first()).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('#viewer canvas').first()).toBeVisible({ timeout: 30000 });
+  await expect(page.getByRole('status')).toContainText('已恢复', { timeout: 30000 });
   await page.evaluate(async () => {
     const list = await window.enlumor.listDocuments(); const doc = list.value[0];
     const marks = Array.from({ length: 1000 }, (_, i) => ({ id: `stress-${i}`, documentId: doc.id, fingerprint: doc.fingerprint, pageIndex: i % 200, type: 'highlight', author: 'user', color: '#f4cf58', quote: `Evidence ${i}`, note: '', quads: [[48,570,200,570,48,550,200,550]] }));
@@ -36,14 +40,18 @@ try {
   // Reload through the ordinary recent-document UI so real annotation cards are mounted.
   await page.locator('.recent>button').first().click();
   await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1000, { timeout: 30000 });
+  if (process.argv.includes('--thumbnails')) {
+    await page.getByRole('tab',{name:'缩略图',exact:true}).click();
+    await expect(page.locator('.thumbnail-rail canvas[data-rendered="true"]').first()).toBeVisible();
+  }
   scrolling = await page.evaluate(async () => {
     const frames = [], tasks = [];
     const observer = new PerformanceObserver(list => tasks.push(...list.getEntries().map(entry => entry.duration)));
     observer.observe({ type: 'longtask', buffered: false });
     const view = document.querySelector('#viewerContainer'); let last = performance.now();
-    for (let i = 0; i < 180; i++) { await new Promise(requestAnimationFrame); const now = performance.now(); frames.push(now-last); last=now; view.scrollTop = (i % 60) * 80; }
+    for (let i = 0; i < 180; i++) { await new Promise(requestAnimationFrame); const now = performance.now(); frames.push(now-last); last=now; view.scrollTop = (i % 60) * 80; const rail=document.querySelector('.thumbnail-rail'); if(rail) rail.scrollTop=(i % 60)*202; }
     observer.disconnect(); frames.sort((a,b)=>a-b);
-    return { frameP50Ms: frames[Math.floor(frames.length*.5)], frameP95Ms: frames[Math.floor(frames.length*.95)], longTasks: tasks.length, worstLongTaskMs: Math.max(0,...tasks), retainedCanvases: document.querySelectorAll('#viewer canvas').length };
+    return { frameP50Ms: frames[Math.floor(frames.length*.5)], frameP95Ms: frames[Math.floor(frames.length*.95)], longTasks: tasks.length, worstLongTaskMs: Math.max(0,...tasks), retainedCanvases: document.querySelectorAll('#viewer canvas').length, thumbnailCanvases: document.querySelectorAll('.thumbnail-rail canvas').length };
   });
   saves = await page.evaluate(async () => {
     const list = await window.enlumor.listDocuments(); const doc = list.value[0]; const times=[];
@@ -61,5 +69,5 @@ for (let i = 0; i < 3; i++) {
     portableStartup.push(performance.now()-start); await page.close();
   } finally { await browser?.close(); child.kill(); }
 }
-const result={label,fixture:'200 pages / 32MiB unused PDF stream / 1000 annotations',startupMs:startup,portableStartupMs:portableStartup,scrolling,readingSave:saves};
-writeFileSync(`evidence/performance/${label}.json`,JSON.stringify(result,null,2)); console.log(JSON.stringify(result));
+const result={label,fixture:scanned ? '200 scanned image pages / approximately 32MB / 1000 annotations' : '200 pages / 32MiB unused PDF stream / 1000 annotations',startupMs:startup,portableStartupMs:portableStartup,scrolling,readingSave:saves};
+writeFileSync(`${evidence}/${label}.json`,JSON.stringify(result,null,2)); console.log(JSON.stringify(result));

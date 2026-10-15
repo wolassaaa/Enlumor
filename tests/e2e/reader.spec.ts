@@ -53,7 +53,7 @@ test('reading layout collapses panels and keeps selection tools near the text', 
 });
 
 async function launch(data: string, scale = 1) {
-  const app = await electron.launch({ args: [root, `--user-data-dir=${data}`, `--force-device-scale-factor=${scale}`], env: { ...process.env, ENLUMOR_PYTHON: python, ELECTRON_DISABLE_SECURITY_WARNINGS: 'true' } });
+  const app = await electron.launch({ executablePath: process.env.ENLUMOR_TEST_APP, args: [...(process.env.ENLUMOR_TEST_APP ? [] : [root]), `--user-data-dir=${data}`, `--force-device-scale-factor=${scale}`], env: { ...process.env, ENLUMOR_PYTHON: python, ELECTRON_DISABLE_SECURITY_WARNINGS: 'true' } });
   await app.evaluate(({ dialog }, files) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [files.source] });
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: files.output });
@@ -74,6 +74,71 @@ test('PDF directory resolves nested entries to source pages', async () => {
     await expect(page.getByLabel('跳转页码')).toHaveValue('101');
     await page.getByRole('button', { name: 'Part One', exact: true }).click();
     await expect(page.getByLabel('跳转页码')).toHaveValue('1');
+  } finally { await app.close(); }
+});
+
+test('PDF thumbnails render on demand, navigate and release offscreen canvases', async () => {
+  const app = await launch(path.join(folder, 'thumbnails'));
+  try {
+    const page = await app.firstWindow();
+    await expect(page.getByRole('tab', { name: '缩略图', exact: true })).toBeDisabled();
+    await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
+    await expect(page.locator('.textLayer span').first()).toBeVisible();
+    const before = hash();
+    await page.getByRole('tab', { name: '缩略图', exact: true }).click();
+    const rail = page.getByRole('region', { name: 'PDF 缩略图', exact: true });
+    await expect(rail.getByRole('button')).toHaveCount(200);
+    await expect(rail.locator('canvas[data-rendered="true"]').first()).toBeVisible();
+    expect(await rail.locator('canvas[data-rendered="true"]').first().evaluate(canvas => {
+      const c = canvas as HTMLCanvasElement;
+      return c.getContext('2d')!.getImageData(0, 0, c.width, c.height).data.some((value, index) => index % 4 !== 3 && value < 150);
+    })).toBe(true);
+    expect(await rail.locator('canvas').count()).toBeLessThanOrEqual(8);
+    const target = rail.getByRole('button', { name: '第 120 页', exact: true });
+    await target.scrollIntoViewIfNeeded();
+    await expect(target.locator('canvas[data-rendered="true"]')).toBeVisible();
+    await target.click();
+    await expect(page.getByLabel('跳转页码')).toHaveValue('120');
+    await expect(target).toHaveAttribute('aria-current', 'page');
+    await expect.poll(() => rail.locator('canvas').count()).toBeLessThanOrEqual(8);
+    await page.getByRole('button', { name: '收起文档栏', exact: true }).click();
+    await expect(page.locator('.thumbnail-rail canvas')).toHaveCount(0);
+    await page.getByRole('button', { name: '展开文档栏', exact: true }).click();
+    await expect(rail.locator('canvas[data-rendered="true"]').first()).toBeVisible();
+    await page.getByRole('tab', { name: '目录', exact: true }).click();
+    await expect(page.locator('.thumbnail-rail canvas')).toHaveCount(0);
+    expect(hash()).toBe(before);
+    await page.getByRole('tab', { name: '缩略图', exact: true }).click();
+    await expect(rail.locator('canvas[data-rendered="true"]').first()).toBeVisible();
+    await page.screenshot({ path: 'evidence/thumbnails/thumbnails.png' });
+  } finally { await app.close(); }
+});
+
+test('PDF thumbnail jobs cancel on rapid scroll and document replacement', async () => {
+  const app = await launch(path.join(folder, 'thumbnail-switch'), 2);
+  try {
+    const page = await app.firstWindow(); const errors: string[] = [];
+    page.on('pageerror', error => errors.push(error.message));
+    await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
+    await page.getByRole('tab', { name: '缩略图', exact: true }).click();
+    const rail = page.getByRole('region', { name: 'PDF 缩略图', exact: true });
+    for (const number of [180, 20, 160, 5]) await rail.getByRole('button', { name: '第 ' + number + ' 页', exact: true }).scrollIntoViewIfNeeded();
+    await expect(rail.locator('canvas[data-rendered="true"]').first()).toBeVisible();
+    const small = path.join(folder, 'small.pdf');
+    execFileSync(python, ['-c', 'import pymupdf as f;d=f.open();p=d.new_page(width=320,height=160);p.insert_text((20,40),"Different document");d.save(' + JSON.stringify(small) + ')']);
+    await app.evaluate(({ dialog }, file) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [file] }); }, small);
+    await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
+    await expect(rail.getByRole('button')).toHaveCount(1);
+    await expect(rail.locator('canvas[data-rendered="true"]')).toBeVisible();
+    await rail.getByRole('button', { name: '第 1 页', exact: true }).click();
+    await expect(page.getByLabel('跳转页码')).toHaveValue('1');
+    expect(await rail.locator('canvas').evaluateAll(items => items.every(c => (c as HTMLCanvasElement).width <= 240 && (c as HTMLCanvasElement).height <= 320))).toBe(true);
+    await page.getByRole('tab', { name: '文档', exact: true }).click();
+    await page.locator('.recent>button').filter({ hasText: '中文 reading sample.pdf' }).click();
+    await page.getByRole('tab', { name: '缩略图', exact: true }).click();
+    await expect(rail.getByRole('button')).toHaveCount(200);
+    await expect(rail.locator('canvas[data-rendered="true"]').first()).toBeVisible();
+    expect(errors).toEqual([]);
   } finally { await app.close(); }
 });
 
