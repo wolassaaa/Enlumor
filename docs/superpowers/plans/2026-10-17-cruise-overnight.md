@@ -37,7 +37,8 @@
 
 ```ts
 type AiProtocol='openai-chat'|'openai-responses'|'anthropic-messages'|'gemini'|'dashscope'|'spark';
-type AiProfileInput={id:string;name:string;protocol:AiProtocol;endpoint:string;model:string;credential?:string;maxOutputTokens:number;timeoutMs:number;parameters:Record<string,unknown>};
+type AiCredential={kind:'api-key';apiKey:string}|{kind:'spark';appId:string;apiKey:string;apiSecret:string};
+type AiProfileInput={id:string;name:string;protocol:AiProtocol;endpoint:string;model:string;credential?:AiCredential;maxOutputTokens:number;timeoutMs:number;parameters:Record<string,unknown>};
 type AiProfileView=Omit<AiProfileInput,'credential'>&{hasCredential:boolean;verification:'configured'|'contract-tested'|'live-tested'};
 type AiTextEvent={requestId:string;type:'delta'|'done'|'error';text?:string;code?:string};
 type CruiseBlock={id:string;documentId:string;fingerprint:string;pageIndex:number;quote:string;quads:number[][]};
