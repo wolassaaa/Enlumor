@@ -1,3 +1,4 @@
+import {ModelSettings} from './model-settings';
 import { NoteDialog } from './note-dialog';
 import { PanelDivider } from './panel-divider';
 import { defaultLayout, fitPanels } from './layout';
@@ -20,6 +21,8 @@ function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id
 }
 
 function App() {
+  const [modelSettingsOpen,setModelSettingsOpen]=useState(false);const modelSettingsTrigger=useRef<HTMLElement|null>(null);
+
   const workspaceElement = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<LayoutPreferences>(defaultLayout), [layoutOpen, setLayoutOpen] = useState(false), [workspaceWidth, setWorkspaceWidth] = useState(window.innerWidth);
   const layoutRef = useRef(layout), layoutFlight = useRef<Promise<void> | null>(null), [layoutError, setLayoutError] = useState(false);
@@ -95,6 +98,8 @@ function App() {
       catch (reason) { fail(reason); }
     })();
     const keyboard = (event: KeyboardEvent) => {
+      if(document.querySelector('dialog.ai-settings[open]')){if(event.ctrlKey&&(event.key==='Tab'||event.key.toLowerCase()==='w'))event.preventDefault();return;}
+
       if (noteOpen.current && event.ctrlKey && (event.key === 'Tab' || event.key.toLowerCase() === 'w')) { event.preventDefault(); return; }
       if (event.ctrlKey && event.key === 'Tab') {
         event.preventDefault(); const list=tabsRef.current; const index=list.findIndex(tab=>tab.id===activeId.current);
@@ -251,7 +256,7 @@ function App() {
     <header className="topbar"><div className="wordmark"><span className="brand-dot">e</span>enlumor</div><span className="edition">YOUR QUIET READING ROOM</span>
       <div className="panel-toggles"><button className={libraryOpen ? 'is-active' : ''} aria-label={libraryOpen ? '收起文档栏' : '展开文档栏'} aria-expanded={libraryOpen} onClick={() => { resetDrawing();setParts([]); setLibraryOpen(!libraryOpen); }}><Glyph name="library"/></button><button className={notesOpen ? 'is-active' : ''} aria-label={notesOpen ? '收起批注栏' : '展开批注栏'} aria-expanded={notesOpen} onClick={() => { resetDrawing();setParts([]); setNotesOpen(!notesOpen); }}><Glyph name="notes"/></button></div>
       <button aria-label="布局设置" aria-expanded={layoutOpen} onClick={() => setLayoutOpen(!layoutOpen)}>布局</button><div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}><Glyph name="open"/>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <Glyph name="export"/></button></div>
-    </header>
+    <button aria-label="模型设置" disabled={busy||!!pending.current} onClick={event=>{resetDrawing();setParts([]);modelSettingsTrigger.current=event.currentTarget;setModelSettingsOpen(true);}}>模型设置</button></header>
     {layoutOpen && <div className="layout-popover" role="region" aria-label="布局设置"><label>阅读间距 <select aria-label="阅读间距" value={layout.spacing} onChange={event=>persistLayout({...layoutRef.current,spacing:Number(event.target.value) as 12|16|24})}><option value="12">紧凑</option><option value="16">标准</option><option value="24">宽松</option></select></label><p>拖动侧栏边缘调宽；方向键微调，双击恢复宽度。</p><button onClick={()=>persistLayout(defaultLayout)}>恢复默认布局</button><button aria-label="关闭布局设置" onClick={()=>setLayoutOpen(false)}>完成</button></div>}
     <div className="workspace" ref={workspaceElement} style={{'--library-width':panels.left+'px','--notes-width':panels.right+'px'} as CSSProperties}>
       <aside className="library" hidden={!libraryOpen}>
@@ -295,6 +300,7 @@ function App() {
       </aside>
     </div>
     {parts.length > 0 && doc && <div ref={selectionPopover} className="selection-popover" role="toolbar" aria-label="选区工具" style={{...selectionPosition,maxWidth:Math.max(200,(container.current?.clientWidth||400)-24)}} onMouseDown={event => event.preventDefault()}><span>{parts.length > 1 ? `${parts.length} 页选区` : '原文选区'}</span><button disabled={busy || !!pending.current} onClick={() => add('highlight')}><Glyph name="mark"/>高亮</button><button disabled={busy||!!pending.current} onClick={()=>add('underline')}>下划线</button><button disabled={busy||!!pending.current} onClick={()=>add('strikeout')}>删除线</button><button disabled={busy || !!pending.current} onClick={event => openNote(undefined,event.currentTarget)}>写便签</button><button className="popover-close" aria-label="取消选区" onClick={() => { setParts([]); window.getSelection()?.removeAllRanges(); }}><Glyph name="close"/></button></div>}
+    {modelSettingsOpen && <ModelSettings returnFocus={modelSettingsTrigger.current} close={()=>setModelSettingsOpen(false)}/>}
     {note !== null && <NoteDialog returnFocus={noteTrigger.current} value={note} editing={!!editing} busy={busy} pending={!!pending.current} error={error} change={setNote} submit={()=>void submitNote()} cancel={closeNote} dismiss={()=>setError('')}/>}
   </div>;
 }

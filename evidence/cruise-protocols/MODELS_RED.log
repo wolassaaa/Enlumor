@@ -1,0 +1,27 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+ ❯ tests/ai-client.test.ts (25 tests | 4 failed) 285ms
+   × openai-chat: model discovery uses the right GET route and normalizes IDs 2ms
+   × openai-responses: model discovery uses the right GET route and normalizes IDs 1ms
+   × anthropic-messages: model discovery uses the right GET route and normalizes IDs 2ms
+   × gemini: model discovery uses the right GET route and normalizes IDs 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/ai-client.test.ts > openai-chat: model discovery uses the right GET route and normalizes IDs
+ FAIL  tests/ai-client.test.ts > openai-responses: model discovery uses the right GET route and normalizes IDs
+ FAIL  tests/ai-client.test.ts > anthropic-messages: model discovery uses the right GET route and normalizes IDs
+ FAIL  tests/ai-client.test.ts > gemini: model discovery uses the right GET route and normalizes IDs
+TypeError: listAiModels is not a function
+ ❯ tests/ai-client.test.ts:66:295
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 21 passed (25)
+   Start at  02:23:02
+   Duration  461ms (tests 83%, transform 8%, import 8%, worker 1%)
+

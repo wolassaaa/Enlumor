@@ -1,0 +1,9 @@
+
+Running 2 tests using 1 worker
+
+(node:34308) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 tests\e2e\ai-settings.spec.ts:4:1 › model settings save masked configuration and preserve it after restart (1.6s)
+  ok 2 tests\e2e\ai-settings.spec.ts:5:1 › connection test uses only fixed text and modal errors retain the editable draft (1.2s)
+
+  2 passed (3.4s)

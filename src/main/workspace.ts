@@ -20,7 +20,7 @@ export class Workspace {
     this.db = new DatabaseSync(file);
     this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000');
     const version = Number(this.db.prepare('PRAGMA user_version').get()!.user_version);
-    if (version > 2) { this.db.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
+    if (version > 3) { this.db.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
     if (version === 0) {
       const tables = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
       if (tables.length) { this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); copyFileSync(file, `${file}.pre-v1.bak`); }
@@ -40,6 +40,17 @@ export class Workspace {
         }
         this.db.exec('BEGIN IMMEDIATE; CREATE TABLE preferences(key TEXT PRIMARY KEY,payload TEXT NOT NULL); PRAGMA user_version=2; COMMIT;');
       } catch (error) { this.db.close(); this.closed = true; throw error; }
+    }
+    if (version < 3) {
+      try {
+        if (version > 0) {
+          const checkpoint=this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get();
+          if(Number(checkpoint?.busy))throw new Error('BACKUP_BUSY: 请关闭其他 Enlumor 窗口后重试升级');
+          const backup=existsSync(`${file}.pre-v3.bak`)?`${file}.pre-v3.${Date.now()}.bak`:`${file}.pre-v3.bak`;
+          copyFileSync(file,backup,constants.COPYFILE_EXCL);
+        }
+        this.db.exec('BEGIN IMMEDIATE; CREATE TABLE ai_profiles(id TEXT PRIMARY KEY,payload TEXT NOT NULL,secret BLOB); PRAGMA user_version=3; COMMIT;');
+      }catch(error){this.db.close();this.closed=true;throw error;}
     }
   }
   layout(): LayoutPreferences {

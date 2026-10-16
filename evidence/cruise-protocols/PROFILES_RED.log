@@ -1,0 +1,27 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+(node:48336) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/ai-profiles.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/ai-profiles.test.ts [ tests/ai-profiles.test.ts ]
+Error: Cannot find module '../src/main/ai-profiles' imported from D:/codex project/Enlumor/tests/ai-profiles.test.ts
+ ❯ tests/ai-profiles.test.ts:3:1
+      1| import {it,expect} from 'vitest';
+      2| import {Workspace} from '../src/main/workspace';
+      3| import {AiProfiles} from '../src/main/ai-profiles';
+       | ^
+      4| import {mkdtempSync,readFileSync,existsSync} from 'node:fs';import {tm…
+      5| const box={available:()=>true,encrypt:(s:string)=>Buffer.from(s.split(…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  02:16:32
+   Duration  164ms (worker 96%, environment 4%)
+

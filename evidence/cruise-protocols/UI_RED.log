@@ -1,0 +1,63 @@
+
+Running 2 tests using 1 worker
+
+(node:54952) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 tests\e2e\ai-settings.spec.ts:4:1 › model settings save masked configuration and preserve it after restart (3.1s)
+(node:50872) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  2 tests\e2e\ai-settings.spec.ts:5:1 › connection test uses only fixed text and modal errors retain the editable draft (2.9s)
+
+
+  1) tests\e2e\ai-settings.spec.ts:4:1 › model settings save masked configuration and preserve it after restart 
+
+    TimeoutError: locator.click: Timeout 2500ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '模型设置', exact: true })
+
+
+      2 | const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-ai-settings-'));
+      3 | async function launch(name:string){return electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,name)]});}
+    > 4 | test('model settings save masked configuration and preserve it after restart',async()=>{let app=await launch('persist');try{let page=await app.firstWindow();await page.getByRole('button',{name:'模型设置',exact:true}).click({timeout:2500});await page.getByLabel('配置名称',{exact:true}).fill('我的模型');await page.getByLabel('模型 ID',{exact:true}).fill('fixture-model');await page.getByLabel('API 密钥',{exact:true}).fill('fixture-only-private-key');await page.getByRole('button',{name:'保存配置',exact:true}).click();await expect(page.getByText('配置已保存',{exact:true})).toBeVisible();const views=await page.evaluate(()=>window.enlumor.listAiProfiles());expect(views.ok).toBe(true);expect(JSON.stringify(views)).not.toContain('fixture-only-private-key');if(!views.ok)throw Error('profiles');expect(views.value[0].hasCredential).toBe(true);await app.close();app=await launch('persist');page=await app.firstWindow();await page.getByRole('button',{name:'模型设置',exact:true}).click();await page.getByLabel('已有配置',{exact:true}).selectOption(views.value[0].id);await expect(page.getByLabel('模型 ID',{exact:true})).toHaveValue('fixture-model');await expect(page.getByLabel('API 密钥',{exact:true})).toHaveValue('');await page.getByRole('button',{name:'删除配置',exact:true}).click();await expect(page.getByText('配置已删除',{exact:true})).toBeVisible();}finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}});
+        |                                                                                                                                                                                                                      ^
+      5 | test('connection test uses only fixed text and modal errors retain the editable draft',async()=>{let received:any;const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;received=JSON.parse(raw);res.setHeader('content-type','application/json');res.end(JSON.stringify({choices:[{message:{content:'OK'},finish_reason:'stop'}]}));});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const endpoint='http://127.0.0.1:'+(server.address() as any).port+'/v1';const app=await launch('test');try{const page=await app.firstWindow();await page.getByRole('button',{name:'模型设置',exact:true}).click({timeout:2500});await page.getByLabel('配置名称',{exact:true}).fill('本地测试');await page.getByLabel('接口地址',{exact:true}).fill(endpoint);await page.getByLabel('模型 ID',{exact:true}).fill('fixture');await page.getByRole('button',{name:'保存配置',exact:true}).click();await expect(page.getByText('配置已保存',{exact:true})).toBeVisible();await page.getByRole('button',{name:'测试连接',exact:true}).click();await expect(page.getByText('连接测试成功',{exact:true})).toBeVisible();expect(received.messages).toEqual([{role:'system',content:'Connection test. Reply with OK only.'},{role:'user',content:'OK'}]);await page.getByLabel('接口地址',{exact:true}).fill('http://remote.example/v1');await page.getByRole('button',{name:'保存配置',exact:true}).click();await expect(page.locator('.ai-settings [role="alert"]')).toContainText('AI_INVALID_CONFIG');await expect(page.getByLabel('接口地址',{exact:true})).toHaveValue('http://remote.example/v1');await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'模型设置',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'模型设置',exact:true})).toBeFocused();}finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}});
+      6 |
+        at D:\codex project\Enlumor\tests\e2e\ai-settings.spec.ts:4:214
+
+    Error Context: test-results\ai-settings-model-settings-e7dfe-d-preserve-it-after-restart\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ai-settings-model-settings-e7dfe-d-preserve-it-after-restart\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ai-settings-model-settings-e7dfe-d-preserve-it-after-restart\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\ai-settings.spec.ts:5:1 › connection test uses only fixed text and modal errors retain the editable draft 
+
+    TimeoutError: locator.click: Timeout 2500ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '模型设置', exact: true })
+
+
+      3 | async function launch(name:string){return electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,name)]});}
+      4 | test('model settings save masked configuration and preserve it after restart',async()=>{let app=await launch('persist');try{let page=await app.firstWindow();await page.getByRole('button',{name:'模型设置',exact:true}).click({timeout:2500});await page.getByLabel('配置名称',{exact:true}).fill('我的模型');await page.getByLabel('模型 ID',{exact:true}).fill('fixture-model');await page.getByLabel('API 密钥',{exact:true}).fill('fixture-only-private-key');await page.getByRole('button',{name:'保存配置',exact:true}).click();await expect(page.getByText('配置已保存',{exact:true})).toBeVisible();const views=await page.evaluate(()=>window.enlumor.listAiProfiles());expect(views.ok).toBe(true);expect(JSON.stringify(views)).not.toContain('fixture-only-private-key');if(!views.ok)throw Error('profiles');expect(views.value[0].hasCredential).toBe(true);await app.close();app=await launch('persist');page=await app.firstWindow();await page.getByRole('button',{name:'模型设置',exact:true}).click();await page.getByLabel('已有配置',{exact:true}).selectOption(views.value[0].id);await expect(page.getByLabel('模型 ID',{exact:true})).toHaveValue('fixture-model');await expect(page.getByLabel('API 密钥',{exact:true})).toHaveValue('');await page.getByRole('button',{name:'删除配置',exact:true}).click();await expect(page.getByText('配置已删除',{exact:true})).toBeVisible();}finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}});
+    > 5 | test('connection test uses only fixed text and modal errors retain the editable draft',async()=>{let received:any;const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;received=JSON.parse(raw);res.setHeader('content-type','application/json');res.end(JSON.stringify({choices:[{message:{content:'OK'},finish_reason:'stop'}]}));});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const endpoint='http://127.0.0.1:'+(server.address() as any).port+'/v1';const app=await launch('test');try{const page=await app.firstWindow();await page.getByRole('button',{name:'模型设置',exact:true}).click({timeout:2500});await page.getByLabel('配置名称',{exact:true}).fill('本地测试');await page.getByLabel('接口地址',{exact:true}).fill(endpoint);await page.getByLabel('模型 ID',{exact:true}).fill('fixture');await page.getByRole('button',{name:'保存配置',exact:true}).click();await expect(page.getByText('配置已保存',{exact:true})).toBeVisible();await page.getByRole('button',{name:'测试连接',exact:true}).click();await expect(page.getByText('连接测试成功',{exact:true})).toBeVisible();expect(received.messages).toEqual([{role:'system',content:'Connection test. Reply with OK only.'},{role:'user',content:'OK'}]);await page.getByLabel('接口地址',{exact:true}).fill('http://remote.example/v1');await page.getByRole('button',{name:'保存配置',exact:true}).click();await expect(page.locator('.ai-settings [role="alert"]')).toContainText('AI_INVALID_CONFIG');await expect(page.getByLabel('接口地址',{exact:true})).toHaveValue('http://remote.example/v1');await page.keyboard.press('Escape');await expect(page.getByRole('dialog',{name:'模型设置',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'模型设置',exact:true})).toBeFocused();}finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}});
+        |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          ^
+      6 |
+        at D:\codex project\Enlumor\tests\e2e\ai-settings.spec.ts:5:618
+
+    Error Context: test-results\ai-settings-connection-tes-5c98d-s-retain-the-editable-draft\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\ai-settings-connection-tes-5c98d-s-retain-the-editable-draft\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\ai-settings-connection-tes-5c98d-s-retain-the-editable-draft\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests\e2e\ai-settings.spec.ts:4:1 › model settings save masked configuration and preserve it after restart 
+    tests\e2e\ai-settings.spec.ts:5:1 › connection test uses only fixed text and modal errors retain the editable draft 

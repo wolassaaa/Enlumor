@@ -14,7 +14,7 @@
 
 - 基线0.1.12 / 1844993，设计提交另计；保留原PDF与个人工作区。当前分支先检查，不覆盖其他人的改动。
 - 截止2026-10-17 08:00 Asia/Taipei，等于2026-10-17 00:00 UTC；最新绝对截止覆盖先前8小时表述。
-- 本计划需用户书面确认后开始产品代码；此前可以核验文件/依赖/测试，不自动跨过审阅。
+- 用户已于2026-10-17书面回复“确认执行”，实施批准已收到；不重复等待确认。
 - 每两项整体review；Critical/Important先失败测试复现再修复；Minor记账，不派重复reviewer空转。
 - 每任务红→绿、类型检查、独立提交；发布候选递增版本，完整release:verified通过才更新latest。
 - 调用在主进程，秘密不回传、不进Git/日志；只发送当前块和必要上下文。不自动调用真实收费API进行夜间压力测试。
@@ -52,11 +52,11 @@ type CruiseSession={documentId:string;fingerprint:string;blockId:string;profileI
 Files：src/shared/ai.ts、src/main/ai-client.ts；修改workspace/index/preload/model；增加模型设置组件；tests/ai-client.test.ts、tests/ai-profiles.test.ts、tests/e2e/ai-settings.spec.ts。
 Produces：经验证的AiProfileView与AiTextEvent；主进程请求注册表按requestId支持取消，最多一个巡航解释请求。配置编辑支持endpoint或baseURL的明确选择，URI规范化不重复/v1，手动model必可用。
 
-- [ ] 写本地HTTP模拟测试：四种请求/响应契约、SSE跨chunk/UTF-8/截断、401/429/500、超时/取消、模型列表失败手动填写、不同origin重定向不泄漏认证。
-- [ ] 写配置测试：safeStorage加密保存/脱敏读取/会话内fallback、参数白名单、SQL迁移前备份；只实现所需表，不引入通用配置框架。
-- [ ] 运行`npx vitest run tests/ai-client.test.ts tests/ai-profiles.test.ts`并保存真实失败；最小实现后运行相同命令转绿。
-- [ ] 按官方文档核对DeepSeek、百炼、方舟、千帆、混元预设；Kimi/智谱/MiniMax/硅基流动逐一核对后再纳入，不假设所有特殊参数可互换。
-- [ ] Electron设置测试通过：增删配置、测试连接、密钥读回脱敏、无密钥/错误提示；运行`npm run typecheck`，提交。
+- [x] 写本地HTTP模拟测试：四种请求/响应契约、SSE跨chunk/UTF-8/截断、401/429/500、超时/取消、模型列表失败手动填写、不同origin重定向不泄漏认证。
+- [x] 写配置测试：safeStorage加密保存/脱敏读取/会话内fallback、参数白名单、SQL迁移前备份；只实现所需表，不引入通用配置框架。
+- [x] 运行`npx vitest run tests/ai-client.test.ts tests/ai-profiles.test.ts`并保存真实失败；最小实现后运行相同命令转绿。
+- [x] 按官方文档核对DeepSeek、百炼、方舟、千帆、混元预设；Kimi/智谱/MiniMax/硅基流动逐一核对后再纳入，不假设所有特殊参数可互换。
+- [x] Electron设置测试通过：增删配置、测试连接、密钥读回脱敏、无密钥/错误提示；运行`npm run typecheck`，提交。
 
 ### Task 2：按需原文分块与锚点定位
 

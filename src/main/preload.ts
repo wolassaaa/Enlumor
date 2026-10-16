@@ -1,6 +1,11 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Bridge } from '../shared/model';
 const bridge: Bridge = {
+  listAiProfiles:()=>ipcRenderer.invoke('ai:profiles:list'),
+  saveAiProfile:input=>ipcRenderer.invoke('ai:profiles:save',input),
+  deleteAiProfile:id=>ipcRenderer.invoke('ai:profiles:delete',id),
+  testAiProfile:id=>ipcRenderer.invoke('ai:profiles:test',id),
+  listAiModels:id=>ipcRenderer.invoke('ai:profiles:models',id),
   getLayout: () => ipcRenderer.invoke('layout:get'),
   saveLayout: layout => ipcRenderer.invoke('layout:save', layout),
   getTabs: () => ipcRenderer.invoke('tabs:get'),

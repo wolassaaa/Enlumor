@@ -1,0 +1,452 @@
+diff --git a/src/main/index.ts b/src/main/index.ts
+index d501937..fc3a4a3 100644
+--- a/src/main/index.ts
++++ b/src/main/index.ts
+@@ -1,4 +1,6 @@
+-import { app, BrowserWindow, dialog, ipcMain, protocol, net } from 'electron';
++import { app, BrowserWindow, dialog, ipcMain, protocol, net, safeStorage } from 'electron';
++import {AiProfiles} from './ai-profiles';
++import {generateText,listAiModels} from './ai-client';
+ import { readFileSync, mkdirSync } from 'node:fs';
+ import path from 'node:path';
+ import { pathToFileURL } from 'node:url';
+@@ -11,6 +13,8 @@ app.setName('Enlumor');
+ const customData = app.commandLine.getSwitchValue('user-data-dir');
+ if (customData) { mkdirSync(customData, { recursive: true }); app.setPath('userData', customData); }
+ let workspace: Workspace;
++let aiProfiles:AiProfiles;
++let aiFlight:AbortController|undefined;
+ let window: BrowserWindow;
+ let closeReady = false, waitingClose = false;
+ let closeTimer: ReturnType<typeof setTimeout> | undefined;
+@@ -28,6 +32,7 @@ async function choosePdf(): Promise<string | null> {
+ app.whenReady().then(() => {
+   mkdirSync(app.getPath('userData'), { recursive: true });
+   workspace = new Workspace(path.join(app.getPath('userData'), 'workspace.sqlite'));
++  aiProfiles=new AiProfiles(workspace.db,{available:()=>safeStorage.isEncryptionAvailable(),encrypt:text=>safeStorage.encryptString(text),decrypt:data=>safeStorage.decryptString(Buffer.from(data))});
+   const rendererRoot = path.resolve(__dirname, '../renderer');
+   protocol.handle('enlumor', request => {
+     const url = new URL(request.url);
+@@ -50,6 +55,16 @@ app.whenReady().then(() => {
+     }
+   });
+   handle('document:list', () => workspace.list());
++  handle('ai:profiles:list',()=>aiProfiles.list());
++  handle('ai:profiles:save',input=>aiProfiles.save(input));
++  handle('ai:profiles:delete',id=>aiProfiles.delete(id));
++  handle('ai:profiles:models',id=>listAiModels(aiProfiles.resolve(id),{fetch:(input,init)=>net.fetch(String(input),init)}));
++  handle('ai:profiles:test',async id=>{
++    if(aiFlight)throw new Error('AI_BUSY');
++    const profile=aiProfiles.resolve(id),controller=aiFlight=new AbortController();
++    try{await generateText(profile,{system:'Connection test. Reply with OK only.',user:'OK'},{stream:false,signal:controller.signal,fetch:(input,init)=>net.fetch(String(input),init)});}
++    finally{if(aiFlight===controller)aiFlight=undefined;}
++  });
+   handle('layout:get', () => workspace.layout());
+   handle('layout:save', layout => workspace.saveLayout(layout));
+   handle('tabs:get', () => workspace.tabs());
+@@ -88,4 +103,4 @@ app.whenReady().then(() => {
+   void window.loadURL(process.env.ENLUMOR_DEV_URL || 'enlumor://app/index.html');
+ });
+ app.on('window-all-closed', () => app.quit());
+-app.on('will-quit', () => workspace?.close());
++app.on('will-quit', () => {aiFlight?.abort();workspace?.close();});
+diff --git a/src/main/preload.ts b/src/main/preload.ts
+index 3280ba0..eb197fb 100644
+--- a/src/main/preload.ts
++++ b/src/main/preload.ts
+@@ -1,6 +1,11 @@
+ import { contextBridge, ipcRenderer } from 'electron';
+ import type { Bridge } from '../shared/model';
+ const bridge: Bridge = {
++  listAiProfiles:()=>ipcRenderer.invoke('ai:profiles:list'),
++  saveAiProfile:input=>ipcRenderer.invoke('ai:profiles:save',input),
++  deleteAiProfile:id=>ipcRenderer.invoke('ai:profiles:delete',id),
++  testAiProfile:id=>ipcRenderer.invoke('ai:profiles:test',id),
++  listAiModels:id=>ipcRenderer.invoke('ai:profiles:models',id),
+   getLayout: () => ipcRenderer.invoke('layout:get'),
+   saveLayout: layout => ipcRenderer.invoke('layout:save', layout),
+   getTabs: () => ipcRenderer.invoke('tabs:get'),
+diff --git a/src/main/workspace.ts b/src/main/workspace.ts
+index 53cb79b..90c3213 100644
+--- a/src/main/workspace.ts
++++ b/src/main/workspace.ts
+@@ -20,7 +20,7 @@ export class Workspace {
+     this.db = new DatabaseSync(file);
+     this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000');
+     const version = Number(this.db.prepare('PRAGMA user_version').get()!.user_version);
+-    if (version > 2) { this.db.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
++    if (version > 3) { this.db.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
+     if (version === 0) {
+       const tables = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
+       if (tables.length) { this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); copyFileSync(file, `${file}.pre-v1.bak`); }
+@@ -41,6 +41,17 @@ export class Workspace {
+         this.db.exec('BEGIN IMMEDIATE; CREATE TABLE preferences(key TEXT PRIMARY KEY,payload TEXT NOT NULL); PRAGMA user_version=2; COMMIT;');
+       } catch (error) { this.db.close(); this.closed = true; throw error; }
+     }
++    if (version < 3) {
++      try {
++        if (version > 0) {
++          const checkpoint=this.db.prepare('PRAGMA wal_checkpoint(TRUNCATE)').get();
++          if(Number(checkpoint?.busy))throw new Error('BACKUP_BUSY: 请关闭其他 Enlumor 窗口后重试升级');
++          const backup=existsSync(`${file}.pre-v3.bak`)?`${file}.pre-v3.${Date.now()}.bak`:`${file}.pre-v3.bak`;
++          copyFileSync(file,backup,constants.COPYFILE_EXCL);
++        }
++        this.db.exec('BEGIN IMMEDIATE; CREATE TABLE ai_profiles(id TEXT PRIMARY KEY,payload TEXT NOT NULL,secret BLOB); PRAGMA user_version=3; COMMIT;');
++      }catch(error){this.db.close();this.closed=true;throw error;}
++    }
+   }
+   layout(): LayoutPreferences {
+     const row = this.db.prepare("SELECT payload FROM preferences WHERE key='layout'").get();
+diff --git a/src/renderer/main.tsx b/src/renderer/main.tsx
+index 70a6d41..cb0ad43 100644
+--- a/src/renderer/main.tsx
++++ b/src/renderer/main.tsx
+@@ -1,3 +1,4 @@
++import {ModelSettings} from './model-settings';
+ import { NoteDialog } from './note-dialog';
+ import { PanelDivider } from './panel-divider';
+ import { defaultLayout, fitPanels } from './layout';
+@@ -20,6 +21,8 @@ function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id
+ }
+ 
+ function App() {
++  const [modelSettingsOpen,setModelSettingsOpen]=useState(false);const modelSettingsTrigger=useRef<HTMLElement|null>(null);
++
+   const workspaceElement = useRef<HTMLDivElement>(null);
+   const [layout, setLayout] = useState<LayoutPreferences>(defaultLayout), [layoutOpen, setLayoutOpen] = useState(false), [workspaceWidth, setWorkspaceWidth] = useState(window.innerWidth);
+   const layoutRef = useRef(layout), layoutFlight = useRef<Promise<void> | null>(null), [layoutError, setLayoutError] = useState(false);
+@@ -95,6 +98,8 @@ function App() {
+       catch (reason) { fail(reason); }
+     })();
+     const keyboard = (event: KeyboardEvent) => {
++      if(document.querySelector('dialog.ai-settings[open]')){if(event.ctrlKey&&(event.key==='Tab'||event.key.toLowerCase()==='w'))event.preventDefault();return;}
++
+       if (noteOpen.current && event.ctrlKey && (event.key === 'Tab' || event.key.toLowerCase() === 'w')) { event.preventDefault(); return; }
+       if (event.ctrlKey && event.key === 'Tab') {
+         event.preventDefault(); const list=tabsRef.current; const index=list.findIndex(tab=>tab.id===activeId.current);
+@@ -251,7 +256,7 @@ function App() {
+     <header className="topbar"><div className="wordmark"><span className="brand-dot">e</span>enlumor</div><span className="edition">YOUR QUIET READING ROOM</span>
+       <div className="panel-toggles"><button className={libraryOpen ? 'is-active' : ''} aria-label={libraryOpen ? '收起文档栏' : '展开文档栏'} aria-expanded={libraryOpen} onClick={() => { resetDrawing();setParts([]); setLibraryOpen(!libraryOpen); }}><Glyph name="library"/></button><button className={notesOpen ? 'is-active' : ''} aria-label={notesOpen ? '收起批注栏' : '展开批注栏'} aria-expanded={notesOpen} onClick={() => { resetDrawing();setParts([]); setNotesOpen(!notesOpen); }}><Glyph name="notes"/></button></div>
+       <button aria-label="布局设置" aria-expanded={layoutOpen} onClick={() => setLayoutOpen(!layoutOpen)}>布局</button><div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}><Glyph name="open"/>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <Glyph name="export"/></button></div>
+-    </header>
++    <button aria-label="模型设置" disabled={busy||!!pending.current} onClick={event=>{resetDrawing();setParts([]);modelSettingsTrigger.current=event.currentTarget;setModelSettingsOpen(true);}}>模型设置</button></header>
+     {layoutOpen && <div className="layout-popover" role="region" aria-label="布局设置"><label>阅读间距 <select aria-label="阅读间距" value={layout.spacing} onChange={event=>persistLayout({...layoutRef.current,spacing:Number(event.target.value) as 12|16|24})}><option value="12">紧凑</option><option value="16">标准</option><option value="24">宽松</option></select></label><p>拖动侧栏边缘调宽；方向键微调，双击恢复宽度。</p><button onClick={()=>persistLayout(defaultLayout)}>恢复默认布局</button><button aria-label="关闭布局设置" onClick={()=>setLayoutOpen(false)}>完成</button></div>}
+     <div className="workspace" ref={workspaceElement} style={{'--library-width':panels.left+'px','--notes-width':panels.right+'px'} as CSSProperties}>
+       <aside className="library" hidden={!libraryOpen}>
+@@ -295,6 +300,7 @@ function App() {
+       </aside>
+     </div>
+     {parts.length > 0 && doc && <div ref={selectionPopover} className="selection-popover" role="toolbar" aria-label="选区工具" style={{...selectionPosition,maxWidth:Math.max(200,(container.current?.clientWidth||400)-24)}} onMouseDown={event => event.preventDefault()}><span>{parts.length > 1 ? `${parts.length} 页选区` : '原文选区'}</span><button disabled={busy || !!pending.current} onClick={() => add('highlight')}><Glyph name="mark"/>高亮</button><button disabled={busy||!!pending.current} onClick={()=>add('underline')}>下划线</button><button disabled={busy||!!pending.current} onClick={()=>add('strikeout')}>删除线</button><button disabled={busy || !!pending.current} onClick={event => openNote(undefined,event.currentTarget)}>写便签</button><button className="popover-close" aria-label="取消选区" onClick={() => { setParts([]); window.getSelection()?.removeAllRanges(); }}><Glyph name="close"/></button></div>}
++    {modelSettingsOpen && <ModelSettings returnFocus={modelSettingsTrigger.current} close={()=>setModelSettingsOpen(false)}/>}
+     {note !== null && <NoteDialog returnFocus={noteTrigger.current} value={note} editing={!!editing} busy={busy} pending={!!pending.current} error={error} change={setNote} submit={()=>void submitNote()} cancel={closeNote} dismiss={()=>setError('')}/>}
+   </div>;
+ }
+diff --git a/src/renderer/style.css b/src/renderer/style.css
+index aab9ba6..0455fa3 100644
+--- a/src/renderer/style.css
++++ b/src/renderer/style.css
+@@ -68,3 +68,6 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
+ .note-error{font-size:12px;color:#82462e;background:#f9e9df;padding:8px;margin-bottom:16px;overflow-wrap:anywhere}.note-error p{margin:0 0 6px}.note-error button{padding:3px 8px;font-size:11px}
+ 
+ .erasing-ink,.erasing-ink .textLayer,.erasing-ink .textLayer span{cursor:crosshair!important}#viewerContainer.erasing-ink{touch-action:none}.erase-preview{opacity:.2!important}.eraser-hint{font-size:11px;color:var(--muted);line-height:1.7;margin:8px 0 0}
++
++.ai-settings{width:min(640px,92vw);max-height:88vh;overflow:auto;padding:24px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
++.ai-settings::backdrop{background:#202a2380}.ai-settings h2{margin:0 0 12px}.ai-settings p{font-size:12px;line-height:1.7}.ai-settings fieldset{border:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}.ai-settings label{display:flex;flex-direction:column;gap:5px;font-size:12px;min-width:0}.ai-settings input,.ai-settings select,.ai-settings textarea{width:100%;min-width:0;padding:8px}.ai-settings textarea{height:70px;resize:vertical}.ai-settings [role=alert]{color:#82462e;overflow-wrap:anywhere}.ai-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+diff --git a/src/shared/model.ts b/src/shared/model.ts
+index ed96fa6..0727202 100644
+--- a/src/shared/model.ts
++++ b/src/shared/model.ts
+@@ -1,3 +1,4 @@
++import type {AiProfileInput,AiProfileView} from './ai';
+ export type Quad = number[];
+ export type Annotation = {
+   id: string; documentId: string; fingerprint: string; type: 'highlight' | 'underline' | 'strikeout' | 'line' | 'arrow' | 'ink' | 'note';
+@@ -13,6 +14,11 @@ export type Reply<T> = { ok: true; value: T } | { ok: false; error: { code: stri
+ export type LayoutPreferences = { left: number; right: number; spacing: 12 | 16 | 24 };
+ export type TabSession = { openIds: string[]; activeId: string | null };
+ export type Bridge = {
++  listAiProfiles():Promise<Reply<AiProfileView[]>>;
++  saveAiProfile(input:AiProfileInput):Promise<Reply<AiProfileView>>;
++  deleteAiProfile(id:string):Promise<Reply<void>>;
++  testAiProfile(id:string):Promise<Reply<void>>;
++  listAiModels(id:string):Promise<Reply<string[]>>;
+   getLayout(): Promise<Reply<LayoutPreferences>>;
+   saveLayout(layout: LayoutPreferences): Promise<Reply<void>>;
+   getTabs(): Promise<Reply<TabSession | null>>;
+diff --git a/tests/layout-tabs.test.ts b/tests/layout-tabs.test.ts
+index 4308fea..9723be3 100644
+--- a/tests/layout-tabs.test.ts
++++ b/tests/layout-tabs.test.ts
+@@ -16,7 +16,7 @@ it('v1 migration creates a verified backup and preserves documents, annotations
+  old.exec("CREATE TABLE documents(id TEXT PRIMARY KEY,path TEXT,name TEXT,fingerprint TEXT,pageCount INTEGER,updatedAt INTEGER); CREATE TABLE annotations(id TEXT PRIMARY KEY,documentId TEXT,payload TEXT); CREATE TABLE reading(documentId TEXT PRIMARY KEY,payload TEXT); PRAGMA user_version=1;");
+  old.prepare('INSERT INTO documents VALUES(?,?,?,?,?,?)').run('kept','source.pdf','source.pdf','fingerprint',3,1);old.prepare('INSERT INTO annotations VALUES(?,?,?)').run('a','kept','{"id":"a"}');old.prepare('INSERT INTO reading VALUES(?,?)').run('kept','{"pageIndex":2}');old.close();
+  const w=new Workspace(file);try{expect(w.list()[0].id).toBe('kept');expect(w.annotations('kept')).toEqual([{id:'a'}]);expect(w.reading('kept')?.pageIndex).toBe(2);expect(existsSync(file+'.pre-v2.bak')).toBe(true);
+- const backup=new DatabaseSync(file+'.pre-v2.bak');expect(backup.prepare('PRAGMA user_version').get()?.user_version).toBe(1);expect(backup.prepare('SELECT COUNT(*) n FROM annotations').get()?.n).toBe(1);backup.close();expect(w.db.prepare('PRAGMA user_version').get()?.user_version).toBe(2);}finally{w.close();}
++ const backup=new DatabaseSync(file+'.pre-v2.bak');expect(backup.prepare('PRAGMA user_version').get()?.user_version).toBe(1);expect(backup.prepare('SELECT COUNT(*) n FROM annotations').get()?.n).toBe(1);backup.close();expect(w.db.prepare('PRAGMA user_version').get()?.user_version).toBe(3);}finally{w.close();}
+ });
+ it('tab session persists only registered unique IDs with a valid active member',()=>{
+  const {dir,file}=setup();const source=path.join(dir,'source.pdf');writeFileSync(source,'one');const w=new Workspace(file);
+diff --git a/src/shared/ai.ts b/src/shared/ai.ts
+new file mode 100644
+index 0000000..ba314db
+--- /dev/null
++++ b/src/shared/ai.ts
+@@ -0,0 +1,6 @@
++export type AiProtocol='openai-chat'|'openai-responses'|'anthropic-messages'|'gemini'|'dashscope'|'spark';
++export type AiCredential={kind:'api-key';apiKey:string}|{kind:'spark';appId:string;apiKey:string;apiSecret:string};
++export type AiProfileInput={id:string;name:string;protocol:AiProtocol;endpoint:string;model:string;credential?:AiCredential;maxOutputTokens:number;timeoutMs:number;parameters:Record<string,unknown>};
++export type AiProfileView=Omit<AiProfileInput,'credential'>&{hasCredential:boolean;credentialStorage:'encrypted'|'session'|'none';verification:'configured'|'contract-tested'|'live-tested'};
++export type AiTextEvent={requestId:string;type:'delta'|'done'|'error';text?:string;code?:string};
++export type AiPrompt={system:string;user:string};
+diff --git a/src/main/ai-client.ts b/src/main/ai-client.ts
+new file mode 100644
+index 0000000..c22f2a6
+--- /dev/null
++++ b/src/main/ai-client.ts
+@@ -0,0 +1,161 @@
++import type {AiProfileInput,AiPrompt} from '../shared/ai';
++
++const MAX_RESPONSE_BYTES=4*1024*1024,MAX_EVENT_BYTES=512*1024;
++const protocols=['openai-chat','openai-responses','anthropic-messages','gemini'];
++const invalid=()=>new Error('AI_INVALID_CONFIG');
++const failure=(code:string)=>new Error(code);
++
++/** Caller supplies an explicitly selected service; no redirects or URL credentials. */
++export function validateAiProfile(profile:AiProfileInput):URL {
++ if(!profile||typeof profile!=='object'||!protocols.includes(profile.protocol)||typeof profile.id!=='string'||!/^[\w-]{1,100}$/.test(profile.id)||typeof profile.name!=='string'||profile.name.length>100||!profile.name.trim()||typeof profile.model!=='string'||!profile.model.trim()||profile.model.length>200||typeof profile.endpoint!=='string'||profile.endpoint.length>2000||!Number.isInteger(profile.maxOutputTokens)||profile.maxOutputTokens<1||profile.maxOutputTokens>32768||!Number.isInteger(profile.timeoutMs)||profile.timeoutMs<100||profile.timeoutMs>120000)throw invalid();
++ let url:URL;try{url=new URL(profile.endpoint);}catch{throw invalid();}
++ const local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
++ if((url.protocol!=='https:'&&!(url.protocol==='http:'&&local))||url.username||url.password||url.search||url.hash)throw invalid();
++ if(profile.credential&&(profile.credential.kind!=='api-key'||typeof profile.credential.apiKey!=='string'||profile.credential.apiKey.length>8192||!profile.credential.apiKey.trim()||/[\r\n]/.test(profile.credential.apiKey)))throw invalid();
++ const p=profile.parameters;if(!p||typeof p!=='object'||Array.isArray(p)||Object.getPrototypeOf(p)!==Object.prototype)throw invalid();
++ // Protocol-specific controls, never authentication/routing/prompts or arbitrary request fields.
++ const allowed:Record<string,string[]>={
++  'openai-chat':['temperature','top_p','seed','presence_penalty','frequency_penalty','reasoning_effort','enable_thinking'],
++  'openai-responses':['temperature','top_p'],
++  'anthropic-messages':['temperature','top_p','top_k'],
++  gemini:['temperature','topP','topK'],
++ };
++ for(const [key,value]of Object.entries(p)){
++  if(!allowed[profile.protocol].includes(key))throw invalid();
++  if(key==='reasoning_effort'){if(typeof value!=='string'||!['none','minimal','low','medium','high','xhigh'].includes(value))throw invalid();}
++  else if(key==='enable_thinking'){if(typeof value!=='boolean')throw invalid();}
++  else {
++   if(typeof value!=='number'||!Number.isFinite(value))throw invalid();
++   if(key==='temperature'&&(value<0||value>(profile.protocol==='anthropic-messages'?1:2)))throw invalid();
++   if(['top_p','topP'].includes(key)&&(value<0||value>1))throw invalid();
++   if(['top_k','topK'].includes(key)&&(!Number.isInteger(value)||value<1||value>10000))throw invalid();
++   if(['presence_penalty','frequency_penalty'].includes(key)&&Math.abs(value)>2)throw invalid();
++   if(key==='seed'&&(!Number.isInteger(value)||Math.abs(value)>2147483647))throw invalid();
++  }
++ }
++ return url;
++}
++
++export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=true):{url:string;headers:Record<string,string>;body:any} {
++ const url=validateAiProfile(profile);
++ if(!prompt||typeof prompt.system!=='string'||typeof prompt.user!=='string'||!prompt.user.trim()||prompt.system.length+prompt.user.length>200000)throw failure('AI_INVALID_PROMPT');
++ const headers:Record<string,string>={'Content-Type':'application/json','Accept':stream?'text/event-stream':'application/json'};
++ const key=profile.credential?.kind==='api-key'?profile.credential.apiKey:'';
++ if(!key&&url.protocol==='https:')throw failure('AI_KEY_REQUIRED');
++ let body:any;
++ const addPath=(suffix:string,root:string)=>{let base=url.pathname.replace(/\/+$/,'');if(!base)base=root;if(!base.endsWith(suffix))base+=suffix;url.pathname=base;};
++ switch(profile.protocol){
++  case'openai-chat':
++   addPath('/chat/completions','/v1');if(key)headers.Authorization='Bearer '+key;
++   body={model:profile.model,messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user}],max_tokens:profile.maxOutputTokens,stream,...profile.parameters};break;
++  case'openai-responses':
++   addPath('/responses','/v1');if(key)headers.Authorization='Bearer '+key;
++   body={model:profile.model,instructions:prompt.system,input:prompt.user,max_output_tokens:profile.maxOutputTokens,stream,store:false,...profile.parameters};break;
++  case'anthropic-messages':
++   addPath('/messages','/v1');if(key)headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';
++   body={model:profile.model,system:prompt.system,messages:[{role:'user',content:prompt.user}],max_tokens:profile.maxOutputTokens,stream,...profile.parameters};break;
++  case'gemini':{
++   let base=url.pathname.replace(/\/+$/,'')||'/v1beta';
++   if(/:(?:streamGenerateContent|generateContent)$/.test(base))base=base.replace(/:(?:streamGenerateContent|generateContent)$/,stream?':streamGenerateContent':':generateContent');
++   else base+='/models/'+encodeURIComponent(profile.model)+(stream?':streamGenerateContent':':generateContent');
++   url.pathname=base;if(stream)url.searchParams.set('alt','sse');if(key)headers['x-goog-api-key']=key;
++   body={systemInstruction:{parts:[{text:prompt.system}]},contents:[{role:'user',parts:[{text:prompt.user}]}],generationConfig:{maxOutputTokens:profile.maxOutputTokens,...profile.parameters}};break;
++  }
++  default:throw failure('AI_PROTOCOL_NOT_READY');
++ }
++ return{url:url.toString(),headers,body};
++}
++
++function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:string;done:boolean} {
++ if(!value||typeof value!=='object'||Array.isArray(value))throw failure('AI_INVALID_RESPONSE');
++ if(value.error||value.type==='error'||value.type==='response.failed')throw failure('AI_REMOTE_ERROR');
++ let text='',done=false;
++ switch(profile.protocol){
++  case'openai-chat':{
++   const choices=value.choices;if(!Array.isArray(choices))throw failure('AI_INVALID_RESPONSE');
++   const c=choices[0];if(!c)return{text:'',done:false};const finish=c.finish_reason;
++   if(finish==='length'||finish==='content_filter')throw failure('AI_INCOMPLETE');
++   const content=stream?c.delta?.content:c.message?.content;
++   if(typeof content==='string')text=content;
++   else if(Array.isArray(content))text=content.filter(p=>p.type==='text'&&typeof p.text==='string').map(p=>p.text).join('');
++   else if(content!==undefined&&content!==null)throw failure('AI_INVALID_RESPONSE');
++   done=!!finish||!stream;break;
++  }
++  case'openai-responses':
++   if(!stream){if(value.status&&value.status!=='completed')throw failure('AI_INCOMPLETE');if(!Array.isArray(value.output))throw failure('AI_INVALID_RESPONSE');text=value.output.flatMap((v:any)=>v.type==='message'&&Array.isArray(v.content)?v.content:[]).filter((v:any)=>v.type==='output_text'&&typeof v.text==='string').map((v:any)=>v.text).join('');done=true;}
++   else if(value.type==='response.output_text.delta'){if(typeof value.delta!=='string')throw failure('AI_INVALID_RESPONSE');text=value.delta;}
++   else if(value.type==='response.completed'){if(value.response?.status&&value.response.status!=='completed')throw failure('AI_INCOMPLETE');done=true;}
++   else if(value.type==='response.incomplete')throw failure('AI_INCOMPLETE');
++   break;
++  case'anthropic-messages':
++   if(!stream){if(value.stop_reason==='max_tokens')throw failure('AI_INCOMPLETE');if(!Array.isArray(value.content))throw failure('AI_INVALID_RESPONSE');text=value.content.filter((v:any)=>v.type==='text'&&typeof v.text==='string').map((v:any)=>v.text).join('');done=true;}
++   else if(value.type==='content_block_start'&&value.content_block?.type==='text'){if(typeof value.content_block.text!=='string')throw failure('AI_INVALID_RESPONSE');text=value.content_block.text;}
++   else if(value.type==='content_block_delta'&&value.delta?.type==='text_delta'){if(typeof value.delta.text!=='string')throw failure('AI_INVALID_RESPONSE');text=value.delta.text;}
++   else if(value.type==='message_delta'&&value.delta?.stop_reason==='max_tokens')throw failure('AI_INCOMPLETE');
++   else if(value.type==='message_stop')done=true;
++   break;
++  case'gemini':{
++   const c=value.candidates?.[0];if(!c){if(value.promptFeedback?.blockReason)throw failure('AI_REMOTE_ERROR');if(!Array.isArray(value.candidates))throw failure('AI_INVALID_RESPONSE');return{text:'',done:false};}
++   if(c.finishReason&&c.finishReason!=='STOP')throw failure('AI_INCOMPLETE');
++   if(c.content?.parts&&!Array.isArray(c.content.parts))throw failure('AI_INVALID_RESPONSE');
++   text=(c.content?.parts||[]).filter((p:any)=>typeof p.text==='string'&&!p.thought).map((p:any)=>p.text).join('');done=c.finishReason==='STOP'||!stream;break;
++  }
++  default:throw failure('AI_PROTOCOL_NOT_READY');
++ }
++ return{text,done};
++}
++
++export async function listAiModels(profile:AiProfileInput,options:{signal?:AbortSignal;fetch?:typeof fetch}={}):Promise<string[]>{
++ const request=buildAiRequest(profile,{system:'',user:'Model discovery'},false),url=new URL(request.url);
++ if(profile.protocol==='gemini')url.pathname=url.pathname.replace(/\/models\/[^/]+:generateContent$/,'/models');
++ else url.pathname=url.pathname.replace(/\/(chat\/completions|responses|messages)$/,'/models');
++ url.search='';const timer=new AbortController(),timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);const signal=options.signal?AbortSignal.any([options.signal,timer.signal]):timer.signal;
++ let reader:ReadableStreamDefaultReader<Uint8Array>|undefined;
++ try{
++  const response=await(options.fetch||fetch)(url,{method:'GET',headers:{...request.headers,Accept:'application/json'},redirect:'error',signal});
++  if(!response.ok){await response.body?.cancel();throw failure('AI_HTTP_'+response.status);}if(!response.body)throw failure('AI_INVALID_RESPONSE');
++  reader=response.body.getReader();const chunks:Uint8Array[]=[];let size=0;
++  while(true){const chunk=await reader.read();if(chunk.done)break;size+=chunk.value.byteLength;if(size>MAX_RESPONSE_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');chunks.push(chunk.value);}
++  let value;try{value=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw failure('AI_INVALID_RESPONSE');}
++  const list=profile.protocol==='gemini'?value.models:value.data;if(!Array.isArray(list))throw failure('AI_INVALID_RESPONSE');
++  return[...new Set<string>(list.map(v=>profile.protocol==='gemini'?v?.name?.replace(/^models\//,''):v?.id).filter(v=>typeof v==='string'&&v.length>0&&v.length<=200))].slice(0,1000);
++ }catch(error){if(options.signal?.aborted)throw failure('AI_CANCELLED');if(timer.signal.aborted)throw failure('AI_TIMEOUT');if(error instanceof Error&&/^AI_[A-Z_0-9]+$/.test(error.message))throw error;throw failure('AI_REQUEST_FAILED');}
++ finally{clearTimeout(timeout);await reader?.cancel().catch(()=>{});reader?.releaseLock();}
++}
++
++export async function generateText(profile:AiProfileInput,prompt:AiPrompt,options:{stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;fetch?:typeof fetch}={}):Promise<string>{
++ const stream=options.stream!==false,request=buildAiRequest(profile,prompt,stream),timer=new AbortController();
++ const timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);
++ const signal=options.signal?AbortSignal.any([options.signal,timer.signal]):timer.signal;
++ let text='',bytes=0,reader:ReadableStreamDefaultReader<Uint8Array>|undefined;
++ const emit=(delta:string)=>{if(!delta)return;text+=delta;if(text.length>MAX_RESPONSE_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');options.onDelta?.(delta);};
++ try{
++  const response=await(options.fetch||fetch)(request.url,{method:'POST',headers:request.headers,body:JSON.stringify(request.body),redirect:'error',signal});
++  if(!response.ok){await response.body?.cancel();throw failure('AI_HTTP_'+response.status);}
++  if(!response.body)throw failure('AI_INVALID_RESPONSE');
++  reader=response.body.getReader();const decoder=new TextDecoder('utf-8',{fatal:true});let pending='',done=false;
++  const sse=stream&&!response.headers.get('content-type')?.includes('application/json');
++  const frame=(raw:string)=>{
++   if(new TextEncoder().encode(raw).byteLength>MAX_EVENT_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');
++   const lines=raw.split(/\r?\n/),data=lines.filter(line=>line.startsWith('data:')).map(line=>line.slice(5).replace(/^ /,'')).join('\n');
++   const event=lines.find(line=>line.startsWith('event:'))?.slice(6).trim();
++   if(event==='error')throw failure('AI_REMOTE_ERROR');if(!data)return;
++   if(data==='[DONE]'){if(profile.protocol!=='openai-chat')throw failure('AI_INVALID_RESPONSE');done=true;return;}
++   let value;try{value=JSON.parse(data);}catch{throw failure('AI_INVALID_RESPONSE');}
++   const decoded=decodeObject(profile,value,true);emit(decoded.text);done||=decoded.done;
++  };
++  while(!done){
++   const chunk=await reader.read();if(chunk.done){pending+=decoder.decode();break;}
++   bytes+=chunk.value.byteLength;if(bytes>MAX_RESPONSE_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');
++   pending+=decoder.decode(chunk.value,{stream:true});
++   if(sse){let split:RegExpExecArray|null;while((split=/\r?\n\r?\n/.exec(pending))){const raw=pending.slice(0,split.index);pending=pending.slice(split.index+split[0].length);frame(raw);if(done)break;}if(pending.length>MAX_EVENT_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');}
++  }
++  if(!sse){let value;try{value=JSON.parse(pending);}catch{throw failure('AI_INVALID_RESPONSE');}const decoded=decodeObject(profile,value,false);emit(decoded.text);done=decoded.done;}
++  else if(!done&&pending.trim())frame(pending);
++  if(!done||!text.trim())throw failure('AI_INCOMPLETE');return text;
++ }catch(error){
++  if(options.signal?.aborted)throw failure('AI_CANCELLED');if(timer.signal.aborted)throw failure('AI_TIMEOUT');
++  if(error instanceof Error&&/^AI_[A-Z_0-9]+$/.test(error.message))throw error;
++  throw failure('AI_REQUEST_FAILED');
++ }finally{clearTimeout(timeout);await reader?.cancel().catch(()=>{});reader?.releaseLock();}
++}
+diff --git a/src/main/ai-profiles.ts b/src/main/ai-profiles.ts
+new file mode 100644
+index 0000000..5610a73
+--- /dev/null
++++ b/src/main/ai-profiles.ts
+@@ -0,0 +1,31 @@
++import type {DatabaseSync} from 'node:sqlite';
++import type {AiProfileInput,AiProfileView,AiCredential} from '../shared/ai';
++import {validateAiProfile} from './ai-client';
++type SecretBox={available:()=>boolean;encrypt:(text:string)=>Uint8Array;decrypt:(data:Uint8Array)=>string};
++export class AiProfiles {
++ private session=new Map<string,AiCredential>();
++ constructor(private db:DatabaseSync,private box:SecretBox){}
++ private row(id:string){if(typeof id!=='string'||!/^[\w-]{1,100}$/.test(id))throw new Error('AI_INVALID_CONFIG');const row=this.db.prepare('SELECT * FROM ai_profiles WHERE id=?').get(id);if(!row)throw new Error('AI_PROFILE_MISSING');return row;}
++ private view(row:Record<string,unknown>):AiProfileView {const secret=row.secret as Uint8Array|null,temporary=this.session.has(row.id as string);return{...JSON.parse(row.payload as string),hasCredential:temporary||!!secret,credentialStorage:temporary?'session':secret?'encrypted':'none',verification:'configured'};}
++ list():AiProfileView[]{return this.db.prepare('SELECT * FROM ai_profiles ORDER BY rowid').all().map(row=>this.view(row));}
++ save(input:AiProfileInput):AiProfileView {
++  validateAiProfile(input);const{credential}=input;
++  const metadata={id:input.id,name:input.name,protocol:input.protocol,endpoint:input.endpoint,model:input.model,maxOutputTokens:input.maxOutputTokens,timeoutMs:input.timeoutMs,parameters:input.parameters};
++  const old=this.db.prepare('SELECT secret,payload FROM ai_profiles WHERE id=?').get(input.id);
++  const changedOrigin=!!old&&new URL(JSON.parse(old.payload as string).endpoint).origin!==new URL(input.endpoint).origin;
++  let secret=(old?.secret as Uint8Array|null)||null;
++  if(changedOrigin&&!credential)secret=null;
++  let temporary:AiCredential|undefined;
++  if(credential){if(this.box.available())secret=this.box.encrypt(JSON.stringify(credential));else{secret=null;temporary=structuredClone(credential);}}
++  this.db.prepare('INSERT INTO ai_profiles VALUES(?,?,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload,secret=excluded.secret').run(input.id,JSON.stringify(metadata),secret);
++  if(changedOrigin&&!credential)this.session.delete(input.id);
++  if(credential){if(temporary)this.session.set(input.id,temporary);else this.session.delete(input.id);}
++  return this.view(this.row(input.id));
++ }
++ resolve(id:string):AiProfileInput {
++  const row=this.row(id),metadata=JSON.parse(row.payload as string);let credential=this.session.get(id);
++  if(!credential&&row.secret){try{if(!this.box.available())throw Error();credential=JSON.parse(this.box.decrypt(row.secret as Uint8Array));}catch{throw new Error('AI_CREDENTIAL_UNAVAILABLE');}}
++  const result={...metadata,credential};validateAiProfile(result);return result;
++ }
++ delete(id:string){this.row(id);this.db.prepare('DELETE FROM ai_profiles WHERE id=?').run(id);this.session.delete(id);}
++}
+diff --git a/src/renderer/model-settings.tsx b/src/renderer/model-settings.tsx
+new file mode 100644
+index 0000000..d45f08a
+--- /dev/null
++++ b/src/renderer/model-settings.tsx
+@@ -0,0 +1,42 @@
++import {useLayoutEffect,useRef,useState} from 'react';
++import {unwrap} from '../shared/model';
++import type{AiProfileInput,AiProfileView,AiProtocol}from'../shared/ai';
++const presets=[
++ ['自定义 OpenAI','openai-chat','https://api.openai.com/v1'],
++ ['DeepSeek','openai-chat','https://api.deepseek.com/v1'],
++ ['阿里云百炼 / 通义千问','openai-chat','https://dashscope.aliyuncs.com/compatible-mode/v1'],
++ ['火山方舟 / 豆包','openai-chat','https://ark.cn-beijing.volces.com/api/v3/chat/completions'],
++ ['百度千帆','openai-chat','https://qianfan.baidubce.com/v2/chat/completions'],
++ ['腾讯混元','openai-chat','https://api.hunyuan.cloud.tencent.com/v1'],
++ ['Claude','anthropic-messages','https://api.anthropic.com/v1/messages'],
++ ['Gemini','gemini','https://generativelanguage.googleapis.com/v1beta'],
++] as const;
++const empty=():AiProfileInput=>({id:crypto.randomUUID(),name:'新模型配置',protocol:'openai-chat',endpoint:presets[0][2],model:'',maxOutputTokens:1024,timeoutMs:30000,parameters:{}});
++export function ModelSettings({close,returnFocus}:{close:()=>void;returnFocus:HTMLElement|null}){
++ const dialog=useRef<HTMLDialogElement>(null);const[profiles,setProfiles]=useState<AiProfileView[]>([]),[draft,setDraft]=useState(empty),[key,setKey]=useState(''),[selected,setSelected]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[parameters,setParameters]=useState('{}');
++ const [models,setModels]=useState<string[]>([]);
++ const selectedView=profiles.find(p=>p.id===selected);
++ const refresh=async()=>{const list=unwrap(await window.enlumor.listAiProfiles());setProfiles(list);return list;};
++ useLayoutEffect(()=>{const el=dialog.current!;el.showModal();void refresh().catch(e=>setError(String(e)));return()=>{el.close();queueMicrotask(()=>returnFocus?.isConnected&&returnFocus.focus());};},[]);
++ const choose=(id:string)=>{setModels([]);setSelected(id);const p=profiles.find(p=>p.id===id);setDraft(p?{id:p.id,name:p.name,protocol:p.protocol,endpoint:p.endpoint,model:p.model,maxOutputTokens:p.maxOutputTokens,timeoutMs:p.timeoutMs,parameters:p.parameters}:empty());setParameters(JSON.stringify(p?.parameters||{},null,2));setKey('');setMessage('');setError('');};
++ const run=async(fn:()=>Promise<void>)=>{setBusy(true);setMessage('');setError('');try{await fn();}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}};
++ const save=()=>run(async()=>{let parsed;try{parsed=JSON.parse(parameters);}catch{throw Error('AI_INVALID_CONFIG: 参数必须是 JSON 对象');}const saved=unwrap(await window.enlumor.saveAiProfile({...draft,parameters:parsed,credential:key?{kind:'api-key',apiKey:key}:undefined}));await refresh();setDraft({...draft,id:saved.id,parameters:parsed});setSelected(saved.id);setKey('');setMessage('配置已保存');});
++ return <dialog ref={dialog} className="ai-settings" aria-modal="true" aria-labelledby="ai-title" onCancel={event=>{event.preventDefault();if(!busy)close();}}><form onSubmit={event=>{event.preventDefault();void save();}}>
++  <h2 id="ai-title">模型设置</h2><p>服务与协议独立配置。仅“测试连接”发送固定短句；不会发送 PDF。</p>
++  <fieldset disabled={busy}>
++   <label>已有配置<select aria-label="已有配置" value={selected} onChange={e=>choose(e.target.value)}><option value="">新建配置</option>{profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
++   <label>厂商预设<select aria-label="厂商预设" defaultValue="" onChange={e=>{if(!e.target.value)return;const p=presets[Number(e.target.value)];setDraft({...draft,name:p[0],protocol:p[1],endpoint:p[2],model:''});}}><option value="">选择或手动配置</option>{presets.map((p,i)=><option key={p[0]} value={i}>{p[0]}</option>)}</select></label>
++   <label>配置名称<input aria-label="配置名称" autoFocus value={draft.name} maxLength={100} onChange={e=>setDraft({...draft,name:e.target.value})}/></label>
++   <label>协议<select aria-label="协议" value={draft.protocol} onChange={e=>setDraft({...draft,protocol:e.target.value as AiProtocol})}><option value="openai-chat">OpenAI Chat Completions</option><option value="openai-responses">OpenAI Responses</option><option value="anthropic-messages">Claude Messages</option><option value="gemini">Gemini GenerateContent</option></select></label>
++   <label>接口地址<input aria-label="接口地址" value={draft.endpoint} maxLength={2000} onChange={e=>setDraft({...draft,endpoint:e.target.value})}/></label>
++   <datalist id="ai-models">{models.map(id=><option key={id} value={id}/>)}</datalist><label>模型 ID<input list="ai-models" aria-label="模型 ID" value={draft.model} maxLength={200} placeholder="填写服务商模型 ID" onChange={e=>setDraft({...draft,model:e.target.value})}/></label>
++   <label>API 密钥<input aria-label="API 密钥" type="password" autoComplete="off" value={key} placeholder={selectedView?.hasCredential?'已保存；留空保留原密钥':'填写密钥，本地服务可留空'} onChange={e=>setKey(e.target.value)}/></label>
++   <label>最大输出 tokens<input aria-label="最大输出 tokens" type="number" min={1} max={32768} value={draft.maxOutputTokens} onChange={e=>setDraft({...draft,maxOutputTokens:Number(e.target.value)})}/></label>
++   <label>超时（毫秒）<input aria-label="超时（毫秒）" type="number" min={100} max={120000} value={draft.timeoutMs} onChange={e=>setDraft({...draft,timeoutMs:Number(e.target.value)})}/></label>
++   <label>协议参数 JSON<textarea aria-label="协议参数 JSON" value={parameters} onChange={e=>setParameters(e.target.value)}/></label>
++  </fieldset>
++  {selectedView?.credentialStorage==='session'&&<p role="status">系统加密不可用，密钥仅保留本次会话；重启后需重新填写。</p>}
++  {error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
++  <div className="ai-actions"><button type="button" disabled={busy||!selected} onClick={()=>void run(async()=>{try{setModels(unwrap(await window.enlumor.listAiModels(selected)));setMessage('模型列表已读取；也可手动填写');}catch(e){throw Error((e instanceof Error?e.message:String(e))+'；仍可手动填写模型 ID');}})}>读取模型列表</button><button type="button" disabled={busy} onClick={close}>关闭设置</button><button type="button" disabled={busy||!selected} onClick={()=>void run(async()=>{unwrap(await window.enlumor.deleteAiProfile(selected));await refresh();choose('');setMessage('配置已删除');})}>删除配置</button><button type="button" disabled={busy||!selected} onClick={()=>void run(async()=>{unwrap(await window.enlumor.testAiProfile(selected));setMessage('连接测试成功');})}>测试连接</button><button type="submit" disabled={busy}>{busy?'处理中…':'保存配置'}</button></div>
++ </form></dialog>;
++}

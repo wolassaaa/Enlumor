@@ -1,0 +1,30 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+(node:38656) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/ai-profiles.test.ts (6 tests | 1 failed) 77ms
+   × changing service origin does not silently reuse the old API credential 15ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/ai-profiles.test.ts > changing service origin does not silently reuse the old API credential
+AssertionError: expected true to be false // Object.is equality
+
+- Expected
++ Received
+
+- false
++ true
+
+ ❯ tests/ai-profiles.test.ts:12:371
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 5 passed (6)
+   Start at  02:28:14
+   Duration  250ms (tests 61%, transform 23%, import 14%, worker 3%)
+

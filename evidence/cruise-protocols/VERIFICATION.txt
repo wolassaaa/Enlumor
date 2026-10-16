@@ -1,0 +1,51 @@
+Cruise Task1 development milestone — NOT a published Cruise release
+Branch feat/cruise-overnight; baseline e67681ccf008ba404949e29be8365d3ece39a94a.
+Changed fields: AiProtocol/AiProfileInput; ai_profiles + SQLite schema3; encrypted/session-only credentials; four AI request/response adapters; model-settings native dialog and narrow IPC.
+User explicitly approved implementation2026-10-17; heartbeat enlumor ACTIVE, cutoff08:00 Asia/Taipei. Remaining plan tasks must continue without repeated approval questions.
+
+Four artifact paths (all reopened and checked):
+MODIFIED_FILE D:/codex project/Enlumor/evidence/cruise-protocols/MODIFIED_FILE.ts
+DIFF_FILE D:/codex project/Enlumor/evidence/cruise-protocols/DIFF.patch
+VERIFICATION D:/codex project/Enlumor/evidence/cruise-protocols/VERIFICATION.txt
+ROLLBACK D:/codex project/Enlumor/evidence/cruise-protocols/ROLLBACK.sh
+Original byte SHA256 manifest: originals.json, seven original files retained with -text attributes. New files absent at baseline; rollback deletes only their isolated copies, not live files.
+
+BASELINE command: npx vitest run tests/ai-client.test.ts
+Input: initial18-test protocol contract suite before module creation; four protocols JSON/SSE, local HTTP fixtures, UTF-8 byte splits, timeout/cancel and errors.
+Literal result: Test Files 1 failed (1); Tests no tests
+Exit status1. BASELINE.log. Failure is explicitly missing new ai-client module, not a false behavioral failure.
+Additional behavioral RED: EDGE_RED.log2 failed/19passed (parameter types and Claude initial block), METADATA_RED.log1failed/4passed, ORIGIN_RED.log1failed/5passed, MODELS_RED.log4failed/21passed, UI_RED.log2failed, MODELS_UI_RED.log1failed. Each corrected and included in final green suites.
+
+MODIFIED command: npx vitest run tests/ai-client.test.ts tests/ai-profiles.test.ts
+Input: local HTTP servers only; final25 protocol/model-discovery checks plus6 encrypted-profile/migration/validation checks. SecretBox injected for deterministic crypto and unavailable-encryption tests.
+Literal result: Test Files 2 passed (2); Tests 31 passed (31)
+Exit status0. MODIFIED.log.
+
+Full unit command: npm test
+Input: entire current unit suite including old reader/storage tests.
+Literal result: Test Files 13 passed (13); Tests 66 passed (66)
+Exit status0. UNIT.log.
+
+Build command: npm run build
+Input: TypeScript typecheck + actual Electron/React bundle.
+Literal result: built in548ms (first successful settings build); final current build also exited0. BUILD.log.
+Exit status0. TYPECHECK.log also reports tsc --noEmit exit0.
+
+Actual Electron command: npx playwright test tests/e2e/ai-settings.spec.ts
+Input: fresh temporary user-data profiles; actual Electron safeStorage + SQLite; save/restart/delete config, credential masked and not returned, fixed-text connection test against local HTTP server, model-list503 retains manual model, invalid endpoint preserves draft, Escape restores trigger focus. Only fixture secrets; no real external API calls.
+Literal result: 2 passed (3.4s)
+Exit status0. UI_GREEN.log. model-settings.png captured and reopened with view_image; password field empty after save.
+
+ROLLBACK command: & 'C:/Program Files/Git/bin/bash.exe' evidence/cruise-protocols/ROLLBACK.sh
+Input: unique bounded .cache/cruise-protocols-rollback/run-* source copy, restore seven hash-checked original files, remove only four new product modules in copy, build and launch old app with new temporary profile.
+Literal output: ROLLBACK: MODEL_SETTINGS=0; SCHEMA=2; LIVE_SOURCE_UNCHANGED=YES
+Exit status0. ROLLBACK.log.
+Restored behavior/status: model settings absent and old schema2 recreated in isolated profile; current source remains modified. Old reader opens200-page benchmark. No personal database rollback/delete. Helper first used unsupported dynamic import inside Electron evaluate; replaced with host read-only SQLite verification, successful rerun recorded.
+
+Release status: latest still validated0.1.12. Current development schema3 has pre-v3 backup, older schema2 app will reject a v3 database; personal userData was never opened/migrated by this work. Do not move latest before Task2 review and complete release:verified gate.
+Review cadence: Task1done, count1/2; no early independent review. Task2 blocks/anchors next, then a single cumulative review.
+Ruling: requestId registry/explanation IPC deferred toTask3, which depends on Task2 block validation. Current connection test one-flight + cancellation on quit. Additional Kimi/GLM/MiniMax/SiliconFlow presets remain pending official endpoint verification; only five checked domestic presets included now.
+CredentialStorage added as masked readonly metadata to expose encrypted/session-only/none. Changed service origin clears old credential unless explicitly re-entered, preventing silent key reuse. Whitelist persistence excludes accidental extra input secrets.
+
+Reusable continuation:
+Read docs/CRUISE-PROGRESS.md and the approved overnight plan. Task1 model settings/protocols are already implemented; do not redo them. ContinueTask2 blocks/anchors, then reviewTask1+2, fixing Important with RED->GREEN beforeTask3. Stop starting work08:00 Asia/Taipei, retain last verified build and personal data. No GitHub push or real billed-model tests.

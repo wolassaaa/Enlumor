@@ -1,0 +1,27 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+(node:46636) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/ai-profiles.test.ts (5 tests | 1 failed) 68ms
+   × persists only whitelisted metadata, not extra input secrets 13ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/ai-profiles.test.ts > persists only whitelisted metadata, not extra input secrets
+AssertionError: expected '{"payload":"{\"id\":\"local\",\"name\…' not to contain 'extra-private-value'
+
+Expected: "extra-private-value"
+Received: "{"payload":"{\"id\":\"local\",\"name\":\"本地模型\",\"protocol\":\"openai-chat\",\"endpoint\":\"http://127.0.0.1:12345/v1\",\"model\":\"fixture\",\"maxOutputTokens\":256,\"timeoutMs\":1000,\"parameters\":{},\"accidentalSecret\":\"extra-private-value\"}"}"
+
+ ❯ tests/ai-profiles.test.ts:11:376
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 4 passed (5)
+   Start at  02:18:41
+   Duration  242ms (tests 57%, transform 26%, import 14%, worker 3%)
+

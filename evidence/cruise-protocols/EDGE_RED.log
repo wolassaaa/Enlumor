@@ -1,0 +1,48 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+ ❯ tests/ai-client.test.ts (21 tests | 2 failed) 277ms
+   × rejects incorrectly typed reasoning and excessive numeric parameters 3ms
+   × Claude preserves initial content_block_start text and rejects incomplete EOF 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/ai-client.test.ts > rejects incorrectly typed reasoning and excessive numeric parameters
+AssertionError: expected [Function] to throw an error
+
+- Expected:
+null
+
++ Received:
+undefined
+
+ ❯ tests/ai-client.test.ts:57:156
+     55| });
+     56| it('rejects incorrectly typed reasoning and excessive numeric paramete…
+     57|  for(const parameters of [{reasoning_effort:['low']},{temperature:5},{…
+       |                                                                                                                                                            ^
+     58| });
+     59| it('Claude preserves initial content_block_start text and rejects inco…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/ai-client.test.ts > Claude preserves initial content_block_start text and rejects incomplete EOF
+Error: AI_INCOMPLETE
+ ❯ failure src/main/ai-client.ts:6:30
+      4| const protocols=['openai-chat','openai-responses','anthropic-messages'…
+      5| const invalid=()=>new Error('AI_INVALID_CONFIG');
+      6| const failure=(code:string)=>new Error(code);
+       |                              ^
+      7|
+      8| /** Caller supplies an explicitly selected service; no redirects or UR…
+ ❯ generateText src/main/ai-client.ts:128:32
+ ❯ tests/ai-client.test.ts:60:281
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 19 passed (21)
+   Start at  02:14:08
+   Duration  460ms (tests 83%, import 8%, transform 8%, worker 1%)
+

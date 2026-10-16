@@ -1,4 +1,6 @@
-import { app, BrowserWindow, dialog, ipcMain, protocol, net } from 'electron';
+import { app, BrowserWindow, dialog, ipcMain, protocol, net, safeStorage } from 'electron';
+import {AiProfiles} from './ai-profiles';
+import {generateText,listAiModels} from './ai-client';
 import { readFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -11,6 +13,8 @@ app.setName('Enlumor');
 const customData = app.commandLine.getSwitchValue('user-data-dir');
 if (customData) { mkdirSync(customData, { recursive: true }); app.setPath('userData', customData); }
 let workspace: Workspace;
+let aiProfiles:AiProfiles;
+let aiFlight:AbortController|undefined;
 let window: BrowserWindow;
 let closeReady = false, waitingClose = false;
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -28,6 +32,7 @@ async function choosePdf(): Promise<string | null> {
 app.whenReady().then(() => {
   mkdirSync(app.getPath('userData'), { recursive: true });
   workspace = new Workspace(path.join(app.getPath('userData'), 'workspace.sqlite'));
+  aiProfiles=new AiProfiles(workspace.db,{available:()=>safeStorage.isEncryptionAvailable(),encrypt:text=>safeStorage.encryptString(text),decrypt:data=>safeStorage.decryptString(Buffer.from(data))});
   const rendererRoot = path.resolve(__dirname, '../renderer');
   protocol.handle('enlumor', request => {
     const url = new URL(request.url);
@@ -50,6 +55,16 @@ app.whenReady().then(() => {
     }
   });
   handle('document:list', () => workspace.list());
+  handle('ai:profiles:list',()=>aiProfiles.list());
+  handle('ai:profiles:save',input=>aiProfiles.save(input));
+  handle('ai:profiles:delete',id=>aiProfiles.delete(id));
+  handle('ai:profiles:models',id=>listAiModels(aiProfiles.resolve(id),{fetch:(input,init)=>net.fetch(String(input),init)}));
+  handle('ai:profiles:test',async id=>{
+    if(aiFlight)throw new Error('AI_BUSY');
+    const profile=aiProfiles.resolve(id),controller=aiFlight=new AbortController();
+    try{await generateText(profile,{system:'Connection test. Reply with OK only.',user:'OK'},{stream:false,signal:controller.signal,fetch:(input,init)=>net.fetch(String(input),init)});}
+    finally{if(aiFlight===controller)aiFlight=undefined;}
+  });
   handle('layout:get', () => workspace.layout());
   handle('layout:save', layout => workspace.saveLayout(layout));
   handle('tabs:get', () => workspace.tabs());
@@ -88,4 +103,4 @@ app.whenReady().then(() => {
   void window.loadURL(process.env.ENLUMOR_DEV_URL || 'enlumor://app/index.html');
 });
 app.on('window-all-closed', () => app.quit());
-app.on('will-quit', () => workspace?.close());
+app.on('will-quit', () => {aiFlight?.abort();workspace?.close();});

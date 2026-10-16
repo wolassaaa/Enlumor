@@ -1,3 +1,4 @@
+import type {AiProfileInput,AiProfileView} from './ai';
 export type Quad = number[];
 export type Annotation = {
   id: string; documentId: string; fingerprint: string; type: 'highlight' | 'underline' | 'strikeout' | 'line' | 'arrow' | 'ink' | 'note';
@@ -13,6 +14,11 @@ export type Reply<T> = { ok: true; value: T } | { ok: false; error: { code: stri
 export type LayoutPreferences = { left: number; right: number; spacing: 12 | 16 | 24 };
 export type TabSession = { openIds: string[]; activeId: string | null };
 export type Bridge = {
+  listAiProfiles():Promise<Reply<AiProfileView[]>>;
+  saveAiProfile(input:AiProfileInput):Promise<Reply<AiProfileView>>;
+  deleteAiProfile(id:string):Promise<Reply<void>>;
+  testAiProfile(id:string):Promise<Reply<void>>;
+  listAiModels(id:string):Promise<Reply<string[]>>;
   getLayout(): Promise<Reply<LayoutPreferences>>;
   saveLayout(layout: LayoutPreferences): Promise<Reply<void>>;
   getTabs(): Promise<Reply<TabSession | null>>;
