@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Bridge } from '../shared/model';
 const bridge: Bridge = {
+  onAppBackground:handler=>{const listener=()=>handler();ipcRenderer.on('cruise:background',listener);return()=>ipcRenderer.removeListener('cruise:background',listener);},
   getCruiseSession:id=>ipcRenderer.invoke('cruise:session:get',id),
   saveCruiseSession:session=>ipcRenderer.invoke('cruise:session:save',session),
   startBlockExplanation:input=>ipcRenderer.invoke('cruise:start',input),

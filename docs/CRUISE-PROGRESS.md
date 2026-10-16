@@ -66,3 +66,9 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 - 修复本次真实RED：flush最前新增await使flight.current取值延后，load自等待导致PDF不显示；将Cruise flush放在原flight await之后，3项Electron均转绿。历史schema2模拟测试必须删除后来新增cruise表后再标version2，最终schema断言更新4，保留原pre-v3备份检查。
 - Task3+4唯一只读reviewer cruise_batch_two_review已运行，不重复派审；收到Important后RED→GREEN。全套Electron正在跑。Task5/6本轮后移，优先完整发布门禁及性能验收。
 - 仍保留已验证0.1.12，个人userData从未用于测试；当前修改未作为release发布。
+
+## 2026-10-17 06:57 review完成与发布候选
+- Task4提交1d72b3f。唯一reviewer cruise_batch_two_review报告2项Important：空文字页skip重复读取、可见但失焦仍自动调用。两项各实际RED，已修复后Cruise4项Electron通过23.8s、全部94单测通过，隔离回退再次通过。
+- 修复空页先reader.go同步页码；主进程BrowserWindow blur取消解释并发窄background事件，Panel停止计时器。没有第二轮review空转。
+- 全套开发Electron92项通过3.7m（在两项修复前）；下一步版本0.1.13候选完整release:verified，含最终EXE全套93项及200页压力两样本/画笔门禁。通过前latest仍0.1.12，不推GitHub。
+- 本轮不再扩展Task5/6。若发布失败修门禁，保留原latest；07:40后不开新任务，08:00停止并暂停automation enlumor。

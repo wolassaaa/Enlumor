@@ -17,6 +17,7 @@ export type Reply<T> = { ok: true; value: T } | { ok: false; error: { code: stri
 export type LayoutPreferences = { left: number; right: number; spacing: 12 | 16 | 24 };
 export type TabSession = { openIds: string[]; activeId: string | null };
 export type Bridge = {
+  onAppBackground(handler:()=>void):()=>void;
   getCruiseSession(documentId:string):Promise<Reply<CruiseSession|null>>;
   saveCruiseSession(session:CruiseSession):Promise<Reply<void>>;
   startBlockExplanation(input:ExplanationInput):Promise<Reply<void>>;

@@ -1,11 +1,11 @@
-Branch feat/cruise-overnight. Fields: CruiseSession/mode/pace/ackKey, schema4 migration withpre-v4 backup, paused restart. Task3+4 independent review currently running, release remains0.1.12.
+Branch feat/cruise-overnight. Fields: CruiseSession/mode/pace/ackKey, schema4 migration withpre-v4 backup, paused restart. Task3+4 independent review complete; Important2 fixed RED->GREEN, release remains0.1.12.
 BASELINE: npx vitest run tests/cruise-session.test.ts. InputmissingCruiseSessions module/contracts. Literal Test Files 1 failed (1);Tests no tests;exit1.
 UI_RED: npx playwright test tests/e2e/cruise.spec.ts -g "auto pacing";missing persistence controls;exit1. During implementation all3UI failed with textLayer absent due flush/flight self-await. Fixed by preserving initial flight await ordering, actual3UI green.
 MODIFIED: npx vitest run tests/cruise-session.test.ts tests/cruise.test.ts tests/cruise-requests.test.ts. Inputs20/12/6 pacing gates, confirmedsave/background/pause, migratedDBbackup, injectedwritefailure/retry, sourcefingerprint, boundedanswers. Literal Tests 17 passed (17);exit0.
 UNIT: npm test. Literal Test Files 18 passed (18);Tests 94 passed (94);exit0.
 PYTHON: npm run test:python. Literal Ran 8 tests;OK;exit0.
 BUILD: npm run build. Production build completed;exit0; includes tsc --noEmit.
-UI: npx playwright test tests/e2e/cruise.spec.ts. Inputlocal2pagePDF/mockSSE/tempDB;3 passed (22.4s);exit0. Pause>6seconds preventsAPI; successfulauto advance then abrupt appexit and restart paused withcached result/model, no API; backcache causesnoAPI.
+UI: npx playwright test tests/e2e/cruise.spec.ts. Inputlocal2pagePDF/mockSSE/tempDB;4 passed (23.8s);exit0. Pause>6seconds preventsAPI; successfulauto advance then abrupt appexit and restart paused withcached result/model, no API; backcache causesnoAPI.
 ROLLBACK: node scripts/check-cruise-session-rollback.mjs (ROLLBACK.sh same command). Inputboundedisolatedcopy/originalSHA256+200page32MiB fixture.
 Literal: ROLLBACK: CRUISE=1; PACING=0; SCHEMA=3; LIVE_SOURCE_UNCHANGED=YES
 Exit0. RestoresTask3onlyincopy; live schema4source remainsmodified. Personal userData/originalPDF untouched.
@@ -14,3 +14,5 @@ D:/codex project/Enlumor/evidence/cruise-session/MODIFIED_FILE.tsx
 D:/codex project/Enlumor/evidence/cruise-session/DIFF.patch
 D:/codex project/Enlumor/evidence/cruise-session/VERIFICATION.txt
 D:/codex project/Enlumor/evidence/cruise-session/ROLLBACK.sh
+
+REVIEW commands: npx playwright test tests/e2e/cruise.spec.ts -g "scan pages" (REDexit1, GREEN1 passed2.8sexit0); -g "auto pacing" (nativeblur REDexit1; full4testsGREENexit0). Fullpre-fixUI92passed3.7m; packagedpost-fix gate pending.

@@ -89,7 +89,7 @@ Consumes/Produces：CruiseSession与get/saveCruiseSession。SQLite为权威，�
 - [x] 测迁移备份、写入失败重试、强退恢复、指纹被替换时拒绝旧会话，模型切换不改已有解释来源。保存结果未确认不显示已保存。
 - [x] `npx vitest run tests/cruise-session.test.ts`红→绿；实际Electron重启不会自动发API请求。
 - [x] 类型检查、聚焦E2E、提交。
-- [ ] **Review第2批（Task3+4）**：修复Important后，时间充足才开始Task5；可先做独立发布候选保留可用Cruise。
+- [x] **Review第2批（Task3+4）**：修复Important后，时间充足才开始Task5；可先做独立发布候选保留可用Cruise。
 
 ### Task 5：DashScope原生文本HTTP/SSE
 
