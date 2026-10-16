@@ -26,7 +26,7 @@ export class PdfReader {
   private lineTool: LineTool;
   private eraser: EraserTool;
   private outlineTargets = new Map<string, string | any[]>();
-  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true, drawingColor:()=>string=()=> '#5a7350', onErase:(ids:string[])=>void=()=>{}) {
+  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true, drawingColor:()=>string=()=> '#5a7350', onErase:(ids:string[])=>void=()=>{}, private onTextNotice:(text:string)=>void=onNotice) {
     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
@@ -36,17 +36,13 @@ export class PdfReader {
     this.bus.on('pagechanging', ({pageNumber}:{pageNumber:number}) => {
       this.eraser.cancel();const generation=this.generation;
       requestAnimationFrame(()=>{if(generation===this.generation&&this.ready)this.paint(pageNumber-1);});
+      void this.reportTextCapability(pageNumber);
     });
     this.bus.on('pagerendered', ({ pageNumber }: { pageNumber: number }) => this.paint(pageNumber - 1));
     this.bus.on('scalechanging', () => { this.lineTool.cancel(); this.eraser.cancel(); this.paint(); onSelection([]); });
     this.bus.on('rotationchanging', () => { this.lineTool.cancel(); this.eraser.cancel(); this.paint(); onSelection([]); });
-    this.bus.on('textlayerrendered', async ({ pageNumber }: { pageNumber: number }) => {
-      const document = this.viewer.pdfDocument;
-      if (!document || !this.ready || pageNumber !== this.viewer.currentPageNumber) return;
-      const text = await (await document.getPage(pageNumber)).getTextContent();
-      if (this.viewer.pdfDocument === document) onNotice(text.items.length ? '' : '当前页没有文字层，可阅读；文字选择、搜索与精确引用需要 OCR。');
-    });
     this.bus.on('updatefindmatchescount', ({ matchesCount }: { matchesCount: { current: number; total: number } }) => onNotice(`搜索 ${matchesCount.current} / ${matchesCount.total}`));
+    this.bus.on('updatefindcontrolstate', ({ matchesCount }: { matchesCount: { current: number; total: number } }) => onNotice(`搜索 ${matchesCount.current} / ${matchesCount.total}`));
     this.bus.on('updateviewarea', () => {
       if (!this.active || !this.ready) return;
       const index = this.viewer.currentPageNumber - 1;
@@ -90,6 +86,7 @@ export class PdfReader {
       this.bus.on('pagesinit', initialized);
       this.link.setDocument(pdf); this.viewer.setDocument(pdf);
     });
+    void this.reportTextCapability(this.viewer.currentPageNumber);
     void pdf.getOutline().then(items => {
       if (generation !== this.generation) return;
       const entries = (nodes: NonNullable<typeof items>, parent = ''): OutlineEntry[] => nodes.map((node, index) => {
@@ -99,6 +96,18 @@ export class PdfReader {
       });
       this.onOutline(entries(items || []));
     }).catch(() => { if (generation === this.generation) { this.onOutline([]); this.onNotice('目录读取失败，可使用页码跳转。'); } });
+  }
+  private async reportTextCapability(pageNumber:number) {
+    const document=this.viewer.pdfDocument,generation=this.generation;
+    if(!document||!this.ready)return;
+    try {
+      const text=await(await document.getPage(pageNumber)).getTextContent();
+      if(generation===this.generation&&document===this.viewer.pdfDocument&&pageNumber===this.viewer.currentPageNumber&&this.ready)
+        this.onTextNotice(text.items.length?'':'当前页没有文字层，可阅读；文字选择、搜索与精确引用需要 OCR。');
+    } catch {
+      if(generation===this.generation&&document===this.viewer.pdfDocument&&pageNumber===this.viewer.currentPageNumber&&this.ready)
+        this.onTextNotice('当前页文字层读取失败，可继续阅读页面。');
+    }
   }
   async goToOutline(id: string) {
     const pdf = this.viewer.pdfDocument, target = this.outlineTargets.get(id);
@@ -118,7 +127,7 @@ export class PdfReader {
     if (!pdf || !this.ready) return false;
     return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
   }
-  setMarks(marks: Annotation[]) { this.marks = marks; this.paint(); }
+  setMarks(marks: Annotation[], changedIds?: string[]) { this.marks = marks; this.paint(undefined,changedIds?new Set(changedIds):undefined); }
   setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
   setLineEnabled(enabled:boolean) { this.setDrawingTool(enabled?'line':null); }
   clear() {
@@ -179,34 +188,42 @@ export class PdfReader {
       this.container.scrollTop = Math.max(0, view.div.offsetTop + rect[1] - this.container.clientHeight / 3);
     });
   }
-  private paint(pageIndex?: number) {
+  private paint(pageIndex?: number, changed?: Set<string>) {
     if (!this.active) return;
     const pages: HTMLElement[] = pageIndex === undefined ? [...this.container.querySelectorAll<HTMLElement>('.page')] : [this.viewer.getPageView(pageIndex)?.div].filter(Boolean);
     for (const page of pages) {
       const index = Number(page.dataset.pageNumber) - 1, view = this.viewer.getPageView(index);
-      page.querySelector('.enlumor-marks')?.remove();
       if (!view?.viewport || !page.querySelector('canvas')) continue;
-      const overlay = document.createElement('div'); overlay.className = 'enlumor-marks';
-      for (const mark of [...this.marks, ...(this.flash ? [this.flash] : [])].filter(a => a.pageIndex === index)) {
+      const old=page.querySelector<HTMLElement>('.enlumor-marks');
+      const partial=!!changed&&!!old&&!this.flash;
+      const existing=new Map<string,Element[]>();
+      // Snapshot children before removing: HTMLCollection is live.
+      if(partial)for(const node of [...old!.children]){const id=(node as HTMLElement).dataset.annotationId!;existing.set(id,[...(existing.get(id)||[]),node]);if(changed!.has(id))node.remove();}
+      const overlay = partial?old!:document.createElement('div'); overlay.className = 'enlumor-marks';
+      if(!partial)old?.remove();
+      let insertionPoint:ChildNode|null=partial?overlay.firstChild:null;
+      for (const {mark,flashing} of [...this.marks.map(mark=>({mark,flashing:false})), ...(this.flash ? [{mark:this.flash,flashing:true}] : [])].filter(({mark}) => mark.pageIndex === index)) {
+        if(partial&&!changed!.has(mark.id)){insertionPoint=existing.get(mark.id)?.at(-1)?.nextSibling||null;continue;}
         for (const quad of mark.quads) {
           const [left, top, right, bottom] = quadToScreen(quad, view.viewport.transform);
-          if(['line','arrow','ink'].includes(mark.type)&&mark!==this.flash) {
+          if(['line','arrow','ink'].includes(mark.type)&&!flashing) {
             const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('drawn-'+mark.type);svg.dataset.annotationId=mark.id;
             const points=mark.points!.flatMap((_,i,p)=>i%2===0?transform(p[i],p[i+1],view.viewport.transform):[]);
-            paintDrawing(svg,mark.type as DrawingMode,points,mark.color,(mark.type==='line'?1.5/view.viewport.scale:1.125)*view.viewport.scale);overlay.append(svg);continue;
+            paintDrawing(svg,mark.type as DrawingMode,points,mark.color,(mark.type==='line'?1.5/view.viewport.scale:1.125)*view.viewport.scale);overlay.insertBefore(svg,insertionPoint);continue;
           }
-          if(['underline','strikeout'].includes(mark.type)&&mark!==this.flash){
+          if(['underline','strikeout'].includes(mark.type)&&!flashing){
             const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add(mark.type==='strikeout'?'strikeout-line':'underline-line');
             const p=mark.type==='strikeout'?[quad[0],(quad[1]+quad[5])/2,quad[2],(quad[3]+quad[7])/2]:[quad[4],quad[5],quad[6],quad[7]];
-            paintDrawing(svg,'line',[...transform(p[0],p[1],view.viewport.transform),...transform(p[2],p[3],view.viewport.transform)],mark.color,1.5);overlay.append(svg);continue;
+            svg.dataset.annotationId=mark.id;paintDrawing(svg,'line',[...transform(p[0],p[1],view.viewport.transform),...transform(p[2],p[3],view.viewport.transform)],mark.color,1.5);overlay.insertBefore(svg,insertionPoint);continue;
           }
-          const block = document.createElement('div'); block.className = mark === this.flash ? 'mark flash' : `mark ${mark.type}`;
+          const block = document.createElement('div'); block.className = flashing ? 'mark flash' : `mark ${mark.type}`;
+          block.dataset.annotationId=mark.id;
           Object.assign(block.style, { left: `${left}px`, top: `${top}px`, width: `${right - left}px`, height: `${bottom - top}px`, backgroundColor: mark.color });
           if (mark.type === 'note') { block.textContent = '▤'; block.style.width = '20px'; block.style.height = '20px'; }
-          overlay.append(block);
+          overlay.insertBefore(block,insertionPoint);
         }
       }
-      page.append(overlay);
+      if(!partial)page.append(overlay);
       this.eraser?.refresh();
     }
   }

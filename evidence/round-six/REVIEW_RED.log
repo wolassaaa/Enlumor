@@ -1,0 +1,46 @@
+
+Running 1 test using 1 worker
+
+(node:3372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\complex-pdf.spec.ts:41:1 › search Next preserves match counts across cached and newly visited pages (7.3s)
+
+
+  1) tests\e2e\complex-pdf.spec.ts:41:1 › search Next preserves match counts across cached and newly visited pages 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('.notice')
+    Expected substring: "搜索 2 / 8"
+    Received string:    "搜索 1 / 8"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" locator('.notice') with timeout 5000ms
+      - waiting for locator('.notice')
+        14 × locator resolved to <div class="notice">搜索 1 / 8</div>
+           - unexpected value "搜索 1 / 8"
+
+
+      41 | test('search Next preserves match counts across cached and newly visited pages',async()=>{
+      42 |  const{app,page}=await launch('search-next');try{await page.getByLabel('阅读模式',{exact:true}).selectOption('single');await go(page,2);await go(page,1);await page.getByLabel('全文搜索',{exact:true}).fill('Repeated evidence');await page.getByRole('button',{name:'搜索',exact:true}).click();await expect(page.locator('.notice')).toContainText('搜索 1 / 8');
+    > 43 |  for(let i=2;i<=5;i++){await page.getByRole('button',{name:'下一个搜索结果',exact:true}).click();await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue(String(Math.ceil(i/2)));await expect(page.locator('.notice')).toContainText(`搜索 ${i} / 8`);}
+         |                                                                                                                                                                                                                        ^
+      44 |  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}
+      45 | });
+      46 | test('vector page renders and cached scan page restores no-text feedback after leaving and returning',async()=>{
+        at D:\codex project\Enlumor\tests\e2e\complex-pdf.spec.ts:43:216
+
+    Error Context: test-results\complex-pdf-search-Next-pr-567c3-hed-and-newly-visited-pages\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\complex-pdf-search-Next-pr-567c3-hed-and-newly-visited-pages\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\complex-pdf-search-Next-pr-567c3-hed-and-newly-visited-pages\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\complex-pdf.spec.ts:41:1 › search Next preserves match counts across cached and newly visited pages 

@@ -1,0 +1,13 @@
+
+Running 3 tests using 1 worker
+
+(node:49004) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+DENSE_INK {"count":30,"pointsPerStroke":256,"scrollP95Ms":9.199999999254942,"pointerP95Ms":0.7999999988824129,"frameP95Ms":9.099999999627471,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.900000000372529,"eraseUndoMs":77}
+  ok 1 tests\e2e\dense-ink.spec.ts:8:34 › dense 30 x 256 points: scroll erase save undo (2.7s)
+DENSE_INK {"count":300,"pointsPerStroke":256,"scrollP95Ms":9.400000000372529,"pointerP95Ms":1.5,"frameP95Ms":9.099999999627471,"longTasks":0,"worstLongTaskMs":0,"saveMs":2.400000000372529,"eraseUndoMs":300}
+  ok 2 tests\e2e\dense-ink.spec.ts:8:34 › dense 300 x 256 points: scroll erase save undo (3.9s)
+DENSE_INK {"count":1000,"pointsPerStroke":256,"scrollP95Ms":10.5,"pointerP95Ms":2.099999999627471,"frameP95Ms":9.5,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.900000000372529,"eraseUndoMs":1157}
+  ok 3 tests\e2e\dense-ink.spec.ts:8:34 › dense 1000 x 256 points: scroll erase save undo (5.9s)
+
+  3 passed (13.7s)

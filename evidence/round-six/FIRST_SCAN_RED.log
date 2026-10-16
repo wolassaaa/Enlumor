@@ -1,0 +1,42 @@
+
+Running 1 test using 1 worker
+
+(node:38456) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\complex-pdf.spec.ts:52:1 › scan-only document shows capability feedback on initial open (6.2s)
+
+
+  1) tests\e2e\complex-pdf.spec.ts:52:1 › scan-only document shows capability feedback on initial open 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('.notice')
+    Expected substring: "当前页没有文字层"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" locator('.notice') with timeout 5000ms
+      - waiting for locator('.notice')
+
+
+      50 | });
+      51 |
+    > 52 | test('scan-only document shows capability feedback on initial open',async()=>{const{app,page}=await launch('scan-first',1,scanOnly);try{await expect(page.locator('.notice')).toContainText('当前页没有文字层');await expect(page.locator('.textLayer span')).toHaveCount(0);}finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}});
+         |                                                                                                                                                                               ^
+      53 |
+        at D:\codex project\Enlumor\tests\e2e\complex-pdf.spec.ts:52:175
+
+    Error Context: test-results\complex-pdf-scan-only-docu-fdcd8-ty-feedback-on-initial-open\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\complex-pdf-scan-only-docu-fdcd8-ty-feedback-on-initial-open\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\complex-pdf-scan-only-docu-fdcd8-ty-feedback-on-initial-open\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\complex-pdf.spec.ts:52:1 › scan-only document shows capability feedback on initial open 

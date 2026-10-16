@@ -1,0 +1,18 @@
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 31 modules transformed.
+rendering chunks...
+computing gzip size...
+.cache/round-six-rollback/run-Mwcb3v/dist/renderer/index.html                                          0.59 kB │ gzip:   0.38 kB
+.cache/round-six-rollback/run-Mwcb3v/dist/renderer/assets/cursor-editorTextHighlight-kG3uUOwL.svg      5.40 kB │ gzip:   2.20 kB
+.cache/round-six-rollback/run-Mwcb3v/dist/renderer/assets/pdf.worker.min-CjEcRF4W.mjs              1,264.34 kB
+.cache/round-six-rollback/run-Mwcb3v/dist/renderer/assets/index-CoSuq1wt.css                         245.78 kB │ gzip:  45.85 kB
+.cache/round-six-rollback/run-Mwcb3v/dist/renderer/assets/index-DvE6kSQI.js                          867.64 kB │ gzip: 263.63 kB
+
+✓ built in 351ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+ROLLBACK: UNCHANGED_SVG_RECREATED=YES; CARD_CONTENT_VISIBILITY=visible; LIVE_SOURCE_UNCHANGED=YES

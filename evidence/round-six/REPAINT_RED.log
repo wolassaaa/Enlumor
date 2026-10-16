@@ -1,0 +1,39 @@
+
+Running 1 test using 1 worker
+
+(node:4728) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+DENSE_INK {"count":1000,"pointsPerStroke":256,"scrollP95Ms":9.699999999254942,"pointerP95Ms":2.5,"frameP95Ms":9.300000000745058,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.900000000372529,"eraseUndoMs":765,"mutationLongTasks":6,"mutationWorstLongTaskMs":121}
+  x  1 tests\e2e\dense-ink.spec.ts:8:34 › dense 1000 x 256 points: scroll erase save undo (4.2s)
+
+
+  1) tests\e2e\dense-ink.spec.ts:8:34 › dense 1000 x 256 points: scroll erase save undo ────────────
+
+    Error: unchanged ink SVG should survive commit and undo
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: true
+    Received: false
+
+      23 |  const mutation=await page.evaluate(async()=>{await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));const w=window as any;w.denseMutationObserver.disconnect();return{mutationLongTasks:w.denseMutationTasks.length,mutationWorstLongTaskMs:Math.max(0,...w.denseMutationTasks)};});
+      24 |  const result={count,pointsPerStroke:256,scrollP95Ms:scroll,...metrics,saveMs,eraseUndoMs,...mutation};const evidence=process.env.ENLUMOR_EVIDENCE_DIR||'evidence/round-six';mkdirSync(evidence,{recursive:true});writeFileSync(path.join(evidence,`dense-${count}.json`),JSON.stringify(result,null,2));console.log('DENSE_INK '+JSON.stringify(result));if(cdp){writeFileSync(path.join(evidence,`profile-${count}.json`),JSON.stringify((await cdp.send('Profiler.stop')).profile));await cdp.detach();}
+    > 25 |  expect(reused,'unchanged ink SVG should survive commit and undo').toBe(true);expect(metrics.pointerP95Ms).toBeLessThanOrEqual(8);expect(metrics.frameP95Ms).toBeLessThanOrEqual(34);expect(scroll).toBeLessThanOrEqual(34);expect(saveMs).toBeLessThanOrEqual(20);expect(metrics.longTasks).toBe(0);
+         |                                                                    ^
+      26 |  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}
+      27 | });
+      28 |
+        at D:\codex project\Enlumor\tests\e2e\dense-ink.spec.ts:25:68
+
+    Error Context: test-results\dense-ink-dense-1000-x-256-points-scroll-erase-save-undo\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\dense-ink-dense-1000-x-256-points-scroll-erase-save-undo\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\dense-ink-dense-1000-x-256-points-scroll-erase-save-undo\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\dense-ink.spec.ts:8:34 › dense 1000 x 256 points: scroll erase save undo ─────────────

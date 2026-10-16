@@ -1,0 +1,10 @@
+
+Running 2 tests using 1 worker
+
+(node:30920) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\complex-pdf.spec.ts:21:1 › double columns and repeated Chinese text retain the selected occurrence through crop rotation restart and repeat export (5.0s)
+  ok 2 tests\e2e\complex-pdf.spec.ts:38:1 › vector page renders and cached scan page restores no-text feedback after leaving and returning (1.8s)
+
+  2 passed (8.1s)

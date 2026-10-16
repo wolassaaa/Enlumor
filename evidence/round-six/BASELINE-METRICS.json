@@ -1,0 +1,58 @@
+[
+  {
+    "log": "DENSE_BASELINE.log",
+    "count": 30,
+    "pointsPerStroke": 256,
+    "scrollP95Ms": 9.5,
+    "pointerP95Ms": 0.7999999988824129,
+    "frameP95Ms": 9.199999999254942,
+    "longTasks": 0,
+    "worstLongTaskMs": 0,
+    "saveMs": 0.7999999988824129,
+    "eraseUndoMs": 77,
+    "mutationLongTasks": 0,
+    "mutationWorstLongTaskMs": 0
+  },
+  {
+    "log": "DENSE_BASELINE.log",
+    "count": 300,
+    "pointsPerStroke": 256,
+    "scrollP95Ms": 9.699999999254942,
+    "pointerP95Ms": 1.400000000372529,
+    "frameP95Ms": 9.200000001117587,
+    "longTasks": 0,
+    "worstLongTaskMs": 0,
+    "saveMs": 0.900000000372529,
+    "eraseUndoMs": 333,
+    "mutationLongTasks": 0,
+    "mutationWorstLongTaskMs": 0
+  },
+  {
+    "log": "DENSE_BASELINE.log",
+    "count": 1000,
+    "pointsPerStroke": 256,
+    "scrollP95Ms": 10.699999999254942,
+    "pointerP95Ms": 2.5,
+    "frameP95Ms": 9.5,
+    "longTasks": 0,
+    "worstLongTaskMs": 0,
+    "saveMs": 0.8000000007450581,
+    "eraseUndoMs": 1148,
+    "mutationLongTasks": 6,
+    "mutationWorstLongTaskMs": 124
+  },
+  {
+    "log": "PROFILE_SELECTORS.log",
+    "count": 1000,
+    "pointsPerStroke": 256,
+    "scrollP95Ms": 10.5,
+    "pointerP95Ms": 2.199999999254942,
+    "frameP95Ms": 9.299999998882413,
+    "longTasks": 0,
+    "worstLongTaskMs": 0,
+    "saveMs": 0.900000000372529,
+    "eraseUndoMs": 817,
+    "mutationLongTasks": 6,
+    "mutationWorstLongTaskMs": 122
+  }
+]

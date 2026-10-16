@@ -1,0 +1,85 @@
+Enlumor 0.1.12 — Round 6: dense ink performance + complex PDF compatibility
+Branch: perf/dense-ink-compatibility; base 3f82fe4.
+Changed fields/branches: PdfReader.setMarks(changedIds), partial paint and explicit flashing flag; annotation-card content-visibility; reportTextCapability document/generation/page guards; independent textNotice; updatefindcontrolstate match counter.
+No database schema, preload or export-format changes. Original PDFs and personal workspace data retained.
+
+Four artifacts (reopened and hash checked):
+MODIFIED_FILE: D:/codex project/Enlumor/evidence/round-six/MODIFIED_FILE.ts
+DIFF_FILE: D:/codex project/Enlumor/evidence/round-six/DIFF.patch
+VERIFICATION: D:/codex project/Enlumor/evidence/round-six/VERIFICATION.txt
+ROLLBACK: D:/codex project/Enlumor/evidence/round-six/ROLLBACK.sh
+
+Original byte SHA256 for changed product files:
+src/renderer/main.tsx: 33749b23ab0f9f456db74b0ba5aeffde67595c8b196f7dc9e3508c24cc879630
+src/renderer/pdf-reader.ts: 44d6f21594b27be18c3e6a5bb88208c6222ab55c80b74263be616bccf2f5bee2
+src/renderer/style.css: a5dd73ce3b175fa436e8674a2d1eecb7a9dd8338eefbfd3f672c1da6e22ae8bf
+Originals stored byte-for-byte, -text protected, including inspected unchanged geometry/eraser/release files. All six hashes in originals.json verified against actual stored bytes and staged Git blobs.
+
+All commands use cwd D:/codex project/Enlumor. No inherited ENLUMOR_TEST_APP except where specified.
+
+Initial measured baseline command:
+$env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.11-win-x64/Enlumor.exe).Path; npx playwright test tests/e2e/dense-ink.spec.ts
+Input: fresh profiles; 30/300/1000 real ink annotations on one page, 256 points each; scroll, controlled pointermove through real handler, real mouse-down/up erase and ordinary undo, reading save.
+Literal result: 3 passed (13.0s); exit 0. DENSE_BASELINE.log.
+1000: eraseUndoMs1148, mutationLongTasks6, mutationWorstLongTaskMs124. Scroll/move already within budget; no speculative spatial index added.
+Profiler found automation-role queries inflate latency. Repeated baseline using direct selectors only in benchmark: eraseUndoMs817, mutationLongTasks6, worst122ms. PROFILE_SELECTORS.log, profile-1000.json, BASELINE-METRICS.json.
+
+BASELINE command: npx playwright test tests/e2e/dense-ink.spec.ts -g '1000'
+Input: same1000x256 fixture; before incremental overlay repair; added unchanged-SVG identity assertion.
+Literal result: 1 failed
+Exit status: 1. REPAINT_RED.log.
+After partial repair: 1 passed (5.2s), exit0, eraseUndoMs621, three mutation long tasks/worst106ms. REPAINT_GREEN.log.
+New mutation<=50ms assertion: 1 failed, exit1. MUTATION_RED.log.
+After offscreen-card rendering optimization: 1 passed (4.7s), exit0, eraseUndoMs382, zero mutation long tasks. MUTATION_GREEN.log.
+
+Compatibility baseline command:
+$env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.11-win-x64/Enlumor.exe).Path; npx playwright test tests/e2e/complex-pdf.spec.ts
+Input: initial two-test version; generated6-page Chinese/double-column/repeated-sentence/crop/four-rotation/vector2500-lines/scan fixture, fresh profiles.
+Literal result: 1 failed; 1 passed (12.9s)
+Exit status: 1. COMPAT_BASELINE.log. Missing scan capability feedback reproduced.
+
+Independent review regression:
+npx playwright test tests/e2e/complex-pdf.spec.ts -g 'search Next'
+Input: cross cached/new pages, expect search1..5/8 counts. Before fix literal1 failed, exit1 (REVIEW_RED.log); after fix1 passed (3.7s), exit0 (REVIEW_GREEN.log).
+Fixed shared capability/search notice state AND missing updatefindcontrolstate listener, not only suppressed the capability check.
+Other red regressions: FLASH_RED.log (permanent ink hidden by duplicate flash identity), FIRST_SCAN_RED.log (200ms tabs-save delay clears initial scan warning), both exit1 before fixes and covered by final green suite.
+
+MODIFIED command: npx playwright test tests/e2e/dense-ink.spec.ts tests/e2e/complex-pdf.spec.ts
+Input: final development build; above dense fixtures + complex pages; right-column single/multiline/Chinese selection, 150%->200% restart, two exports, native coordinate centroid checks, source SHA unchanged, four original notes retained; offscreen card focus/Enter, unchanged node reuse/order and multi-quad color change.
+Literal result: 7 passed (22.2s)
+Exit status: 0. MODIFIED.log.
+1000 final-development erase+undo360ms, zero observed >50ms long tasks.
+
+ROLLBACK command: & 'C:/Program Files/Git/bin/bash.exe' evidence/round-six/ROLLBACK.sh
+Input: new bounded .cache/round-six-rollback/run-* copy, hash-checked original files, fresh test profile,200-page benchmark PDF; draw two strokes then change second stroke color.
+Literal result: ROLLBACK: UNCHANGED_SVG_RECREATED=YES; CARD_CONTENT_VISIBILITY=visible; LIVE_SOURCE_UNCHANGED=YES
+Exit status: 0. ROLLBACK.log.
+Restored behavior/status: isolated copy recreates unchanged SVG on commit and restores visible card rendering. Original file hashes restored; current source remains modified. Personal databases/PDFs never rolled back. Initial helper adaptation missed scripts/ parent; corrected bounded destination creation, reran successfully.
+
+Full release command:
+$env:ENLUMOR_EVIDENCE_DIR='evidence/round-six'; npm run release:verified
+Literal results: Tests 35 passed (35); Ran 7 tests; OK; 85 passed (3.1m)
+PACKAGED_READER: PASS
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.12 D:\codex project\Enlumor\release\Enlumor-0.1.12-win.zip SHA256=dcda7c90851032d7b97cead25fd3ee6cf65e55af5cc8193b1b6b1118b0e3c12b
+Exit status: 0. Total127 tests. RELEASE.log.
+Staged EXE dense1000: scrollP95 13.7ms; pointerP95 2.5ms; erase-frameP95 9.5ms; save0.8ms; erase+undo358ms; zero movement/mutation long tasks.
+Text200-page/32MiB/1000-highlight fixture: extracted startup median583.5769ms; scrollP95 11.800000000745058ms; saveP95 5.900000000372529ms; main/thumbnail canvases8/4.
+Scanned200-page/~32MB/1000-highlight fixture: extracted startup median480.51ms; scrollP95 11.599999999627471ms; saveP95 5.600000001490116ms; main/thumbnail canvases8/4.
+Both zero observed >50ms long tasks; all configured budgets passed.
+
+Published local EXE retest command:
+$env:ENLUMOR_EVIDENCE_DIR='evidence/round-six'; $env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.12-win-x64/Enlumor.exe).Path; npx playwright test tests/e2e/dense-ink.spec.ts tests/e2e/complex-pdf.spec.ts
+Literal result: 7 passed (24.1s)
+Exit status: 0. FINAL_EXE.log.
+1000: erase+undo375ms, pointerP95 2.2ms, scrollP95 11.9ms; zero movement/mutation long tasks. Includes local1000ms end-to-end gate and50ms mutation-long-task gate.
+
+Visual checks: complex-rotation.png, exported page1/page2 rendered PNGs and Edge export screenshot reopened with view_image. Right-column marks and Chinese/multiline text remain aligned through crop/rotation; source note retained. Full list of original hashes, measured JSON and logs reopened. Snapshot matches live pdf-reader.ts.
+
+Review: one independent pass; Important search regression fixed red->green; Minor stale Chinese assertion repaired by selected-match text, end-to-end latency gate added. Details docs/reviews/2026-10-16-round-six.md. Counter reset0 after two tasks. Real complex files and longer4096-point ink still require future representative coverage.
+Test-draft corrections were investigated rather than weakening product checks: nonexistent-notice negative assertion, nested find-highlight span targeting,30-item fixture taking index50, flash strict locator. Final release did not bypass failures or budgets.
+Build/commit are local. This batch does not push to GitHub or upload a binary release.
+
+Reusable continuation prompt:
+按docs/FEATURES.md继续下一批两项阅读器收尾；先失败测试再实现，完成两项后整体review，修复Important再跑release:verified。保留原PDF和个人工作区，真实复杂文档与密集长笔迹问题以实测定位，不提前搭AI空壳。

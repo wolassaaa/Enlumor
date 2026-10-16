@@ -1,0 +1,32 @@
+[
+  {
+    "name": "main.tsx",
+    "target": "src/renderer/main.tsx",
+    "sha256": "33749b23ab0f9f456db74b0ba5aeffde67595c8b196f7dc9e3508c24cc879630"
+  },
+  {
+    "name": "pdf-reader.ts",
+    "target": "src/renderer/pdf-reader.ts",
+    "sha256": "44d6f21594b27be18c3e6a5bb88208c6222ab55c80b74263be616bccf2f5bee2"
+  },
+  {
+    "name": "style.css",
+    "target": "src/renderer/style.css",
+    "sha256": "a5dd73ce3b175fa436e8674a2d1eecb7a9dd8338eefbfd3f672c1da6e22ae8bf"
+  },
+  {
+    "name": "eraser-tool.ts",
+    "target": "src/renderer/eraser-tool.ts",
+    "sha256": "d15bdd69a1d66012ebf18bbfbe9bfd649fe5817d3c2796000e914b4976d987bf"
+  },
+  {
+    "name": "geometry.ts",
+    "target": "src/shared/geometry.ts",
+    "sha256": "e2c3973d6b2f225ab46575e247c4e1023533ad930ca161af361d7e1164598282"
+  },
+  {
+    "name": "release.mjs",
+    "target": "scripts/release.mjs",
+    "sha256": "1710e11b3cd6c9747b73e43a6bcbb31d1da4a5bb448e58132fe8171f2299e363"
+  }
+]

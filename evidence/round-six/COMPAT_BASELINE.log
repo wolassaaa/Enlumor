@@ -1,0 +1,46 @@
+
+Running 2 tests using 1 worker
+
+(node:45132) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\complex-pdf.spec.ts:21:1 › double columns and repeated Chinese text retain the selected occurrence through crop rotation restart and repeat export (4.9s)
+  x  2 tests\e2e\complex-pdf.spec.ts:37:1 › vector page renders and cached scan page restores no-text feedback after leaving and returning (6.7s)
+
+
+  1) tests\e2e\complex-pdf.spec.ts:37:1 › vector page renders and cached scan page restores no-text feedback after leaving and returning 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('.notice')
+    Expected substring: "当前页没有文字层"
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" locator('.notice') with timeout 5000ms
+      - waiting for locator('.notice')
+
+
+      36 | });
+      37 | test('vector page renders and cached scan page restores no-text feedback after leaving and returning',async()=>{
+    > 38 |  const{app,page}=await launch('scan');try{await page.getByLabel('阅读模式',{exact:true}).selectOption('single');await go(page,5);await expect(page.locator('.page[data-page-number="5"] .textLayer')).toContainText('Vector complexity evidence');await go(page,6);await expect(page.locator('.notice')).toContainText('当前页没有文字层');await expect(page.locator('.page[data-page-number="6"] .textLayer span')).toHaveCount(0);await expect(page.getByRole('button',{name:'高亮选区',exact:true})).toBeDisabled();await go(page,5);await expect(page.locator('.notice')).not.toContainText('当前页没有文字层');await go(page,6);await expect(page.locator('.notice')).toContainText('当前页没有文字层');
+         |                                                                                                                                                                                                                                                                                                      ^
+      39 |  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}
+      40 | });
+      41 |
+        at D:\codex project\Enlumor\tests\e2e\complex-pdf.spec.ts:38:294
+
+    Error Context: test-results\complex-pdf-vector-page-re-a7ec1-after-leaving-and-returning\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\complex-pdf-vector-page-re-a7ec1-after-leaving-and-returning\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\complex-pdf-vector-page-re-a7ec1-after-leaving-and-returning\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\complex-pdf.spec.ts:37:1 › vector page renders and cached scan page restores no-text feedback after leaving and returning 
+  1 passed (12.9s)

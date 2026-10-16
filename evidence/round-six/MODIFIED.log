@@ -1,0 +1,18 @@
+
+Running 7 tests using 1 worker
+
+(node:29312) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\complex-pdf.spec.ts:22:1 › double columns and repeated Chinese text retain the selected occurrence through crop rotation restart and repeat export (5.3s)
+  ok 2 tests\e2e\complex-pdf.spec.ts:42:1 › search Next preserves match counts across cached and newly visited pages (2.1s)
+  ok 3 tests\e2e\complex-pdf.spec.ts:47:1 › vector page renders and cached scan page restores no-text feedback after leaving and returning (1.8s)
+  ok 4 tests\e2e\complex-pdf.spec.ts:52:1 › scan-only document shows capability feedback on initial open (1.3s)
+DENSE_INK {"count":30,"pointsPerStroke":256,"scrollP95Ms":9.5,"pointerP95Ms":0.8000000007450581,"frameP95Ms":8.800000000745058,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.7999999988824129,"eraseUndoMs":61,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok 5 tests\e2e\dense-ink.spec.ts:8:34 › dense 30 x 256 points: scroll erase save undo (2.7s)
+DENSE_INK {"count":300,"pointsPerStroke":256,"scrollP95Ms":9.699999999254942,"pointerP95Ms":1.5,"frameP95Ms":9.299999998882413,"longTasks":0,"worstLongTaskMs":0,"saveMs":4.100000001490116,"eraseUndoMs":143,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok 6 tests\e2e\dense-ink.spec.ts:8:34 › dense 300 x 256 points: scroll erase save undo (3.0s)
+DENSE_INK {"count":1000,"pointsPerStroke":256,"scrollP95Ms":12.900000000372529,"pointerP95Ms":2.300000000745058,"frameP95Ms":9.400000000372529,"longTasks":0,"worstLongTaskMs":0,"saveMs":1.199999999254942,"eraseUndoMs":360,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok 7 tests\e2e\dense-ink.spec.ts:8:34 › dense 1000 x 256 points: scroll erase save undo (3.9s)
+
+  7 passed (22.2s)

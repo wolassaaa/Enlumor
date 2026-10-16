@@ -33,6 +33,7 @@ function App() {
   const [doc, setDoc] = useState<OpenedDocument | null>(null), [recent, setRecent] = useState<DocumentInfo[]>([]);
   const [marks, setMarks] = useState<Annotation[]>([]), [parts, setParts] = useState<SelectionPart[]>([]);
   const [status, setStatus] = useState('本地工作区就绪'), [error, setError] = useState(''), [notice, setNotice] = useState('');
+  const [textNotice,setTextNotice]=useState('');
   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
   const [currentPage,setCurrentPage]=useState(1),[pageError,setPageError]=useState('');
   function syncPage(value:number){setCurrentPage(value);setPage(String(value));setPageError('');}
@@ -81,7 +82,7 @@ function App() {
     }, ()=>!locked.current&&!pending.current&&!noteOpen.current,()=>colorRef.current,ids=>{
       setDrawMode(null);const opened=activeDocument.current;if(!opened)return;
       void commit({documentId:opened.id,upserts:[],deletes:ids});
-    });
+    },setTextNotice);
     const off = window.enlumor.onFlush(flush);
     void (async () => {
       try { const savedLayout = unwrap(await window.enlumor.getLayout()); setLayout(savedLayout); layoutRef.current = savedLayout; const list = unwrap(await window.enlumor.listDocuments()); setRecent(list);
@@ -133,7 +134,7 @@ function App() {
       const baseTabs=replacementTabs || tabsRef.current;
       const nextTabs=baseTabs.some(tab=>tab.id===opened.id) ? baseTabs.map(tab=>tab.id===opened.id?opened:tab) : [...baseTabs,opened];
       resetDrawing();previous.reading = current.current;
-      replacing = true; current.current=null;setParts([]);setNotice('');
+      replacing = true; current.current=null;setParts([]);setNotice('');setTextNotice('');
       await reader.current!.open(opened);
       unwrap(await window.enlumor.saveTabs({openIds:nextTabs.map(tab=>tab.id),activeId:opened.id}));
       setQuery('');setHistory(histories.current.get(opened.id) || emptyHistory());
@@ -167,7 +168,7 @@ function App() {
     resetDrawing();locked.current = true; setBusy(true); setError(''); setStatus('正在保存…'); pending.current = { change, kind };
     const job = (async () => {
       const result = unwrap(await window.enlumor.applyAnnotationChange(change));
-      pending.current = null;activeMarks.current=result.annotations; setMarks(result.annotations); reader.current!.setMarks(result.annotations); setParts([]);
+      pending.current = null;activeMarks.current=result.annotations; setMarks(result.annotations); reader.current!.setMarks(result.annotations,[...change.deletes,...change.upserts.map(mark=>mark.id)]); setParts([]);
       setHistory(old => {
         const next=kind==='undo'?{undo:old.undo.slice(0,-1),redo:[...old.redo,result.inverse]}:kind==='redo'?{undo:[...old.undo,result.inverse],redo:old.redo.slice(0,-1)}:{undo:[...old.undo,result.inverse],redo:[]};
         histories.current.set(change.documentId,next);return next;
@@ -206,7 +207,7 @@ function App() {
     if(await commit(change,kind))closeNote();
   }
   function clearCurrent() {
-    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
+    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
   }
   async function closeTab(id:string) {
     if(locked.current || pending.current || noteOpen.current)return;
@@ -277,7 +278,7 @@ function App() {
         </div>
         {pageError && <div id="page-error" className="notice" role="alert">{pageError}</div>}
         {(error||pending.current||layoutError) && <div className="error" role="alert">{error||'存在未保存更改'}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && note===null && <button disabled={busy} onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && note===null && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
-        {notice && <div className="notice">{notice}</div>}
+        {(textNotice||notice) && <div className="notice">{[textNotice,notice].filter(Boolean).join(' · ')}</div>}
         <div className="reader-stage"><div id="viewerContainer" ref={container} tabIndex={0}><div id="viewer" className="pdfViewer"/></div>
           {!doc && <div className="empty"><div className="paper-emblem" aria-hidden="true"><svg viewBox="0 0 140 100" fill="none"><path d="M70 21C50 9 25 10 12 16v64c20-7 38-6 58 4 20-10 38-11 58-4V16c-13-6-38-7-58 5Zm0 0v63M25 33l30 4M25 45l30 4M25 57l22 3M85 37l29-4M85 49l29-4M85 61l21-3"/></svg></div><span className="empty-index">A QUIETER PLACE TO READ</span><h1>让理解，<br/>留在原文旁。</h1><p>打开一本书、一篇论文，或今天的讲义。<br/>选中，标记，下次从这里继续。</p><button className="primary" disabled={busy} onClick={() => void load()}>打开 PDF <Glyph name="open"/></button><small>无需账户 · 离线可用 · 原文件保持不变</small><div className="empty-footnote"><span>01 — 阅读原文</span><span>02 — 留下思考</span><span>03 — 从这里继续</span></div></div>}
         </div>
