@@ -1,0 +1,42 @@
+[
+  {
+    "name": "0-cruise.ts",
+    "target": "src/shared/cruise.ts",
+    "sha256": "42005f417253dd68d36c1e0f95dfd5c649a5ce40621e2a5e493e107fcec8ee04"
+  },
+  {
+    "name": "1-model.ts",
+    "target": "src/shared/model.ts",
+    "sha256": "54b9dab7bcfc2270b30a3eb6aafdd7fe6b22b487eb1c466a9a8fae4bd4de5592"
+  },
+  {
+    "name": "2-index.ts",
+    "target": "src/main/index.ts",
+    "sha256": "707e61e45bba94a9858ff7bbb4f0ed1c3ece88554dad2ca677c36fc25b09e0f4"
+  },
+  {
+    "name": "3-preload.ts",
+    "target": "src/main/preload.ts",
+    "sha256": "6af6fe164881cb49e82ea3875aa97c8c1f01fb9beda71c288a7a4c30718bc142"
+  },
+  {
+    "name": "4-main.tsx",
+    "target": "src/renderer/main.tsx",
+    "sha256": "8b580cf64ecc0ddb37f6db58748e729860c881aefe9c02b1455c533b3b899125"
+  },
+  {
+    "name": "5-pdf-reader.ts",
+    "target": "src/renderer/pdf-reader.ts",
+    "sha256": "0e62510204065006284e36010bd464b769882e920c250c707921ed051f4c3d6b"
+  },
+  {
+    "name": "6-style.css",
+    "target": "src/renderer/style.css",
+    "sha256": "39b590d4524c5b5a44f42765ea79fe58fda77cf6f20232d85ab74a5becf00dae"
+  },
+  {
+    "name": "7-export_pdf.py",
+    "target": "python/export_pdf.py",
+    "sha256": "f96347dc28d0fd826c2e45394b5c8a9314956a1b16759fd8b12c498e9d9fd764"
+  }
+]

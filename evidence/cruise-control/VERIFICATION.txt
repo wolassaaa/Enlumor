@@ -1,0 +1,16 @@
+Branch feat/cruise-overnight. Fields: CruiseState/requestId/current quote+quads validation/paused/manual takeover. Task3 complete, Task4 and batch review pending; latest0.1.12 unchanged.
+BASELINE: npx vitest run tests/cruise.test.ts. Input6state contracts; literal Tests 6 failed (6), initialCruise is not a function;exit1.
+Additional RED: missing request module; missing verify_block import; missing Cruise button; missing settings refresh; AI_HTTP_429 incorrectly sanitized. Saved respective *_RED.log.
+MODIFIED: npx vitest run tests/cruise.test.ts tests/cruise-requests.test.ts. Inputstate/staleIDs/cancel/delayedvalidation/source/error;Tests 11 passed (11);exit0.
+UNIT: npm test;Test Files 17 passed (17);Tests 88 passed (88);exit0.
+PYTHON: npm run test:python;Ran 8 tests;OK;exit0. Native crop rotations/fakequote/wrongquad rejection preserves hash.
+BUILD: npm run build;production build completed;exit0. npm run typecheck;exit0.
+UI: npx playwright test tests/e2e/cruise.spec.ts;Inputtwo-pagePDF/mockSSE/temp profiles;2 passed (6.3s);exit0. Actual unverified anchors rejected with CRUISE_ANCHOR_INVALID and0networkrequests; no fake explanations withoutconfig. Cropanchor2tests also passed earlier.
+ROLLBACK: node scripts/check-cruise-control-rollback.mjs (executableROLLBACK.sh same command). Inputboundedisolatedsource/profilecopy+200page32MiBfixture.
+Literal: ROLLBACK: CRUISE=0; READ_BLOCKS=1; SCHEMA=3; LIVE_SOURCE_UNCHANGED=YES
+Exit0. RestoredTask2inCOPY; currentliveCruise remainsmodified; userData never downgraded.
+Artifacts:
+D:/codex project/Enlumor/evidence/cruise-control/MODIFIED_FILE.tsx
+D:/codex project/Enlumor/evidence/cruise-control/DIFF.patch
+D:/codex project/Enlumor/evidence/cruise-control/VERIFICATION.txt
+D:/codex project/Enlumor/evidence/cruise-control/ROLLBACK.sh

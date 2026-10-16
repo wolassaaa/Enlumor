@@ -1,3 +1,4 @@
+import{CruisePanel}from'./CruisePanel';
 import type {CruiseBlock} from '../shared/cruise';
 import {ModelSettings} from './model-settings';
 import { NoteDialog } from './note-dialog';
@@ -22,6 +23,7 @@ function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id
 }
 
 function App() {
+  const [cruiseOpen,setCruiseOpen]=useState(false),[cruiseTakeover,setCruiseTakeover]=useState(0);
   const [modelSettingsOpen,setModelSettingsOpen]=useState(false);const modelSettingsTrigger=useRef<HTMLElement|null>(null);
 
   const [cruiseBlocks,setCruiseBlocks]=useState<CruiseBlock[]>([]),[blocksOpen,setBlocksOpen]=useState(false),[blocksBusy,setBlocksBusy]=useState(false);
@@ -45,7 +47,7 @@ function App() {
   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
   const [currentPage,setCurrentPage]=useState(1),[pageError,setPageError]=useState('');
   function syncPage(value:number){if(blockPage.current!==value){blockPage.current=value;clearBlocks();}setCurrentPage(value);setPage(String(value));setPageError('');}
-  function navigatePage(value:number){if(!doc||busy)return;resetDrawing();setParts([]);setPage(String(value));setPageError('');reader.current?.go(value);}
+  function navigatePage(value:number){if(!doc||busy)return;setCruiseTakeover(n=>n+1);resetDrawing();setParts([]);setPage(String(value));setPageError('');reader.current?.go(value);}
   function submitPage(){const value=page.trim(),number=Number(value);if(!doc)return;if(!/^\d+$/.test(value)||!Number.isSafeInteger(number)||number<1||number>doc.pageCount){setPageError(`请输入 1–${doc.pageCount} 之间的整数页码`);return;}navigatePage(number);}
   const [drawMode,setDrawMode]=useState<'line'|'arrow'|'ink'|'erase'|null>(null);
   function resetDrawing(){reader.current?.setDrawingTool(null);setDrawMode(null);}
@@ -144,7 +146,7 @@ function App() {
       const baseTabs=replacementTabs || tabsRef.current;
       const nextTabs=baseTabs.some(tab=>tab.id===opened.id) ? baseTabs.map(tab=>tab.id===opened.id?opened:tab) : [...baseTabs,opened];
       resetDrawing();previous.reading = current.current;
-      replacing = true; current.current=null;clearBlocks();setParts([]);setNotice('');setTextNotice('');
+      replacing = true; current.current=null;clearBlocks();setCruiseOpen(false);setParts([]);setNotice('');setTextNotice('');
       await reader.current!.open(opened);
       unwrap(await window.enlumor.saveTabs({openIds:nextTabs.map(tab=>tab.id),activeId:opened.id}));
       setQuery('');setHistory(histories.current.get(opened.id) || emptyHistory());
@@ -217,7 +219,7 @@ function App() {
     if(await commit(change,kind))closeNote();
   }
   function clearCurrent() {
-    clearTimeout(timer.current);clearBlocks();current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
+    clearTimeout(timer.current);clearBlocks();setCruiseOpen(false);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
   }
   async function closeTab(id:string) {
     if(locked.current || pending.current || noteOpen.current)return;
@@ -264,7 +266,7 @@ function App() {
     <button aria-label="模型设置" disabled={busy||!!pending.current} onClick={event=>{resetDrawing();setParts([]);modelSettingsTrigger.current=event.currentTarget;setModelSettingsOpen(true);}}>模型设置</button></header>
     {layoutOpen && <div className="layout-popover" role="region" aria-label="布局设置"><label>阅读间距 <select aria-label="阅读间距" value={layout.spacing} onChange={event=>persistLayout({...layoutRef.current,spacing:Number(event.target.value) as 12|16|24})}><option value="12">紧凑</option><option value="16">标准</option><option value="24">宽松</option></select></label><p>拖动侧栏边缘调宽；方向键微调，双击恢复宽度。</p><button onClick={()=>persistLayout(defaultLayout)}>恢复默认布局</button><button aria-label="关闭布局设置" onClick={()=>setLayoutOpen(false)}>完成</button></div>}
     <div className="workspace" ref={workspaceElement} style={{'--library-width':panels.left+'px','--notes-width':panels.right+'px'} as CSSProperties}>
-      <aside className="library" hidden={!libraryOpen}>
+      <aside onClickCapture={()=>setCruiseTakeover(n=>n+1)} className="library" hidden={!libraryOpen}>
         <div className="section-label">LIBRARY / 你的阅读空间</div>
         <h2>{libraryView === 'documents' ? '文档' : libraryView === 'outline' ? '目录' : '缩略图'}<span className="section-count">{(libraryView === 'documents' ? recent.length : libraryView === 'thumbnails' ? doc?.pageCount || 0 : outline?.length || 0).toString().padStart(2, '0')}</span></h2>
         <div className="library-tabs" role="tablist" aria-label="文档导航"><button role="tab" aria-selected={libraryView === 'documents'} onClick={() => setLibraryView('documents')}>文档</button><button role="tab" aria-selected={libraryView === 'outline'} disabled={!doc} onClick={() => setLibraryView('outline')}>目录</button><button role="tab" aria-selected={libraryView === 'thumbnails'} disabled={!doc} onClick={() => setLibraryView('thumbnails')}>缩略图</button></div>
@@ -282,10 +284,11 @@ function App() {
           <button role="tab" aria-label={tab.name} aria-selected={doc?.id===tab.id} tabIndex={doc?.id===tab.id?0:-1} title={tab.path} disabled={busy||!!pending.current} onClick={()=>void load(tab.id)}>{tab.name}</button>
           <button aria-label={`关闭 ${tab.name}`} title="关闭标签（Ctrl+W）" disabled={busy||!!pending.current} onClick={()=>void closeTab(tab.id)} onKeyDown={event=>event.stopPropagation()}>×</button>
         </div>)}</div>}<div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
-        <div className="toolbar"><button aria-label="读取本页阅读块" disabled={!doc||busy||blocksBusy} onClick={()=>void readBlocks()}>{blocksBusy?'读取中…':'阅读块'}</button><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
+        <div className="toolbar"><button aria-label="打开 Cruise" disabled={!doc||busy} onClick={()=>{resetDrawing();setCruiseOpen(true);}}>Cruise</button><button aria-label="读取本页阅读块" disabled={!doc||busy||blocksBusy} onClick={()=>void readBlocks()}>{blocksBusy?'读取中…':'阅读块'}</button><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
           <form className="search" onSubmit={event => { event.preventDefault(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
         </div>
+        {cruiseOpen&&doc&&reader.current&&<CruisePanel key={doc.id} document={doc} reader={reader.current} takeover={cruiseTakeover} selection={parts} settingsOpen={modelSettingsOpen} onSettings={()=>{modelSettingsTrigger.current=window.document.activeElement as HTMLElement;setModelSettingsOpen(true);}} onExit={()=>setCruiseOpen(false)}/>}
         {blocksOpen&&<section className="cruise-block-list" aria-label="本页阅读块"><div><strong>本页阅读块 · 原文定位</strong><button aria-label="收起阅读块" onClick={()=>setBlocksOpen(false)}>收起</button></div>{cruiseBlocks.length?cruiseBlocks.map((block,index)=><button key={block.id} data-block-id={block.id} aria-label={`定位阅读块 ${index+1}`} onClick={()=>{resetDrawing();reader.current?.locateCruiseBlock(block);}}>{block.quote}</button>):<p>当前页没有可用阅读块；扫描页需要文字层，可略过或继续普通阅读。</p>}</section>}
         {pageError && <div id="page-error" className="notice" role="alert">{pageError}</div>}
         {(error||pending.current||layoutError) && <div className="error" role="alert">{error||'存在未保存更改'}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && note===null && <button disabled={busy} onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && note===null && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}

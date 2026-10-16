@@ -1,3 +1,4 @@
+import{ExplanationRequests}from'./cruise-requests';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, safeStorage } from 'electron';
 import {AiProfiles} from './ai-profiles';
 import {generateText,listAiModels} from './ai-client';
@@ -15,6 +16,7 @@ if (customData) { mkdirSync(customData, { recursive: true }); app.setPath('userD
 let workspace: Workspace;
 let aiProfiles:AiProfiles;
 let aiFlight:AbortController|undefined;
+let cruiseRequests:ExplanationRequests;
 let window: BrowserWindow;
 let closeReady = false, waitingClose = false;
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -54,6 +56,13 @@ app.whenReady().then(() => {
       return { ok: false, error: { code: /^[A-Z_]+(?=:)/.exec(message)?.[0] || 'OPERATION_FAILED', message } };
     }
   });
+  cruiseRequests=new ExplanationRequests(async block=>{
+    const doc=workspace.verified(block.documentId);
+    if(block.fingerprint!==doc.fingerprint||block.pageIndex>=doc.pageCount)throw Error('CRUISE_SOURCE_CHANGED');
+    await runPdfTask({operation:'verify-block',source:doc.path,fingerprint:doc.fingerprint,block});
+  },id=>aiProfiles.resolve(id),(profile,prompt,options)=>generateText(profile,prompt,{...options,stream:true,fetch:(input,init)=>net.fetch(String(input),init)}),event=>{if(!window.isDestroyed())window.webContents.send('cruise:text',event);});
+  handle('cruise:start',input=>cruiseRequests.start(input));
+  handle('cruise:cancel',id=>{if(typeof id!=='string'||!/^[\w-]{1,100}$/.test(id))throw Error('CRUISE_INVALID_REQUEST');cruiseRequests.cancel(id);});
   handle('document:list', () => workspace.list());
   handle('ai:profiles:list',()=>aiProfiles.list());
   handle('ai:profiles:save',input=>aiProfiles.save(input));
@@ -103,4 +112,4 @@ app.whenReady().then(() => {
   void window.loadURL(process.env.ENLUMOR_DEV_URL || 'enlumor://app/index.html');
 });
 app.on('window-all-closed', () => app.quit());
-app.on('will-quit', () => {aiFlight?.abort();workspace?.close();});
+app.on('will-quit', () => {aiFlight?.abort();cruiseRequests?.cancel();workspace?.close();});

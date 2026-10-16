@@ -1,3 +1,5 @@
+import type{ExplanationInput}from'../main/cruise-requests';
+import type{AiTextEvent}from'./ai';
 import type {AiProfileInput,AiProfileView} from './ai';
 export type Quad = number[];
 export type Annotation = {
@@ -14,6 +16,9 @@ export type Reply<T> = { ok: true; value: T } | { ok: false; error: { code: stri
 export type LayoutPreferences = { left: number; right: number; spacing: 12 | 16 | 24 };
 export type TabSession = { openIds: string[]; activeId: string | null };
 export type Bridge = {
+  startBlockExplanation(input:ExplanationInput):Promise<Reply<void>>;
+  cancelBlockExplanation(requestId:string):Promise<Reply<void>>;
+  onAiText(handler:(event:AiTextEvent)=>void):()=>void;
   listAiProfiles():Promise<Reply<AiProfileView[]>>;
   saveAiProfile(input:AiProfileInput):Promise<Reply<AiProfileView>>;
   deleteAiProfile(id:string):Promise<Reply<void>>;

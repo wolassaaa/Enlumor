@@ -24,6 +24,31 @@ def inspect_pdf(source):
             raise ValueError('INVALID_PDF: 文件不是有效 PDF')
         return {'pageCount': doc.page_count}
 
+def verify_block(source, fingerprint, block):
+    import unicodedata
+    invalid = 'CRUISE_ANCHOR_INVALID'
+    if digest(source) != fingerprint: raise ValueError('SOURCE_CHANGED')
+    normalize = lambda text: ''.join(unicodedata.normalize('NFKC', text).split())
+    with fitz.open(source) as doc:
+        index = block.get('pageIndex')
+        if type(index) is not int or not 0 <= index < len(doc): raise ValueError(invalid)
+        quote, quads = block.get('quote'), block.get('quads')
+        if not isinstance(quote,str) or not 0 < len(quote) <= 1200 or not isinstance(quads,list) or not 0 < len(quads) <= 100: raise ValueError(invalid)
+        page=doc[index];page.set_rotation(0);matrix=page.transformation_matrix
+        chars=[char for b in page.get_text('rawdict')['blocks'] if b.get('type') == 0 for line in b['lines'] for span in line['spans'] for char in span['chars']]
+        fragments=[]
+        for q in quads:
+            if not isinstance(q,list) or len(q)!=8 or any(type(v) not in (int,float) or not math.isfinite(v) for v in q): raise ValueError(invalid)
+            quad=fitz.Quad([fitz.Point(q[i],q[i+1])*matrix for i in (0,2,4,6)])
+            if not quad.is_convex or quad.is_empty: raise ValueError(invalid)
+            rect=quad.rect
+            if not page.rect.contains(rect): raise ValueError(invalid)
+            selected=[c for c in chars if rect.contains((fitz.Rect(c['bbox']).tl+fitz.Rect(c['bbox']).br)*.5)]
+            selected.sort(key=lambda c:c['bbox'][0]);fragments.append(''.join(c['c'] for c in selected))
+        if normalize(''.join(fragments)) != normalize(quote): raise ValueError(invalid)
+    if digest(source) != fingerprint: raise ValueError('SOURCE_CHANGED')
+    return {'verified':True}
+
 def export_pdf(source, target, fingerprint, annotations):
     source, target = Path(source).resolve(), Path(target).resolve()
     if source == target or (target.exists() and os.path.samefile(source, target)):
@@ -105,7 +130,10 @@ def export_pdf(source, target, fingerprint, annotations):
 if __name__ == '__main__':
     try:
         request = json.loads(sys.stdin.buffer.read())
-        result = inspect_pdf(request['source']) if request['operation'] == 'inspect' else export_pdf(request['source'], request['target'], request['fingerprint'], request['annotations'])
+        if request['operation'] == 'inspect': result = inspect_pdf(request['source'])
+        elif request['operation'] == 'verify-block': result = verify_block(request['source'], request['fingerprint'], request['block'])
+        elif request['operation'] == 'export': result = export_pdf(request['source'], request['target'], request['fingerprint'], request['annotations'])
+        else: raise ValueError('INVALID_OPERATION')
         print(json.dumps({'ok': True, 'value': result}, ensure_ascii=True))
     except Exception as error:
         print(json.dumps({'ok': False, 'error': str(error)}, ensure_ascii=True))

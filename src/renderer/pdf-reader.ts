@@ -143,6 +143,7 @@ export class PdfReader {
     this.blockCache.set(pageIndex,blocks);if(this.blockCache.size>6)this.blockCache.delete(this.blockCache.keys().next().value!);
     return structuredClone(blocks);
   }
+  clearCruiseFocus(){clearTimeout(this.flashTimer);this.flash=undefined;this.paint();}
   locateCruiseBlock(block:CruiseBlock){
     if(!this.active||block.documentId!==this.active.id||block.fingerprint!==this.active.fingerprint)throw new Error('CRUISE_SOURCE_CHANGED');
     this.focus({...block,type:'highlight',author:'user',color:'#f4cf58',note:''});

@@ -74,11 +74,11 @@ Consumes：已有PDF.js文档/viewport和SelectionPart；Produces：readPageBloc
 Files：src/shared/cruise.ts、src/renderer/CruisePanel.tsx；修改main.tsx/pdf-reader.ts/style.css；tests/cruise.test.ts、tests/e2e/cruise.spec.ts。
 Consumes：AiProfileView、AiTextEvent、CruiseBlock；Produces：开始/继续/暂停/后退/略过/退出流程与可验证引用回跳，默认手动继续。
 
-- [ ] 状态机先写失败测试：idle/loading/ready/explaining/paused/error/finished；快速连按、换块/换标签取消、旧requestId事件、超时重试不丢块。
-- [ ] 原文与模型输出是数据，不执行其指令。解释只发送当前块/少量上下文；引用只接受已提供块ID，并校验docId/fingerprint。
-- [ ] `npx vitest run tests/cruise.test.ts`红→绿；网络解释复用Task1，不给每家单写UI。
-- [ ] 实际Electron模拟服务跑打开→开始→流式解释→引用回跳→暂停→手动滚动/切页接管→退出；程序定位滚动不被误判用户接管。
-- [ ] 用户首次开始说明服务与发送范围；配置缺失明确引导设置，无模拟答案。临时强调不新增永久批注；原PDF哈希不变。类型检查、提交。
+- [x] 状态机先写失败测试：idle/loading/ready/explaining/paused/error/finished；快速连按、换块/换标签取消、旧requestId事件、超时重试不丢块。
+- [x] 原文与模型输出是数据，不执行其指令。解释只发送当前块/少量上下文；引用只接受已提供块ID，并校验docId/fingerprint。
+- [x] `npx vitest run tests/cruise.test.ts`红→绿；网络解释复用Task1，不给每家单写UI。
+- [x] 实际Electron模拟服务跑打开→开始→流式解释→引用回跳→暂停→手动滚动/切页接管→退出；程序定位滚动不被误判用户接管。
+- [x] 用户首次开始说明服务与发送范围；配置缺失明确引导设置，无模拟答案。临时强调不新增永久批注；原PDF哈希不变。类型检查、提交。
 
 ### Task 4：节奏、会话恢复与故障恢复
 

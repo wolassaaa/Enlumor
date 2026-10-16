@@ -10,7 +10,7 @@
 
 - Task1：模型设置与四协议底座已实现，专项31项单测、2项实际Electron流程通过；已提交9bafc46；全部66项单测通过，开发构建通过。不是完整Cruise，也不是正式发布。
 - Task2：完成并提交e91e19e；11项分块/生命周期测试、全部77项单测、4项实际Electron（设置2＋定位2）通过；四种裁剪源旋转、150%/200%显示缩放。临时强调不入批注表。Task1+2独立review的1项Important和2项Minor均已修复并有回归测试。
-- Task3/4：巡航解释/控制/接管，节奏/恢复尚未实现。
+- Task3：逐块流式解释/控制/引用原文/手动接管已实现并验证，待Task4后统一review。Task4节奏/恢复尚未实现。
 - Task5/6：DashScope/星火原生尚未实现；不能在设置中作为可用协议出现。
 - 两任务一review：Task1+2统一只读独立review完成（cruise_batch_one_review），Important修复后计数归零；下一次为Task3+4，不重复派审。
 - 当前最新已验证发布仍为0.1.12，开发源代码引入SQLite v3模型配置表；个人userData未迁移，测试全用临时profile。
@@ -50,3 +50,11 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 ## 2026-10-17 02:55续跑检查点
 - 当前无在途产品修改或测试。定时任务enlumor保持ACTIVE，每15分钟续跑本线程，截止08:00。下一步Task3；Task3未开始，不把预研读取算实现。
 - Task1+2修复及证据已提交；下一批Task3+4完成后才review。暂停/持久化及原生厂商适配均仍待办。
+
+## Task3实施记录
+- 状态机6项、requestId/取消/脱敏5项；全部88项单测、8项Python测试、2项Cruise Electron流程、build/typecheck通过。隔离回退恢复Task2（CRUISE0 READ_BLOCKS1 SCHEMA3），原PDF/个人数据不变。
+- Python仅新增只读verify-block：主进程先校验doc/fingerprint/页码/有界quote+quads，再用原文件字符中心与quad核对原文；校验失败不发网络。字体提取差异可能保守拒绝，不伪造证据；Task4/发布须重打包worker。
+- 解释只发JSON blockId+当前quote，不发路径/整份PDF；模型文字只作React纯文本。引用回跳仅指向当前内部块，不接受模型任意URL/ID执行。
+- 窄接口start/cancel/onAiText；取消验证中任务会阻止后续网络，旧回调全部隔离。手动wheel/pointerdown/页码/导航与后台暂停；程序focus的scroll不触发手动接管。模型设置关闭刷新服务，不自动请求。
+- 更正Task2验证记录：最后新增生命周期测试后typecheck曾报测试私有字段类型错误，之前串联命令只检查最终退出码，误记类型检查通过。Task3开工已将harness返回类型限定为测试any并重新独立运行tsc通过；其余Task2单测/E2E/回退输出真实。后续所有命令逐项检查退出码。
+- 下一步Task4：自动20/12/6秒、后台停止、数据库schema4迁移备份、保存确认/恢复paused与来源。Task3+4后一次统一review；不提前标发布。

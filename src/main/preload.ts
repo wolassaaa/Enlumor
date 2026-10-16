@@ -1,6 +1,9 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Bridge } from '../shared/model';
 const bridge: Bridge = {
+  startBlockExplanation:input=>ipcRenderer.invoke('cruise:start',input),
+  cancelBlockExplanation:id=>ipcRenderer.invoke('cruise:cancel',id),
+  onAiText:handler=>{const listener=(_event:unknown,value:import('../shared/ai').AiTextEvent)=>handler(value);ipcRenderer.on('cruise:text',listener);return()=>ipcRenderer.removeListener('cruise:text',listener);},
   listAiProfiles:()=>ipcRenderer.invoke('ai:profiles:list'),
   saveAiProfile:input=>ipcRenderer.invoke('ai:profiles:save',input),
   deleteAiProfile:id=>ipcRenderer.invoke('ai:profiles:delete',id),
