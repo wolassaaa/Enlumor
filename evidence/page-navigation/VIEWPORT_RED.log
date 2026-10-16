@@ -1,0 +1,46 @@
+
+Running 1 test using 1 worker
+
+(node:45432) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\page-navigation.spec.ts:13:1 › same-page viewport updates retain invalid feedback and unsubmitted draft (6.1s)
+
+
+  1) tests\e2e\page-navigation.spec.ts:13:1 › same-page viewport updates retain invalid feedback and unsubmitted draft 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel('跳转页码', { exact: true })
+    Expected: "999"
+    Received: "1"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('跳转页码', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('跳转页码', { exact: true })
+        14 × locator resolved to <input value="1" aria-label="跳转页码" class="page-input" inputmode="numeric" aria-invalid="false"/>
+           - unexpected value "1"
+
+
+      14 |  const {app,page}=await launch('viewport');try{const input=page.getByLabel('跳转页码',{exact:true});await input.fill('999');await input.press('Enter');await expect(input).toHaveAttribute('aria-invalid','true');
+      15 |  await page.locator('#viewerContainer').evaluate(async e=>{e.scrollTop+=1;e.dispatchEvent(new Event('scroll'));await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve()))));});
+    > 16 |  await expect(input).toHaveValue('999');await expect(input).toHaveAttribute('aria-invalid','true');await expect(page.getByText('请输入 1–3 之间的整数页码',{exact:true})).toBeVisible();
+         |                      ^
+      17 |  }finally{await app.evaluate(({app})=>app.exit(0));}
+      18 | });
+      19 | test('invalid input stays on current page with accessible feedback; Escape resets and blur never jumps',async()=>{
+        at D:\codex project\Enlumor\tests\e2e\page-navigation.spec.ts:16:22
+
+    Error Context: test-results\page-navigation-same-page--ce04d-dback-and-unsubmitted-draft\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\page-navigation-same-page--ce04d-dback-and-unsubmitted-draft\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\page-navigation-same-page--ce04d-dback-and-unsubmitted-draft\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\page-navigation.spec.ts:13:1 › same-page viewport updates retain invalid feedback and unsubmitted draft 

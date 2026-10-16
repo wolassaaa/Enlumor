@@ -1,0 +1,78 @@
+Enlumor 0.1.11 — page navigation + Round 5 review
+Branch: feat/page-navigation-review
+Base: f859d75 (cumulative review base 0b3cc69)
+Changed fields/branches: currentPage / page draft / pageError; updateviewarea only synchronizes input when documentId or pageIndex changes; EraserTool.point preserves actual off-page coordinates.
+Database schema: unchanged. Original PDFs and personal userData: untouched by this batch.
+
+Artifacts (reopened and checked):
+MODIFIED_FILE: D:/codex project/Enlumor/evidence/page-navigation/MODIFIED_FILE.tsx
+DIFF_FILE: D:/codex project/Enlumor/evidence/page-navigation/DIFF.patch
+VERIFICATION: D:/codex project/Enlumor/evidence/page-navigation/VERIFICATION.txt
+ROLLBACK: D:/codex project/Enlumor/evidence/page-navigation/ROLLBACK.sh
+
+Original raw SHA256 (also checked against staged Git blobs):
+src/renderer/main.tsx: 9d331bb79acd3bdab0881589818e869d573d2978a6834a9058e5fdb98a95fd96
+src/renderer/eraser-tool.ts: a08bde2c857a876e80f6f93e222e6fdbb905f4899374927635e62d2fe5e727d5
+Both originals stored byte-for-byte under originals/, protected with -text in .gitattributes.
+
+All commands below use cwd D:/codex project/Enlumor; no inherited ENLUMOR_TEST_APP unless explicitly set.
+BASELINE command: npx playwright test tests/e2e/page-navigation.spec.ts
+Input: original 0.1.10 build; fresh profiles; generated 3-page PDF; continuous/single page, draft999/0, Enter invalid ['',0,4,1.5,abc,1e0], Esc, blur, valid3.
+Literal result: 3 failed
+Exit status: 1
+Log: BASELINE.log
+
+Review regression command: npx playwright test tests/e2e/eraser.spec.ts -g 'captured off-page'
+Input: fresh profile, original eraser; edge ink x3,y200..250, pointer (30,180)->(-30,190)->(-30,270); then genuine edge hit and undo.
+Literal before fix: 1 failed; exit 1 (REVIEW_RED.log)
+Literal after fix: 1 passed (2.2s); exit 0 (REVIEW_GREEN.log)
+
+Initial release command: $env:ENLUMOR_EVIDENCE_DIR='evidence/page-navigation'; npm run release:verified
+Literal result: 1 failed; 75 passed (2.8m)
+Exit status: 1. latest remained 0.1.10.
+Cause: same-page updateviewarea reset validation/draft. Log: RELEASE_RED.log.
+Deterministic repro command: npx playwright test tests/e2e/page-navigation.spec.ts -g 'same-page'
+Input: invalid999, same-page scroll event, three animation frames, expect draft/error retained.
+Literal result: 1 failed; exit 1 (VIEWPORT_RED.log).
+
+MODIFIED command: npx playwright test tests/e2e/page-navigation.spec.ts tests/e2e/eraser.spec.ts
+Input: updated development build, fresh profiles; above scenarios plus existing eraser regressions.
+Literal result: 15 passed (24.9s)
+Exit status: 0
+Log: MODIFIED.log
+
+ROLLBACK command: & 'C:/Program Files/Git/bin/bash.exe' evidence/page-navigation/ROLLBACK.sh
+Input: new .cache/page-navigation-rollback/run-* copy; restore BOTH hash-checked originals; fresh test profile; generated 200-page benchmark PDF.
+Literal result: ROLLBACK: FIRST_PAGE_PREVIOUS_ENABLED=YES; VALIDATION_ATTRIBUTE=ABSENT; LIVE_SOURCE_UNCHANGED=YES
+Exit status: 0
+Restored status: isolated copy has old enabled first-page Previous and absent input validation attribute; both code files restored to original hashes. Main working tree remains modified, personal DB unchanged.
+Log: ROLLBACK.log
+Rollback helper initially failed during adaptation (substring selection, then leftover old eraser assertion); corrected helper and reran successfully. No live source/user data reverted.
+
+Final complete gate command: $env:ENLUMOR_EVIDENCE_DIR='evidence/page-navigation'; npm run release:verified
+Input: final source, packaged staged EXE, fresh profiles; 200 pages/~32MB/1000 highlights text and scanned fixtures.
+Literal results: Tests 35 passed (35); Ran 7 tests; OK; 78 passed (2.8m)
+PACKAGED_READER: PASS
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.11 D:\codex project\Enlumor\release\Enlumor-0.1.11-win.zip SHA256=e181774cff174548d5feb600d1e748105a485317e4b2ac1edac4c710c882dea2
+Exit status: 0. Total: 120 tests.
+Log: RELEASE.log
+Text extracted startup median497.1395ms, scrollP95 14.5ms, readingSaveP95 9ms, main/thumbnail canvases8/3.
+Scanned extracted startup median513.9956ms, scrollP95 14.200000001117587ms, readingSaveP95 7.799999998882413ms, main/thumbnail canvases8/3.
+Both zero >50ms long tasks; all configured budgets passed. Dense ink is NOT represented by the highlight fixtures and remains a review Minor requiring a dedicated benchmark.
+
+Final EXE retest command: $env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.11-win-x64/Enlumor.exe).Path; npx playwright test tests/e2e/page-navigation.spec.ts tests/e2e/eraser.spec.ts
+Input: published local EXE, fresh profiles, same navigation/eraser suite.
+Literal result: 15 passed (28.2s)
+Exit status: 0. Log: FINAL_EXE.log
+
+Visual command: node scripts/capture-page-navigation.mjs
+Literal result: NAVIGATION_CAPTURE: FIRST_DISABLED=YES; INVALID_FEEDBACK=YES; ESC_RESTORES=YES; LAST_DISABLED=YES
+Exit status: 0. first-page.png, invalid-page.png, last-page.png and gate edge-export.png reopened with view_image; navigation state, feedback and Edge exported highlight/note visually inspected.
+
+One independent cumulative review completed; Important fixed via red->green regression. Minor dense-ink benchmark, explicit scroll cancellation test and draft/thumbnail synchronization test recorded in docs/reviews/2026-10-16-round-five.md. No repeat reviewer dispatch. Two-task review counter reset0.
+Build remains local; no GitHub push or binary upload in this batch.
+
+Reusable continuation prompt:
+按docs/FEATURES.md继续；先补密集画笔专项性能基准，定位后再优化。坚持失败→成功测试、每两项整体review、完整release:verified门禁；保持原PDF只读和个人工作区数据。

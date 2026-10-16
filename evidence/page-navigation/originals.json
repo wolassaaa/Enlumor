@@ -1,0 +1,12 @@
+[
+  {
+    "name": "main.tsx",
+    "target": "src/renderer/main.tsx",
+    "sha256": "9d331bb79acd3bdab0881589818e869d573d2978a6834a9058e5fdb98a95fd96"
+  },
+  {
+    "name": "eraser-tool.ts",
+    "target": "src/renderer/eraser-tool.ts",
+    "sha256": "a08bde2c857a876e80f6f93e222e6fdbb905f4899374927635e62d2fe5e727d5"
+  }
+]

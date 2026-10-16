@@ -43,6 +43,11 @@ for(const [rotation,scale]of [[90,1.5],[270,2]]as const)test(`eraser hits rotate
  const app=await launch('rot-'+rotation,scale);try{const page=await open(app);for(let i=0;i<rotation/90;i++)await page.getByRole('button',{name:'旋转页面',exact:true}).click();await draw(page,[[80,160],[220,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await erase(page,[[150,140],[150,180]]);await expect(page.locator('.drawn-ink')).toHaveCount(0);await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(1);
  }finally{await quit(app);}
 });
+test('captured off-page pointer does not project a fictional eraser sweep onto the page edge',async()=>{
+ const app=await launch('edge');try{const page=await open(app);await draw(page,[[3,200],[3,250]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await erase(page,[[30,180],[-30,190],[-30,270]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await expect(page.locator('.erase-preview')).toHaveCount(0);
+ await page.keyboard.press('Escape');await erase(page,[[3,190],[3,260]]);await expect(page.locator('.drawn-ink')).toHaveCount(0);await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(1);
+ }finally{await quit(app);}
+});
 for(const action of ['rotate','layout','page']as const)test(`eraser preview cancels before same-turn ${action} and pointer release`,async()=>{
  const app=await launch('cancel-'+action);try{const page=await open(app);await draw(page,[[80,160],[220,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await page.getByRole('button',{name:'整笔擦除',exact:true}).click();const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+150,b.y+160);await page.mouse.down();await expect(page.locator('.erase-preview')).toHaveCount(1);
  await page.evaluate(({action,x,y}:{action:string;x:number;y:number})=>{const label=action==='rotate'?'旋转页面':action==='layout'?'收起文档栏':'下一页';(document.querySelector('[aria-label="'+label+'"]')as HTMLButtonElement).click();document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));},{action,x:b.x+150,y:b.y+160});

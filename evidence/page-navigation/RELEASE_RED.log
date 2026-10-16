@@ -1,0 +1,313 @@
+
+> enlumor@0.1.11 release:verified
+> node scripts/release.mjs
+
+
+> enlumor@0.1.11 build
+> tsc --noEmit && node scripts/build.mjs
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 31 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/renderer/index.html                                          0.59 kB │ gzip:   0.38 kB
+dist/renderer/assets/cursor-editorTextHighlight-kG3uUOwL.svg      5.40 kB │ gzip:   2.20 kB
+dist/renderer/assets/pdf.worker.min-CjEcRF4W.mjs              1,264.34 kB
+dist/renderer/assets/index-CoSuq1wt.css                         245.78 kB │ gzip:  45.85 kB
+dist/renderer/assets/index-4PBxB2IG.js                          867.64 kB │ gzip: 263.60 kB
+
+✓ built in 406ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+> enlumor@0.1.11 test
+> vitest run
+
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+(node:7448) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:49144) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45008) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:5240) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  11 passed (11)
+      Tests  35 passed (35)
+   Start at  22:23:38
+   Duration  277ms (tests 45%, import 31%, transform 13%, worker 11%)
+
+
+> enlumor@0.1.11 test:python
+> node scripts/python.mjs -m unittest discover -s tests/python -v
+
+test_arrow_ends_crop_rotation_repeat (test_export.ExportTests.test_arrow_ends_crop_rotation_repeat) ... ok
+test_cli_accepts_utf8_chinese_paths_with_windows_legacy_encoding (test_export.ExportTests.test_cli_accepts_utf8_chinese_paths_with_windows_legacy_encoding) ... ok
+test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) ... ok
+test_rejects_overwrite_stale_and_invalid_without_output (test_export.ExportTests.test_rejects_overwrite_stale_and_invalid_without_output) ... ok
+test_rotation_crop_native_marks_and_repeat_exports (test_export.ExportTests.test_rotation_crop_native_marks_and_repeat_exports) ... ok
+test_strikeout_and_line_crop_rotation_repeat_exports (test_export.ExportTests.test_strikeout_and_line_crop_rotation_repeat_exports) ... ok
+test_underline_standard_subtype_crop_rotation_and_repeat_export (test_export.ExportTests.test_underline_standard_subtype_crop_rotation_and_repeat_export) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.544s
+
+OK
+
+> enlumor@0.1.11 build:worker
+> node scripts/build-worker.mjs
+
+200 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.8
+200 INFO: Python: 3.14.3
+232 INFO: Platform: Windows-11-10.0.26200-SP0
+232 INFO: Python environment: D:\codex project\Enlumor\.venv
+233 INFO: wrote .cache\enlumor-pdf-worker.spec
+237 INFO: Removing temporary files and cleaning cache in C:\Users\woola\AppData\Local\pyinstaller
+773 INFO: Module search paths (PYTHONPATH):
+['D:\\codex project\\Enlumor',
+ 'C:\\Python314\\python314.zip',
+ 'C:\\Python314\\DLLs',
+ 'C:\\Python314\\Lib',
+ 'C:\\Python314',
+ 'D:\\codex project\\Enlumor\\.venv',
+ 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages',
+ 'D:\\codex project\\Enlumor\\python']
+1046 INFO: Appending 'binaries' from .spec
+1047 INFO: Appending 'datas' from .spec
+1051 INFO: checking Analysis
+1051 INFO: Building Analysis because Analysis-00.toc is non existent
+1051 INFO: Looking for Python shared library...
+1051 INFO: Using Python shared library: C:\Python314\python314.dll
+1051 INFO: Running Analysis Analysis-00.toc
+1051 INFO: Target bytecode optimization level: 0
+1051 INFO: Initializing module dependency graph...
+1052 INFO: Initializing module graph hook caches...
+1071 INFO: Analyzing modules for base_library.zip ...
+2518 INFO: Processing standard module hook 'hook-encodings.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+2904 INFO: Processing standard module hook 'hook-math.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4343 INFO: Processing standard module hook 'hook-difflib.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4353 INFO: Processing standard module hook 'hook-heapq.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+4463 INFO: Processing standard module hook 'hook-pickle.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5762 INFO: Caching module dependency graph...
+5789 INFO: Analyzing D:\codex project\Enlumor\python\export_pdf.py
+8218 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8421 INFO: Processing standard module hook 'hook-xml.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8763 INFO: Processing standard module hook 'hook-sysconfig.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8770 INFO: Processing standard module hook 'hook-_ctypes.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8833 INFO: Processing standard module hook 'hook-platform.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9180 INFO: Analyzing hidden import 'pymupdf.__main__'
+9216 INFO: Processing module hooks (post-graph stage)...
+9270 INFO: Performing binary vs. data reclassification (117 entries)
+9298 INFO: Looking for ctypes DLLs
+9310 INFO: Analyzing run-time hooks ...
+9312 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9316 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9318 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'D:\\codex project\\Enlumor\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9324 INFO: Creating base_library.zip...
+9338 INFO: Looking for dynamic libraries
+9594 INFO: Extra DLL search directories (AddDllDirectory): []
+9595 INFO: Extra DLL search directories (PATH): []
+10005 INFO: Warnings written to D:\codex project\Enlumor\.cache\pyinstaller-build\enlumor-pdf-worker\warn-enlumor-pdf-worker.txt
+10019 INFO: Graph cross-reference written to D:\codex project\Enlumor\.cache\pyinstaller-build\enlumor-pdf-worker\xref-enlumor-pdf-worker.html
+10039 INFO: checking PYZ
+10040 INFO: Building PYZ because PYZ-00.toc is non existent
+10040 INFO: Building PYZ (ZlibArchive) D:\codex project\Enlumor\.cache\pyinstaller-build\enlumor-pdf-worker\PYZ-00.pyz
+10253 INFO: Building PYZ (ZlibArchive) D:\codex project\Enlumor\.cache\pyinstaller-build\enlumor-pdf-worker\PYZ-00.pyz completed successfully.
+10265 INFO: checking PKG
+10265 INFO: Building PKG because PKG-00.toc is non existent
+10265 INFO: Building PKG (CArchive) enlumor-pdf-worker.pkg
+10277 INFO: Building PKG (CArchive) enlumor-pdf-worker.pkg completed successfully.
+10278 INFO: Bootloader D:\codex project\Enlumor\.venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+10278 INFO: checking EXE
+10278 INFO: Building EXE because EXE-00.toc is non existent
+10278 INFO: Building EXE from EXE-00.toc
+10278 INFO: Copying bootloader EXE to D:\codex project\Enlumor\.cache\pyinstaller-build\enlumor-pdf-worker\enlumor-pdf-worker.exe
+10280 INFO: Copying icon to EXE
+10282 INFO: Copying 0 resources to EXE
+10282 INFO: Embedding manifest in EXE
+10284 INFO: Appending PKG archive to EXE
+10286 INFO: Fixing EXE headers
+10337 INFO: Building EXE from EXE-00.toc completed successfully.
+10340 INFO: checking COLLECT
+10340 INFO: Building COLLECT because COLLECT-00.toc is non existent
+10340 INFO: Removing dir D:\codex project\Enlumor\.cache\pdf-worker\enlumor-pdf-worker
+10358 INFO: Building COLLECT COLLECT-00.toc
+10496 INFO: Building COLLECT COLLECT-00.toc completed successfully.
+10498 INFO: Build complete! The results are available in: D:\codex project\Enlumor\.cache\pdf-worker
+  • electron-builder  version=26.15.3 os=10.0.26200
+  • loaded configuration  file=package.json ("build" field)
+  • executing @electron/rebuild  electronVersion=44.7.2 arch=x64 buildFromSource=false workspaceRoot=D:\codex project\Enlumor projectDir=./ appDir=./
+  • installing native dependencies  arch=x64
+  • completed installing native dependencies
+  • packaging       platform=win32 arch=x64 electron=44.7.2 appOutDir=.cache\release-0.1.11-1792160616523\win-unpacked
+  • using custom unpacked Electron distribution  electronDist=node_modules\electron\dist
+  • copying unpacked Electron  source=D:\codex project\Enlumor\node_modules\electron\dist destination=D:\codex project\Enlumor\.cache\release-0.1.11-1792160616523\win-unpacked
+  • searching for node modules  pm=npm searchDir=D:\codex project\Enlumor
+  • updating asar integrity executable resource  executablePath=.cache\release-0.1.11-1792160616523\win-unpacked\Enlumor.exe
+  • signing with signtool.exe  path=.cache\release-0.1.11-1792160616523\win-unpacked\resources\pdf-worker\enlumor-pdf-worker.exe
+  • default Electron icon is used  reason=application icon is not set
+  • signing with signtool.exe  path=.cache\release-0.1.11-1792160616523\win-unpacked\Enlumor.exe
+  • building        target=zip arch=x64 file=.cache\release-0.1.11-1792160616523\Enlumor-0.1.11-win.zip
+(node:23480) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 76 tests using 1 worker
+
+(node:16864) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\arrows-ink.spec.ts:15:1 › arrow direction and Escape cancellation preserve native endpoints through rotation restart and standard export (5.2s)
+  ok  2 tests\e2e\arrows-ink.spec.ts:35:1 › ink keeps an ordered closed stroke through cancel undo restart and native export (3.6s)
+  ok  3 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 0 degrees and display scale 1 matches native SVG and PDF coordinates (1.9s)
+  ok  4 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 90 degrees and display scale 1.5 matches native SVG and PDF coordinates (2.0s)
+  ok  5 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 180 degrees and display scale 1 matches native SVG and PDF coordinates (2.5s)
+  ok  6 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 270 degrees and display scale 2 matches native SVG and PDF coordinates (2.5s)
+  ok  7 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 0 degrees and display scale 1 matches native SVG and PDF coordinates (1.9s)
+  ok  8 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 90 degrees and display scale 1.5 matches native SVG and PDF coordinates (1.9s)
+  ok  9 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 180 degrees and display scale 1 matches native SVG and PDF coordinates (2.5s)
+  ok 10 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 270 degrees and display scale 2 matches native SVG and PDF coordinates (2.0s)
+  ok 11 tests\e2e\arrows-ink.spec.ts:73:1 › long ink gesture bounds stored samples and preserves first and terminal coordinates (1.5s)
+  ok 12 tests\e2e\arrows-ink.spec.ts:84:44 › arrow draft uses selected color and cancels on rotation without saving (1.4s)
+  ok 13 tests\e2e\arrows-ink.spec.ts:84:44 › ink draft uses selected color and cancels on rotation without saving (2.0s)
+  ok 14 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (same-turn) (1.3s)
+  ok 15 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (same-turn) (1.8s)
+  ok 16 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (same-turn) (1.8s)
+  ok 17 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (same-turn) (1.8s)
+  ok 18 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (after-render) (1.3s)
+  ok 19 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (after-render) (1.8s)
+  ok 20 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (after-render) (1.9s)
+  ok 21 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (after-render) (1.8s)
+  ok 22 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (same-turn) (1.8s)
+  ok 23 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (same-turn) (1.3s)
+  ok 24 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (same-turn) (1.8s)
+  ok 25 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (same-turn) (1.3s)
+  ok 26 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (after-render) (1.8s)
+  ok 27 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (after-render) (1.8s)
+  ok 28 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (after-render) (1.8s)
+  ok 29 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (after-render) (1.8s)
+
+  ok 30 tests\e2e\eraser.spec.ts:10:1 › one eraser sweep deletes two entire strokes atomically and one undo restores both (1.2s)
+  ok 31 tests\e2e\eraser.spec.ts:15:1 › empty interior does not erase a closed stroke and Escape cancels matching preview (1.8s)
+  ok 32 tests\e2e\eraser.spec.ts:20:1 › eraser persistence and repeat exports remove only workspace ink and preserve source PDF annotation (3.3s)
+  ok 33 tests\e2e\eraser.spec.ts:27:1 › failed erase restores preview and retains original deletion for visible retry (1.3s)
+  ok 34 tests\e2e\eraser.spec.ts:34:1 › eraser ignores original PDF ink and workspace arrows highlights and notes (1.5s)
+  ok 35 tests\e2e\eraser.spec.ts:42:57 › eraser hits rotated ink at 90 degrees and display scale 1.5 (1.3s)
+  ok 36 tests\e2e\eraser.spec.ts:42:57 › eraser hits rotated ink at 270 degrees and display scale 2 (1.4s)
+  ok 37 tests\e2e\eraser.spec.ts:46:56 › eraser preview cancels before same-turn rotate and pointer release (1.7s)
+  ok 38 tests\e2e\eraser.spec.ts:46:56 › eraser preview cancels before same-turn layout and pointer release (1.2s)
+  ok 39 tests\e2e\eraser.spec.ts:46:56 › eraser preview cancels before same-turn page and pointer release (1.7s)
+
+  ok 40 tests\e2e\note-recovery.spec.ts:13:1 › note modal traps keyboard focus and restores its trigger after cancellation (1.7s)
+  ok 41 tests\e2e\note-recovery.spec.ts:21:1 › note saves its captured original anchor even if background selection is cleared (1.3s)
+  ok 42 tests\e2e\note-recovery.spec.ts:28:1 › failed note save retains draft and exact retry after closing details or Escape (1.5s)
+  ok 43 tests\e2e\note-recovery.spec.ts:36:1 › closing save error details keeps pending recovery visible and commits original delete on retry (1.3s)
+  ok 44 tests\e2e\note-recovery.spec.ts:43:1 › explicitly discarding a failed note edit preserves the previously saved note (1.9s)
+
+  ok 45 tests\e2e\page-navigation.spec.ts:9:43 › continuous: boundary buttons and actual page ignore unsubmitted draft (1.2s)
+  ok 46 tests\e2e\page-navigation.spec.ts:9:43 › single: boundary buttons and actual page ignore unsubmitted draft (1.9s)
+  x  47 tests\e2e\page-navigation.spec.ts:13:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps (6.8s)
+(node:23352) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:23352) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 48 tests\e2e\reader.spec.ts:17:1 › packaged app opens and exports without external Python configuration (1.7s)
+  ok 49 tests\e2e\reader.spec.ts:33:1 › reading layout collapses panels and keeps selection tools near the text (1.4s)
+  ok 50 tests\e2e\reader.spec.ts:64:1 › PDF directory resolves nested entries to source pages (1.9s)
+  ok 51 tests\e2e\reader.spec.ts:80:1 › PDF thumbnails render on demand, navigate and release offscreen canvases (1.7s)
+
+  ok 52 tests\e2e\reader.spec.ts:117:1 › PDF thumbnail jobs cancel on rapid scroll and document replacement (2.1s)
+  ok 53 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1 (1.9s)
+  ok 54 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1.5 (2.5s)
+  ok 55 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 2 (2.5s)
+  ok 56 tests\e2e\reader.spec.ts:163:1 › failed undo retries as undo and preserves the redo action (2.0s)
+  ok 57 tests\e2e\reader.spec.ts:183:1 › search markup does not duplicate selected text or quads (2.1s)
+  ok 58 tests\e2e\reader.spec.ts:197:1 › cross-page multiline selection is one undo step (1.4s)
+
+  ok 59 tests\e2e\reader.spec.ts:221:1 › cancel, corrupt, encrypted and image-only PDFs have explicit outcomes (2.0s)
+  ok 60 tests\e2e\reader.spec.ts:262:1 › offline reading, selected highlight, note, undo/redo, export and crash recovery (6.2s)
+  ok 61 tests\e2e\reader.spec.ts:300:1 › rejects replaced source and permits same-content relocation (1.5s)
+
+  ok 62 tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages (2.9s)
+  ok 63 tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source (3.1s)
+  ok 64 tests\e2e\reading-tools.spec.ts:47:1 › single-page cached overlays reflect offscreen deletion and undo when pages remount (2.1s)
+
+  ok 65 tests\e2e\strikeout-lines.spec.ts:15:1 › strikeout persists rotates and exports a native StrikeOut annotation (3.5s)
+  ok 66 tests\e2e\strikeout-lines.spec.ts:29:1 › line drag and Escape cancellation preserve native endpoints through rotation restart and standard export (3.5s)
+  ok 67 tests\e2e\strikeout-lines.spec.ts:48:1 › short line click stays armed and the next drag draws without extra toggles (1.7s)
+  ok 68 tests\e2e\strikeout-lines.spec.ts:56:1 › armed line tool cancels and cannot draw while an export is pending (2.0s)
+  ok 69 tests\e2e\strikeout-lines.spec.ts:66:1 › failed annotation remains retryable and cannot be replaced by an armed line gesture (2.1s)
+  ok 70 tests\e2e\strikeout-lines.spec.ts:76:1 › viewport rotation during a drag cancels it before a same-turn pointer release can persist wrong coordinates (1.8s)
+  ok 71 tests\e2e\strikeout-lines.spec.ts:85:57 › line creation at rotation 90 and display scale 1.5 retains native and exported endpoints (2.5s)
+  ok 72 tests\e2e\strikeout-lines.spec.ts:85:57 › line creation at rotation 270 and display scale 2 retains native and exported endpoints (2.0s)
+
+  ok 73 tests\e2e\workspace.spec.ts:18:1 › adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport (2.3s)
+  ok 74 tests\e2e\workspace.spec.ts:41:1 › document tabs isolate progress and undo, deduplicate opens, restore session and close without deleting data (4.4s)
+  ok 75 tests\e2e\workspace.spec.ts:63:1 › note drafts block tab navigation and close shortcuts until saved or cancelled (2.0s)
+  ok 76 tests\e2e\workspace.spec.ts:79:1 › failed PDF renderer opening restores prior document, undo history and persisted active session (2.7s)
+
+
+  1) tests\e2e\page-navigation.spec.ts:13:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText('请输入 1–3 之间的整数页码', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByText('请输入 1–3 之间的整数页码', { exact: true }) with timeout 5000ms
+      - waiting for getByText('请输入 1–3 之间的整数页码', { exact: true })
+
+
+      13 | test('invalid input stays on current page with accessible feedback; Escape resets and blur never jumps',async()=>{
+      14 |  const {app,page}=await launch('validation');try{const input=page.getByLabel('跳转页码',{exact:true});await input.fill('2');await input.press('Enter');await expect(page.getByRole('button',{name:'上一页',exact:true})).toBeEnabled();
+    > 15 |  for(const value of ['', '0','4','1.5','abc','1e0']){await input.fill(value);await input.press('Enter');await expect(input).toHaveAttribute('aria-invalid','true');await expect(page.getByText('请输入 1–3 之间的整数页码',{exact:true})).toBeVisible();await input.press('Escape');await expect(input).toHaveValue('2');await expect(input).toHaveAttribute('aria-invalid','false');}
+         |                                                                                                                                                                                                                                 ^
+      16 |  await input.fill('3');await input.press('Tab');await expect(page.getByRole('button',{name:'下一页',exact:true})).toBeEnabled();await input.press('Escape');await expect(input).toHaveValue('2');await input.fill(' 3 ');await input.press('Enter');await expect(page.getByRole('button',{name:'下一页',exact:true})).toBeDisabled();await expect(input).toHaveValue('3');
+      17 |  }finally{await app.evaluate(({app})=>app.exit(0));}
+      18 | });
+        at D:\codex project\Enlumor\tests\e2e\page-navigation.spec.ts:15:225
+
+    Error Context: test-results\page-navigation-invalid-in-0c840-resets-and-blur-never-jumps\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\page-navigation-invalid-in-0c840-resets-and-blur-never-jumps\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\page-navigation-invalid-in-0c840-resets-and-blur-never-jumps\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\page-navigation.spec.ts:13:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps 
+  75 passed (2.8m)
+node:internal/errors:985
+  const err = new Error(message);
+              ^
+
+Error: Command failed: D:\software\tools\node.exe node_modules/@playwright/test/cli.js test
+    at genericNodeError (node:internal/errors:985:15)
+    at wrappedFn (node:internal/errors:539:14)
+    at checkExecSyncError (node:child_process:925:11)
+    at execFileSync (node:child_process:961:15)
+    at run (file:///D:/codex%20project/Enlumor/scripts/release.mjs:10:35)
+    at file:///D:/codex%20project/Enlumor/scripts/release.mjs:20:1
+    at ModuleJob.run (node:internal/modules/esm/module_job:430:25)
+    at async onImport.tracePromise.__proto__ (node:internal/modules/esm/loader:661:26)
+    at async asyncRunEntryPointWithESMLoader (node:internal/modules/run_main:101:5) {
+  status: 1,
+  signal: null,
+  output: [ null, null, null ],
+  pid: 23480,
+  stdout: null,
+  stderr: null
+}
+
+Node.js v24.14.0

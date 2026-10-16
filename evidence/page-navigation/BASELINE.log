@@ -1,0 +1,128 @@
+
+Running 3 tests using 1 worker
+
+(node:49772) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\page-navigation.spec.ts:9:43 › continuous: boundary buttons and actual page ignore unsubmitted draft (6.9s)
+(node:47636) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  2 tests\e2e\page-navigation.spec.ts:9:43 › single: boundary buttons and actual page ignore unsubmitted draft (6.1s)
+(node:42724) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  3 tests\e2e\page-navigation.spec.ts:13:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps (6.1s)
+
+
+  1) tests\e2e\page-navigation.spec.ts:9:43 › continuous: boundary buttons and actual page ignore unsubmitted draft 
+
+    Error: expect(locator).toBeDisabled() failed
+
+    Locator:  getByRole('button', { name: '上一页', exact: true })
+    Expected: disabled
+    Received: enabled
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeDisabled" getByRole('button', { name: '上一页', exact: true }) with timeout 5000ms
+      - waiting for getByRole('button', { name: '上一页', exact: true })
+        14 × locator resolved to <button aria-label="上一页">‹</button>
+           - unexpected value "enabled"
+
+
+       8 | async function launch(name:string){const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,name)],env:{...process.env,ENLUMOR_PYTHON:python}});await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();return {app,page};}
+       9 | for(const mode of ['continuous','single'])test(`${mode}: boundary buttons and actual page ignore unsubmitted draft`,async()=>{
+    > 10 |  const {app,page}=await launch(mode);try{await page.getByLabel('阅读模式',{exact:true}).selectOption(mode);const input=page.getByLabel('跳转页码',{exact:true}),prev=page.getByRole('button',{name:'上一页',exact:true}),next=page.getByRole('button',{name:'下一页',exact:true});await expect(prev).toBeDisabled();await expect(next).toBeEnabled();await input.fill('999');await next.click();await expect(input).toHaveValue('2');await input.fill('3');await input.press('Enter');await expect(input).toHaveValue('3');await expect(next).toBeDisabled();await expect(prev).toBeEnabled();await input.fill('0');await prev.click();await expect(input).toHaveValue('2');
+         |                                                                                                                                                                                                                                                                                        ^
+      11 |  }finally{await app.evaluate(({app})=>app.exit(0));}
+      12 | });
+      13 | test('invalid input stays on current page with accessible feedback; Escape resets and blur never jumps',async()=>{
+        at D:\codex project\Enlumor\tests\e2e\page-navigation.spec.ts:10:280
+
+    Error Context: test-results\page-navigation-continuous-ddf93-ge-ignore-unsubmitted-draft\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\page-navigation-continuous-ddf93-ge-ignore-unsubmitted-draft\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\page-navigation-continuous-ddf93-ge-ignore-unsubmitted-draft\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\page-navigation.spec.ts:9:43 › single: boundary buttons and actual page ignore unsubmitted draft 
+
+    Error: expect(locator).toBeDisabled() failed
+
+    Locator:  getByRole('button', { name: '上一页', exact: true })
+    Expected: disabled
+    Received: enabled
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toBeDisabled" getByRole('button', { name: '上一页', exact: true }) with timeout 5000ms
+      - waiting for getByRole('button', { name: '上一页', exact: true })
+        14 × locator resolved to <button aria-label="上一页">‹</button>
+           - unexpected value "enabled"
+
+
+       8 | async function launch(name:string){const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,name)],env:{...process.env,ENLUMOR_PYTHON:python}});await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();return {app,page};}
+       9 | for(const mode of ['continuous','single'])test(`${mode}: boundary buttons and actual page ignore unsubmitted draft`,async()=>{
+    > 10 |  const {app,page}=await launch(mode);try{await page.getByLabel('阅读模式',{exact:true}).selectOption(mode);const input=page.getByLabel('跳转页码',{exact:true}),prev=page.getByRole('button',{name:'上一页',exact:true}),next=page.getByRole('button',{name:'下一页',exact:true});await expect(prev).toBeDisabled();await expect(next).toBeEnabled();await input.fill('999');await next.click();await expect(input).toHaveValue('2');await input.fill('3');await input.press('Enter');await expect(input).toHaveValue('3');await expect(next).toBeDisabled();await expect(prev).toBeEnabled();await input.fill('0');await prev.click();await expect(input).toHaveValue('2');
+         |                                                                                                                                                                                                                                                                                        ^
+      11 |  }finally{await app.evaluate(({app})=>app.exit(0));}
+      12 | });
+      13 | test('invalid input stays on current page with accessible feedback; Escape resets and blur never jumps',async()=>{
+        at D:\codex project\Enlumor\tests\e2e\page-navigation.spec.ts:10:280
+
+    Error Context: test-results\page-navigation-single-bou-86615-ge-ignore-unsubmitted-draft\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\page-navigation-single-bou-86615-ge-ignore-unsubmitted-draft\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\page-navigation-single-bou-86615-ge-ignore-unsubmitted-draft\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests\e2e\page-navigation.spec.ts:13:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps 
+
+    Error: expect(locator).toHaveAttribute(expected) failed
+
+    Locator:  getByLabel('跳转页码', { exact: true })
+    Expected: "true"
+    Received: ""
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveAttribute" getByLabel('跳转页码', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('跳转页码', { exact: true })
+        2 × locator resolved to <input value="" aria-label="跳转页码" class="page-input"/>
+          - unexpected value "null"
+        12 × locator resolved to <input value="2" aria-label="跳转页码" class="page-input"/>
+           - unexpected value "null"
+
+
+      13 | test('invalid input stays on current page with accessible feedback; Escape resets and blur never jumps',async()=>{
+      14 |  const {app,page}=await launch('validation');try{const input=page.getByLabel('跳转页码',{exact:true});await input.fill('2');await input.press('Enter');await expect(page.getByRole('button',{name:'上一页',exact:true})).toBeEnabled();
+    > 15 |  for(const value of ['', '0','4','1.5','abc','1e0']){await input.fill(value);await input.press('Enter');await expect(input).toHaveAttribute('aria-invalid','true');await expect(page.getByText('请输入 1–3 之间的整数页码',{exact:true})).toBeVisible();await input.press('Escape');await expect(input).toHaveValue('2');await expect(input).toHaveAttribute('aria-invalid','false');}
+         |                                                                                                                             ^
+      16 |  await input.fill('3');await input.press('Tab');await expect(page.getByRole('button',{name:'下一页',exact:true})).toBeEnabled();await input.press('Escape');await expect(input).toHaveValue('2');await input.fill(' 3 ');await input.press('Enter');await expect(page.getByRole('button',{name:'下一页',exact:true})).toBeDisabled();await expect(input).toHaveValue('3');
+      17 |  }finally{await app.evaluate(({app})=>app.exit(0));}
+      18 | });
+        at D:\codex project\Enlumor\tests\e2e\page-navigation.spec.ts:15:125
+
+    Error Context: test-results\page-navigation-invalid-in-0c840-resets-and-blur-never-jumps\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\page-navigation-invalid-in-0c840-resets-and-blur-never-jumps\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\page-navigation-invalid-in-0c840-resets-and-blur-never-jumps\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    tests\e2e\page-navigation.spec.ts:9:43 › continuous: boundary buttons and actual page ignore unsubmitted draft 
+    tests\e2e\page-navigation.spec.ts:9:43 › single: boundary buttons and actual page ignore unsubmitted draft 
+    tests\e2e\page-navigation.spec.ts:13:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps 

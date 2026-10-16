@@ -1,0 +1,87 @@
+diff --git a/src/renderer/eraser-tool.ts b/src/renderer/eraser-tool.ts
+index b34a095..276fa3c 100644
+--- a/src/renderer/eraser-tool.ts
++++ b/src/renderer/eraser-tool.ts
+@@ -27,6 +27,7 @@ export class EraserTool{
+  setEnabled(enabled:boolean){this.cancel();this.enabled=enabled;this.container.classList.toggle('erasing-ink',enabled);}
+  cancel(){cancelAnimationFrame(this.frame);this.frame=0;const g=this.gesture;this.gesture=undefined;this.refresh();if(g&&this.container.hasPointerCapture(g.id))this.container.releasePointerCapture(g.id);}
+  refresh(){for(const svg of this.container.querySelectorAll<SVGSVGElement>('.drawn-ink'))svg.classList.toggle('erase-preview',!!this.gesture?.hits.has(svg.dataset.annotationId!));}
+- private point(event:PointerEvent,view:View):[number,number]{const r=view.div.getBoundingClientRect();return[Math.max(0,Math.min(view.viewport.width,event.clientX-r.left-view.div.clientLeft)),Math.max(0,Math.min(view.viewport.height,event.clientY-r.top-view.div.clientTop))];}
++ // Pointer capture includes off-page samples: clamping would invent a sweep along the edge.
++ private point(event:PointerEvent,view:View):[number,number]{const r=view.div.getBoundingClientRect();return[event.clientX-r.left-view.div.clientLeft,event.clientY-r.top-view.div.clientTop];}
+  private hit(next:[number,number]){const g=this.gesture!;for(const mark of g.marks)if(!g.hits.has(mark.id)&&strokeIntersectsEraser(mark.points!,g.view.viewport.transform,g.previous,next,8+.5625*g.view.viewport.scale))g.hits.add(mark.id);g.previous=next;}
+ }
+diff --git a/src/renderer/main.tsx b/src/renderer/main.tsx
+index 6739824..309effe 100644
+--- a/src/renderer/main.tsx
++++ b/src/renderer/main.tsx
+@@ -34,6 +34,10 @@ function App() {
+   const [marks, setMarks] = useState<Annotation[]>([]), [parts, setParts] = useState<SelectionPart[]>([]);
+   const [status, setStatus] = useState('本地工作区就绪'), [error, setError] = useState(''), [notice, setNotice] = useState('');
+   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
++  const [currentPage,setCurrentPage]=useState(1),[pageError,setPageError]=useState('');
++  function syncPage(value:number){setCurrentPage(value);setPage(String(value));setPageError('');}
++  function navigatePage(value:number){if(!doc||busy)return;resetDrawing();setParts([]);setPage(String(value));setPageError('');reader.current?.go(value);}
++  function submitPage(){const value=page.trim(),number=Number(value);if(!doc)return;if(!/^\d+$/.test(value)||!Number.isSafeInteger(number)||number<1||number>doc.pageCount){setPageError(`请输入 1–${doc.pageCount} 之间的整数页码`);return;}navigatePage(number);}
+   const [drawMode,setDrawMode]=useState<'line'|'arrow'|'ink'|'erase'|null>(null);
+   function resetDrawing(){reader.current?.setDrawingTool(null);setDrawMode(null);}
+   const [readingLayout,setReadingLayout]=useState<'continuous'|'single'>('continuous');
+@@ -66,7 +70,8 @@ function App() {
+   }
+   useEffect(() => {
+     reader.current = new PdfReader(container.current!, state => {
+-      current.current = state; setReadingLayout(state.layout||'continuous'); setPage(String(state.pageIndex + 1)); setZoom(state.zoom);
++      const pageChanged=current.current?.documentId!==state.documentId||current.current?.pageIndex!==state.pageIndex;
++      current.current = state; setReadingLayout(state.layout||'continuous'); if(pageChanged)syncPage(state.pageIndex + 1); setZoom(state.zoom);
+       clearTimeout(timer.current); if(!noteOpen.current)timer.current = setTimeout(() => { void flush().catch(fail); }, 500);
+     }, selected => {
+       setParts(old => !selected.length && !old.length ? old : selected);
+@@ -134,7 +139,7 @@ function App() {
+       setQuery('');setHistory(histories.current.get(opened.id) || emptyHistory());
+       tabsRef.current=nextTabs.map(({id,path,name,fingerprint,pageCount,updatedAt})=>({id,path,name,fingerprint,pageCount,updatedAt}));setTabs(tabsRef.current);activeId.current=opened.id;
+       activeDocument.current=opened;activeMarks.current=annotations;
+-      setDoc(opened); setReadingLayout(opened.reading?.layout||'continuous'); setPage(String((opened.reading?.pageIndex || 0) + 1)); setZoom(opened.reading?.zoom || 1);
++      setDoc(opened); setReadingLayout(opened.reading?.layout||'continuous'); syncPage((opened.reading?.pageIndex || 0) + 1); setZoom(opened.reading?.zoom || 1);
+       setMarks(annotations); reader.current!.setMarks(annotations);
+       current.current = opened.reading || { documentId: opened.id, fingerprint: opened.fingerprint, pageIndex: 0, offset: 0, zoom: 1, rotation: 0 };
+       replacing=false;setStatus('已恢复 · 原 PDF 只读'); await refresh(); return true;
+@@ -149,7 +154,7 @@ function App() {
+             await reader.current!.open({...previous.document,reading:previous.reading});reader.current!.setMarks(previous.marks);
+             current.current=previous.reading;activeDocument.current=previous.document;activeMarks.current=previous.marks;activeId.current=previous.activeId;
+             setDoc(previous.document);setReadingLayout(previous.reading?.layout||'continuous');setMarks(previous.marks);setHistory(histories.current.get(previous.document.id)||emptyHistory());
+-            setPage(String((previous.reading?.pageIndex||0)+1));setZoom(previous.reading?.zoom||1);
++            syncPage((previous.reading?.pageIndex||0)+1);setZoom(previous.reading?.zoom||1);
+           } else clearCurrent();
+         } catch(recovery) { clearCurrent();fail(new Error(`打开失败，恢复阅读视图也失败：${String(recovery)}`));return false; }
+       }
+@@ -201,7 +206,7 @@ function App() {
+     if(await commit(change,kind))closeNote();
+   }
+   function clearCurrent() {
+-    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');resetDrawing();setPage('1');setZoom(1);setReadingLayout('continuous');
++    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
+   }
+   async function closeTab(id:string) {
+     if(locked.current || pending.current || noteOpen.current)return;
+@@ -252,7 +257,7 @@ function App() {
+         <div className="section-label">LIBRARY / 你的阅读空间</div>
+         <h2>{libraryView === 'documents' ? '文档' : libraryView === 'outline' ? '目录' : '缩略图'}<span className="section-count">{(libraryView === 'documents' ? recent.length : libraryView === 'thumbnails' ? doc?.pageCount || 0 : outline?.length || 0).toString().padStart(2, '0')}</span></h2>
+         <div className="library-tabs" role="tablist" aria-label="文档导航"><button role="tab" aria-selected={libraryView === 'documents'} onClick={() => setLibraryView('documents')}>文档</button><button role="tab" aria-selected={libraryView === 'outline'} disabled={!doc} onClick={() => setLibraryView('outline')}>目录</button><button role="tab" aria-selected={libraryView === 'thumbnails'} disabled={!doc} onClick={() => setLibraryView('thumbnails')}>缩略图</button></div>
+-        {libraryView === 'documents' ? <div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div> : libraryView === 'thumbnails' ? libraryOpen && doc && reader.current && <ThumbnailRail key={doc.id} reader={reader.current} documentId={doc.id} pageCount={doc.pageCount} currentPage={Number(page)}/> : <div className="recent-list" aria-label="PDF 目录">{outline === null ? <p className="library-empty">正在读取目录…</p> : outline.length ? <OutlineTree items={outline} navigate={id => void reader.current?.goToOutline(id)}/> : <p className="library-empty">此 PDF 没有目录，可使用页码跳转。</p>}</div>}
++        {libraryView === 'documents' ? <div className="recent-list">{recent.map(item => <div className={`recent ${doc?.id === item.id ? 'active' : ''}`} key={item.id}><button title={item.path} disabled={busy || !!pending.current} onClick={() => void load(item.id)}><span className="file-icon"><Glyph name="notes"/></span><span>{item.name}<small>{item.pageCount} 页 · 本地文件</small></span></button><button className="rebind" aria-label={`重新关联 ${item.name}`} disabled={busy || !!pending.current} onClick={() => void load(item.id, true)}>重新关联</button></div>)}{!recent.length && <div className="library-empty">还没有文档。<br/>打开 PDF 后，它会留在这里。</div>}</div> : libraryView === 'thumbnails' ? libraryOpen && doc && reader.current && <ThumbnailRail key={doc.id} reader={reader.current} documentId={doc.id} pageCount={doc.pageCount} currentPage={currentPage}/> : <div className="recent-list" aria-label="PDF 目录">{outline === null ? <p className="library-empty">正在读取目录…</p> : outline.length ? <OutlineTree items={outline} navigate={id => void reader.current?.goToOutline(id)}/> : <p className="library-empty">此 PDF 没有目录，可使用页码跳转。</p>}</div>}
+         <div className="library-footer"><span className="online-dot"/> 离线可用<span>所有阅读痕迹保存在这台电脑</span></div>
+       </aside>
+       {libraryOpen && <PanelDivider side="left" size={panels.left} max={Math.min(420,workspaceWidth-400-(notesOpen?panels.right+12:6))} start={()=>{resetDrawing();setParts([]);}} preview={value=>previewPanel('left',value)} commit={value=>commitPanel('left',value)} reset={()=>persistLayout({...layoutRef.current,left:208})}/>}
+@@ -266,10 +271,11 @@ function App() {
+           <button role="tab" aria-label={tab.name} aria-selected={doc?.id===tab.id} tabIndex={doc?.id===tab.id?0:-1} title={tab.path} disabled={busy||!!pending.current} onClick={()=>void load(tab.id)}>{tab.name}</button>
+           <button aria-label={`关闭 ${tab.name}`} title="关闭标签（Ctrl+W）" disabled={busy||!!pending.current} onClick={()=>void closeTab(tab.id)} onKeyDown={event=>event.stopPropagation()}>×</button>
+         </div>)}</div>}<div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
+-        <div className="toolbar"><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) - 1)}>‹</button><input aria-label="跳转页码" className="page-input" disabled={!doc} value={page} onChange={event => setPage(event.target.value)} onKeyDown={event => { if (event.key === 'Enter') reader.current?.go(Number(page)); }}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc} onClick={() => reader.current?.go(Number(page) + 1)}>›</button></div>
++        <div className="toolbar"><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
+           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
+           <form className="search" onSubmit={event => { event.preventDefault(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
+         </div>
++        {pageError && <div id="page-error" className="notice" role="alert">{pageError}</div>}
+         {(error||pending.current||layoutError) && <div className="error" role="alert">{error||'存在未保存更改'}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && note===null && <button disabled={busy} onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && note===null && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
+         {notice && <div className="notice">{notice}</div>}
+         <div className="reader-stage"><div id="viewerContainer" ref={container} tabIndex={0}><div id="viewer" className="pdfViewer"/></div>

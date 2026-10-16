@@ -1,0 +1,24 @@
+
+Running 15 tests using 1 worker
+
+(node:26224) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\eraser.spec.ts:10:1 › one eraser sweep deletes two entire strokes atomically and one undo restores both (1.3s)
+  ok  2 tests\e2e\eraser.spec.ts:15:1 › empty interior does not erase a closed stroke and Escape cancels matching preview (1.7s)
+  ok  3 tests\e2e\eraser.spec.ts:20:1 › eraser persistence and repeat exports remove only workspace ink and preserve source PDF annotation (3.7s)
+  ok  4 tests\e2e\eraser.spec.ts:27:1 › failed erase restores preview and retains original deletion for visible retry (1.8s)
+  ok  5 tests\e2e\eraser.spec.ts:34:1 › eraser ignores original PDF ink and workspace arrows highlights and notes (1.5s)
+  ok  6 tests\e2e\eraser.spec.ts:42:57 › eraser hits rotated ink at 90 degrees and display scale 1.5 (1.8s)
+  ok  7 tests\e2e\eraser.spec.ts:42:57 › eraser hits rotated ink at 270 degrees and display scale 2 (1.9s)
+  ok  8 tests\e2e\eraser.spec.ts:46:1 › captured off-page pointer does not project a fictional eraser sweep onto the page edge (1.9s)
+  ok  9 tests\e2e\eraser.spec.ts:51:56 › eraser preview cancels before same-turn rotate and pointer release (1.7s)
+  ok 10 tests\e2e\eraser.spec.ts:51:56 › eraser preview cancels before same-turn layout and pointer release (1.8s)
+  ok 11 tests\e2e\eraser.spec.ts:51:56 › eraser preview cancels before same-turn page and pointer release (1.7s)
+
+  ok 12 tests\e2e\page-navigation.spec.ts:9:43 › continuous: boundary buttons and actual page ignore unsubmitted draft (1.6s)
+  ok 13 tests\e2e\page-navigation.spec.ts:9:43 › single: boundary buttons and actual page ignore unsubmitted draft (1.2s)
+  ok 14 tests\e2e\page-navigation.spec.ts:13:1 › same-page viewport updates retain invalid feedback and unsubmitted draft (1.2s)
+  ok 15 tests\e2e\page-navigation.spec.ts:19:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps (2.0s)
+
+  15 passed (28.2s)

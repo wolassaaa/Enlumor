@@ -27,6 +27,7 @@ export class EraserTool{
  setEnabled(enabled:boolean){this.cancel();this.enabled=enabled;this.container.classList.toggle('erasing-ink',enabled);}
  cancel(){cancelAnimationFrame(this.frame);this.frame=0;const g=this.gesture;this.gesture=undefined;this.refresh();if(g&&this.container.hasPointerCapture(g.id))this.container.releasePointerCapture(g.id);}
  refresh(){for(const svg of this.container.querySelectorAll<SVGSVGElement>('.drawn-ink'))svg.classList.toggle('erase-preview',!!this.gesture?.hits.has(svg.dataset.annotationId!));}
- private point(event:PointerEvent,view:View):[number,number]{const r=view.div.getBoundingClientRect();return[Math.max(0,Math.min(view.viewport.width,event.clientX-r.left-view.div.clientLeft)),Math.max(0,Math.min(view.viewport.height,event.clientY-r.top-view.div.clientTop))];}
+ // Pointer capture includes off-page samples: clamping would invent a sweep along the edge.
+ private point(event:PointerEvent,view:View):[number,number]{const r=view.div.getBoundingClientRect();return[event.clientX-r.left-view.div.clientLeft,event.clientY-r.top-view.div.clientTop];}
  private hit(next:[number,number]){const g=this.gesture!;for(const mark of g.marks)if(!g.hits.has(mark.id)&&strokeIntersectsEraser(mark.points!,g.view.viewport.transform,g.previous,next,8+.5625*g.view.viewport.scale))g.hits.add(mark.id);g.previous=next;}
 }

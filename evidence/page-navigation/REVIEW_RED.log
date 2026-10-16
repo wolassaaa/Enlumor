@@ -1,0 +1,46 @@
+
+Running 1 test using 1 worker
+
+(node:46320) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\eraser.spec.ts:46:1 › captured off-page pointer does not project a fictional eraser sweep onto the page edge (6.7s)
+
+
+  1) tests\e2e\eraser.spec.ts:46:1 › captured off-page pointer does not project a fictional eraser sweep onto the page edge 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  locator('.drawn-ink')
+    Expected: 1
+    Received: 0
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" locator('.drawn-ink') with timeout 5000ms
+      - waiting for locator('.drawn-ink')
+        14 × locator resolved to 0 elements
+           - unexpected value "0"
+
+
+      45 | });
+      46 | test('captured off-page pointer does not project a fictional eraser sweep onto the page edge',async()=>{
+    > 47 |  const app=await launch('edge');try{const page=await open(app);await draw(page,[[3,200],[3,250]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await erase(page,[[30,180],[-30,190],[-30,270]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await expect(page.locator('.erase-preview')).toHaveCount(0);
+         |                                                                                                                                                                                                                                                     ^
+      48 |  await page.keyboard.press('Escape');await erase(page,[[3,190],[3,260]]);await expect(page.locator('.drawn-ink')).toHaveCount(0);await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(1);
+      49 |  }finally{await quit(app);}
+      50 | });
+        at D:\codex project\Enlumor\tests\e2e\eraser.spec.ts:47:245
+
+    Error Context: test-results\eraser-captured-off-page-p-eef73-er-sweep-onto-the-page-edge\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\eraser-captured-off-page-p-eef73-er-sweep-onto-the-page-edge\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\eraser-captured-off-page-p-eef73-er-sweep-onto-the-page-edge\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\eraser.spec.ts:46:1 › captured off-page pointer does not project a fictional eraser sweep onto the page edge 
