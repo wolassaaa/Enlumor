@@ -1,0 +1,427 @@
+diff --git a/.gitattributes b/.gitattributes
+index 2f161b4..5aeccb9 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -10,3 +10,5 @@ evidence/strikeout-lines/originals/* -text
+ evidence/arrows-ink/originals/* -text
+ 
+ evidence/note-recovery/originals/* -text
++
++evidence/stroke-eraser/originals/* -text
+diff --git a/README.md b/README.md
+index 589d844..9779d71 100644
+--- a/README.md
++++ b/README.md
+@@ -20,7 +20,9 @@ npm start          # 启动已构建的桌面应用
+ 
+ 仅开发/重新构建需要 Node 和 Python。`setup.ps1` 安装 requirements-build.txt；打包命令通过 PyInstaller 收集解释器、PyMuPDF 和依赖到应用资源目录，运行时优先使用内置程序。Windows 构建不作为 macOS/iPad 的二进制包使用。
+ 
+-0.1.9 修复便签模态焦点隔离、原文锚点固定与失败草稿保留；保存失败后收起详情仍能重试。明确放弃失败便签编辑不会删除旧的已保存内容。
++0.1.10 新增“整笔擦除”：仅擦除本软件新建画笔笔迹。一次拖动可擦多条，一次撤销全部恢复；Esc取消，失败可重试。原PDF及其自带批注、高亮和便签保持不变。
++
++此前0.1.9 修复便签模态焦点隔离、原文锚点固定与失败草稿保留；保存失败后收起详情仍能重试。明确放弃失败便签编辑不会删除旧的已保存内容。
+ 
+ 此前0.1.8 新增箭头与画笔（标准PDF批注导出）。右栏选择工具后页内拖动，一次笔迹保存后恢复文字选择；Esc或布局改变取消。画笔每条最多4096采样点，长笔迹抽样降密度，不模拟压感。箭头头部应用内实心、导出空心，端点方向保持一致。保留删除线、直线、下划线、高亮、便签、侧栏调宽/间距、多标签及按需渲染。完整清单与每两项review见 [docs/FEATURES.md](docs/FEATURES.md)、[docs/REVIEW-CADENCE.md](docs/REVIEW-CADENCE.md)。
+ 
+diff --git a/docs/FEATURES.md b/docs/FEATURES.md
+index 83f5865..c2ff25a 100644
+--- a/docs/FEATURES.md
++++ b/docs/FEATURES.md
+@@ -21,7 +21,17 @@
+ 3. **P3暂缓**：首页上一页仍可点击但无动作。
+ 此前33条既有交互回归通过但未覆盖新增故障序列；本次新增5条回归并实际见红，修复后完整102项通过、发布EXE5项再测通过。下一项擦除；功能两项一review计数仍0。
+ 
+-## 当前 0.1.9
++## 当前 0.1.10
++- ANN-01：整笔擦除仅命中Enlumor工作区画笔（ink）；不删除原PDF内置批注、高亮、下划线、删除线、直线、箭头或便签。
++- 点击/拖动碰到实际笔迹即整条删除，不按包围框空白区域判断；连续指针采样之间扫过的线段也参与命中。半径为8 CSS像素加笔画半宽，不随Windows显示缩放失真。
++- 一次拖动命中多条笔迹，作为一个SQLite事务/一个撤销步骤；有效提交后退出工具，未命中保持待擦除。工具互斥，提示明确限定“本软件新建画笔笔迹”。
++- 未提交前仅降低命中笔迹透明度；Esc、旋转/缩放、翻页、滚动和布局变化取消预览。保存失败恢复原笔迹，保留原删除操作和可见重试入口。
++- 已确认删除重启后保持；撤销/重做复用现有业务链路；导出总是从原PDF和当前工作区生成，源文件不变、原有批注保留。
++- 本次只有整笔擦除一个功能任务，Review计数1/2；下一项完成后进行第5轮整体review。尚未实现局部擦除，不将整笔擦除写成局部擦除。
++- 验收：35 Vitest + 7 unittest + 73 实际打包Electron E2E = 115项通过；最终EXE10项复测通过。双压力样本启动中位数510/513ms、滚动帧P95 18/16.8ms，均通过门禁。证据见 evidence/stroke-eraser/VERIFICATION.txt。
++- 初次打包下载Electron超时未更新latest；改为复用已安装且版本一致的Electron44.7.2，重跑完整门禁后发布。
++
++## 上轮 0.1.9
+ - 修复P1：原生dialog隔离背景、Tab/Shift+Tab焦点循环、正确的弹窗语义；取消后恢复触发点，保存后触发点失效时回到阅读区。
+ - 打开便签时复制文档身份/原文/原生quads；原始选区被清除也按固定锚点保存。提交保护文档身份与缺失锚点，确认数据库提交后才关闭草稿。
+ - 保存失败保留便签和原待提交操作；弹窗提供重试/明确放弃，pending时Esc不丢草稿；放弃失败编辑保留先前已保存便签。
+@@ -94,7 +104,7 @@
+ | RDR-01 | 本地打开、最近文件、目录、按需缩略图、多标签页、页码、全文搜索、位置/缩放恢复 | 复杂文档兼容回归 |
+ | RDR-02 | 连续/单页模式、适宽/适页、滚轮、Ctrl+滚轮缩放 | 单页边界翻页按钮反馈 |
+ | RDR-03 | 搜索命中定位与强调 | 更复杂 PDF 的兼容回归持续补充 |
+-| ANN-01 | 高亮、下划线、删除线、直线、箭头、画笔、便签、缩放旋转锚定 | 擦除（含保存/撤销/导出独立验收） |
++| ANN-01 | 高亮、下划线、删除线、直线、箭头、画笔、整笔擦除、便签、缩放旋转锚定 | 局部擦除若后续需要，单独设计验收 |
+ | ANN-02 | 手动编辑、删除/改色、当前会话撤销/重做、持久化 | 可见修改历史、AI 来源/逐个接受撤销 |
+ | ANN-03 | — | AI 永久批注预览、匹配范围及确认 |
+ | AI-01/02 | 底层文字选区与临时强调可复用 | 引文验证、点击回跳、解释/举例/画图/标记 |
+diff --git a/docs/REVIEW-CADENCE.md b/docs/REVIEW-CADENCE.md
+index 1a2cd00..c5421fc 100644
+--- a/docs/REVIEW-CADENCE.md
++++ b/docs/REVIEW-CADENCE.md
+@@ -1,6 +1,6 @@
+ # Enlumor 两项一 Review 记录
+ 
+-当前执行位置：第4轮已完成，计数0。下一项擦除，继续两项一 Review。
++当前执行位置：第4轮已完成；整笔擦除已推进，计数1/2。下一项完成后第5轮整体Review。
+ 
+ ## 第1轮：侧栏与标签
+ 
+@@ -110,3 +110,12 @@ P3边界按钮反馈继续暂缓。既有操作33条实际EXE回归通过，不
+ 首次修复4通过1失败：点击便签按钮为保持选区使用preventDefault，原生焦点恢复目标不是触发按钮；显式记录触发点并在dialog关闭后恢复，禁用/移除时回到阅读区。原失败测试转绿。
+ 最终5通过；完整32+7+63=102通过、实际发布EXE5项再测通过、双样本性能/无外部Python通过。原始记录在evidence/note-recovery。
+ P3边界按钮、箭头外观等旧Minor不进入这次修复。复制回退恢复旧非模态行为，个人工作区与当前源码不回退。
++
++## 第5轮计数：任务1整笔擦除（0.1.10）
++用户选择整笔擦除，按整条工作区画笔删除，不擦PDF原文/内置批注、不改其他工作区标记。一次拖动一次事务和撤销；取消预览不入库；失败保留原删除操作供重试。
++先见3条几何单测失败、0.1.9实际EXE中3条新功能测试失败，再实现扫掠线段命中与ErasureTool。没有按每条功能重新派reviewer；遵循用户每两个任务review一次，目前1/2。
++10条本轮交互测试覆盖多笔原子撤销、闭合路径空白不误删、Esc取消、源批注/其他类型保护、失败恢复、重启/重复导出、90°/270°及150%/200%缩放、旋转/布局/翻页同回合取消。
++类型检查补齐测试回调参数类型；产品不为测试增加绕过接口。发布门禁结果以VERIFICATION.txt和RELEASE.log为准。
++延后项：局部擦除不是本次整笔擦除的“已完成”子项；既有P3边界按钮和箭头外观等minor仍保留。
++
++整笔擦除最终门禁：35+7+73=115通过，发布EXE10项再测通过。首次打包网络超时，latest保留0.1.9；核验本地Electron44.7.2后用官方electronDist配置复用运行时，全门禁重跑通过发布0.1.10。没有跳过失败步骤。
+diff --git a/package-lock.json b/package-lock.json
+index 16d09a3..7be0a8b 100644
+--- a/package-lock.json
++++ b/package-lock.json
+@@ -1,12 +1,12 @@
+ {
+   "name": "enlumor",
+-  "version": "0.1.9",
++  "version": "0.1.10",
+   "lockfileVersion": 3,
+   "requires": true,
+   "packages": {
+     "": {
+       "name": "enlumor",
+-      "version": "0.1.9",
++      "version": "0.1.10",
+       "dependencies": {
+         "pdfjs-dist": "6.4.299",
+         "react": "19.3.1",
+diff --git a/package.json b/package.json
+index 91cb7cf..b7575eb 100644
+--- a/package.json
++++ b/package.json
+@@ -1,6 +1,6 @@
+ {
+   "name": "enlumor",
+-  "version": "0.1.9",
++  "version": "0.1.10",
+   "private": true,
+   "type": "module",
+   "description": "Local-first PDF reading workspace",
+@@ -46,7 +46,8 @@
+     "win": {
+       "target": "portable"
+     },
+-    "artifactName": "Enlumor-${version}-win.${ext}"
++    "artifactName": "Enlumor-${version}-win.${ext}",
++    "electronDist": "node_modules/electron/dist"
+   },
+   "dependencies": {
+     "pdfjs-dist": "6.4.299",
+diff --git a/scripts/check-stroke-eraser-rollback.mjs b/scripts/check-stroke-eraser-rollback.mjs
+new file mode 100644
+index 0000000..db1eed4
+--- /dev/null
++++ b/scripts/check-stroke-eraser-rollback.mjs
+@@ -0,0 +1,32 @@
++import { build } from 'esbuild';
++import { build as viteBuild } from 'vite';
++import react from '@vitejs/plugin-react';
++import { _electron as electron, expect } from '@playwright/test';
++import { mkdirSync, mkdtempSync, cpSync, copyFileSync, readFileSync, unlinkSync } from 'node:fs';
++import { createHash } from 'node:crypto';
++import path from 'node:path';
++import { copyAssets } from './assets.mjs';
++const root=path.resolve('.');
++const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex');
++const live=sha('src/renderer/main.tsx');
++const base=path.join(root,'.cache/stroke-eraser-rollback');mkdirSync(base,{recursive:true});
++const copy=mkdtempSync(path.join(base,'run-'));
++if(!copy.startsWith(base+path.sep))throw Error('Unexpected rollback target');
++cpSync('src',path.join(copy,'src'),{recursive:true});
++cpSync('python',path.join(copy,'python'),{recursive:true});
++for(const file of ['package.json','index.html'])copyFileSync(file,path.join(copy,file));
++const originals=JSON.parse(readFileSync('evidence/stroke-eraser/originals.json','utf8'));
++for(const {name,target,sha256} of originals){const file=path.join(root,'evidence/stroke-eraser/originals',name);if(sha(file)!==sha256)throw Error('Original hash mismatch');copyFileSync(file,path.join(copy,target));}
++const added=path.join(copy,'src/renderer/eraser-tool.ts');if(!added.startsWith(copy+path.sep))throw Error('Unexpected added-file target');unlinkSync(added);
++await build({entryPoints:[path.join(copy,'src/main/index.ts'),path.join(copy,'src/main/preload.ts')],outdir:path.join(copy,'dist/main'),bundle:true,platform:'node',format:'cjs',outExtension:{'.js':'.cjs'},external:['electron']});
++await viteBuild({configFile:false,root:copy,plugins:[react()],base:'./',build:{outDir:path.join(copy,'dist/renderer')}});
++copyAssets(path.join(copy,'dist/renderer/pdf-assets'));
++const app=await electron.launch({args:[copy,`--user-data-dir=${path.join(copy,'profile')}`],env:{...process.env,ENLUMOR_PYTHON:path.join(root,'.venv/Scripts/python.exe')}});
++try{
++ const page=await app.firstWindow(),source=path.join(root,'.cache/benchmark/200-pages-32MiB.pdf');
++ await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);
++ await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ await expect(page.getByRole('button',{name:'整笔擦除',exact:true})).toHaveCount(0);await expect(page.getByRole('button',{name:'绘制画笔',exact:true})).toHaveCount(1);
++ if(sha('src/renderer/main.tsx')!==live)throw Error('Live source changed');
++ console.log('ROLLBACK: ERASER=0; INK_TOOL=1; LIVE_SOURCE_UNCHANGED=YES');
++}finally{await app.close();}
+diff --git a/src/renderer/eraser-tool.ts b/src/renderer/eraser-tool.ts
+new file mode 100644
+index 0000000..b34a095
+--- /dev/null
++++ b/src/renderer/eraser-tool.ts
+@@ -0,0 +1,32 @@
++import{strokeIntersectsEraser}from'../shared/geometry';
++import type{Annotation}from'../shared/model';
++type View={div:HTMLElement;viewport:{width:number;height:number;scale:number;transform:number[]}};
++export class EraserTool{
++ private enabled=false;private frame=0;
++ private gesture?:{id:number;index:number;view:View;previous:[number,number];hits:Set<string>;marks:Annotation[]};
++ constructor(private container:HTMLElement,private page:(index:number)=>View|undefined,private marks:()=>Annotation[],private ready:()=>boolean,private erased:(ids:string[])=>void){
++  container.addEventListener('pointerdown',event=>{
++   if(!this.enabled||!this.ready()||!event.isPrimary||event.button!==0||this.gesture)return;
++   const element=(event.target as Element).closest<HTMLElement>('.page');if(!element)return;
++   const index=Number(element.dataset.pageNumber)-1,view=this.page(index);if(!view)return;
++   event.preventDefault();getSelection()?.removeAllRanges();
++   this.gesture={id:event.pointerId,index,view,previous:this.point(event,view),hits:new Set(),marks:this.marks().filter(a=>a.pageIndex===index&&a.type==='ink')};
++   this.hit(this.gesture.previous);this.refresh();container.setPointerCapture(event.pointerId);
++  },{capture:true});
++  container.addEventListener('pointermove',event=>{
++   if(!this.ready()){this.cancel();return;}const g=this.gesture;if(!g||g.id!==event.pointerId)return;
++   this.hit(this.point(event,g.view));if(!this.frame)this.frame=requestAnimationFrame(()=>{this.frame=0;this.refresh();});
++  });
++  container.addEventListener('pointerup',event=>{
++   if(!this.ready()){this.cancel();return;}const g=this.gesture;if(!g||g.id!==event.pointerId)return;
++   this.hit(this.point(event,g.view));const ids=[...g.hits];this.cancel();if(ids.length){this.setEnabled(false);this.erased(ids);}
++  });
++  for(const name of ['pointercancel','lostpointercapture'])container.addEventListener(name,event=>{if(this.gesture?.id===(event as PointerEvent).pointerId)this.cancel();});
++  container.addEventListener('scroll',()=>this.cancel(),{passive:true});
++ }
++ setEnabled(enabled:boolean){this.cancel();this.enabled=enabled;this.container.classList.toggle('erasing-ink',enabled);}
++ cancel(){cancelAnimationFrame(this.frame);this.frame=0;const g=this.gesture;this.gesture=undefined;this.refresh();if(g&&this.container.hasPointerCapture(g.id))this.container.releasePointerCapture(g.id);}
++ refresh(){for(const svg of this.container.querySelectorAll<SVGSVGElement>('.drawn-ink'))svg.classList.toggle('erase-preview',!!this.gesture?.hits.has(svg.dataset.annotationId!));}
++ private point(event:PointerEvent,view:View):[number,number]{const r=view.div.getBoundingClientRect();return[Math.max(0,Math.min(view.viewport.width,event.clientX-r.left-view.div.clientLeft)),Math.max(0,Math.min(view.viewport.height,event.clientY-r.top-view.div.clientTop))];}
++ private hit(next:[number,number]){const g=this.gesture!;for(const mark of g.marks)if(!g.hits.has(mark.id)&&strokeIntersectsEraser(mark.points!,g.view.viewport.transform,g.previous,next,8+.5625*g.view.viewport.scale))g.hits.add(mark.id);g.previous=next;}
++}
+diff --git a/src/renderer/main.tsx b/src/renderer/main.tsx
+index 7192180..6739824 100644
+--- a/src/renderer/main.tsx
++++ b/src/renderer/main.tsx
+@@ -34,7 +34,7 @@ function App() {
+   const [marks, setMarks] = useState<Annotation[]>([]), [parts, setParts] = useState<SelectionPart[]>([]);
+   const [status, setStatus] = useState('本地工作区就绪'), [error, setError] = useState(''), [notice, setNotice] = useState('');
+   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
+-  const [drawMode,setDrawMode]=useState<'line'|'arrow'|'ink'|null>(null);
++  const [drawMode,setDrawMode]=useState<'line'|'arrow'|'ink'|'erase'|null>(null);
+   function resetDrawing(){reader.current?.setDrawingTool(null);setDrawMode(null);}
+   const [readingLayout,setReadingLayout]=useState<'continuous'|'single'>('continuous');
+   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
+@@ -73,7 +73,10 @@ function App() {
+     }, setNotice, setOutline, line=>{
+       setDrawMode(null);const opened=activeDocument.current;if(!opened)return;
+       void commit({documentId:opened.id,upserts:[{...line,id:crypto.randomUUID(),documentId:opened.id,fingerprint:opened.fingerprint,type:line.type,author:'user',color:colorRef.current,quote:'',note:''}],deletes:[]});
+-    }, ()=>!locked.current&&!pending.current&&!noteOpen.current,()=>colorRef.current);
++    }, ()=>!locked.current&&!pending.current&&!noteOpen.current,()=>colorRef.current,ids=>{
++      setDrawMode(null);const opened=activeDocument.current;if(!opened)return;
++      void commit({documentId:opened.id,upserts:[],deletes:ids});
++    });
+     const off = window.enlumor.onFlush(flush);
+     void (async () => {
+       try { const savedLayout = unwrap(await window.enlumor.getLayout()); setLayout(savedLayout); layoutRef.current = savedLayout; const list = unwrap(await window.enlumor.listDocuments()); setRecent(list);
+@@ -276,7 +279,8 @@ function App() {
+       </main>
+       {notesOpen && <PanelDivider side="right" size={panels.right} max={Math.min(460,workspaceWidth-400-(libraryOpen?panels.left+12:6))} start={()=>{resetDrawing();setParts([]);}} preview={value=>previewPanel('right',value)} commit={value=>commitPanel('right',value)} reset={()=>persistLayout({...layoutRef.current,right:282})}/>}
+       <aside className="annotations" hidden={!notesOpen}><div className="section-label">MARGINALIA / 页边思考</div><h2>批注 <span>{marks.length.toString().padStart(2, '0')}</span></h2>
+-        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length||busy||!!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('strikeout')}>删除线选区</button><button aria-label="绘制直线" aria-pressed={drawMode==='line'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='line'?null:'line';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>直线</button><button aria-label="绘制箭头" aria-pressed={drawMode==='arrow'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='arrow'?null:'arrow';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>箭头</button><button aria-label="绘制画笔" aria-pressed={drawMode==='ink'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='ink'?null:'ink';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>画笔</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={event => openNote(undefined,event.currentTarget)}>添加便签</button></div>
++        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length||busy||!!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('strikeout')}>删除线选区</button><button aria-label="绘制直线" aria-pressed={drawMode==='line'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='line'?null:'line';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>直线</button><button aria-label="绘制箭头" aria-pressed={drawMode==='arrow'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='arrow'?null:'arrow';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>箭头</button><button aria-label="绘制画笔" aria-pressed={drawMode==='ink'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='ink'?null:'ink';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>画笔</button><button aria-label="整笔擦除" title="只擦除画笔整条笔迹；Esc取消" aria-pressed={drawMode==='erase'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='erase'?null:'erase';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>整笔擦除</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={event => openNote(undefined,event.currentTarget)}>添加便签</button></div>
++        {drawMode==='erase'&&<p className="eraser-hint">仅擦除本软件新建的画笔整条笔迹；原 PDF 不变。Esc 取消。</p>}
+         <div className="history"><button disabled={!history.undo.length || busy || !!pending.current} onClick={() => void commit(history.undo.at(-1)!, 'undo')}>撤销</button><button disabled={!history.redo.length || busy || !!pending.current} onClick={() => void commit(history.redo.at(-1)!, 'redo')}>重做</button></div>
+         {parts.length > 0 && <div className="selection-preview">已选 {parts.length} 页原文<p>{parts.map(part => part.quote).join(' ').slice(0, 180)}</p></div>}
+         <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':mark.type==='strikeout'?'删除线':mark.type==='ink'?'画笔':mark.type==='arrow'?'箭头':mark.type==='line'?'直线':'高亮'}</span><p>{mark.quote || (mark.type==='ink'?'页面笔迹':mark.type==='arrow'?'页面箭头':mark.type==='line'?'页面直线':'页面便签')}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}<div className="card-actions"><button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current} onClick={event => openNote(mark,event.currentTarget)}>编辑</button>}<button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
+diff --git a/src/renderer/pdf-reader.ts b/src/renderer/pdf-reader.ts
+index 47f7c7b..265fcaa 100644
+--- a/src/renderer/pdf-reader.ts
++++ b/src/renderer/pdf-reader.ts
+@@ -1,3 +1,4 @@
++import { EraserTool } from './eraser-tool';
+ import { paintDrawing, type DrawingMode } from './drawing-svg';
+ import { LineTool, type DrawnLine } from './line-tool';
+ import { drawPageThumbnail } from './thumbnail-render';
+@@ -23,20 +24,22 @@ export class PdfReader {
+   private flashTimer?: ReturnType<typeof setTimeout>;
+   private ready = false;
+   private lineTool: LineTool;
++  private eraser: EraserTool;
+   private outlineTargets = new Map<string, string | any[]>();
+-  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true, drawingColor:()=>string=()=> '#5a7350') {
++  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true, drawingColor:()=>string=()=> '#5a7350', onErase:(ids:string[])=>void=()=>{}) {
+     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
+     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
+     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
+     this.link.setViewer(this.viewer);
+     this.lineTool=new LineTool(container,index=>this.viewer.getPageView(index),()=>this.ready&&canDraw(),onLine,drawingColor);
++    this.eraser=new EraserTool(container,index=>this.viewer.getPageView(index),()=>this.marks,()=>this.ready&&canDraw(),onErase);
+     this.bus.on('pagechanging', ({pageNumber}:{pageNumber:number}) => {
+-      const generation=this.generation;
++      this.eraser.cancel();const generation=this.generation;
+       requestAnimationFrame(()=>{if(generation===this.generation&&this.ready)this.paint(pageNumber-1);});
+     });
+     this.bus.on('pagerendered', ({ pageNumber }: { pageNumber: number }) => this.paint(pageNumber - 1));
+-    this.bus.on('scalechanging', () => { this.lineTool.cancel(); this.paint(); onSelection([]); });
+-    this.bus.on('rotationchanging', () => { this.lineTool.cancel(); this.paint(); onSelection([]); });
++    this.bus.on('scalechanging', () => { this.lineTool.cancel(); this.eraser.cancel(); this.paint(); onSelection([]); });
++    this.bus.on('rotationchanging', () => { this.lineTool.cancel(); this.eraser.cancel(); this.paint(); onSelection([]); });
+     this.bus.on('textlayerrendered', async ({ pageNumber }: { pageNumber: number }) => {
+       const document = this.viewer.pdfDocument;
+       if (!document || !this.ready || pageNumber !== this.viewer.currentPageNumber) return;
+@@ -60,7 +63,7 @@ export class PdfReader {
+     }, { passive: false });
+   }
+   async open(doc: OpenedDocument) {
+-    this.lineTool.setEnabled(false);
++    this.setDrawingTool(null);
+     const generation = ++this.generation;
+     this.outlineTargets.clear(); this.onOutline(null);
+     this.ready = false; this.active = doc; this.marks = []; this.flash = undefined;
+@@ -116,10 +119,10 @@ export class PdfReader {
+     return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
+   }
+   setMarks(marks: Annotation[]) { this.marks = marks; this.paint(); }
+-  setDrawingTool(mode:DrawingMode|null) {this.lineTool.setMode(mode);}
+-  setLineEnabled(enabled:boolean) { this.lineTool.setEnabled(enabled); }
++  setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
++  setLineEnabled(enabled:boolean) { this.setDrawingTool(enabled?'line':null); }
+   clear() {
+-    this.lineTool.setEnabled(false);
++    this.setDrawingTool(null);
+     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
+     this.outlineTargets.clear(); this.onOutline([]);
+     this.viewer.setDocument(null); this.link.setDocument(null); void this.task?.destroy(); this.task = undefined;
+@@ -188,7 +191,7 @@ export class PdfReader {
+         for (const quad of mark.quads) {
+           const [left, top, right, bottom] = quadToScreen(quad, view.viewport.transform);
+           if(['line','arrow','ink'].includes(mark.type)&&mark!==this.flash) {
+-            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('drawn-'+mark.type);
++            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('drawn-'+mark.type);svg.dataset.annotationId=mark.id;
+             const points=mark.points!.flatMap((_,i,p)=>i%2===0?transform(p[i],p[i+1],view.viewport.transform):[]);
+             paintDrawing(svg,mark.type as DrawingMode,points,mark.color,(mark.type==='line'?1.5/view.viewport.scale:1.125)*view.viewport.scale);overlay.append(svg);continue;
+           }
+@@ -204,6 +207,7 @@ export class PdfReader {
+         }
+       }
+       page.append(overlay);
++      this.eraser?.refresh();
+     }
+   }
+ }
+diff --git a/src/renderer/style.css b/src/renderer/style.css
+index 7b6cf24..df2e570 100644
+--- a/src/renderer/style.css
++++ b/src/renderer/style.css
+@@ -66,3 +66,5 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
+ .note-dialog{border:0;padding:0;background:transparent;color:var(--ink);max-width:95vw;max-height:95vh;overflow:auto}
+ .note-dialog::backdrop{background:#202a2359;backdrop-filter:blur(3px)}
+ .note-error{font-size:12px;color:#82462e;background:#f9e9df;padding:8px;margin-bottom:16px;overflow-wrap:anywhere}.note-error p{margin:0 0 6px}.note-error button{padding:3px 8px;font-size:11px}
++
++.erasing-ink,.erasing-ink .textLayer,.erasing-ink .textLayer span{cursor:crosshair!important}#viewerContainer.erasing-ink{touch-action:none}.erase-preview{opacity:.2!important}.eraser-hint{font-size:11px;color:var(--muted);line-height:1.7;margin:8px 0 0}
+diff --git a/src/shared/geometry.ts b/src/shared/geometry.ts
+index 6bb23ce..ead2bee 100644
+--- a/src/shared/geometry.ts
++++ b/src/shared/geometry.ts
+@@ -42,3 +42,22 @@ export function lineAnchor(points: number[]): Quad {
+   const l=Math.min(...xs)-.25,r=Math.max(...xs)+.25,t=Math.max(...ys)+.25,b=Math.min(...ys)-.25;
+   return [l,t,r,t,l,b,r,b];
+ }
++
++/** Swept eraser versus each native ink segment, in viewport CSS pixels. */
++export function strokeIntersectsEraser(points:number[],matrix:number[],from:[number,number],to:[number,number],radius:number):boolean {
++ const distance=(p:[number,number],a:[number,number],b:[number,number])=>{
++  const dx=b[0]-a[0],dy=b[1]-a[1],d=dx*dx+dy*dy,t=d?Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/d)):0;
++  return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);
++ };
++ const cross=(a:[number,number],b:[number,number],p:[number,number])=>(b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]);
++ let a=transform(points[0],points[1],matrix);
++ for(let i=2;i<points.length;i+=2){
++  const b=transform(points[i],points[i+1],matrix);
++  if(Math.max(a[0],b[0])+radius>=Math.min(from[0],to[0])&&Math.min(a[0],b[0])-radius<=Math.max(from[0],to[0])&&Math.max(a[1],b[1])+radius>=Math.min(from[1],to[1])&&Math.min(a[1],b[1])-radius<=Math.max(from[1],to[1])){
++   const overlap=Math.max(a[0],b[0])>=Math.min(from[0],to[0])&&Math.min(a[0],b[0])<=Math.max(from[0],to[0])&&Math.max(a[1],b[1])>=Math.min(from[1],to[1])&&Math.min(a[1],b[1])<=Math.max(from[1],to[1]);
++   if((overlap&&cross(a,b,from)*cross(a,b,to)<=0&&cross(from,to,a)*cross(from,to,b)<=0)||Math.min(distance(a,from,to),distance(b,from,to),distance(from,a,b),distance(to,a,b))<=radius)return true;
++  }
++  a=b;
++ }
++ return false;
++}
+diff --git a/tests/e2e/eraser.spec.ts b/tests/e2e/eraser.spec.ts
+new file mode 100644
+index 0000000..e57f30c
+--- /dev/null
++++ b/tests/e2e/eraser.spec.ts
+@@ -0,0 +1,51 @@
++import{test,expect,_electron as electron}from'@playwright/test';import{mkdtempSync,readFileSync,copyFileSync}from'node:fs';import{tmpdir}from'node:os';import{execFileSync}from'node:child_process';import path from'node:path';
++const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-eraser-')),python=path.join(root,'.venv/Scripts/python.exe'),source=path.join(folder,'eraser.pdf'),output=path.join(folder,'export.pdf');
++execFileSync(python,['-c',`import pymupdf as f;d=f.open();p=d.new_page(width=480,height=640);p.insert_text((48,72),'Eraser evidence',fontsize=16);p.add_text_annot((48,100),'Original PDF note');p.add_ink_annot([[(60,120),(165,120)]]);d.new_page(width=480,height=640);d.save(${JSON.stringify(source)})`]);
++async function launch(profile:string,scale=1){const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,profile),'--force-device-scale-factor='+scale],env:{...process.env,ENLUMOR_PYTHON:python}});
++ await app.evaluate(({dialog},files)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[files.source]});dialog.showSaveDialog=async()=>({canceled:false,filePath:files.output});},{source,output});return app;}
++async function open(app:any){const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();return page;}
++async function draw(page:any,points:number[][]){await page.getByRole('button',{name:'绘制画笔',exact:true}).click();const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+points[0][0],b.y+points[0][1]);await page.mouse.down();for(const p of points.slice(1))await page.mouse.move(b.x+p[0],b.y+p[1]);await page.mouse.up();}
++async function erase(page:any,points:number[][]){await page.getByRole('button',{name:'整笔擦除',exact:true}).click({timeout:2500});const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+points[0][0],b.y+points[0][1]);await page.mouse.down();for(const p of points.slice(1))await page.mouse.move(b.x+p[0],b.y+p[1]);await page.mouse.up();}
++async function quit(app:any){await app.evaluate(({app}:any)=>app.exit(0)).catch(()=>{});}
++test('one eraser sweep deletes two entire strokes atomically and one undo restores both',async()=>{
++ const app=await launch('atomic');try{const page=await open(app);await draw(page,[[80,160],[220,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await draw(page,[[80,220],[220,220]]);await expect(page.locator('.drawn-ink')).toHaveCount(2);await erase(page,[[150,140],[150,240]]);await expect(page.locator('.drawn-ink')).toHaveCount(0);
++ await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(2);await page.getByRole('button',{name:'重做',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(0);
++ }finally{await quit(app);}
++});
++test('empty interior does not erase a closed stroke and Escape cancels matching preview',async()=>{
++ const app=await launch('cancel');try{const page=await open(app);await draw(page,[[80,160],[220,160],[220,300],[80,300],[80,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await erase(page,[[150,230]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await expect(page.getByRole('button',{name:'整笔擦除',exact:true})).toHaveAttribute('aria-pressed','true');
++ const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+150,b.y+160);await page.mouse.down();await expect(page.locator('.erase-preview')).toHaveCount(1);await page.keyboard.press('Escape');await page.mouse.up();await expect(page.locator('.erase-preview')).toHaveCount(0);await expect(page.locator('.drawn-ink')).toHaveCount(1);
++ }finally{await quit(app);}
++});
++test('eraser persistence and repeat exports remove only workspace ink and preserve source PDF annotation',async()=>{
++ let app=await launch('export');const before=readFileSync(source);try{let page=await open(app);await draw(page,[[80,160],[220,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await erase(page,[[150,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(0);await app.close();app=await launch('export');page=await app.firstWindow();await expect(page.locator('.textLayer span').first()).toBeVisible();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ for(let i=0;i<2;i++){await page.getByRole('button',{name:'导出批注 PDF',exact:true}).click();await expect(page.getByRole('status')).toContainText('导出完成');expect(execFileSync(python,['-c',`import pymupdf as f;d=f.open(${JSON.stringify(output)});p=d[0];print([a.type[0] for a in p.annots()])`],{encoding:'utf8'}).trim()).toBe('[0, 15]');}
++ expect(readFileSync(source).equals(before)).toBe(true);copyFileSync(output,path.join(process.env.ENLUMOR_EVIDENCE_DIR||'evidence/stroke-eraser','erased-export.pdf'));
++ }finally{await quit(app);}
++});
++
++test('failed erase restores preview and retains original deletion for visible retry',async()=>{
++ const app=await launch('failed');try{const page=await open(app);await draw(page,[[80,160],[220,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);
++ await app.evaluate(({ipcMain}:any)=>{const handler=ipcMain._invokeHandlers.get('annotation:change');let fail=true;ipcMain.removeHandler('annotation:change');ipcMain.handle('annotation:change',(e:any,c:any)=>{if(fail){fail=false;return{ok:false,error:{code:'ERASE_TEST',message:'injected write failure'}};}return handler(e,c);});});
++ await erase(page,[[150,160]]);await expect(page.getByRole('button',{name:'重试保存',exact:true})).toBeVisible();await expect(page.locator('.drawn-ink')).toHaveCount(1);await expect(page.locator('.erase-preview')).toHaveCount(0);await expect(page.getByRole('button',{name:'整笔擦除',exact:true})).toBeDisabled();
++ await page.getByRole('button',{name:'关闭错误提示',exact:true}).click();await page.getByRole('button',{name:'重试保存',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(0);await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(1);
++ }finally{await quit(app);}
++});
++test('eraser ignores original PDF ink and workspace arrows highlights and notes',async()=>{
++ const app=await launch('only-ink');try{const page=await open(app);await erase(page,[[150,160]]);await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);await expect(page.getByRole('button',{name:'整笔擦除',exact:true})).toHaveAttribute('aria-pressed','true');await page.keyboard.press('Escape');
++ await page.locator('.textLayer span').first().evaluate((item:HTMLElement)=>{const r=document.createRange();r.selectNodeContents(item);const s=getSelection()!;s.removeAllRanges();s.addRange(r);document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});await page.getByRole('button',{name:'高亮选区',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
++ await page.getByRole('button',{name:'绘制箭头',exact:true}).click();let b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+80,b.y+220);await page.mouse.down();await page.mouse.move(b.x+220,b.y+220);await page.mouse.up();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(2);
++ await page.locator('.textLayer span').first().evaluate((item:HTMLElement)=>{const r=document.createRange();r.selectNodeContents(item);const s=getSelection()!;s.removeAllRanges();s.addRange(r);document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});await page.getByRole('button',{name:'添加便签',exact:true}).click();await page.getByLabel('便签内容').fill('keep this note');await page.getByRole('button',{name:'保存便签',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(3);
++ await erase(page,[[70,80],[150,240]]);await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(3);await expect(page.locator('.note-content')).toHaveText('keep this note');
++ }finally{await quit(app);}
++});
++for(const [rotation,scale]of [[90,1.5],[270,2]]as const)test(`eraser hits rotated ink at ${rotation} degrees and display scale ${scale}`,async()=>{
++ const app=await launch('rot-'+rotation,scale);try{const page=await open(app);for(let i=0;i<rotation/90;i++)await page.getByRole('button',{name:'旋转页面',exact:true}).click();await draw(page,[[80,160],[220,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await erase(page,[[150,140],[150,180]]);await expect(page.locator('.drawn-ink')).toHaveCount(0);await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.locator('.drawn-ink')).toHaveCount(1);
++ }finally{await quit(app);}
++});
++for(const action of ['rotate','layout','page']as const)test(`eraser preview cancels before same-turn ${action} and pointer release`,async()=>{
++ const app=await launch('cancel-'+action);try{const page=await open(app);await draw(page,[[80,160],[220,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await page.getByRole('button',{name:'整笔擦除',exact:true}).click();const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+150,b.y+160);await page.mouse.down();await expect(page.locator('.erase-preview')).toHaveCount(1);
++ await page.evaluate(({action,x,y}:{action:string;x:number;y:number})=>{const label=action==='rotate'?'旋转页面':action==='layout'?'收起文档栏':'下一页';(document.querySelector('[aria-label="'+label+'"]')as HTMLButtonElement).click();document.querySelector('#viewerContainer')!.dispatchEvent(new PointerEvent('pointerup',{pointerId:1,clientX:x,clientY:y,bubbles:true}));},{action,x:b.x+150,y:b.y+160});
++ await expect(page.locator('.erase-preview')).toHaveCount(0);await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
++ }finally{await (await app.firstWindow()).mouse.up();await quit(app);}
++});
+diff --git a/tests/eraser.test.ts b/tests/eraser.test.ts
+new file mode 100644
+index 0000000..404e15b
+--- /dev/null
++++ b/tests/eraser.test.ts
+@@ -0,0 +1,17 @@
++import{it,expect}from'vitest';import{strokeIntersectsEraser}from'../src/shared/geometry';
++const m=[1,0,0,1,0,0];
++it('eraser sweeps between pointer samples instead of skipping a thin stroke',()=>{
++ expect(strokeIntersectsEraser([0,0,10,0],m,[5,-10],[5,10],0)).toBe(true);
++ expect(strokeIntersectsEraser([0,0,10,0],m,[5,4],[5,4],3)).toBe(false);
++ expect(strokeIntersectsEraser([0,0,10,0],m,[5,4],[5,4],4)).toBe(true);
++});
++it('eraser checks actual polyline rather than erasing empty bounding box interiors',()=>{
++ const square=[0,0,10,0,10,10,0,10,0,0];expect(strokeIntersectsEraser(square,m,[5,5],[5,5],1)).toBe(false);
++ expect(strokeIntersectsEraser(square,m,[0,5],[0,5],1)).toBe(true);
++});
++it('eraser hit radius stays in CSS pixels across rotated scaled crop transforms',()=>{
++ for(const matrix of [[0,2,2,0,-20,40],[-2,0,0,-2,80,100]]){
++ const from=matrix[0]===0?[-17,50]:[70,103];expect(strokeIntersectsEraser([0,0,10,0],matrix,from as [number,number],from as [number,number],2)).toBe(false);
++ expect(strokeIntersectsEraser([0,0,10,0],matrix,from as [number,number],from as [number,number],3)).toBe(true);
++ }
++});

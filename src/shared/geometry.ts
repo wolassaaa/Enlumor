@@ -42,3 +42,22 @@ export function lineAnchor(points: number[]): Quad {
   const l=Math.min(...xs)-.25,r=Math.max(...xs)+.25,t=Math.max(...ys)+.25,b=Math.min(...ys)-.25;
   return [l,t,r,t,l,b,r,b];
 }
+
+/** Swept eraser versus each native ink segment, in viewport CSS pixels. */
+export function strokeIntersectsEraser(points:number[],matrix:number[],from:[number,number],to:[number,number],radius:number):boolean {
+ const distance=(p:[number,number],a:[number,number],b:[number,number])=>{
+  const dx=b[0]-a[0],dy=b[1]-a[1],d=dx*dx+dy*dy,t=d?Math.max(0,Math.min(1,((p[0]-a[0])*dx+(p[1]-a[1])*dy)/d)):0;
+  return Math.hypot(p[0]-a[0]-t*dx,p[1]-a[1]-t*dy);
+ };
+ const cross=(a:[number,number],b:[number,number],p:[number,number])=>(b[0]-a[0])*(p[1]-a[1])-(b[1]-a[1])*(p[0]-a[0]);
+ let a=transform(points[0],points[1],matrix);
+ for(let i=2;i<points.length;i+=2){
+  const b=transform(points[i],points[i+1],matrix);
+  if(Math.max(a[0],b[0])+radius>=Math.min(from[0],to[0])&&Math.min(a[0],b[0])-radius<=Math.max(from[0],to[0])&&Math.max(a[1],b[1])+radius>=Math.min(from[1],to[1])&&Math.min(a[1],b[1])-radius<=Math.max(from[1],to[1])){
+   const overlap=Math.max(a[0],b[0])>=Math.min(from[0],to[0])&&Math.min(a[0],b[0])<=Math.max(from[0],to[0])&&Math.max(a[1],b[1])>=Math.min(from[1],to[1])&&Math.min(a[1],b[1])<=Math.max(from[1],to[1]);
+   if((overlap&&cross(a,b,from)*cross(a,b,to)<=0&&cross(from,to,a)*cross(from,to,b)<=0)||Math.min(distance(a,from,to),distance(b,from,to),distance(from,a,b),distance(to,a,b))<=radius)return true;
+  }
+  a=b;
+ }
+ return false;
+}

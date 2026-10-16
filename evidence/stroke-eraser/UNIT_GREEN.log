@@ -1,0 +1,9 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  20:48:22
+   Duration  168ms (transform 58%, import 26%, worker 10%, tests 6%, environment 1%)
+

@@ -1,0 +1,80 @@
+Enlumor0.1.10 whole-stroke eraser verification
+Branch:feat/stroke-eraser. Baseline:0b3cc69.
+Changed fields/branches: drawMode adds erase; strokeIntersectsEraser transforms native ink into CSS-space swept hit geometry; EraserTool collects unique ink IDs; AnnotationChange.deletes commits one gesture atomically; SVG data-annotation-id and erase-preview track temporary feedback. Annotation types/schema unchanged.
+MODIFIED_FILE: D:\codex project\Enlumor\evidence\stroke-eraser/MODIFIED_FILE.ts
+DIFF_FILE: D:\codex project\Enlumor\evidence\stroke-eraser/DIFF.patch
+VERIFICATION: D:\codex project\Enlumor\evidence\stroke-eraser/VERIFICATION.txt
+ROLLBACK: D:\codex project\Enlumor\evidence\stroke-eraser/ROLLBACK.sh
+Four original business-source files and raw SHA256 preserved in originals/ and originals.json; -text protects Git bytes.
+Live modified source retained; snapshot is src/renderer/eraser-tool.ts.
+Approved design: whole strokes only, not partial cuts. Only Enlumor workspace ink is erasable, never original PDF annotations or other workspace types.
+One page per gesture; radius8 CSS px + stroke half-width; pointer segments are swept so fast moves do not skip thin strokes.
+A valid erase exits tool; no-hit stays armed; Escape cancels. One gesture creates one commit/undo step.
+
+BASELINE
+Command (PowerShell):
+$env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.9-win-x64/Enlumor.exe).Path
+npx playwright test eraser.spec.ts
+Input: actual0.1.9 EXE, first3 new feature tests, fresh profiles and synthetic PDF.
+Literal output: 3 failed
+Exit status:1. BASELINE.log (missing eraser control).
+Command: npx vitest run tests/eraser.test.ts
+Input: swept segment, bounding-box interior, scaled/rotated crop cases.
+Literal output: Tests 3 failed (3)
+Exit status:1. UNIT_RED.log.
+After implementation the same3 geometry tests and first3 E2E passed; suite then expanded to10 real workflows.
+
+MODIFIED
+Command (PowerShell):
+$env:ENLUMOR_TEST_APP=(Resolve-Path release/Enlumor-0.1.10-win-x64/Enlumor.exe).Path
+$env:ENLUMOR_EVIDENCE_DIR='evidence/stroke-eraser'
+npx playwright test eraser.spec.ts
+Input: actual published0.1.10 EXE,10 tests, fresh synthetic profiles; controlled one-shot write error only within test process.
+Literal output: 10 passed (21.2s)
+Exit status:0. FINAL_CHECK.log.
+Verified multi-stroke atomic undo/redo; empty closed-stroke interior no hit; Esc preview cancellation; stored deletion survives restart; repeated export retains original PDF note+ink (subtypes0,15) and original bytes unchanged; highlights/arrows/notes protected; failed deletion remains retryable and undoable;90/270 degrees at display scales1.5/2; same-turn rotation/layout/page-change cancels.
+No deletion becomes authoritative before SQLite acknowledges.
+Preview/undo screenshots from actual EXE viewed and accepted; ERASER_PREVIEW_UNDO: PASS.
+
+ROLLBACK
+Command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' evidence/stroke-eraser/ROLLBACK.sh
+Input: isolated .cache/stroke-eraser-rollback/run-* code copy, four preserved business-source files verified by SHA256, new EraserTool removed only from bounded copy, fresh profile.
+Literal output: ROLLBACK: ERASER=0; INK_TOOL=1; LIVE_SOURCE_UNCHANGED=YES
+Exit status:0. ROLLBACK.log.
+Restored behavior/status: copied app has no eraser and retains ink drawing; live source stays modified, personal data untouched. This is business-code rollback in a copy, not a personal database rollback; current packaging configuration remains.
+No DB schema upgrade or source PDF writes.
+
+FULL RELEASE
+Command (PowerShell): $env:ENLUMOR_EVIDENCE_DIR='evidence/stroke-eraser'; npm run release:verified
+First attempt: exit1 during packaging, connect ETIMEDOUT20.205.243.166:443; no E2E/portable/performance result inferred; latest stayed0.1.9. RELEASE_RED.log.
+Root cause: builder default path tries to download Electron archive despite installed pinned runtime.
+Inspected installed app-builder-lib ElectronFramework.js: supported electronDist copies unpacked distribution without hard links.
+Verified node_modules/electron/dist/version=44.7.2 matches dev dependency. Set build.electronDist=node_modules/electron/dist; before-config package snapshot preserved as before-electron-dist.package.json.
+Rerun same full gate from build through all tests and performance, no gate bypass.
+35 Vitest +7 Python unittest +73 actual staged Electron E2E =115 passed.
+Literal outputs:
+73 passed (2.9m)
+PACKAGED_READER: PASS
+{"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
+EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.10 D:\codex project\Enlumor\release\Enlumor-0.1.10-win.zip SHA256=4e99e5e2cec76c385e90d5476f18853cf044195a3df24579d2c4bca900f59a20
+Final exit status:0. RELEASE.log.
+latest.json points0.1.10 only after all gates.
+ZIP SHA256 independently checked:
+4e99e5e2cec76c385e90d5476f18853cf044195a3df24579d2c4bca900f59a20
+
+PERFORMANCE
+200 pages/approximately32MB/1000 real highlights with thumbnail rail.
+Text extracted startup median509.6054000000004ms; frame p95=18ms; reading-save IPC p95=2.800000000745058ms; retained main/thumbnail canvas8/4.
+Scanned startup median513.0413999999992ms; frame p95=16.799999999813735ms; save p95=6.900000000372529ms; canvas8/3.
+Both zero measured >50ms long tasks. Passed1500ms startup /34ms frame /20ms save /30 main canvases /8 thumbnails.
+Rawrelease.json/scanned.json. These measure synthetic reading samples, not all real PDFs or1000 complex ink strokes/eraser moves.
+Known build warnings: >500kB bundle and experimental SQLite.
+
+REVIEW CADENCE / NEXT
+One new functional task: whole-stroke eraser. Counter1/2, no per-task reviewer dispatch; fifth overall review after next task.
+Deferred: partial erasing (not claimed), prior boundary-button/focus/grip and arrow-head appearance minors.
+Reusable prompt:
+沿Enlumor清单推进下一项，保留整笔擦除与便签恢复回归；完成第二项后做第五轮整体review，对照成熟操作规则修重要问题；发布前完整release:verified与双样本性能通过。原PDF只读，SQLite唯一权威，不提前搭AI空壳。

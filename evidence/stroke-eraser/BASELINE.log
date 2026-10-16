@@ -1,0 +1,102 @@
+
+Running 3 tests using 1 worker
+
+(node:20448) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\eraser.spec.ts:10:1 › one eraser sweep deletes two entire strokes atomically and one undo restores both (5.5s)
+(node:25776) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  2 tests\e2e\eraser.spec.ts:15:1 › empty interior does not erase a closed stroke and Escape cancels matching preview (4.2s)
+(node:42332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  3 tests\e2e\eraser.spec.ts:20:1 › eraser persistence and repeat exports remove only workspace ink and preserve source PDF annotation (4.0s)
+
+
+  1) tests\e2e\eraser.spec.ts:10:1 › one eraser sweep deletes two entire strokes atomically and one undo restores both 
+
+    TimeoutError: locator.click: Timeout 2500ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '整笔擦除', exact: true })
+
+
+       6 | async function open(app:any){const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();return page;}
+       7 | async function draw(page:any,points:number[][]){await page.getByRole('button',{name:'绘制画笔',exact:true}).click();const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+points[0][0],b.y+points[0][1]);await page.mouse.down();for(const p of points.slice(1))await page.mouse.move(b.x+p[0],b.y+p[1]);await page.mouse.up();}
+    >  8 | async function erase(page:any,points:number[][]){await page.getByRole('button',{name:'整笔擦除',exact:true}).click({timeout:2500});const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+points[0][0],b.y+points[0][1]);await page.mouse.down();for(const p of points.slice(1))await page.mouse.move(b.x+p[0],b.y+p[1]);await page.mouse.up();}
+         |                                                                                                          ^
+       9 | async function quit(app:any){await app.evaluate(({app}:any)=>app.exit(0)).catch(()=>{});}
+      10 | test('one eraser sweep deletes two entire strokes atomically and one undo restores both',async()=>{
+      11 |  const app=await launch('atomic');try{const page=await open(app);await draw(page,[[80,160],[220,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await draw(page,[[80,220],[220,220]]);await expect(page.locator('.drawn-ink')).toHaveCount(2);await erase(page,[[150,140],[150,240]]);await expect(page.locator('.drawn-ink')).toHaveCount(0);
+        at erase (D:\codex project\Enlumor\tests\e2e\eraser.spec.ts:8:106)
+        at D:\codex project\Enlumor\tests\e2e\eraser.spec.ts:11:260
+
+    Error Context: test-results\eraser-one-eraser-sweep-de-b3c99--and-one-undo-restores-both\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\eraser-one-eraser-sweep-de-b3c99--and-one-undo-restores-both\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\eraser-one-eraser-sweep-de-b3c99--and-one-undo-restores-both\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\eraser.spec.ts:15:1 › empty interior does not erase a closed stroke and Escape cancels matching preview 
+
+    TimeoutError: locator.click: Timeout 2500ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '整笔擦除', exact: true })
+
+
+       6 | async function open(app:any){const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();return page;}
+       7 | async function draw(page:any,points:number[][]){await page.getByRole('button',{name:'绘制画笔',exact:true}).click();const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+points[0][0],b.y+points[0][1]);await page.mouse.down();for(const p of points.slice(1))await page.mouse.move(b.x+p[0],b.y+p[1]);await page.mouse.up();}
+    >  8 | async function erase(page:any,points:number[][]){await page.getByRole('button',{name:'整笔擦除',exact:true}).click({timeout:2500});const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+points[0][0],b.y+points[0][1]);await page.mouse.down();for(const p of points.slice(1))await page.mouse.move(b.x+p[0],b.y+p[1]);await page.mouse.up();}
+         |                                                                                                          ^
+       9 | async function quit(app:any){await app.evaluate(({app}:any)=>app.exit(0)).catch(()=>{});}
+      10 | test('one eraser sweep deletes two entire strokes atomically and one undo restores both',async()=>{
+      11 |  const app=await launch('atomic');try{const page=await open(app);await draw(page,[[80,160],[220,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await draw(page,[[80,220],[220,220]]);await expect(page.locator('.drawn-ink')).toHaveCount(2);await erase(page,[[150,140],[150,240]]);await expect(page.locator('.drawn-ink')).toHaveCount(0);
+        at erase (D:\codex project\Enlumor\tests\e2e\eraser.spec.ts:8:106)
+        at D:\codex project\Enlumor\tests\e2e\eraser.spec.ts:16:194
+
+    Error Context: test-results\eraser-empty-interior-does-ce865-pe-cancels-matching-preview\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\eraser-empty-interior-does-ce865-pe-cancels-matching-preview\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\eraser-empty-interior-does-ce865-pe-cancels-matching-preview\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests\e2e\eraser.spec.ts:20:1 › eraser persistence and repeat exports remove only workspace ink and preserve source PDF annotation 
+
+    TimeoutError: locator.click: Timeout 2500ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '整笔擦除', exact: true })
+
+
+       6 | async function open(app:any){const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();return page;}
+       7 | async function draw(page:any,points:number[][]){await page.getByRole('button',{name:'绘制画笔',exact:true}).click();const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+points[0][0],b.y+points[0][1]);await page.mouse.down();for(const p of points.slice(1))await page.mouse.move(b.x+p[0],b.y+p[1]);await page.mouse.up();}
+    >  8 | async function erase(page:any,points:number[][]){await page.getByRole('button',{name:'整笔擦除',exact:true}).click({timeout:2500});const b=await page.locator('.page[data-page-number="1"]').boundingBox();await page.mouse.move(b.x+points[0][0],b.y+points[0][1]);await page.mouse.down();for(const p of points.slice(1))await page.mouse.move(b.x+p[0],b.y+p[1]);await page.mouse.up();}
+         |                                                                                                          ^
+       9 | async function quit(app:any){await app.evaluate(({app}:any)=>app.exit(0)).catch(()=>{});}
+      10 | test('one eraser sweep deletes two entire strokes atomically and one undo restores both',async()=>{
+      11 |  const app=await launch('atomic');try{const page=await open(app);await draw(page,[[80,160],[220,160]]);await expect(page.locator('.drawn-ink')).toHaveCount(1);await draw(page,[[80,220],[220,220]]);await expect(page.locator('.drawn-ink')).toHaveCount(2);await erase(page,[[150,140],[150,240]]);await expect(page.locator('.drawn-ink')).toHaveCount(0);
+        at erase (D:\codex project\Enlumor\tests\e2e\eraser.spec.ts:8:106)
+        at D:\codex project\Enlumor\tests\e2e\eraser.spec.ts:21:196
+
+    Error Context: test-results\eraser-eraser-persistence--46f77-serve-source-PDF-annotation\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\eraser-eraser-persistence--46f77-serve-source-PDF-annotation\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\eraser-eraser-persistence--46f77-serve-source-PDF-annotation\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    tests\e2e\eraser.spec.ts:10:1 › one eraser sweep deletes two entire strokes atomically and one undo restores both 
+    tests\e2e\eraser.spec.ts:15:1 › empty interior does not erase a closed stroke and Escape cancels matching preview 
+    tests\e2e\eraser.spec.ts:20:1 › eraser persistence and repeat exports remove only workspace ink and preserve source PDF annotation 

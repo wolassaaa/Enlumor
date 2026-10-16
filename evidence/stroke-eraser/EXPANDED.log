@@ -1,0 +1,18 @@
+
+Running 10 tests using 1 worker
+
+(node:25016) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\eraser.spec.ts:10:1 › one eraser sweep deletes two entire strokes atomically and one undo restores both (1.9s)
+  ok  2 tests\e2e\eraser.spec.ts:15:1 › empty interior does not erase a closed stroke and Escape cancels matching preview (1.8s)
+  ok  3 tests\e2e\eraser.spec.ts:20:1 › eraser persistence and repeat exports remove only workspace ink and preserve source PDF annotation (3.8s)
+  ok  4 tests\e2e\eraser.spec.ts:27:1 › failed erase restores preview and retains original deletion for visible retry (1.8s)
+  ok  5 tests\e2e\eraser.spec.ts:34:1 › eraser ignores original PDF ink and workspace arrows highlights and notes (1.9s)
+  ok  6 tests\e2e\eraser.spec.ts:41:57 › eraser hits rotated ink at 90 degrees and display scale 1.5 (1.8s)
+  ok  7 tests\e2e\eraser.spec.ts:41:57 › eraser hits rotated ink at 270 degrees and display scale 2 (1.9s)
+  ok  8 tests\e2e\eraser.spec.ts:45:56 › eraser preview cancels before same-turn rotate and pointer release (1.7s)
+  ok  9 tests\e2e\eraser.spec.ts:45:56 › eraser preview cancels before same-turn layout and pointer release (1.7s)
+  ok 10 tests\e2e\eraser.spec.ts:45:56 › eraser preview cancels before same-turn page and pointer release (1.7s)
+
+  10 passed (21.2s)

@@ -1,0 +1,11 @@
+
+Running 3 tests using 1 worker
+
+(node:10536) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\eraser.spec.ts:10:1 › one eraser sweep deletes two entire strokes atomically and one undo restores both (3.2s)
+  ok 2 tests\e2e\eraser.spec.ts:15:1 › empty interior does not erase a closed stroke and Escape cancels matching preview (1.7s)
+  ok 3 tests\e2e\eraser.spec.ts:20:1 › eraser persistence and repeat exports remove only workspace ink and preserve source PDF annotation (3.8s)
+
+  3 passed (9.9s)

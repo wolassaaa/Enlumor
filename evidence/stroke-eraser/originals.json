@@ -1,0 +1,22 @@
+[
+  {
+    "name": "src__shared__geometry.ts",
+    "target": "src/shared/geometry.ts",
+    "sha256": "fb75c054e001dce3fbda9482909bd044446fc7455e22c573c7020bff06635006"
+  },
+  {
+    "name": "src__renderer__main.tsx",
+    "target": "src/renderer/main.tsx",
+    "sha256": "c7efa74eb1ed86edb4e61d2460fe96dd491553c64c5639c4df2ca3bec1bc859f"
+  },
+  {
+    "name": "src__renderer__pdf-reader.ts",
+    "target": "src/renderer/pdf-reader.ts",
+    "sha256": "4989c72b728f109b6545d0dd6d75f38ac8c71b8c3e626d1382b406ba4d5dc25a"
+  },
+  {
+    "name": "src__renderer__style.css",
+    "target": "src/renderer/style.css",
+    "sha256": "3e0c04f0f2ae10f46781dc1f88bcd021d4e2a177b219e8d5a4abad623d2088e1"
+  }
+]

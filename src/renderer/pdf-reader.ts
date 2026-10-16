@@ -1,3 +1,4 @@
+import { EraserTool } from './eraser-tool';
 import { paintDrawing, type DrawingMode } from './drawing-svg';
 import { LineTool, type DrawnLine } from './line-tool';
 import { drawPageThumbnail } from './thumbnail-render';
@@ -23,20 +24,22 @@ export class PdfReader {
   private flashTimer?: ReturnType<typeof setTimeout>;
   private ready = false;
   private lineTool: LineTool;
+  private eraser: EraserTool;
   private outlineTargets = new Map<string, string | any[]>();
-  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true, drawingColor:()=>string=()=> '#5a7350') {
+  constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true, drawingColor:()=>string=()=> '#5a7350', onErase:(ids:string[])=>void=()=>{}) {
     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
     this.link.setViewer(this.viewer);
     this.lineTool=new LineTool(container,index=>this.viewer.getPageView(index),()=>this.ready&&canDraw(),onLine,drawingColor);
+    this.eraser=new EraserTool(container,index=>this.viewer.getPageView(index),()=>this.marks,()=>this.ready&&canDraw(),onErase);
     this.bus.on('pagechanging', ({pageNumber}:{pageNumber:number}) => {
-      const generation=this.generation;
+      this.eraser.cancel();const generation=this.generation;
       requestAnimationFrame(()=>{if(generation===this.generation&&this.ready)this.paint(pageNumber-1);});
     });
     this.bus.on('pagerendered', ({ pageNumber }: { pageNumber: number }) => this.paint(pageNumber - 1));
-    this.bus.on('scalechanging', () => { this.lineTool.cancel(); this.paint(); onSelection([]); });
-    this.bus.on('rotationchanging', () => { this.lineTool.cancel(); this.paint(); onSelection([]); });
+    this.bus.on('scalechanging', () => { this.lineTool.cancel(); this.eraser.cancel(); this.paint(); onSelection([]); });
+    this.bus.on('rotationchanging', () => { this.lineTool.cancel(); this.eraser.cancel(); this.paint(); onSelection([]); });
     this.bus.on('textlayerrendered', async ({ pageNumber }: { pageNumber: number }) => {
       const document = this.viewer.pdfDocument;
       if (!document || !this.ready || pageNumber !== this.viewer.currentPageNumber) return;
@@ -60,7 +63,7 @@ export class PdfReader {
     }, { passive: false });
   }
   async open(doc: OpenedDocument) {
-    this.lineTool.setEnabled(false);
+    this.setDrawingTool(null);
     const generation = ++this.generation;
     this.outlineTargets.clear(); this.onOutline(null);
     this.ready = false; this.active = doc; this.marks = []; this.flash = undefined;
@@ -116,10 +119,10 @@ export class PdfReader {
     return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
   }
   setMarks(marks: Annotation[]) { this.marks = marks; this.paint(); }
-  setDrawingTool(mode:DrawingMode|null) {this.lineTool.setMode(mode);}
-  setLineEnabled(enabled:boolean) { this.lineTool.setEnabled(enabled); }
+  setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
+  setLineEnabled(enabled:boolean) { this.setDrawingTool(enabled?'line':null); }
   clear() {
-    this.lineTool.setEnabled(false);
+    this.setDrawingTool(null);
     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
     this.outlineTargets.clear(); this.onOutline([]);
     this.viewer.setDocument(null); this.link.setDocument(null); void this.task?.destroy(); this.task = undefined;
@@ -188,7 +191,7 @@ export class PdfReader {
         for (const quad of mark.quads) {
           const [left, top, right, bottom] = quadToScreen(quad, view.viewport.transform);
           if(['line','arrow','ink'].includes(mark.type)&&mark!==this.flash) {
-            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('drawn-'+mark.type);
+            const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('drawn-'+mark.type);svg.dataset.annotationId=mark.id;
             const points=mark.points!.flatMap((_,i,p)=>i%2===0?transform(p[i],p[i+1],view.viewport.transform):[]);
             paintDrawing(svg,mark.type as DrawingMode,points,mark.color,(mark.type==='line'?1.5/view.viewport.scale:1.125)*view.viewport.scale);overlay.append(svg);continue;
           }
@@ -204,6 +207,7 @@ export class PdfReader {
         }
       }
       page.append(overlay);
+      this.eraser?.refresh();
     }
   }
 }
