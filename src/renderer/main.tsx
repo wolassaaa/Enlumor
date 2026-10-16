@@ -1,3 +1,4 @@
+import type {CruiseBlock} from '../shared/cruise';
 import {ModelSettings} from './model-settings';
 import { NoteDialog } from './note-dialog';
 import { PanelDivider } from './panel-divider';
@@ -23,6 +24,10 @@ function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id
 function App() {
   const [modelSettingsOpen,setModelSettingsOpen]=useState(false);const modelSettingsTrigger=useRef<HTMLElement|null>(null);
 
+  const [cruiseBlocks,setCruiseBlocks]=useState<CruiseBlock[]>([]),[blocksOpen,setBlocksOpen]=useState(false),[blocksBusy,setBlocksBusy]=useState(false);
+  const blockEpoch=useRef(0),blockPage=useRef(1);
+  function clearBlocks(){blockEpoch.current++;setCruiseBlocks([]);setBlocksOpen(false);}
+  async function readBlocks(){const opened=activeDocument.current;if(!opened||!reader.current||blocksBusy)return;const epoch=blockEpoch.current,pageIndex=blockPage.current-1;resetDrawing();setParts([]);setBlocksBusy(true);try{const blocks=await reader.current.readPageBlocks(pageIndex);if(activeId.current===opened.id&&blockEpoch.current===epoch){setCruiseBlocks(blocks);setBlocksOpen(true);}}catch(reason){if(activeId.current===opened.id&&blockEpoch.current===epoch)fail(reason);}finally{setBlocksBusy(false);}}
   const workspaceElement = useRef<HTMLDivElement>(null);
   const [layout, setLayout] = useState<LayoutPreferences>(defaultLayout), [layoutOpen, setLayoutOpen] = useState(false), [workspaceWidth, setWorkspaceWidth] = useState(window.innerWidth);
   const layoutRef = useRef(layout), layoutFlight = useRef<Promise<void> | null>(null), [layoutError, setLayoutError] = useState(false);
@@ -39,7 +44,7 @@ function App() {
   const [textNotice,setTextNotice]=useState('');
   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
   const [currentPage,setCurrentPage]=useState(1),[pageError,setPageError]=useState('');
-  function syncPage(value:number){setCurrentPage(value);setPage(String(value));setPageError('');}
+  function syncPage(value:number){if(blockPage.current!==value){blockPage.current=value;clearBlocks();}setCurrentPage(value);setPage(String(value));setPageError('');}
   function navigatePage(value:number){if(!doc||busy)return;resetDrawing();setParts([]);setPage(String(value));setPageError('');reader.current?.go(value);}
   function submitPage(){const value=page.trim(),number=Number(value);if(!doc)return;if(!/^\d+$/.test(value)||!Number.isSafeInteger(number)||number<1||number>doc.pageCount){setPageError(`请输入 1–${doc.pageCount} 之间的整数页码`);return;}navigatePage(number);}
   const [drawMode,setDrawMode]=useState<'line'|'arrow'|'ink'|'erase'|null>(null);
@@ -139,7 +144,7 @@ function App() {
       const baseTabs=replacementTabs || tabsRef.current;
       const nextTabs=baseTabs.some(tab=>tab.id===opened.id) ? baseTabs.map(tab=>tab.id===opened.id?opened:tab) : [...baseTabs,opened];
       resetDrawing();previous.reading = current.current;
-      replacing = true; current.current=null;setParts([]);setNotice('');setTextNotice('');
+      replacing = true; current.current=null;clearBlocks();setParts([]);setNotice('');setTextNotice('');
       await reader.current!.open(opened);
       unwrap(await window.enlumor.saveTabs({openIds:nextTabs.map(tab=>tab.id),activeId:opened.id}));
       setQuery('');setHistory(histories.current.get(opened.id) || emptyHistory());
@@ -212,7 +217,7 @@ function App() {
     if(await commit(change,kind))closeNote();
   }
   function clearCurrent() {
-    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
+    clearTimeout(timer.current);clearBlocks();current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
   }
   async function closeTab(id:string) {
     if(locked.current || pending.current || noteOpen.current)return;
@@ -277,10 +282,11 @@ function App() {
           <button role="tab" aria-label={tab.name} aria-selected={doc?.id===tab.id} tabIndex={doc?.id===tab.id?0:-1} title={tab.path} disabled={busy||!!pending.current} onClick={()=>void load(tab.id)}>{tab.name}</button>
           <button aria-label={`关闭 ${tab.name}`} title="关闭标签（Ctrl+W）" disabled={busy||!!pending.current} onClick={()=>void closeTab(tab.id)} onKeyDown={event=>event.stopPropagation()}>×</button>
         </div>)}</div>}<div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
-        <div className="toolbar"><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
+        <div className="toolbar"><button aria-label="读取本页阅读块" disabled={!doc||busy||blocksBusy} onClick={()=>void readBlocks()}>{blocksBusy?'读取中…':'阅读块'}</button><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
           <form className="search" onSubmit={event => { event.preventDefault(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
         </div>
+        {blocksOpen&&<section className="cruise-block-list" aria-label="本页阅读块"><div><strong>本页阅读块 · 原文定位</strong><button aria-label="收起阅读块" onClick={()=>setBlocksOpen(false)}>收起</button></div>{cruiseBlocks.length?cruiseBlocks.map((block,index)=><button key={block.id} data-block-id={block.id} aria-label={`定位阅读块 ${index+1}`} onClick={()=>{resetDrawing();reader.current?.locateCruiseBlock(block);}}>{block.quote}</button>):<p>当前页没有可用阅读块；扫描页需要文字层，可略过或继续普通阅读。</p>}</section>}
         {pageError && <div id="page-error" className="notice" role="alert">{pageError}</div>}
         {(error||pending.current||layoutError) && <div className="error" role="alert">{error||'存在未保存更改'}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && note===null && <button disabled={busy} onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && note===null && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
         {(textNotice||notice) && <div className="notice">{[textNotice,notice].filter(Boolean).join(' · ')}</div>}

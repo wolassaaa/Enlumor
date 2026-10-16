@@ -8,11 +8,11 @@
 
 ## 当前状态
 
-- Task1：模型设置与四协议底座已实现，专项31项单测、2项实际Electron流程通过；本次里程碑与证据一并提交。不是完整Cruise，也不是正式发布。
-- Task2：下一项，按需原文分块与锚点定位；尚未开始，不提前标完成。
+- Task1：模型设置与四协议底座已实现，专项31项单测、2项实际Electron流程通过；已提交9bafc46；全部66项单测通过，开发构建通过。不是完整Cruise，也不是正式发布。
+- Task2：完成；11项分块/生命周期测试、全部77项单测、4项实际Electron（设置2＋定位2）通过；四种裁剪源旋转、150%/200%显示缩放。临时强调不入批注表。Task1+2独立review的1项Important和2项Minor均已修复并有回归测试。
 - Task3/4：巡航解释/控制/接管，节奏/恢复尚未实现。
 - Task5/6：DashScope/星火原生尚未实现；不能在设置中作为可用协议出现。
-- 两任务一review计数：1/2；Task2完成后只派一次独立整体review，修复Important再推进下一批。
+- 两任务一review：Task1+2统一只读独立review完成（cruise_batch_one_review），Important修复后计数归零；下一次为Task3+4，不重复派审。
 - 当前最新已验证发布仍为0.1.12，开发源代码引入SQLite v3模型配置表；个人userData未迁移，测试全用临时profile。
 
 ## Task1 已做与证据
@@ -35,7 +35,14 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 
 ## 接下来具体动作
 
-1. 确认本任务提交与证据已落盘，检查Git状态；读Task2 brief，从Task2开始，别重写Task1。
-2. Task2写cruise-blocks失败单测：双栏/中文/重复句、跨行、四旋转crop与无文字页、稳定块ID和异步旧文档隔离；再接PdfReader按需页读取与临时定位。
-3. 完成Task2后reviewTask1+2累计变更，特别检查凭据/IPC/分块精度与内存、模型设置模态操作。修复Important后继续Task3。
-4. 只有完整release:verified通过后更新latest；每批证据四件套与隔离回退。到点停机不把未完成代码标记发布。
+1. 读取Git状态、计划与本记录；Task1/2已完成，勿重写。Task3从状态机失败测试开始，解释IPC必须在主进程验证文档/指纹/当前页原文锚点。
+2. 完成Task3再做Task4；两项完成后调用一次只读独立review，修复Important。
+3. 完整release:verified通过后才更新latest；目前保留0.1.12。每批证据四件套与隔离回退。到点停止新增任务。
+
+## Task2补充记录
+- src/renderer/cruise-blocks.ts只用原生PDF坐标，按近邻基线聚行、双栏与跨栏页眉/页脚分带，段落按原文item边界限制1200字符。
+- Ruling：单个text item超过1200字符时明确CRUISE_BLOCK_TOO_LONG，不按字符等宽猜位置；后续Task3可从真实文字选区起点处理，代价是极端排版页不能整页自动分块。
+- readPageBlocks缓存最多6页，返回深拷贝；换文档/clear清理，异步代次不符则拒绝旧结果。locateCruiseBlock校验doc/fingerprint，复用临时flash，不写annotation表。
+- UI提供实际可点击的本页阅读块列表；这不是完整巡航，更没有模拟AI解释。扫描页不生成假块。
+- 全部77项单测、开发构建/类型检查与Electron4项通过；完整发布门禁尚未跑。
+- Review回归：20px/40px栏间距且左栏宽260px，不再串栏；翻页清空面板并拒绝旧异步结果；reader换文档/clear/缓存6页和深拷贝有直接测试。

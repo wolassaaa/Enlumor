@@ -1,0 +1,281 @@
+diff --git a/scripts/check-cruise-blocks-rollback.mjs b/scripts/check-cruise-blocks-rollback.mjs
+new file mode 100644
+index 0000000..64d2162
+--- /dev/null
++++ b/scripts/check-cruise-blocks-rollback.mjs
+@@ -0,0 +1,35 @@
++import { build } from 'esbuild';
++import { build as viteBuild } from 'vite';
++import react from '@vitejs/plugin-react';
++import { _electron as electron, expect } from '@playwright/test';
++import { mkdirSync, mkdtempSync, cpSync, copyFileSync, readFileSync, unlinkSync } from 'node:fs';
++import { createHash } from 'node:crypto';
++import { DatabaseSync } from 'node:sqlite';
++import path from 'node:path';
++import { copyAssets } from './assets.mjs';
++const root=path.resolve('.');
++const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex');
++const live=sha('src/renderer/main.tsx')+sha('src/renderer/pdf-reader.ts')+sha('src/renderer/style.css');
++const base=path.join(root,'.cache/cruise-blocks-rollback');mkdirSync(base,{recursive:true});
++const copy=mkdtempSync(path.join(base,'run-'));
++if(!copy.startsWith(base+path.sep))throw Error('Unexpected rollback target');
++cpSync('src',path.join(copy,'src'),{recursive:true});
++cpSync('python',path.join(copy,'python'),{recursive:true});
++for(const file of ['package.json','index.html'])copyFileSync(file,path.join(copy,file));
++const originals=JSON.parse(readFileSync('evidence/cruise-blocks/originals.json','utf8'));
++for(const {name,target,sha256} of originals){const file=path.join(root,'evidence/cruise-blocks/originals',name),destination=path.resolve(copy,target);if(!destination.startsWith(copy+path.sep))throw Error('Unexpected original target');if(sha(file)!==sha256)throw Error('Original hash mismatch');mkdirSync(path.dirname(destination),{recursive:true});copyFileSync(file,destination);}
++for(const target of ['src/renderer/cruise-blocks.ts','src/shared/cruise.ts']){const file=path.resolve(copy,target);if(!file.startsWith(copy+path.sep))throw Error('Unexpected added file');unlinkSync(file);}
++await build({entryPoints:[path.join(copy,'src/main/index.ts'),path.join(copy,'src/main/preload.ts')],outdir:path.join(copy,'dist/main'),bundle:true,platform:'node',format:'cjs',outExtension:{'.js':'.cjs'},external:['electron']});
++await viteBuild({configFile:false,root:copy,plugins:[react()],base:'./',build:{outDir:path.join(copy,'dist/renderer')}});
++copyAssets(path.join(copy,'dist/renderer/pdf-assets'));
++const app=await electron.launch({args:[copy,`--user-data-dir=${path.join(copy,'profile')}`],env:{...process.env,ENLUMOR_PYTHON:path.join(root,'.venv/Scripts/python.exe')}});
++try{
++ const page=await app.firstWindow(),source=path.join(root,'.cache/benchmark/200-pages-32MiB.pdf');
++ await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);
++ await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ await expect(page.getByRole('button',{name:'模型设置',exact:true})).toHaveCount(1);
++ await expect(page.getByRole('button',{name:'读取本页阅读块',exact:true})).toHaveCount(0);
++ const db=new DatabaseSync(path.join(copy,'profile/workspace.sqlite'),{readOnly:true});try{if(Number(db.prepare('PRAGMA user_version').get().user_version)!==3)throw Error('Original schema not restored');}finally{db.close();}
++ if(sha('src/renderer/main.tsx')+sha('src/renderer/pdf-reader.ts')+sha('src/renderer/style.css')!==live)throw Error('Live source changed');
++ console.log('ROLLBACK: READ_BLOCKS=0; MODEL_SETTINGS=1; SCHEMA=3; LIVE_SOURCE_UNCHANGED=YES');
++}finally{await app.close();}
+diff --git a/src/renderer/cruise-blocks.ts b/src/renderer/cruise-blocks.ts
+new file mode 100644
+index 0000000..f576138
+--- /dev/null
++++ b/src/renderer/cruise-blocks.ts
+@@ -0,0 +1,54 @@
++import type{CruiseBlock}from'../shared/cruise';
++export type TextSpan={str:string;width:number;height:number;transform:number[];fontName:string};
++type Style={ascent?:number;descent?:number};
++type Piece={text:string;left:number;right:number;top:number;bottom:number;base:number;height:number;source:number};
++type Line=Piece&{pieces:Piece[];column?:number};
++const invalid=()=>new Error('CRUISE_INVALID_GEOMETRY');
++/** Native PDF geometry only: display rotation/zoom never changes these blocks. */
++export function buildPageBlocks(document:{id:string;fingerprint:string},pageIndex:number,pageWidth:number,items:TextSpan[],styles:Record<string,Style>):CruiseBlock[]{
++ if(!document||typeof document.id!=='string'||!document.id||typeof document.fingerprint!=='string'||!document.fingerprint||!Number.isInteger(pageIndex)||pageIndex<0||!Number.isFinite(pageWidth)||pageWidth<=0||items.length>20000)throw invalid();
++ const pieces:Piece[]=[];
++ for(const [source,item]of items.entries()){
++  if(typeof item.str!=='string'||!item.str.trim())continue;if(item.str.length>1200)throw new Error('CRUISE_BLOCK_TOO_LONG');
++  const m=item.transform;if(!Array.isArray(m)||m.length!==6||m.some(v=>!Number.isFinite(v))||!Number.isFinite(item.width)||item.width<=0)throw invalid();
++  const h=Math.hypot(m[2],m[3]),axis=Math.hypot(m[0],m[1]);if(h<1e-6||axis<1e-6)throw invalid();
++  const style=styles[item.fontName]||{},ascent=style.ascent??.8,descent=style.descent??-.2;if(!Number.isFinite(ascent)||!Number.isFinite(descent)||ascent<=descent)throw invalid();
++  const ux=m[0]/axis,uy=m[1]/axis,vx=m[2]/h,vy=m[3]/h;
++  const corners=[[m[4]+vx*h*ascent,m[5]+vy*h*ascent],[m[4]+ux*item.width+vx*h*ascent,m[5]+uy*item.width+vy*h*ascent],[m[4]+vx*h*descent,m[5]+vy*h*descent],[m[4]+ux*item.width+vx*h*descent,m[5]+uy*item.width+vy*h*descent]];
++  const piece:Piece={text:item.str,left:Math.min(...corners.map(p=>p[0])),right:Math.max(...corners.map(p=>p[0])),top:Math.max(...corners.map(p=>p[1])),bottom:Math.min(...corners.map(p=>p[1])),base:m[5],height:h,source};
++  pieces.push(piece);
++ }
++ // Detect a persistent physical gutter before joining words into lines.
++ const xs=[...new Set(pieces.map(p=>p.left))].sort((a,b)=>a-b);let split:number|undefined,gap=pageWidth*.18;
++ for(let i=1;i<xs.length;i++){
++  const rightStart=xs[i],distance=rightStart-xs[i-1];if(distance<=gap)continue;
++  const left=pieces.filter(p=>p.left<rightStart&&p.right<=rightStart),right=pieces.filter(p=>p.left>=rightStart);
++  if(left.length<2||right.length<2)continue;
++  const leftEnd=Math.max(...left.map(p=>p.right));if(rightStart-leftEnd<Math.min(...left.map(p=>p.height),...right.map(p=>p.height))*.4)continue;
++  gap=distance;split=(leftEnd+rightStart)/2;
++ }
++ const column=(p:Piece)=>split===undefined?0:p.left<split&&p.right>split?2+p.source:p.left<split?0:1;
++ const lines:Line[]=[];
++ for(const piece of pieces){
++  const col=column(piece),line=lines.find(l=>l.column===col&&Math.abs(l.base-piece.base)<Math.max(piece.height,l.height)*.35&&Math.max(0,piece.left-l.right,l.left-piece.right)<=Math.max(piece.height,l.height)*1.8);
++  if(line){line.pieces.push(piece);line.left=Math.min(line.left,piece.left);line.right=Math.max(line.right,piece.right);line.top=Math.max(line.top,piece.top);line.bottom=Math.min(line.bottom,piece.bottom);}
++  else lines.push({...piece,pieces:[piece],column:col});
++ }
++ for(const line of lines){line.pieces.sort((a,b)=>a.left-b.left);line.text='';let right=line.left;for(const p of line.pieces){if(line.text&&p.left-right>line.height*.12&&!/\s$/.test(line.text)&&!/^\s/.test(p.text))line.text+=' ';line.text+=p.text;right=p.right;}line.text=line.text.trim();if(line.text.length>1200)throw new Error('CRUISE_BLOCK_TOO_LONG');}
++ const byTop=(a:Line,b:Line)=>b.top-a.top||a.left-b.left;
++ let ordered:Line[];
++ if(split===undefined)ordered=lines.sort(byTop);
++ else{
++  const middle=split,spans=lines.filter(l=>l.left<middle&&l.right>middle).sort(byTop);let remaining=lines.filter(l=>!spans.includes(l));ordered=[];
++  const columns=(list:Line[])=>{for(const line of list)line.column=line.left<middle?0:1;return list.sort((a,b)=>a.column!-b.column!||byTop(a,b));};
++  for(const line of spans){const above=remaining.filter(l=>l.top>line.top);ordered.push(...columns(above));remaining=remaining.filter(l=>!above.includes(l));line.column=2+line.source;ordered.push(line);}ordered.push(...columns(remaining));
++ }
++ const blocks:CruiseBlock[]=[];let previous:Line|undefined;
++ for(const line of ordered){
++  const q=[line.left,line.top,line.right,line.top,line.left,line.bottom,line.right,line.bottom],last=blocks.at(-1),distance=previous?previous.base-line.base:Infinity;
++  if(last&&previous&&previous.column===line.column&&distance>0&&distance<=Math.max(previous.height,line.height)*2.2&&Math.abs(previous.left-line.left)<=line.height*2.5&&last.quote.length+line.text.length+1<=1200){last.quote+='\n'+line.text;last.quads.push(q);}
++  else blocks.push({id:`${document.id}-${document.fingerprint.slice(0,12)}-${pageIndex}-${line.source}`,documentId:document.id,fingerprint:document.fingerprint,pageIndex,quote:line.text,quads:[q]});
++  previous=line;
++ }
++ return blocks;
++}
+diff --git a/src/renderer/main.tsx b/src/renderer/main.tsx
+index cb0ad43..03bd764 100644
+--- a/src/renderer/main.tsx
++++ b/src/renderer/main.tsx
+@@ -1,3 +1,4 @@
++import type {CruiseBlock} from '../shared/cruise';
+ import {ModelSettings} from './model-settings';
+ import { NoteDialog } from './note-dialog';
+ import { PanelDivider } from './panel-divider';
+@@ -23,6 +24,10 @@ function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id
+ function App() {
+   const [modelSettingsOpen,setModelSettingsOpen]=useState(false);const modelSettingsTrigger=useRef<HTMLElement|null>(null);
+ 
++  const [cruiseBlocks,setCruiseBlocks]=useState<CruiseBlock[]>([]),[blocksOpen,setBlocksOpen]=useState(false),[blocksBusy,setBlocksBusy]=useState(false);
++  const blockEpoch=useRef(0),blockPage=useRef(1);
++  function clearBlocks(){blockEpoch.current++;setCruiseBlocks([]);setBlocksOpen(false);}
++  async function readBlocks(){const opened=activeDocument.current;if(!opened||!reader.current||blocksBusy)return;const epoch=blockEpoch.current,pageIndex=blockPage.current-1;resetDrawing();setParts([]);setBlocksBusy(true);try{const blocks=await reader.current.readPageBlocks(pageIndex);if(activeId.current===opened.id&&blockEpoch.current===epoch){setCruiseBlocks(blocks);setBlocksOpen(true);}}catch(reason){if(activeId.current===opened.id&&blockEpoch.current===epoch)fail(reason);}finally{setBlocksBusy(false);}}
+   const workspaceElement = useRef<HTMLDivElement>(null);
+   const [layout, setLayout] = useState<LayoutPreferences>(defaultLayout), [layoutOpen, setLayoutOpen] = useState(false), [workspaceWidth, setWorkspaceWidth] = useState(window.innerWidth);
+   const layoutRef = useRef(layout), layoutFlight = useRef<Promise<void> | null>(null), [layoutError, setLayoutError] = useState(false);
+@@ -39,7 +44,7 @@ function App() {
+   const [textNotice,setTextNotice]=useState('');
+   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
+   const [currentPage,setCurrentPage]=useState(1),[pageError,setPageError]=useState('');
+-  function syncPage(value:number){setCurrentPage(value);setPage(String(value));setPageError('');}
++  function syncPage(value:number){if(blockPage.current!==value){blockPage.current=value;clearBlocks();}setCurrentPage(value);setPage(String(value));setPageError('');}
+   function navigatePage(value:number){if(!doc||busy)return;resetDrawing();setParts([]);setPage(String(value));setPageError('');reader.current?.go(value);}
+   function submitPage(){const value=page.trim(),number=Number(value);if(!doc)return;if(!/^\d+$/.test(value)||!Number.isSafeInteger(number)||number<1||number>doc.pageCount){setPageError(`请输入 1–${doc.pageCount} 之间的整数页码`);return;}navigatePage(number);}
+   const [drawMode,setDrawMode]=useState<'line'|'arrow'|'ink'|'erase'|null>(null);
+@@ -139,7 +144,7 @@ function App() {
+       const baseTabs=replacementTabs || tabsRef.current;
+       const nextTabs=baseTabs.some(tab=>tab.id===opened.id) ? baseTabs.map(tab=>tab.id===opened.id?opened:tab) : [...baseTabs,opened];
+       resetDrawing();previous.reading = current.current;
+-      replacing = true; current.current=null;setParts([]);setNotice('');setTextNotice('');
++      replacing = true; current.current=null;clearBlocks();setParts([]);setNotice('');setTextNotice('');
+       await reader.current!.open(opened);
+       unwrap(await window.enlumor.saveTabs({openIds:nextTabs.map(tab=>tab.id),activeId:opened.id}));
+       setQuery('');setHistory(histories.current.get(opened.id) || emptyHistory());
+@@ -212,7 +217,7 @@ function App() {
+     if(await commit(change,kind))closeNote();
+   }
+   function clearCurrent() {
+-    clearTimeout(timer.current);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
++    clearTimeout(timer.current);clearBlocks();current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
+   }
+   async function closeTab(id:string) {
+     if(locked.current || pending.current || noteOpen.current)return;
+@@ -277,10 +282,11 @@ function App() {
+           <button role="tab" aria-label={tab.name} aria-selected={doc?.id===tab.id} tabIndex={doc?.id===tab.id?0:-1} title={tab.path} disabled={busy||!!pending.current} onClick={()=>void load(tab.id)}>{tab.name}</button>
+           <button aria-label={`关闭 ${tab.name}`} title="关闭标签（Ctrl+W）" disabled={busy||!!pending.current} onClick={()=>void closeTab(tab.id)} onKeyDown={event=>event.stopPropagation()}>×</button>
+         </div>)}</div>}<div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
+-        <div className="toolbar"><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
++        <div className="toolbar"><button aria-label="读取本页阅读块" disabled={!doc||busy||blocksBusy} onClick={()=>void readBlocks()}>{blocksBusy?'读取中…':'阅读块'}</button><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
+           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
+           <form className="search" onSubmit={event => { event.preventDefault(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
+         </div>
++        {blocksOpen&&<section className="cruise-block-list" aria-label="本页阅读块"><div><strong>本页阅读块 · 原文定位</strong><button aria-label="收起阅读块" onClick={()=>setBlocksOpen(false)}>收起</button></div>{cruiseBlocks.length?cruiseBlocks.map((block,index)=><button key={block.id} data-block-id={block.id} aria-label={`定位阅读块 ${index+1}`} onClick={()=>{resetDrawing();reader.current?.locateCruiseBlock(block);}}>{block.quote}</button>):<p>当前页没有可用阅读块；扫描页需要文字层，可略过或继续普通阅读。</p>}</section>}
+         {pageError && <div id="page-error" className="notice" role="alert">{pageError}</div>}
+         {(error||pending.current||layoutError) && <div className="error" role="alert">{error||'存在未保存更改'}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && note===null && <button disabled={busy} onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && note===null && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
+         {(textNotice||notice) && <div className="notice">{[textNotice,notice].filter(Boolean).join(' · ')}</div>}
+diff --git a/src/renderer/pdf-reader.ts b/src/renderer/pdf-reader.ts
+index 5e3a717..6e7d1e7 100644
+--- a/src/renderer/pdf-reader.ts
++++ b/src/renderer/pdf-reader.ts
+@@ -1,4 +1,6 @@
+ import { EraserTool } from './eraser-tool';
++import{buildPageBlocks,type TextSpan}from'./cruise-blocks';
++import type{CruiseBlock}from'../shared/cruise';
+ import { paintDrawing, type DrawingMode } from './drawing-svg';
+ import { LineTool, type DrawnLine } from './line-tool';
+ import { drawPageThumbnail } from './thumbnail-render';
+@@ -26,6 +28,7 @@ export class PdfReader {
+   private lineTool: LineTool;
+   private eraser: EraserTool;
+   private outlineTargets = new Map<string, string | any[]>();
++  private blockCache=new Map<number,CruiseBlock[]>();
+   constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true, drawingColor:()=>string=()=> '#5a7350', onErase:(ids:string[])=>void=()=>{}, private onTextNotice:(text:string)=>void=onNotice) {
+     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
+     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
+@@ -59,6 +62,7 @@ export class PdfReader {
+     }, { passive: false });
+   }
+   async open(doc: OpenedDocument) {
++    this.blockCache.clear();
+     this.setDrawingTool(null);
+     const generation = ++this.generation;
+     this.outlineTargets.clear(); this.onOutline(null);
+@@ -127,10 +131,27 @@ export class PdfReader {
+     if (!pdf || !this.ready) return false;
+     return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
+   }
++  async readPageBlocks(pageIndex:number):Promise<CruiseBlock[]>{
++    const document=this.active,pdf=this.viewer.pdfDocument,generation=this.generation;
++    if(!document||!pdf||!this.ready)throw new Error('CRUISE_NOT_READY');
++    if(!Number.isInteger(pageIndex)||pageIndex<0||pageIndex>=document.pageCount)throw new Error('CRUISE_INVALID_PAGE');
++    const cached=this.blockCache.get(pageIndex);if(cached)return structuredClone(cached);
++    const page=await pdf.getPage(pageIndex+1),text=await page.getTextContent();
++    if(generation!==this.generation||pdf!==this.viewer.pdfDocument||document!==this.active||!this.ready)throw new Error('CRUISE_SOURCE_CHANGED');
++    const items=text.items.filter((item):item is typeof text.items[number]&TextSpan=>'str'in item);
++    const blocks=buildPageBlocks(document,pageIndex,page.view[2]-page.view[0],items,text.styles);
++    this.blockCache.set(pageIndex,blocks);if(this.blockCache.size>6)this.blockCache.delete(this.blockCache.keys().next().value!);
++    return structuredClone(blocks);
++  }
++  locateCruiseBlock(block:CruiseBlock){
++    if(!this.active||block.documentId!==this.active.id||block.fingerprint!==this.active.fingerprint)throw new Error('CRUISE_SOURCE_CHANGED');
++    this.focus({...block,type:'highlight',author:'user',color:'#f4cf58',note:''});
++  }
+   setMarks(marks: Annotation[], changedIds?: string[]) { this.marks = marks; this.paint(undefined,changedIds?new Set(changedIds):undefined); }
+   setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
+   setLineEnabled(enabled:boolean) { this.setDrawingTool(enabled?'line':null); }
+   clear() {
++    this.blockCache.clear();
+     this.setDrawingTool(null);
+     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
+     this.outlineTargets.clear(); this.onOutline([]);
+diff --git a/src/renderer/style.css b/src/renderer/style.css
+index 0455fa3..cb31ba9 100644
+--- a/src/renderer/style.css
++++ b/src/renderer/style.css
+@@ -71,3 +71,5 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
+ 
+ .ai-settings{width:min(640px,92vw);max-height:88vh;overflow:auto;padding:24px;border:1px solid var(--line);border-radius:8px;background:var(--paper);color:var(--ink)}
+ .ai-settings::backdrop{background:#202a2380}.ai-settings h2{margin:0 0 12px}.ai-settings p{font-size:12px;line-height:1.7}.ai-settings fieldset{border:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:12px}.ai-settings label{display:flex;flex-direction:column;gap:5px;font-size:12px;min-width:0}.ai-settings input,.ai-settings select,.ai-settings textarea{width:100%;min-width:0;padding:8px}.ai-settings textarea{height:70px;resize:vertical}.ai-settings [role=alert]{color:#82462e;overflow-wrap:anywhere}.ai-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
++
++.cruise-block-list{padding:12px 16px;background:var(--paper);border-bottom:1px solid var(--line);max-height:200px;overflow:auto;flex:none}.cruise-block-list>div{display:flex;align-items:center;justify-content:space-between;font-size:12px}.cruise-block-list>button{display:block;width:100%;text-align:left;white-space:pre-wrap;margin-top:8px;font-size:12px;line-height:1.65}.cruise-block-list p{font-size:12px;color:var(--muted)}
+diff --git a/src/shared/cruise.ts b/src/shared/cruise.ts
+new file mode 100644
+index 0000000..9c4611d
+--- /dev/null
++++ b/src/shared/cruise.ts
+@@ -0,0 +1 @@
++export type CruiseBlock={id:string;documentId:string;fingerprint:string;pageIndex:number;quote:string;quads:number[][]};
+diff --git a/tests/cruise-blocks.test.ts b/tests/cruise-blocks.test.ts
+new file mode 100644
+index 0000000..7012aa0
+--- /dev/null
++++ b/tests/cruise-blocks.test.ts
+@@ -0,0 +1,11 @@
++import{it,expect}from'vitest';
++import{buildPageBlocks,type TextSpan}from'../src/renderer/cruise-blocks';
++const doc={id:'doc',fingerprint:'a'.repeat(64)},styles={font:{ascent:.8,descent:-.2}};
++const span=(str:string,x:number,y:number,width=100):TextSpan=>({str,width,height:14,transform:[14,0,0,14,x,y],fontName:'font'});
++it('keeps repeated phrases in separate columns with original native quads and stable identity',()=>{const items=[span('same phrase',40,700),span('same phrase',340,700),span('left second',40,680),span('right second',340,680)];const blocks=buildPageBlocks(doc,0,600,items,styles);expect(blocks).toHaveLength(2);expect(blocks[0].quote).toBe('same phrase\nleft second');expect(blocks[1].quote).toBe('same phrase\nright second');expect(blocks[0].quads).toHaveLength(2);expect(blocks[1].quads[0][0]).toBe(340);expect(blocks[1].id).not.toBe(blocks[0].id);expect(buildPageBlocks(doc,0,600,items,styles)).toEqual(blocks);});
++it('preserves Chinese and multi-line evidence without injecting a screen scale',()=>{const blocks=buildPageBlocks(doc,2,600,[span('中文原文',50,700),span('第二行',50,682)],styles);expect(blocks).toHaveLength(1);expect(blocks[0].quote).toBe('中文原文\n第二行');expect(blocks[0].pageIndex).toBe(2);expect(blocks[0].quads[0]).toEqual([50,711.2,150,711.2,50,697.2,150,697.2]);});
++it('handles headers and footers spanning columns in vertical reading bands',()=>{const items=[span('HEADER',30,780,540),span('L1',40,700),span('R1',340,700),span('L2',40,680),span('R2',340,680),span('FOOTER',30,40,540)];const blocks=buildPageBlocks(doc,0,600,items,styles);expect(blocks.map(b=>b.quote)).toEqual(['HEADER','L1\nL2','R1\nR2','FOOTER']);});
++it('empty pages are not given fabricated blocks; fingerprint and page bind identity',()=>{expect(buildPageBlocks(doc,0,600,[],styles)).toEqual([]);const items=[span('evidence',40,700)];expect(buildPageBlocks({...doc,fingerprint:'b'.repeat(64)},0,600,items,styles)[0].id).not.toBe(buildPageBlocks(doc,0,600,items,styles)[0].id);expect(buildPageBlocks(doc,1,600,items,styles)[0].id).not.toBe(buildPageBlocks(doc,0,600,items,styles)[0].id);});
++it('caps block size at text-item boundaries rather than inventing per-character geometry',()=>{const items=Array.from({length:20},(_,i)=>span('x'.repeat(100),40,800-i*18));const blocks=buildPageBlocks(doc,0,600,items,styles);expect(blocks.length).toBeGreaterThan(1);expect(blocks.every(b=>b.quote.length<=1200)).toBe(true);expect(blocks.reduce((n,b)=>n+b.quote.replace(/\n/g,'').length,0)).toBe(2000);expect(()=>buildPageBlocks(doc,0,600,[span('x'.repeat(1201),40,700)],styles)).toThrow('CRUISE_BLOCK_TOO_LONG');});
++it('rejects invalid geometry and page metadata without returning inaccurate anchors',()=>{for(const item of [{...span('x',40,700),width:NaN},{...span('x',40,700),transform:[0,0,0,0,0,0]}])expect(()=>buildPageBlocks(doc,0,600,[item],styles)).toThrow(/CRUISE_/);expect(()=>buildPageBlocks(doc,-1,600,[span('x',40,700)],styles)).toThrow(/CRUISE_/);});
++it.each([320,340])('keeps wide columns separate at right start %s',right=>{const blocks=buildPageBlocks(doc,0,600,[span('L1',40,700,260),span('R1',right,700,220),span('L2',40,682,260),span('R2',right,682,220)],styles);expect(blocks.map(b=>b.quote)).toEqual(['L1\nL2','R1\nR2']);expect(blocks[0].quads.every(q=>q[2]===300)).toBe(true);expect(blocks[1].quads.every(q=>q[0]===right)).toBe(true);});
+diff --git a/tests/cruise-reader.test.ts b/tests/cruise-reader.test.ts
+new file mode 100644
+index 0000000..bc3a5af
+--- /dev/null
++++ b/tests/cruise-reader.test.ts
+@@ -0,0 +1,7 @@
++import{it,expect,vi}from'vitest';
++vi.mock('pdfjs-dist',()=>({getDocument:vi.fn(),GlobalWorkerOptions:{}}));
++vi.mock('pdfjs-dist/web/pdf_viewer.mjs',()=>({EventBus:class{},PDFViewer:class{},PDFLinkService:class{},PDFFindController:class{},ScrollMode:{}}));
++import{PdfReader}from'../src/renderer/pdf-reader';
++function harness(){const r:any=Object.create(PdfReader.prototype);Object.assign(r,{generation:1,ready:true,active:{id:'a',fingerprint:'a'.repeat(64),pageCount:10},blockCache:new Map(),lineTool:{setMode(){}},eraser:{setEnabled(){}},outlineTargets:new Map(),onOutline(){},link:{setDocument(){}},viewer:{pdfDocument:{getPage:async()=>({view:[0,0,600,800],getTextContent:async()=>({styles:{},items:[{str:'original',width:100,height:14,transform:[14,0,0,14,40,700],fontName:'f'}]})})},setDocument(){}}});return r as PdfReader&Record<string,any>;}
++it('bounds cache to six pages and returns isolated copies',async()=>{const r=harness();const first=await r.readPageBlocks(0);first[0].quote='mutated';expect((await r.readPageBlocks(0))[0].quote).toBe('original');for(let p=1;p<8;p++)await r.readPageBlocks(p);expect(r.blockCache.size).toBe(6);expect(r.blockCache.has(0)).toBe(false);});
++it.each(['replacement','clear'])('rejects pending text after %s and never caches stale blocks',async change=>{const r=harness();let release!:(value:any)=>void;r.viewer.pdfDocument.getPage=()=>new Promise(resolve=>release=resolve);const pending=r.readPageBlocks(0);const rejected=expect(pending).rejects.toThrow('CRUISE_SOURCE_CHANGED');if(change==='clear')r.clear();else{r.generation++;r.active={...r.active,id:'b'};r.blockCache.clear();}release({view:[0,0,600,800],getTextContent:async()=>({styles:{},items:[]})});await rejected;expect(r.blockCache.size).toBe(0);});
+diff --git a/tests/e2e/cruise-anchors.spec.ts b/tests/e2e/cruise-anchors.spec.ts
+new file mode 100644
+index 0000000..e1e80f3
+--- /dev/null
++++ b/tests/e2e/cruise-anchors.spec.ts
+@@ -0,0 +1,12 @@
++import{test,expect,_electron as electron}from'@playwright/test';import{mkdtempSync,mkdirSync}from'node:fs';import{tmpdir}from'node:os';import path from'node:path';import{execFileSync}from'node:child_process';
++const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-cruise-block-')),python=path.join(root,'.venv/Scripts/python.exe'),source=path.join(folder,'阅读块.pdf');
++execFileSync(python,['-c',`import pymupdf as f;d=f.open()
++for rotation in (0,90,180,270):
++ p=d.new_page(width=640,height=840)
++ for x,word in ((65,'left'),(345,'right')):
++  p.insert_text((x,120),'Repeated evidence',fontsize=14);p.insert_text((x,142),word+' context',fontsize=14)
++ p.set_cropbox(f.Rect(25,35,615,805));p.set_rotation(rotation)
++p=d.new_page(width=480,height=640);pix=f.Pixmap(f.csGRAY,8,8,bytes([160])*64,False);p.insert_image(p.rect,stream=pix.tobytes('png'));d.save(${JSON.stringify(source)})`]);
++for(const displayScale of [1.5,2])test(`page blocks retain right-column occurrence through crop source rotation zoom at display scale ${displayScale} without permanent annotations`,async()=>{test.setTimeout(90000);const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,'profile-'+displayScale),'--force-device-scale-factor='+displayScale],env:{...process.env,ENLUMOR_PYTHON:python}});try{await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();await page.getByLabel('阅读模式',{exact:true}).selectOption('single');for(let n=1;n<=4;n++){const input=page.getByLabel('跳转页码',{exact:true});await input.fill(String(n));await input.press('Enter');await expect(page.locator('.cruise-block-list')).toHaveCount(0);await page.getByRole('button',{name:'适页',exact:true}).click();await expect(page.locator(`.page[data-page-number="${n}"] .textLayer span`).first()).toBeVisible();await page.getByRole('button',{name:'读取本页阅读块',exact:true}).click({timeout:2500});await expect(page.locator('.cruise-block-list [data-block-id]')).toHaveCount(2);await expect(page.getByRole('button',{name:'定位阅读块 2',exact:true})).toContainText('right context');await page.getByRole('button',{name:'定位阅读块 2',exact:true}).click();await expect(page.locator('.flash')).toHaveCount(2);const aligned=await page.locator(`.page[data-page-number="${n}"] .textLayer span`).filter({hasText:'Repeated evidence'}).nth(1).evaluate(el=>{const r=el.getBoundingClientRect(),x=(r.left+r.right)/2,y=(r.top+r.bottom)/2;return[...document.querySelectorAll('.flash')].some(mark=>{const b=mark.getBoundingClientRect();return x>=b.left-2&&x<=b.right+2&&y>=b.top-2&&y<=b.bottom+2;});});expect(aligned).toBe(true);await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);}
++ const input=page.getByLabel('跳转页码',{exact:true});await input.fill('5');await input.press('Enter');await page.getByRole('button',{name:'读取本页阅读块',exact:true}).click();await expect(page.locator('.cruise-block-list')).toContainText('当前页没有可用阅读块');await expect(page.locator('.cruise-block-list [data-block-id]')).toHaveCount(0);const evidence=process.env.ENLUMOR_EVIDENCE_DIR||'evidence/cruise-blocks';mkdirSync(evidence,{recursive:true});await page.screenshot({path:path.join(evidence,'scan-blocks.png')});
++ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}});

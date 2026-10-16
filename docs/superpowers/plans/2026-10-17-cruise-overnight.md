@@ -63,11 +63,11 @@ Produces：经验证的AiProfileView与AiTextEvent；主进程请求注册表按
 Files：src/renderer/cruise-blocks.ts；修改pdf-reader.ts；tests/cruise-blocks.test.ts、tests/e2e/cruise-anchors.spec.ts。
 Consumes：已有PDF.js文档/viewport和SelectionPart；Produces：readPageBlocks(pageIndex):Promise<CruiseBlock[]>、locateCruiseBlock(block):void。缓存绑定文档指纹与页面，仅有限页面常驻；不为200页新建全部canvas。
 
-- [ ] 写失败测试：中文段落/跨行、双栏/重复句、裁剪四旋转、空文字页、文档更换与异步旧结果；块长度上限和稳定ID。
-- [ ] 运行`npx vitest run tests/cruise-blocks.test.ts`观察失败，再最小实现与转绿。
-- [ ] 用实际Electron验证从选区/当前页起点定位，放大旋转后仍在原文；扫描页给明确略过/退出提示，不用假块。
-- [ ] 跑类型检查与本轮E2E，保存证据并提交。
-- [ ] **Review第1批（Task1+2）**：一位只读独立reviewer；修复重要问题并写回清单，完成前不开始Task3。
+- [x] 写失败测试：中文段落/跨行、双栏/重复句、裁剪四旋转、空文字页、文档更换与异步旧结果；块长度上限和稳定ID。
+- [x] 运行`npx vitest run tests/cruise-blocks.test.ts`观察失败，再最小实现与转绿。
+- [x] 用实际Electron验证从选区/当前页起点定位，放大旋转后仍在原文；扫描页给明确略过/退出提示，不用假块。
+- [x] 跑类型检查与本轮E2E，保存证据并提交。
+- [x] **Review第1批（Task1+2）**：一位只读独立reviewer；修复重要问题并写回清单，完成前不开始Task3。
 
 ### Task 3：可用Cruise控制、解释、引用与手动接管
 

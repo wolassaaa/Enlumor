@@ -1,4 +1,6 @@
 import { EraserTool } from './eraser-tool';
+import{buildPageBlocks,type TextSpan}from'./cruise-blocks';
+import type{CruiseBlock}from'../shared/cruise';
 import { paintDrawing, type DrawingMode } from './drawing-svg';
 import { LineTool, type DrawnLine } from './line-tool';
 import { drawPageThumbnail } from './thumbnail-render';
@@ -26,6 +28,7 @@ export class PdfReader {
   private lineTool: LineTool;
   private eraser: EraserTool;
   private outlineTargets = new Map<string, string | any[]>();
+  private blockCache=new Map<number,CruiseBlock[]>();
   constructor(readonly container: HTMLDivElement, onState: (state: ReadingState) => void, onSelection: (parts: SelectionPart[]) => void, private onNotice: (text: string) => void, private onOutline: (items: OutlineEntry[] | null) => void = () => {}, onLine:(line:DrawnLine)=>void=()=>{}, canDraw:()=>boolean=()=>true, drawingColor:()=>string=()=> '#5a7350', onErase:(ids:string[])=>void=()=>{}, private onTextNotice:(text:string)=>void=onNotice) {
     this.link = new PDFLinkService({ eventBus: this.bus }); this.link.externalLinkEnabled = false;
     const find = new PDFFindController({ eventBus: this.bus, linkService: this.link });
@@ -59,6 +62,7 @@ export class PdfReader {
     }, { passive: false });
   }
   async open(doc: OpenedDocument) {
+    this.blockCache.clear();
     this.setDrawingTool(null);
     const generation = ++this.generation;
     this.outlineTargets.clear(); this.onOutline(null);
@@ -127,10 +131,27 @@ export class PdfReader {
     if (!pdf || !this.ready) return false;
     return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
   }
+  async readPageBlocks(pageIndex:number):Promise<CruiseBlock[]>{
+    const document=this.active,pdf=this.viewer.pdfDocument,generation=this.generation;
+    if(!document||!pdf||!this.ready)throw new Error('CRUISE_NOT_READY');
+    if(!Number.isInteger(pageIndex)||pageIndex<0||pageIndex>=document.pageCount)throw new Error('CRUISE_INVALID_PAGE');
+    const cached=this.blockCache.get(pageIndex);if(cached)return structuredClone(cached);
+    const page=await pdf.getPage(pageIndex+1),text=await page.getTextContent();
+    if(generation!==this.generation||pdf!==this.viewer.pdfDocument||document!==this.active||!this.ready)throw new Error('CRUISE_SOURCE_CHANGED');
+    const items=text.items.filter((item):item is typeof text.items[number]&TextSpan=>'str'in item);
+    const blocks=buildPageBlocks(document,pageIndex,page.view[2]-page.view[0],items,text.styles);
+    this.blockCache.set(pageIndex,blocks);if(this.blockCache.size>6)this.blockCache.delete(this.blockCache.keys().next().value!);
+    return structuredClone(blocks);
+  }
+  locateCruiseBlock(block:CruiseBlock){
+    if(!this.active||block.documentId!==this.active.id||block.fingerprint!==this.active.fingerprint)throw new Error('CRUISE_SOURCE_CHANGED');
+    this.focus({...block,type:'highlight',author:'user',color:'#f4cf58',note:''});
+  }
   setMarks(marks: Annotation[], changedIds?: string[]) { this.marks = marks; this.paint(undefined,changedIds?new Set(changedIds):undefined); }
   setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
   setLineEnabled(enabled:boolean) { this.setDrawingTool(enabled?'line':null); }
   clear() {
+    this.blockCache.clear();
     this.setDrawingTool(null);
     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
     this.outlineTargets.clear(); this.onOutline([]);

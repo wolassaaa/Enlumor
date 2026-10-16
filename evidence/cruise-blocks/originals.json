@@ -1,0 +1,17 @@
+[
+  {
+    "name": "pdf-reader.ts",
+    "target": "src/renderer/pdf-reader.ts",
+    "sha256": "1298a19a54f8187f14212ee6a21f8ca24968ef96c4efceface9a73e44d8babe1"
+  },
+  {
+    "name": "main.tsx",
+    "target": "src/renderer/main.tsx",
+    "sha256": "db4b85b33356515c54477cfbf5ff352bcd4a5c65c935f1519e489c05e22717b0"
+  },
+  {
+    "name": "style.css",
+    "target": "src/renderer/style.css",
+    "sha256": "6fd4a86924eb762f4164975705bfcce2e71c12ae9b20b09b1e666bdd68a9f5f2"
+  }
+]

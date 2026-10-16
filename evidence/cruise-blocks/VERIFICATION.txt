@@ -1,0 +1,19 @@
+Branch: feat/cruise-overnight. Changed: native physical-gutter blocks, PdfReader readPageBlocks/cache/locate, page-bound panel epoch. OriginalPDF/userData unchanged. Release remains0.1.12.
+BASELINE command: npx vitest run tests/cruise-blocks.test.ts
+Input: initial absent module. Literal result: Test Files 1 failed (1); Tests no tests. Exit1. See BASELINE.log.
+REVIEW_RED same command; input wide260px columns / gutter20px,40px. Literal result: Tests 2 failed | 6 passed (8). Exit1. PAGE_RED: npx playwright test tests/e2e/cruise-anchors.spec.ts;2 failed;exit1.
+MODIFIED command: npx vitest run tests/cruise-blocks.test.ts tests/cruise-reader.test.ts
+Input: multiline Chinese/repeated columns, wide narrow-gutter regressions, metadata/limits, pending replacement/clear, cache clones/bound. Literal result: Test Files 2 passed (2); Tests 11 passed (11). Exit0.
+UNIT command: npm test. Literal result: Test Files 15 passed (15); Tests 77 passed (77). Exit0.
+BUILD command: npm run build. Input current source. Result production build completed;exit0. TYPECHECK command: npm run typecheck;exit0.
+UI command: npx playwright test tests/e2e/cruise-anchors.spec.ts tests/e2e/ai-settings.spec.ts
+Input local cropPDF/source rotations0/90/180/270, display1.5/2, image-only scan, temp profiles/settings mock. Literal result: 4 passed (7.7s). Exit0.
+ROLLBACK command: node scripts/check-cruise-blocks-rollback.mjs (same as executable ROLLBACK.sh)
+Input isolated source/profile copy + original file SHA256 verification +200page32MiB fixture.
+Literal output: ROLLBACK: READ_BLOCKS=0; MODEL_SETTINGS=1; SCHEMA=3; LIVE_SOURCE_UNCHANGED=YES
+Exit0. Restored behavior: opensPDF, modelsettings remains; blockbutton removed onlyincopy. Live staysmodified.
+Artifacts:
+D:/codex project/Enlumor/evidence/cruise-blocks/MODIFIED_FILE.ts
+D:/codex project/Enlumor/evidence/cruise-blocks/DIFF.patch
+D:/codex project/Enlumor/evidence/cruise-blocks/VERIFICATION.txt
+D:/codex project/Enlumor/evidence/cruise-blocks/ROLLBACK.sh
