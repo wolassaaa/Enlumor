@@ -131,3 +131,6 @@ P3边界按钮、箭头外观等旧Minor不进入这次修复。复制回退恢�
 复杂PDF覆盖中文双栏重复句、裁剪四旋转、矢量/扫描、搜索/选区/重启/重复导出；补缓存扫描页和首次扫描提示。
 独立review Important：跨页搜索Next清空/不更新计数，新增失败→成功回归，能力提示与搜索分离并监听find控制状态。两项Minor测试建议同时补齐；没有再次派审。
 开发版7项聚焦测试通过后跑全套；最终记录见evidence/round-six/VERIFICATION.txt。[本轮报告](reviews/2026-10-16-round-six.md)。本周期计数归零。
+
+## Cruise夜间两批（0.1.13）
+Task1+2统一review：宽双栏串行/错误quad Important，先两条真实栏宽失败单测后修复；旧页列表与异步缓存Minor同时补测试。Task3+4唯一review：扫描略过循环、可见后台继续请求，两个Important均真实Electron复现、各RED→GREEN。没有重复派审。最终94+8+93测试与200页两样本/密集画笔门禁通过，发布0.1.13。Task5/6原生接口后移。

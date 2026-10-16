@@ -16,3 +16,7 @@ D:/codex project/Enlumor/evidence/cruise-session/VERIFICATION.txt
 D:/codex project/Enlumor/evidence/cruise-session/ROLLBACK.sh
 
 REVIEW commands: npx playwright test tests/e2e/cruise.spec.ts -g "scan pages" (REDexit1, GREEN1 passed2.8sexit0); -g "auto pacing" (nativeblur REDexit1; full4testsGREENexit0). Fullpre-fixUI92passed3.7m; packagedpost-fix gate pending.
+
+RELEASE command: npm run release:verified. Inputcandidate0.1.13/fullpackagedEXE/200page32MiB1000annotations/scanned200pages/dense1000strokes. Literal94tests passed, PythonRan8testsOK, 93 passed (3.7m); PACKAGED_READER: PASS; PORTABLE_STARTUP_SQLITE: PASS; PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS.
+Literal VERIFIED_RELEASE: 0.1.13 D:\codex project\Enlumor\release\Enlumor-0.1.13-win.zip SHA256=81ef041afb624737c60952312f9f0e1f72118a40a8f694810b47a81696571b41
+Exit0. latest0.1.13; previous0.1.12 retained. Textframep9512ms/save5.6ms/startupmedian591.9ms; scanned11.7ms/5.1ms/420.8ms;zero longtasks. Edge screenshot actually inspected, standardhighlight/note visible.

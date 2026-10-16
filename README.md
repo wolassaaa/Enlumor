@@ -1,6 +1,6 @@
 # Enlumor
 
-Windows-first, local-first PDF reader foundation. Electron + React + TypeScript + PDF.js; SQLite workspace; PyMuPDF native annotation export. No account, cloud service or AI dependency in this phase.
+Windows-first, local-first PDF reader foundation. Electron + React + TypeScript + PDF.js; SQLite workspace; PyMuPDF native annotation export. 普通阅读无需账户或云服务；可选 Cruise 使用用户配置的模型 API。
 
 ## 启动
 
@@ -25,6 +25,13 @@ npm start          # 启动已构建的桌面应用
 此前0.1.9 修复便签模态焦点隔离、原文锚点固定与失败草稿保留；保存失败后收起详情仍能重试。明确放弃失败便签编辑不会删除旧的已保存内容。
 
 此前0.1.8 新增箭头与画笔（标准PDF批注导出）。右栏选择工具后页内拖动，一次笔迹保存后恢复文字选择；Esc或布局改变取消。画笔每条最多4096采样点，长笔迹抽样降密度，不模拟压感。箭头头部应用内实心、导出空心，端点方向保持一致。保留删除线、直线、下划线、高亮、便签、侧栏调宽/间距、多标签及按需渲染。完整清单与每两项review见 [docs/FEATURES.md](docs/FEATURES.md)、[docs/REVIEW-CADENCE.md](docs/REVIEW-CADENCE.md)。
+
+## 0.1.13 Cruise 共读
+
+打开 PDF → 顶栏 Cruise → 在模型设置保存服务、接口地址和模型 ID → 开始共读。开始前显示目标服务和发送范围；只发送当前块，不上传整份 PDF。
+默认手动继续，可选择自动推进和20/12/6秒节奏；解释成功且会话保存确认后才倒计时。暂停、正文手动接管、窗口失焦均停止推进；重启恢复为暂停，不自动调用。来源按钮返回当前原文，临时强调不新增永久批注。
+支持 OpenAI Chat/Responses、Claude Messages、Gemini 原生格式；国内兼容预设含 DeepSeek、百炼、方舟、千帆、混元，模型 ID 可手填。凭据系统加密；加密不可用只留会话。配置支持不等于厂商真实连接实测，本轮仅本地模拟契约测试。DashScope/星火专有原生接口仍待后续。
+扫描页可略过，不增加OCR；常见横排文本优先，锚点验证不一致时停止解释。近期完整解释缓存最多64条、合计512K字符，超出后逐出较早结果；单次解释上限64K字符。
 
 ## 已有功能
 
@@ -52,12 +59,14 @@ E2E 启动真实 Electron，只替换系统文件选择对话框；使用真实 
 
 ## 当前边界
 
-不打开加密 PDF；扫描页可阅读但没有文字选择/搜索能力。不做 OCR、AI、白板、巡航、完整画笔或原文覆盖保存。任意倾斜字形的像素级四边形精度尚未承诺；首期面向常见横排文本及页面旋转。
+不打开加密 PDF；扫描页可阅读但没有文字选择/搜索能力。不做 OCR、白板、完整画笔或原文覆盖保存；AI/Cruise 范围见0.1.13说明。任意倾斜字形的像素级四边形精度尚未承诺；首期面向常见横排文本及页面旋转。
 
 macOS 后续可复用桌面与文档逻辑，但尚未构建/验收。iPad 需要独立客户端，Electron 不是其运行壳。
 
 PyMuPDF 使用 AGPL/商业双许可，当前仓库用于个人开发；分发前需按实际分发方式处理其许可。第三方依赖版本锁定在 package-lock.json / requirements.txt。
 
 初始底座证据见 `VERIFICATION.txt`；0.1.1 UI 与内置运行时修复证据见 `evidence/ui-runtime/VERIFICATION.txt`。整体实施进度见 `docs/IMPLEMENTATION.md`。
+
+目前SQLite schema4。v3→v4升级前创建workspace.sqlite.pre-v4.bak，保留文档/批注/模型配置；旧程序不直接读取v4库，回退仅在隔离副本验证。
 
 SQLite v1 升级到 v2 前创建 workspace.sqlite.pre-v2.bak（已有同名备份则追加时间戳，不覆盖）。旧程序不直接读取 v2 数据；代码回退时保留当前工作区及备份，不以旧备份静默覆盖新批注。每两项功能一次整体 Review，见 docs/REVIEW-CADENCE.md。

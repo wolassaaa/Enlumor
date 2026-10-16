@@ -10,10 +10,10 @@
 
 - Task1：模型设置与四协议底座已实现，专项31项单测、2项实际Electron流程通过；已提交9bafc46；全部66项单测通过，开发构建通过。不是完整Cruise，也不是正式发布。
 - Task2：完成并提交e91e19e；11项分块/生命周期测试、全部77项单测、4项实际Electron（设置2＋定位2）通过；四种裁剪源旋转、150%/200%显示缩放。临时强调不入批注表。Task1+2独立review的1项Important和2项Minor均已修复并有回归测试。
-- Task3：逐块流式解释/控制/引用原文/手动接管已实现并验证，待Task4后统一review。Task4节奏/恢复已实现，06:49进入统一review，尚未发布。
+- Task3+4：完成且统一review通过修复，提交14b50c6 / 1d72b3f / dbd7668。2项Important各RED→GREEN；0.1.13完整release:verified已通过，最新指针已更新。
 - Task5/6：DashScope/星火原生尚未实现；不能在设置中作为可用协议出现。
-- 两任务一review：Task1+2统一只读独立review完成（cruise_batch_one_review），Important修复后计数归零；下一次为Task3+4，不重复派审。
-- 当前最新已验证发布仍为0.1.12，开发源代码引入SQLite v3模型配置表；个人userData未迁移，测试全用临时profile。
+- 两任务一review：Task1+2与Task3+4均完成唯一独立review及Important修复，不重复派审。Task5/6后移，本轮优先候选发布门禁。
+- 当前最新已验证发布为0.1.13（保留0.1.12目录），开发源代码为SQLite v4模型配置/会话表；个人userData未迁移，测试全用临时profile。
 
 ## Task1 已做与证据
 
@@ -72,3 +72,13 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 - 修复空页先reader.go同步页码；主进程BrowserWindow blur取消解释并发窄background事件，Panel停止计时器。没有第二轮review空转。
 - 全套开发Electron92项通过3.7m（在两项修复前）；下一步版本0.1.13候选完整release:verified，含最终EXE全套93项及200页压力两样本/画笔门禁。通过前latest仍0.1.12，不推GitHub。
 - 本轮不再扩展Task5/6。若发布失败修门禁，保留原latest；07:40后不开新任务，08:00停止并暂停automation enlumor。
+
+## 06:58 在途发布（避免竞争执行）
+- 唯一实施者/root正在等待 npm run release:verified（统一exec session45522），日志 evidence/cruise-session/RELEASE.log；已完成build/unit/Python/worker/打包，进入最终EXE全套93项E2E。不要启动第二个构建或修改产品。完成后收集压力报告、检查latest、提交版本号和证据；本轮不做Task5/6。
+
+## 2026-10-17 07:03 已验证发布
+- npm run release:verified退出0：94Vitest +8Python +93最终EXE E2E（3.7m）；PACKAGED_READER/PORTABLE_STARTUP_SQLITE/PORTABLE_NO_PYTHON_OPEN_EXPORT全部PASS。Edge截图已实际查看，高亮与便签显示正确。
+- release/latest.json现在0.1.13；EXE release/Enlumor-0.1.13-win-x64/Enlumor.exe；ZIP release/Enlumor-0.1.13-win.zip，SHA256 81ef041afb624737c60952312f9f0e1f72118a40a8f694810b47a81696571b41。已重新打开并校验hash。
+- 200页文本32MiB/1000批注：便携解压启动中位591.9ms，framep9512ms，保存p955.6ms，8正文canvas/4缩略图canvas；扫描样本420.8ms/11.7ms/5.1ms；均零长任务。1000条画笔×256点，擦除撤销384ms，零长任务。
+- Ruling：结果缓存限定64条且合计512K字符，单次输出64K，避免长文Cruise无界内存；超限逐出较早完整解释，UI/README明确说明，旧结果再次解释必须用户显式继续/解释。个人原PDF与userData不变，无GitHub推送/真实收费API。
+- Task5/6专有原生接口本轮后移，不在UI暴露。剩余窗口只复核已验证包与证据，不新增产品功能/重复review/发布；08:00暂停自动任务enlumor并汇总。

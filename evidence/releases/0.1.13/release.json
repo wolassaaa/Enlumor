@@ -1,0 +1,26 @@
+{
+  "label": "release",
+  "fixture": "200 pages / 32MiB unused PDF stream / 1000 annotations",
+  "startupMs": [
+    432.7256,
+    410.7052000000001,
+    446.1586
+  ],
+  "portableStartupMs": [
+    561.5856000000003,
+    591.9172999999992,
+    765.6980000000003
+  ],
+  "scrolling": {
+    "frameP50Ms": 9.799999997019768,
+    "frameP95Ms": 12,
+    "longTasks": 0,
+    "worstLongTaskMs": 0,
+    "retainedCanvases": 8,
+    "thumbnailCanvases": 4
+  },
+  "readingSave": {
+    "p50Ms": 0.8999999985098839,
+    "p95Ms": 5.600000001490116
+  }
+}
