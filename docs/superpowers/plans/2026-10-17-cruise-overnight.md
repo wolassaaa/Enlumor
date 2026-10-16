@@ -85,10 +85,10 @@ Consumes：AiProfileView、AiTextEvent、CruiseBlock；Produces：开始/继续/
 Files：修改cruise.ts/CruisePanel.tsx/workspace.ts/index.ts/preload.ts；tests/cruise-session.test.ts、扩展cruise.spec.ts。
 Consumes/Produces：CruiseSession与get/saveCruiseSession。SQLite为权威，重启恢复paused，解释结果保留配置/模型来源。
 
-- [ ] 写失败测试：自动模式只有解释成功后才倒计时；慢/标准/快三档固定为20/12/6秒，可暂停；后台/手动操作停止计时器；返回前块复用已完成结果，不隐式再次调用。
-- [ ] 测迁移备份、写入失败重试、强退恢复、指纹被替换时拒绝旧会话，模型切换不改已有解释来源。保存结果未确认不显示已保存。
-- [ ] `npx vitest run tests/cruise-session.test.ts`红→绿；实际Electron重启不会自动发API请求。
-- [ ] 类型检查、聚焦E2E、提交。
+- [x] 写失败测试：自动模式只有解释成功后才倒计时；慢/标准/快三档固定为20/12/6秒，可暂停；后台/手动操作停止计时器；返回前块复用已完成结果，不隐式再次调用。
+- [x] 测迁移备份、写入失败重试、强退恢复、指纹被替换时拒绝旧会话，模型切换不改已有解释来源。保存结果未确认不显示已保存。
+- [x] `npx vitest run tests/cruise-session.test.ts`红→绿；实际Electron重启不会自动发API请求。
+- [x] 类型检查、聚焦E2E、提交。
 - [ ] **Review第2批（Task3+4）**：修复Important后，时间充足才开始Task5；可先做独立发布候选保留可用Cruise。
 
 ### Task 5：DashScope原生文本HTTP/SSE

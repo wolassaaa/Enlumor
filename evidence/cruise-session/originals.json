@@ -1,0 +1,57 @@
+[
+  {
+    "name": "0-cruise.ts",
+    "target": "src/shared/cruise.ts",
+    "sha256": "9022d62404206903b354a8fca5cda3010482f7ad5e00ec5ff8363470fe9fe4d0"
+  },
+  {
+    "name": "1-model.ts",
+    "target": "src/shared/model.ts",
+    "sha256": "66b78e51009d49ab3f298f57096ab061b45e1e204052b1e662b35ab522cda91a"
+  },
+  {
+    "name": "2-index.ts",
+    "target": "src/main/index.ts",
+    "sha256": "c16342606b999e25c768ee644c393dd4bf2d5cc795d5c9fbf4abb64aeaddd6c1"
+  },
+  {
+    "name": "3-preload.ts",
+    "target": "src/main/preload.ts",
+    "sha256": "dd74b04c5cdc5994d0b41979e0490bdcfcdc4591119c6795b8819ceb72de48ee"
+  },
+  {
+    "name": "4-workspace.ts",
+    "target": "src/main/workspace.ts",
+    "sha256": "0dbea3699e8521b4e5df44ed67194c6b777b1ceb8446d27d7e8b86b1778e5d6d"
+  },
+  {
+    "name": "5-CruisePanel.tsx",
+    "target": "src/renderer/CruisePanel.tsx",
+    "sha256": "7f316210676c39cd32883ca464010dedca6d51433db8acbe4c48e0a060eb7f57"
+  },
+  {
+    "name": "6-layout-tabs.test.ts",
+    "target": "tests/layout-tabs.test.ts",
+    "sha256": "fba7d2702be49cd813c2b82c236721f27ca692a3da18907402fad040a86f4f77"
+  },
+  {
+    "name": "7-cruise-requests.ts",
+    "target": "src/main/cruise-requests.ts",
+    "sha256": "61400abc75d667b28857ec04f198046458798dbaf81d557ca7b4156e24b20be3"
+  },
+  {
+    "name": "8-main.tsx",
+    "target": "src/renderer/main.tsx",
+    "sha256": "d07db289defd9b2e129e736d2d41bb20132d94b8156f4800d53b6b3968c9b292"
+  },
+  {
+    "name": "9-cruise.spec.ts",
+    "target": "tests/e2e/cruise.spec.ts",
+    "sha256": "77912cd72515dd4f9c9275e727bd7bb7d0f516f5a27bc5b965eaaf499fc044c2"
+  },
+  {
+    "name": "10-ai-profiles.test.ts",
+    "target": "tests/ai-profiles.test.ts",
+    "sha256": "17937dff3ccf6f1526a06abb80e1cb5087b91260f6b23a5a7c273c38e4b84a87"
+  }
+]

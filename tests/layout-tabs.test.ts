@@ -16,7 +16,7 @@ it('v1 migration creates a verified backup and preserves documents, annotations 
  old.exec("CREATE TABLE documents(id TEXT PRIMARY KEY,path TEXT,name TEXT,fingerprint TEXT,pageCount INTEGER,updatedAt INTEGER); CREATE TABLE annotations(id TEXT PRIMARY KEY,documentId TEXT,payload TEXT); CREATE TABLE reading(documentId TEXT PRIMARY KEY,payload TEXT); PRAGMA user_version=1;");
  old.prepare('INSERT INTO documents VALUES(?,?,?,?,?,?)').run('kept','source.pdf','source.pdf','fingerprint',3,1);old.prepare('INSERT INTO annotations VALUES(?,?,?)').run('a','kept','{"id":"a"}');old.prepare('INSERT INTO reading VALUES(?,?)').run('kept','{"pageIndex":2}');old.close();
  const w=new Workspace(file);try{expect(w.list()[0].id).toBe('kept');expect(w.annotations('kept')).toEqual([{id:'a'}]);expect(w.reading('kept')?.pageIndex).toBe(2);expect(existsSync(file+'.pre-v2.bak')).toBe(true);
- const backup=new DatabaseSync(file+'.pre-v2.bak');expect(backup.prepare('PRAGMA user_version').get()?.user_version).toBe(1);expect(backup.prepare('SELECT COUNT(*) n FROM annotations').get()?.n).toBe(1);backup.close();expect(w.db.prepare('PRAGMA user_version').get()?.user_version).toBe(3);}finally{w.close();}
+ const backup=new DatabaseSync(file+'.pre-v2.bak');expect(backup.prepare('PRAGMA user_version').get()?.user_version).toBe(1);expect(backup.prepare('SELECT COUNT(*) n FROM annotations').get()?.n).toBe(1);backup.close();expect(w.db.prepare('PRAGMA user_version').get()?.user_version).toBe(4);}finally{w.close();}
 });
 it('tab session persists only registered unique IDs with a valid active member',()=>{
  const {dir,file}=setup();const source=path.join(dir,'source.pdf');writeFileSync(source,'one');const w=new Workspace(file);

@@ -1,3 +1,4 @@
+import{CruiseSessions}from'./cruise-sessions';
 import{ExplanationRequests}from'./cruise-requests';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, safeStorage } from 'electron';
 import {AiProfiles} from './ai-profiles';
@@ -61,6 +62,9 @@ app.whenReady().then(() => {
     if(block.fingerprint!==doc.fingerprint||block.pageIndex>=doc.pageCount)throw Error('CRUISE_SOURCE_CHANGED');
     await runPdfTask({operation:'verify-block',source:doc.path,fingerprint:doc.fingerprint,block});
   },id=>aiProfiles.resolve(id),(profile,prompt,options)=>generateText(profile,prompt,{...options,stream:true,fetch:(input,init)=>net.fetch(String(input),init)}),event=>{if(!window.isDestroyed())window.webContents.send('cruise:text',event);});
+  const cruiseSessions=new CruiseSessions(workspace);
+  handle('cruise:session:get',id=>cruiseSessions.get(id));
+  handle('cruise:session:save',session=>cruiseSessions.save(session));
   handle('cruise:start',input=>cruiseRequests.start(input));
   handle('cruise:cancel',id=>{if(typeof id!=='string'||!/^[\w-]{1,100}$/.test(id))throw Error('CRUISE_INVALID_REQUEST');cruiseRequests.cancel(id);});
   handle('document:list', () => workspace.list());

@@ -10,7 +10,7 @@
 
 - Task1：模型设置与四协议底座已实现，专项31项单测、2项实际Electron流程通过；已提交9bafc46；全部66项单测通过，开发构建通过。不是完整Cruise，也不是正式发布。
 - Task2：完成并提交e91e19e；11项分块/生命周期测试、全部77项单测、4项实际Electron（设置2＋定位2）通过；四种裁剪源旋转、150%/200%显示缩放。临时强调不入批注表。Task1+2独立review的1项Important和2项Minor均已修复并有回归测试。
-- Task3：逐块流式解释/控制/引用原文/手动接管已实现并验证，待Task4后统一review。Task4节奏/恢复尚未实现。
+- Task3：逐块流式解释/控制/引用原文/手动接管已实现并验证，待Task4后统一review。Task4节奏/恢复已实现，06:49进入统一review，尚未发布。
 - Task5/6：DashScope/星火原生尚未实现；不能在设置中作为可用协议出现。
 - 两任务一review：Task1+2统一只读独立review完成（cruise_batch_one_review），Important修复后计数归零；下一次为Task3+4，不重复派审。
 - 当前最新已验证发布仍为0.1.12，开发源代码引入SQLite v3模型配置表；个人userData未迁移，测试全用临时profile。
@@ -58,3 +58,11 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 - 窄接口start/cancel/onAiText；取消验证中任务会阻止后续网络，旧回调全部隔离。手动wheel/pointerdown/页码/导航与后台暂停；程序focus的scroll不触发手动接管。模型设置关闭刷新服务，不自动请求。
 - 更正Task2验证记录：最后新增生命周期测试后typecheck曾报测试私有字段类型错误，之前串联命令只检查最终退出码，误记类型检查通过。Task3开工已将harness返回类型限定为测试any并重新独立运行tsc通过；其余Task2单测/E2E/回退输出真实。后续所有命令逐项检查退出码。
 - 下一步Task4：自动20/12/6秒、后台停止、数据库schema4迁移备份、保存确认/恢复paused与来源。Task3+4后一次统一review；不提前标发布。
+
+## 2026-10-17 06:50 Task4检查点
+- 用量限制导致03:20中断，06:47恢复；未重复实现Task1-3。Task3提交14b50c6。
+- Task4：schema4 cruise_sessions、升级前pre-v4备份、事务单语句提交、原文/结果大小边界；保存失败有重试且未确认前不自动推进。20/12/6秒，只有解释完成+保存确认才倒计时；重启读取已完成解释及原服务/模型，状态paused，不发API。
+- 已通过94项单测、8项Python、3项Cruise Electron流程（含暂停>6秒无新请求、自动继续、强退重启无请求、返回缓存旧答案）；开发构建/类型检查通过。Task4隔离回退恢复CRUISE1 PACING0 SCHEMA3，live unchanged。
+- 修复本次真实RED：flush最前新增await使flight.current取值延后，load自等待导致PDF不显示；将Cruise flush放在原flight await之后，3项Electron均转绿。历史schema2模拟测试必须删除后来新增cruise表后再标version2，最终schema断言更新4，保留原pre-v3备份检查。
+- Task3+4唯一只读reviewer cruise_batch_two_review已运行，不重复派审；收到Important后RED→GREEN。全套Electron正在跑。Task5/6本轮后移，优先完整发布门禁及性能验收。
+- 仍保留已验证0.1.12，个人userData从未用于测试；当前修改未作为release发布。

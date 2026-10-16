@@ -21,3 +21,4 @@ evidence/cruise-protocols/originals/* -text
 
 evidence/cruise-blocks/originals/* -text
 evidence/cruise-control/originals/* -text
+evidence/cruise-session/originals/* -text

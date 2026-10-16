@@ -1,6 +1,8 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Bridge } from '../shared/model';
 const bridge: Bridge = {
+  getCruiseSession:id=>ipcRenderer.invoke('cruise:session:get',id),
+  saveCruiseSession:session=>ipcRenderer.invoke('cruise:session:save',session),
   startBlockExplanation:input=>ipcRenderer.invoke('cruise:start',input),
   cancelBlockExplanation:id=>ipcRenderer.invoke('cruise:cancel',id),
   onAiText:handler=>{const listener=(_event:unknown,value:import('../shared/ai').AiTextEvent)=>handler(value);ipcRenderer.on('cruise:text',listener);return()=>ipcRenderer.removeListener('cruise:text',listener);},

@@ -23,6 +23,7 @@ function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id
 }
 
 function App() {
+  const cruiseFlush=useRef<(()=>Promise<void>)|null>(null);
   const [cruiseOpen,setCruiseOpen]=useState(false),[cruiseTakeover,setCruiseTakeover]=useState(0);
   const [modelSettingsOpen,setModelSettingsOpen]=useState(false);const modelSettingsTrigger=useRef<HTMLElement|null>(null);
 
@@ -75,6 +76,7 @@ function App() {
     clearTimeout(timer.current);
     if(noteOpen.current) throw new Error('UNSAVED_NOTE: 请先保存或取消便签');
     await flight.current;
+    await cruiseFlush.current?.();
     await layoutFlight.current;
     if (pending.current) throw new Error('UNSAVED_CHANGE');
     if (current.current) unwrap(await window.enlumor.saveReadingState(current.current));
@@ -288,7 +290,7 @@ function App() {
           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
           <form className="search" onSubmit={event => { event.preventDefault(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
         </div>
-        {cruiseOpen&&doc&&reader.current&&<CruisePanel key={doc.id} document={doc} reader={reader.current} takeover={cruiseTakeover} selection={parts} settingsOpen={modelSettingsOpen} onSettings={()=>{modelSettingsTrigger.current=window.document.activeElement as HTMLElement;setModelSettingsOpen(true);}} onExit={()=>setCruiseOpen(false)}/>}
+        {cruiseOpen&&doc&&reader.current&&<CruisePanel key={doc.id} document={doc} reader={reader.current} takeover={cruiseTakeover} selection={parts} settingsOpen={modelSettingsOpen} flushRef={cruiseFlush} onSettings={()=>{modelSettingsTrigger.current=window.document.activeElement as HTMLElement;setModelSettingsOpen(true);}} onExit={()=>setCruiseOpen(false)}/>}
         {blocksOpen&&<section className="cruise-block-list" aria-label="本页阅读块"><div><strong>本页阅读块 · 原文定位</strong><button aria-label="收起阅读块" onClick={()=>setBlocksOpen(false)}>收起</button></div>{cruiseBlocks.length?cruiseBlocks.map((block,index)=><button key={block.id} data-block-id={block.id} aria-label={`定位阅读块 ${index+1}`} onClick={()=>{resetDrawing();reader.current?.locateCruiseBlock(block);}}>{block.quote}</button>):<p>当前页没有可用阅读块；扫描页需要文字层，可略过或继续普通阅读。</p>}</section>}
         {pageError && <div id="page-error" className="notice" role="alert">{pageError}</div>}
         {(error||pending.current||layoutError) && <div className="error" role="alert">{error||'存在未保存更改'}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && note===null && <button disabled={busy} onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && note===null && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
