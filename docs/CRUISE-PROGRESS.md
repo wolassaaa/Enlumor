@@ -73,7 +73,7 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 - 全套开发Electron92项通过3.7m（在两项修复前）；下一步版本0.1.13候选完整release:verified，含最终EXE全套93项及200页压力两样本/画笔门禁。通过前latest仍0.1.12，不推GitHub。
 - 本轮不再扩展Task5/6。若发布失败修门禁，保留原latest；07:40后不开新任务，08:00停止并暂停automation enlumor。
 
-## 06:58 在途发布（避免竞争执行）
+## 06:58 在途发布（历史记录，07:03已完成）
 - 唯一实施者/root正在等待 npm run release:verified（统一exec session45522），日志 evidence/cruise-session/RELEASE.log；已完成build/unit/Python/worker/打包，进入最终EXE全套93项E2E。不要启动第二个构建或修改产品。完成后收集压力报告、检查latest、提交版本号和证据；本轮不做Task5/6。
 
 ## 2026-10-17 07:03 已验证发布
@@ -82,3 +82,6 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 - 200页文本32MiB/1000批注：便携解压启动中位591.9ms，framep9512ms，保存p955.6ms，8正文canvas/4缩略图canvas；扫描样本420.8ms/11.7ms/5.1ms；均零长任务。1000条画笔×256点，擦除撤销384ms，零长任务。
 - Ruling：结果缓存限定64条且合计512K字符，单次输出64K，避免长文Cruise无界内存；超限逐出较早完整解释，UI/README明确说明，旧结果再次解释必须用户显式继续/解释。个人原PDF与userData不变，无GitHub推送/真实收费API。
 - Task5/6专有原生接口本轮后移，不在UI暴露。剩余窗口只复核已验证包与证据，不新增产品功能/重复review/发布；08:00暂停自动任务enlumor并汇总。
+
+## 07:06 定时任务状态
+- enlumor已通过工具更新，ACTIVE，每15分钟仅做已验证包/证据复核至08:00；无新问题安静，到点PAUSED。当前无在途实施/测试。工作树产品代码已提交，latest0.1.13。

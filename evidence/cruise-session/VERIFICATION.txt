@@ -1,4 +1,4 @@
-Branch feat/cruise-overnight. Fields: CruiseSession/mode/pace/ackKey, schema4 migration withpre-v4 backup, paused restart. Task3+4 independent review complete; Important2 fixed RED->GREEN, release remains0.1.12.
+Branch feat/cruise-overnight. Fields: CruiseSession/mode/pace/ackKey, schema4 migration withpre-v4 backup, paused restart. Task3+4 independent review complete; Important2 fixed RED->GREEN, release0.1.13 verified; previous0.1.12 retained.
 BASELINE: npx vitest run tests/cruise-session.test.ts. InputmissingCruiseSessions module/contracts. Literal Test Files 1 failed (1);Tests no tests;exit1.
 UI_RED: npx playwright test tests/e2e/cruise.spec.ts -g "auto pacing";missing persistence controls;exit1. During implementation all3UI failed with textLayer absent due flush/flight self-await. Fixed by preserving initial flight await ordering, actual3UI green.
 MODIFIED: npx vitest run tests/cruise-session.test.ts tests/cruise.test.ts tests/cruise-requests.test.ts. Inputs20/12/6 pacing gates, confirmedsave/background/pause, migratedDBbackup, injectedwritefailure/retry, sourcefingerprint, boundedanswers. Literal Tests 17 passed (17);exit0.
@@ -15,7 +15,7 @@ D:/codex project/Enlumor/evidence/cruise-session/DIFF.patch
 D:/codex project/Enlumor/evidence/cruise-session/VERIFICATION.txt
 D:/codex project/Enlumor/evidence/cruise-session/ROLLBACK.sh
 
-REVIEW commands: npx playwright test tests/e2e/cruise.spec.ts -g "scan pages" (REDexit1, GREEN1 passed2.8sexit0); -g "auto pacing" (nativeblur REDexit1; full4testsGREENexit0). Fullpre-fixUI92passed3.7m; packagedpost-fix gate pending.
+REVIEW commands: npx playwright test tests/e2e/cruise.spec.ts -g "scan pages" (REDexit1, GREEN1 passed2.8sexit0); -g "auto pacing" (nativeblur REDexit1; full4testsGREENexit0). Fullpre-fixUI92passed3.7m; packagedpost-fix gate completed:93passed exit0.
 
 RELEASE command: npm run release:verified. Inputcandidate0.1.13/fullpackagedEXE/200page32MiB1000annotations/scanned200pages/dense1000strokes. Literal94tests passed, PythonRan8testsOK, 93 passed (3.7m); PACKAGED_READER: PASS; PORTABLE_STARTUP_SQLITE: PASS; PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS.
 Literal VERIFIED_RELEASE: 0.1.13 D:\codex project\Enlumor\release\Enlumor-0.1.13-win.zip SHA256=81ef041afb624737c60952312f9f0e1f72118a40a8f694810b47a81696571b41
