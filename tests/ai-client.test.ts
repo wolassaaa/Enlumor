@@ -29,6 +29,15 @@ for(const [protocol,response] of [
  let received:any;const endpoint=await server(async(req,res)=>{let raw='';for await(const chunk of req)raw+=chunk;received=JSON.parse(raw);res.setHeader('content-type','application/json');res.end(JSON.stringify(response));});const deltas:string[]=[];expect(await generateText(profile(protocol,endpoint),prompt,{stream:false,onDelta:t=>deltas.push(t)})).toBe('你好');expect(deltas.join('')).toBe('你好');expect(received.model||reqModel(received)).toBe('test-model');
 });
 function reqModel(body:any){return body.contents?'test-model':undefined;}
+for(const [protocol,response] of [
+ ['openai-chat',{choices:[{message:{content:'  '},finish_reason:'stop'}]}],
+ ['openai-responses',{status:'completed',output:[]}],
+ ['anthropic-messages',{content:[],stop_reason:'end_turn'}],
+ ['gemini',{candidates:[{content:{parts:[]},finishReason:'STOP'}]}],
+] as const)it(`${protocol}: empty completed JSON is an incomplete answer, not success`,async()=>{
+ const endpoint=await server((_req,res)=>{res.setHeader('content-type','application/json');res.end(JSON.stringify(response));});
+ await expect(generateText(profile(protocol,endpoint),prompt,{stream:false})).rejects.toThrow('AI_INCOMPLETE');
+});
 const events:Record<string,string>= {
  'openai-chat':'data: {"choices":[{"delta":{"content":"你好"},"finish_reason":null}]}\r\n\r\ndata: [DONE]\r\n\r\n',
  'openai-responses':'event: response.output_text.delta\ndata: {"type":"response.output_text.delta","delta":"你好"}\n\nevent: response.completed\ndata: {"type":"response.completed","response":{"status":"completed"}}\n\n',
@@ -49,6 +58,10 @@ it('refuses cross-origin redirects instead of forwarding authentication',async()
 });
 it('timeouts and explicit abort cancel a stalled request',async()=>{
  const endpoint=await server(()=>{});await expect(generateText({...profile('openai-chat',endpoint),timeoutMs:100},prompt)).rejects.toThrow('AI_TIMEOUT');const controller=new AbortController();const promise=generateText(profile('openai-chat',endpoint),prompt,{signal:controller.signal});controller.abort();await expect(promise).rejects.toThrow('AI_CANCELLED');
+});
+it('timeout after a partial stream retains delivered text but rejects completion',async()=>{
+ const endpoint=await server((_req,res)=>{res.setHeader('content-type','text/event-stream');res.write('data: {"choices":[{"delta":{"content":"partial"}}]}\n\n');});const deltas:string[]=[];
+ await expect(generateText({...profile('openai-chat',endpoint),timeoutMs:100},prompt,{onDelta:t=>deltas.push(t)})).rejects.toThrow('AI_TIMEOUT');expect(deltas.join('')).toBe('partial');
 });
 it('rejects malformed SSE JSON and provider error events',async()=>{
  for(const body of ['data: {broken}\n\n','event: error\ndata: {"type":"error","error":{"message":"fixture-secret"}}\n\n']){const endpoint=await server((_req,res)=>{res.setHeader('content-type','text/event-stream');res.end(body);});await expect(generateText(profile('anthropic-messages',endpoint),prompt)).rejects.toThrow(/AI_(INVALID_RESPONSE|REMOTE_ERROR)/);}

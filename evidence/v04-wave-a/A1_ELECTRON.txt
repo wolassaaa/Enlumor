@@ -1,0 +1,23 @@
+COMMAND: npx playwright test tests/e2e/cruise.spec.ts tests/e2e/ai-settings.spec.ts tests/e2e/settings-simple.spec.ts
+
+Running 12 tests using 1 worker
+
+(node:54848) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok  1 tests\e2e\ai-settings.spec.ts:4:1 › model settings save masked configuration and preserve it after restart (2.0s)
+  ok  2 tests\e2e\ai-settings.spec.ts:5:1 › connection test uses only fixed text and modal errors retain the editable draft (1.1s)
+
+  ok  3 tests\e2e\cruise.spec.ts:7:1 › Cruise streams current block only, valid reference, pause/manual takeover/cancel and exit preserve PDF (3.4s)
+  ok  4 tests\e2e\cruise.spec.ts:8:1 › missing configuration guides settings and refreshes service after closing settings (2.0s)
+  ok  5 tests\e2e\cruise.spec.ts:9:1 › auto pacing waits for explanation/save, pause stops timer, restart resumes paused without API (16.9s)
+
+  ok  6 tests\e2e\cruise.spec.ts:10:1 › scan pages can be skipped sequentially without a fake block or navigation loop (2.1s)
+  ok  7 tests\e2e\cruise.spec.ts:12:69 › Cruise empty stays incomplete; manual retry saves one result and preserves annotations/source (2.6s)
+  ok  8 tests\e2e\cruise.spec.ts:12:69 › Cruise 429 stays incomplete; manual retry saves one result and preserves annotations/source (2.1s)
+  ok  9 tests\e2e\cruise.spec.ts:12:69 › Cruise truncated stays incomplete; manual retry saves one result and preserves annotations/source (2.1s)
+  ok 10 tests\e2e\cruise.spec.ts:12:69 › Cruise timeout stays incomplete; manual retry saves one result and preserves annotations/source (2.7s)
+  ok 11 tests\e2e\settings-simple.spec.ts:6:1 › simple provider setup defaults model, validates inline, saves and tests current draft (1.3s)
+  ok 12 tests\e2e\settings-simple.spec.ts:30:1 › failed connection keeps saved credentials and retry uses corrected draft (1.2s)
+
+  12 passed (41.1s)
+EXIT_STATUS: 0

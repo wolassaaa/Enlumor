@@ -1,0 +1,11 @@
+COMMAND: npx vitest run tests/cruise-requests.test.ts tests/ai-client.test.ts
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+
+ Test Files  2 passed (2)
+      Tests  41 passed (41)
+   Start at  23:35:33
+   Duration  565ms (tests 88%, import 6%, transform 5%, worker 1%)
+
+EXIT_STATUS: 0

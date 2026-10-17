@@ -1,0 +1,43 @@
+COMMAND: npx vitest run tests/cruise-requests.test.ts tests/ai-client.test.ts
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/cruise-requests.test.ts (11 tests | 2 failed) 118ms
+   × does not mark an empty resolved explanation successful ("") 8ms
+   × does not mark an empty resolved explanation successful (" \n\t") 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/cruise-requests.test.ts > does not mark an empty resolved explanation successful ("")
+ FAIL  tests/cruise-requests.test.ts > does not mark an empty resolved explanation successful (" \n\t")
+AssertionError: expected [ { requestId: 'req-one', …(1) } ] to deeply equal [ { requestId: 'req-one', …(2) } ]
+
+- Expected
++ Received
+
+  [
+    {
+-     "code": "AI_INCOMPLETE",
+      "requestId": "req-one",
+-     "type": "error",
++     "type": "done",
+    },
+  ]
+
+ ❯ tests/cruise-requests.test.ts:17:45
+     15|  const requests=new ExplanationRequests(async()=>{},()=>profile,async(…
+     16|  await requests.start(input);await new Promise(r=>setTimeout(r,0));
+     17|  expect(events.filter(e=>e.type!=='delta')).toEqual([{requestId:'req-o…
+       |                                             ^
+     18| });
+     19|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 39 passed (41)
+   Start at  23:35:13
+   Duration  613ms (tests 83%, transform 9%, import 7%, worker 1%)
+
+EXIT_STATUS: 1
