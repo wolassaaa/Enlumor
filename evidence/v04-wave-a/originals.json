@@ -1,0 +1,52 @@
+[
+  {
+    "target": "src/main/ai-client.ts",
+    "source": "evidence/v04-wave-a/originals/00-ai-client.ts",
+    "sha256": "dd569cc8d002a5446e06c383c29c92fa71a469be173c72d8bcbee48eccab4bb2"
+  },
+  {
+    "target": "src/main/cruise-requests.ts",
+    "source": "evidence/v04-wave-a/originals/01-cruise-requests.ts",
+    "sha256": "f5c1c4e2ab3871853341f73ac962d01728f9a936275a397981adc68dd51087c4"
+  },
+  {
+    "target": "src/renderer/CruisePanel.tsx",
+    "source": "evidence/v04-wave-a/originals/02-CruisePanel.tsx",
+    "sha256": "d9278722308fc690ac6e7b19a344aadc59c157d263966d7af0b6ec269d3f597f"
+  },
+  {
+    "target": "src/shared/cruise.ts",
+    "source": "evidence/v04-wave-a/originals/03-cruise.ts",
+    "sha256": "4a7bcd6ebb394d7a350298b86046883fc201768352d9a5f942cd7f3b07def4d8"
+  },
+  {
+    "target": "src/main/cruise-sessions.ts",
+    "source": "evidence/v04-wave-a/originals/04-cruise-sessions.ts",
+    "sha256": "ac1e00b2d2d01ceb56d2e4d9e533ea146efc782381ebdc159f510640eb0549f3"
+  },
+  {
+    "target": "tests/cruise-requests.test.ts",
+    "source": "evidence/v04-wave-a/originals/05-cruise-requests.test.ts",
+    "sha256": "7a5e57971dcf3a2ec5dcb9b3eaab9b415e920c8b97d7c6d081f185e0293dddbb"
+  },
+  {
+    "target": "tests/ai-client.test.ts",
+    "source": "evidence/v04-wave-a/originals/06-ai-client.test.ts",
+    "sha256": "dde27e0ad6af6e0ccfed1503d7c357399e8b9e9824da6d922e30b806751ac39a"
+  },
+  {
+    "target": "tests/cruise.test.ts",
+    "source": "evidence/v04-wave-a/originals/07-cruise.test.ts",
+    "sha256": "d1b10c92476035d4e8dd456302a87f29ab314f7054269f12c7c8966f523e33c4"
+  },
+  {
+    "target": "tests/cruise-session.test.ts",
+    "source": "evidence/v04-wave-a/originals/08-cruise-session.test.ts",
+    "sha256": "d88d345137df9b08de7cf055d36801d540424fc669aed14ae75a3fc790e39a1b"
+  },
+  {
+    "target": "tests/e2e/cruise.spec.ts",
+    "source": "evidence/v04-wave-a/originals/09-cruise.spec.ts",
+    "sha256": "60ea36e2d3fd83c5b7a832332672443328c16ac4d8215db1f034fb934f15999c"
+  }
+]

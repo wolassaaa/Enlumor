@@ -5,7 +5,7 @@
 - 自动化准备：已运行本地 fixture 单元测试、构建和 Electron 验收；实际结果见 `evidence/v04-wave-a/A1_*.txt`。
 - **真实服务验收：NOT EXECUTED（未执行）。A1 整体门槛保持未完成；A 阶段不发布，B 阶段不启动。**
 - 用户提供厂商 `deepseek`、显示名称 `DeepSeek v4.1 flash`。该名称不是已验证的 API 模型 ID；本轮没有据此猜测或替换模型 ID。
-- 本轮没有获得明确的真实服务凭据或用于验收的真实 PDF；没有真实厂商网络请求。
+- 用户随后提供下载目录中的《Attention Is All You Need》；已定位11页真实PDF并完成本地阅读/标题锚点核验。用户明确表示DeepSeek连接尚未测试；本轮没有读取个人凭据或发起真实厂商请求。
 - 本地 fixture 的通过只证明自动化准备，不证明真实厂商、模型或真实论文闭环通过。
 
 ## 已验证的自动化行为
@@ -57,3 +57,11 @@
 ## 本轮结论
 
 真实执行字段全部待填。模拟测试与真实 API 验收分开记录；完整打包、独立 review 与真实验收门槛另行完成，本轮没有发布。
+
+## 真实论文的本地检查（不等于真实API验收）
+
+- 文件：C:/Users/woola/Downloads/NIPS-2017-attention-is-all-you-need-Paper.pdf；11页，569417字节。
+- SHA256：d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537，检查前后相同。
+- `node scripts/check-wave-a-paper.mjs <明确PDF路径>`：真实Electron打开，Cruise手动定位标题，PyMuPDF verify-block验证实际文字/四边形；临时userData，无远程请求。
+- 实际结果：PDF_READ=PASS / ANCHOR_VERIFIED=PASS / MANUAL=PASS / REMOTE_REQUESTS=0 / SOURCE_UNCHANGED=YES。
+- 仅验证当前标题块，不宣称全部论文锚点或语义回答通过；上方真实API七项检查仍NOT EXECUTED。

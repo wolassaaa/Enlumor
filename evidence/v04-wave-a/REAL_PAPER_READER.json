@@ -1,0 +1,30 @@
+{
+  "source": "C:\\Users\\woola\\Downloads\\NIPS-2017-attention-is-all-you-need-Paper.pdf",
+  "sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+  "pages": 11,
+  "firstBlock": {
+    "id": "200952a8-6cc1-4884-a0ab-8b1ed0008c5d-d87d482d5ae7-0-0",
+    "documentId": "200952a8-6cc1-4884-a0ab-8b1ed0008c5d",
+    "fingerprint": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+    "pageIndex": 0,
+    "quote": "Attention Is All You Need",
+    "quads": [
+      [
+        211.488,
+        690.831626,
+        399.8933376000001,
+        690.831626,
+        211.488,
+        675.3549813999999,
+        399.8933376000001,
+        675.3549813999999
+      ]
+    ]
+  },
+  "verification": {
+    "verified": true
+  },
+  "remoteRequests": 0,
+  "remoteApi": "NOT_EXECUTED",
+  "sourceUnchanged": true
+}

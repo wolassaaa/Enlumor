@@ -1,0 +1,35 @@
+Wave A candidate (NOT RELEASED), branch feat/v04-wave-ab; base a7ff6aa.
+Changed fields/branches: empty model completion -> AI_INCOMPLETE, Cruise automatic branch removed, legacy auto -> manual/paused, finite show_evidence/clear_focus/pause_session commands reuse existing reader.
+Artifacts (absolute):
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/v04-wave-a/MODIFIED_FILE.tsx
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/v04-wave-a/DIFF.patch
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/v04-wave-a/VERIFICATION.txt
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/v04-wave-a/ROLLBACK.sh
+CWD: D:/codex project/Enlumor/.worktrees/v04-wave-ab
+BASELINE exact command: npm test
+Input: original a7ff6aa source, generated fixtures/temp DB.
+Literal output: Test Files  20 passed (20); Tests  110 passed (110).
+Exit status: 0.
+Setup initial ENOENT failures from absent .cache fixed by creating isolated cache directory; original log retained (not a product bug).
+A1 RED exact command: npx vitest run tests/cruise-requests.test.ts tests/ai-client.test.ts
+Input: generator empty/whitespace resolving without text.
+Literal result: Tests  2 failed | 39 passed (41). Exit status:1.
+A1 MODIFIED same command: Tests  41 passed (41). Exit status:0.
+A2 RED exact command: npx vitest run tests/reading-commands.test.ts tests/cruise-session.test.ts tests/cruise.test.ts
+Input: original auto session + finite local commands new assertions. Literal result: see A2_RED.txt (15 failed). Exit status:1.
+A2 MODIFIED: npm test; npm run build; npx tsc --noEmit; npx playwright test tests/e2e/cruise.spec.ts tests/e2e/native-apis.spec.ts
+Input: synthetic PDFs/local HTTP+WS/temp userData.
+Literal results: Tests  139 passed (139); build/typecheck success; 10 passed (49.1s). Exit statuses:0/0/0/0.
+21.05-second foreground hold produced no navigation/new request; distinct cover-window blur paused. Legacy auto-finished results/source/user annotations preserved on restart. Native tests now use a self-contained two-page fixture; no pressure budgets relaxed.
+REAL PAPER exact command: node scripts/check-wave-a-paper.mjs "C:/Users/woola/Downloads/NIPS-2017-attention-is-all-you-need-Paper.pdf"
+Input: user supplied 11-page real paper, isolated profile, blocked remote requests.
+Literal output: REAL_PAPER_LOCAL: PDF_READ=PASS; ANCHOR_VERIFIED=PASS; MANUAL=PASS; REMOTE_REQUESTS=0; SOURCE_UNCHANGED=YES; LIVE_API=NOT_EXECUTED
+Exit status:0.
+Paper hash: d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537 before/after; title anchor only, not full-paper semantic acceptance.
+ROLLBACK exact command (PowerShell): & 'C:\Program Files\Git\bin\bash.exe' -lc 'chmod +x evidence/v04-wave-a/ROLLBACK.sh && ./evidence/v04-wave-a/ROLLBACK.sh'
+Input: copy of live source under bounded .cache/wave-a-rollback; original SHA256 snapshots; temporary profile and synthetic PDF. No personal DB touched.
+Literal output: ROLLBACK: ORIGINAL_HASHES=PASS; ORIGINAL_APP_START=PASS; PDF_READ=PASS; AUTO_OPTION_RESTORED=YES; LIVE_SOURCE_UNCHANGED=YES
+Exit status:0.
+Restored behavior: original compiled app opens PDF, old auto selector works in isolated copy. Live changed source and MODIFIED_FILE remain manual; original snapshots/hash retained.
+Review: A1 and A2 task-scoped spec+quality PASS/no actionable findings. Aggregate review and full candidate package gate pending at this point.
+Real DeepSeek API acceptance NOT EXECUTED; user says connection not tested. Model display label is not a verified API ID. No personal credential reads, real provider requests, release/latest updates, GitHub pushes, B/Surfing implementation or automation changes.

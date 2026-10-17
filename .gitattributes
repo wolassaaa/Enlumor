@@ -26,3 +26,5 @@ evidence/native-apis/originals/* -text
 evidence/native-apis/ROLLBACK.sh text eol=lf
 
 evidence/settings-simplify/ORIGINAL.* -text
+
+evidence/v04-wave-a/originals/* -text

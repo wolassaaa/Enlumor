@@ -1,0 +1,88 @@
+
+> enlumor@0.1.15 test
+> vitest run
+
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:36264) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:48576) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42312) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:7440) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:30864) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:35576) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/reading-tools.test.ts (2 tests | 2 failed) 6ms
+   × reading mode persists per document and invalid modes do not overwrite saved reading state 4ms
+   × underline uses existing annotation transaction and inverse operations 1ms
+ ❯ tests/layout-tabs.test.ts (3 tests | 3 failed) 8ms
+   × layout preferences persist in SQLite and reject malformed values without changing saved state 5ms
+   × v1 migration creates a verified backup and preserves documents, annotations and reading state 1ms
+   × tab session persists only registered unique IDs with a valid active member 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/layout-tabs.test.ts > layout preferences persist in SQLite and reject malformed values without changing saved state
+Error: ENOENT: no such file or directory, mkdtemp 'D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\layout-test-XXXXXX'
+ ❯ setup tests/layout-tabs.test.ts:7:28
+      5| import type { LayoutPreferences } from '../src/shared/model';
+      6| import { Workspace } from '../src/main/workspace';
+      7| const setup=()=>{const dir=mkdtempSync(path.resolve('.cache/layout-tes…
+       |                            ^
+      8| it('layout preferences persist in SQLite and reject malformed values w…
+      9|  const {file}=setup();const w=new Workspace(file);
+ ❯ tests/layout-tabs.test.ts:9:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/layout-tabs.test.ts > v1 migration creates a verified backup and preserves documents, annotations and reading state
+Error: ENOENT: no such file or directory, mkdtemp 'D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\layout-test-XXXXXX'
+ ❯ setup tests/layout-tabs.test.ts:7:28
+      5| import type { LayoutPreferences } from '../src/shared/model';
+      6| import { Workspace } from '../src/main/workspace';
+      7| const setup=()=>{const dir=mkdtempSync(path.resolve('.cache/layout-tes…
+       |                            ^
+      8| it('layout preferences persist in SQLite and reject malformed values w…
+      9|  const {file}=setup();const w=new Workspace(file);
+ ❯ tests/layout-tabs.test.ts:15:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  tests/layout-tabs.test.ts > tab session persists only registered unique IDs with a valid active member
+Error: ENOENT: no such file or directory, mkdtemp 'D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\layout-test-XXXXXX'
+ ❯ setup tests/layout-tabs.test.ts:7:28
+      5| import type { LayoutPreferences } from '../src/shared/model';
+      6| import { Workspace } from '../src/main/workspace';
+      7| const setup=()=>{const dir=mkdtempSync(path.resolve('.cache/layout-tes…
+       |                            ^
+      8| it('layout preferences persist in SQLite and reject malformed values w…
+      9|  const {file}=setup();const w=new Workspace(file);
+ ❯ tests/layout-tabs.test.ts:22:19
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  tests/reading-tools.test.ts > reading mode persists per document and invalid modes do not overwrite saved reading state
+Error: ENOENT: no such file or directory, mkdtemp 'D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\reading-mode-XXXXXX'
+ ❯ tests/reading-tools.test.ts:7:12
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  tests/reading-tools.test.ts > underline uses existing annotation transaction and inverse operations
+Error: ENOENT: no such file or directory, mkdtemp 'D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\underline-unit-XXXXXX'
+ ❯ tests/reading-tools.test.ts:13:12
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  2 failed | 18 passed (20)
+      Tests  5 failed | 105 passed (110)
+   Start at  23:30:57
+   Duration  717ms (transform 51%, tests 33%, import 13%, worker 3%)
+
