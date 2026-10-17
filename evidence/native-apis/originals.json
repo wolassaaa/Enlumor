@@ -43,5 +43,10 @@
     "name": "8-cruise.spec.ts",
     "target": "tests/e2e/cruise.spec.ts",
     "sha256": "1b12d7a12aa7ee5d767399ec37f5dc62d7a12911d3b0173e1a66db7a838367e5"
+  },
+  {
+    "name": "9-benchmark.mjs",
+    "target": "scripts/benchmark.mjs",
+    "sha256": "01039131cf66132af2e08551efa73d3bba9c5a052246cbc46a3e0370300b5f25"
   }
 ]

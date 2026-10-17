@@ -42,7 +42,8 @@ try {
   await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1000, { timeout: 30000 });
   if (process.argv.includes('--thumbnails')) {
     await page.getByRole('tab',{name:'缩略图',exact:true}).click();
-    await expect(page.locator('.thumbnail-rail canvas[data-rendered="true"]').first()).toBeVisible();
+    // Initial image decode is setup, like the body canvas above; measured budgets remain unchanged.
+    await expect(page.locator('.thumbnail-rail canvas[data-rendered="true"]').first()).toBeVisible({timeout:30000});
   }
   scrolling = await page.evaluate(async () => {
     const frames = [], tasks = [];
