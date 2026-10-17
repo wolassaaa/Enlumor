@@ -75,7 +75,7 @@ function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:str
    if(value.code||(typeof value.status_code==='number'&&value.status_code>=400))throw failure('AI_REMOTE_ERROR');
    const output=value.output,c=output?.choices?.[0],content=c?.message?.content??output?.text,finish=c?.finish_reason??output?.finish_reason;
    if(typeof content!=='string')throw failure('AI_INVALID_RESPONSE');
-   if(finish&&finish!=='stop')throw failure('AI_INCOMPLETE');text=content;done=finish==='stop';if(!stream&&!done)throw failure('AI_INCOMPLETE');break;
+   if(finish&&finish!=='stop'&&finish!=='null')throw failure('AI_INCOMPLETE');text=content;done=finish==='stop';if(!stream&&!done)throw failure('AI_INCOMPLETE');break;
   }
   case'gemini':{
    const c=value.candidates?.[0];if(!c){if(value.promptFeedback?.blockReason)throw failure('AI_REMOTE_ERROR');if(!Array.isArray(value.candidates))throw failure('AI_INVALID_RESPONSE');return{text:'',done:false};}

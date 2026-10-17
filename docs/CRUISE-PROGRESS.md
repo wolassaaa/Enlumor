@@ -93,3 +93,8 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 - 108单测、2项真实Electron native设置→固定连接测试→实际PDF块Cruise解释通过，本地HTTP/WS模拟；不冒充厂商密钥实测。
 - 两项统一只读reviewer native_api_batch_review进行中，勿重复派审；Important先RED→GREEN。latest仍0.1.13，完整0.1.14门禁前不更新。
 - 隔离回退实际通过：NATIVE_PROTOCOLS0 CRUISE1 SCHEMA4 LIVE_SOURCE_UNCHANGED=YES；只用副本/临时profile，不降级个人库。
+
+## 15:01 Task5+6review修复完成
+- Task6提交1ae89c4；唯一reviewer native_api_batch_review发现1Important：DashScope官方SSE生成中标记字符串"null"被误判。新增增量/累计两条测试先失败，再修复；实际Electron模拟也改为官方stringnull中间帧。
+- 22专项/110全部单测、2native实际Electron通过5.6s，构建类型检查通过；隔离回退再次通过。没有二次派审。
+- 正在准备0.1.14完整release:verified，期间单一实施者等待，不修改产品或启动竞争构建。通过前latest仍0.1.13。

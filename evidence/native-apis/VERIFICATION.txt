@@ -1,11 +1,11 @@
-Branch feat/cruise-overnight. Fields: protocol=dashscope/spark, nativeinput/parameters/incremental_output, signedWS/authtriplet/domain/seq. Task5+6reviewpending, latest0.1.13 unchanged.
+Branch feat/cruise-overnight. Fields: protocol=dashscope/spark, nativeinput/parameters/incremental_output, signedWS/authtriplet/domain/seq. Task5+6reviewcomplete; Important1 fixedRED->GREEN, latest0.1.13 unchanged.
 BASELINE command: npx vitest run tests/dashscope.test.ts. InputnativeHTTP/SSEcontracts;literalTests6failed(6);exit1. Additional SPARK_RED missingmodule exit1; CREDENTIAL_RED protocolchangedkeyretained1failed6passed exit1; UI_RED Sparkoptionmissing1failed1passed exit1.
 MODIFIED command: npx vitest run tests/dashscope.test.ts tests/spark.test.ts tests/ai-profiles.test.ts
-InputfixedclockHMAC/localHTTP/realWS/UTF8/cumulative/error/truncation/timeout/cancel/encryptedtriplet;literalTestFiles3passed(3),Tests20passed(20);exit0.
-UNIT command: npm test;literalTestFiles20passed(20),Tests108passed(108);exit0.
+InputfixedclockHMAC/localHTTP/realWS/UTF8/cumulative/error/truncation/timeout/cancel/encryptedtriplet;literalTestFiles3passed(3),Tests22passed(22);exit0.
+UNIT command: npm test;literalTestFiles20passed(20),Tests110passed(110);exit0.
 BUILD command: npm run build;productionbuild completed withtypecheck;exit0.
 UI command: npx playwright test tests/e2e/native-apis.spec.ts
-InputtwoisolatedElectronprofiles/localHTTPandWSfixtures/200page32MiB PDF;nativeform+encryptedsecret+fixedtest+currentblockCruise;literal2passed(6.7s);exit0.
+InputtwoisolatedElectronprofiles/localHTTPandWSfixtures/200page32MiB PDF;nativeform+encryptedsecret+fixedtest+currentblockCruise;literal2passed(5.6s);exit0.
 ROLLBACK command: node scripts/check-native-apis-rollback.mjs (executableROLLBACK.sh samecommand).
 Inputboundedisolatedcopy+originalSHA256+200page32MiB fixture.
 Literal: ROLLBACK: NATIVE_PROTOCOLS=0; CRUISE=1; SCHEMA=4; LIVE_SOURCE_UNCHANGED=YES
@@ -20,3 +20,5 @@ D:/codex project/Enlumor/evidence/native-apis/MODIFIED_FILE.ts
 D:/codex project/Enlumor/evidence/native-apis/DIFF.patch
 D:/codex project/Enlumor/evidence/native-apis/VERIFICATION.txt
 D:/codex project/Enlumor/evidence/native-apis/ROLLBACK.sh
+
+ReviewRED: npx vitest run tests/dashscope.test.ts;officialstringnull/SSE incremental+cumulative;Tests2failed7passed;exit1. Same commandGREEN9passedexit0 included22focused. NativeUI screenshot actually inspected, credentials blankafter save. 0.1.14 fullgate pending.

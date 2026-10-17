@@ -96,19 +96,19 @@ Consumes/Produces：CruiseSession与get/saveCruiseSession。SQLite为权威，�
 Files：src/main/dashscope-client.ts（需要时拆分）；修改ai-client.ts/设置预设；tests/dashscope.test.ts。
 Consumes：AiProfileInput；Produces：统一AiTextEvent。只接原生文本生成，不把应用编排或多模态端点误当文本接口。
 
-- [ ] 核对官方原生文本接口、input/parameters/output结构和SSE头；写本地模拟请求/响应、增量/累计输出、错误码/UTF-8/取消/截断测试。
-- [ ] `npx vitest run tests/dashscope.test.ts`先见红后实现；输出与四种协议遵守同样取消和脱敏契约。
-- [ ] 设置界面可选原生协议，Electron模拟任务可用于Cruise；类型检查、提交。无真实密钥仅标契约测试。
+- [x] 核对官方原生文本接口、input/parameters/output结构和SSE头；写本地模拟请求/响应、增量/累计输出、错误码/UTF-8/取消/截断测试。
+- [x] `npx vitest run tests/dashscope.test.ts`先见红后实现；输出与四种协议遵守同样取消和脱敏契约。
+- [x] 设置界面可选原生协议，Electron模拟任务可用于Cruise；类型检查、提交。无真实密钥仅标契约测试。
 
 ### Task 6：讯飞星火原生WebSocket与签名
 
 Files：src/main/spark-client.ts；修改ai-client.ts/设置表单；tests/spark.test.ts、相关Electron模拟服务测试。
 Consumes：配置中独立APPID/APIKey/APISecret，秘密按Task1方式处理；Produces：同一AiTextEvent，不改变Cruise状态机。
 
-- [ ] 官方文档核对签名串、host/date/request-line、domain与端点对应。使用固定时钟写签名向量和URL编码测试；错误凭据不回显签名或密钥。
-- [ ] 本地WS服务覆盖多帧、错误帧、结束status、断线/超时/取消、旧请求事件与不完整输出。先测试失败再实现；优先Node现有能力，只在确有需要时增加小型锁定依赖并说明原因。
-- [ ] `npx vitest run tests/spark.test.ts`转绿；真实Electron模拟服务解释当前块，类型检查、提交。
-- [ ] **Review第3批（Task5+6）**：修复Important、更新兼容矩阵；不把未完成的专有云签名或真实供应商连接写成已完成。
+- [x] 官方文档核对签名串、host/date/request-line、domain与端点对应。使用固定时钟写签名向量和URL编码测试；错误凭据不回显签名或密钥。
+- [x] 本地WS服务覆盖多帧、错误帧、结束status、断线/超时/取消、旧请求事件与不完整输出。先测试失败再实现；优先Node现有能力，只在确有需要时增加小型锁定依赖并说明原因。
+- [x] `npx vitest run tests/spark.test.ts`转绿；真实Electron模拟服务解释当前块，类型检查、提交。
+- [x] **Review第3批（Task5+6）**：修复Important、更新兼容矩阵；不把未完成的专有云签名或真实供应商连接写成已完成。
 
 ## 发布与截止检查
 
