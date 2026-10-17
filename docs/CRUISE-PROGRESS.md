@@ -98,3 +98,9 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 - Task6提交1ae89c4；唯一reviewer native_api_batch_review发现1Important：DashScope官方SSE生成中标记字符串"null"被误判。新增增量/累计两条测试先失败，再修复；实际Electron模拟也改为官方stringnull中间帧。
 - 22专项/110全部单测、2native实际Electron通过5.6s，构建类型检查通过；隔离回退再次通过。没有二次派审。
 - 正在准备0.1.14完整release:verified，期间单一实施者等待，不修改产品或启动竞争构建。通过前latest仍0.1.13。
+
+## 15:13 发布门禁首轮失败排查
+- 首轮0.1.14完整门禁：110单测/8Python通过，最终EXE94通过1失败；latest仍0.1.13。失败为旧auto-pacing测试调用BrowserWindow.blur后未暂停。
+- 真实诊断日志BLUR_NATIVE {before:true,after:true}：Windows此次blur没有改变焦点，不是暂停逻辑回归。单加focus前置仍2次失败；未提交的前台轮询尝试已全部撤销，避免错误根因补丁。
+- 测试改为创建另一扇原生测试窗口取得焦点，并断言Enlumor可见且isFocused=false，再验证暂停>6秒/无新增请求/继续/重启。连续2次通过35.7s；没有弱化原断言，也没有改变产品窗口逻辑。
+- 现在重跑完整release:verified，唯一实施者等待；无新增功能/重复review，不上传GitHub。

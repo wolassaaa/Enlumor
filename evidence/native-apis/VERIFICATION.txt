@@ -22,3 +22,7 @@ D:/codex project/Enlumor/evidence/native-apis/VERIFICATION.txt
 D:/codex project/Enlumor/evidence/native-apis/ROLLBACK.sh
 
 ReviewRED: npx vitest run tests/dashscope.test.ts;officialstringnull/SSE incremental+cumulative;Tests2failed7passed;exit1. Same commandGREEN9passedexit0 included22focused. NativeUI screenshot actually inspected, credentials blankafter save. 0.1.14 fullgate pending.
+
+First full release: npm run release:verified;110unit+8Python passed, packagedUI94passed1failed;exit1. latestremained0.1.13.
+Diagnosis: native blur() no-op under current Windows focus state. FOCUS_DIAG.log literal BLUR_NATIVE { before: true, after: true }. Ensuringfocus beforeblur alone still2failed; product foreground polling experiment discarded (notrootcause, notcommitted).
+Corrected fixture creates another native visiblewindow and asserts mainwindow{focused:false,visible:true}; existing nativeblur/background behavior remains unchanged. npx playwright test tests/e2e/cruise.spec.ts -g "auto pacing" --repeat-each=2 =>2 passed (35.7s),exit0. No weaker pause/network assertions. Fullgate rerun pending.

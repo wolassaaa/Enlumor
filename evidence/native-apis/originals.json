@@ -18,5 +18,30 @@
     "name": "3-ai.ts",
     "target": "src/shared/ai.ts",
     "sha256": "9bbc568ed0ad8973f68e547075c9f2ee70912ff06894b4e0bf5baa2a268e00d2"
+  },
+  {
+    "name": "4-model.ts",
+    "target": "src/shared/model.ts",
+    "sha256": "4a05be639a1107eb174831d8249482e3ff5f01456c40059c6b27c4799164cc33"
+  },
+  {
+    "name": "5-preload.ts",
+    "target": "src/main/preload.ts",
+    "sha256": "ef8127315285f821e92b52e850f85b144268257468ecc1eefc483b9822c3dd93"
+  },
+  {
+    "name": "6-index.ts",
+    "target": "src/main/index.ts",
+    "sha256": "b6e14a891d954bb99ab5147c16da4c5cb91db58d3b9118a7af3b8e62a967de37"
+  },
+  {
+    "name": "7-CruisePanel.tsx",
+    "target": "src/renderer/CruisePanel.tsx",
+    "sha256": "d9278722308fc690ac6e7b19a344aadc59c157d263966d7af0b6ec269d3f597f"
+  },
+  {
+    "name": "8-cruise.spec.ts",
+    "target": "tests/e2e/cruise.spec.ts",
+    "sha256": "1b12d7a12aa7ee5d767399ec37f5dc62d7a12911d3b0173e1a66db7a838367e5"
   }
 ]
