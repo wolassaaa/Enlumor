@@ -1,31 +1,29 @@
-Branch feat/cruise-overnight. Fields: protocol=dashscope/spark, nativeinput/parameters/incremental_output, signedWS/authtriplet/domain/seq. Task5+6reviewcomplete; Important1 fixedRED->GREEN, latest0.1.13 unchanged.
-BASELINE command: npx vitest run tests/dashscope.test.ts. InputnativeHTTP/SSEcontracts;literalTests6failed(6);exit1. Additional SPARK_RED missingmodule exit1; CREDENTIAL_RED protocolchangedkeyretained1failed6passed exit1; UI_RED Sparkoptionmissing1failed1passed exit1.
+Branch: feat/cruise-overnight. Fields: protocol=dashscope/spark; nativeinput/parameters/incremental_output; signedWS/authtriplet/domain/seq. Task5+6 unifiedreview complete, Important1 fixedRED->GREEN. Latest0.1.14 verified; previous0.1.13 retained.
+BASELINE command: npx vitest run tests/dashscope.test.ts
+Input nativeHTTP/SSE contracts. Literal output: Tests 6 failed (6). Exit1. SPARK_RED missingmodule exit1; CREDENTIAL_RED1failed6passed exit1; UI_RED Sparkoptionmissing1failed1passed exit1.
+REVIEW_RED command: npx vitest run tests/dashscope.test.ts
+Input official SSE stringnull ongoing, incremental/cumulative. Literal output: Tests 2 failed | 7 passed (9). Exit1. Fix accepts bothnull sentinels, still requiresstop and rejects length/truncation.
 MODIFIED command: npx vitest run tests/dashscope.test.ts tests/spark.test.ts tests/ai-profiles.test.ts
-InputfixedclockHMAC/localHTTP/realWS/UTF8/cumulative/error/truncation/timeout/cancel/encryptedtriplet;literalTestFiles3passed(3),Tests22passed(22);exit0.
-UNIT command: npm test;literalTestFiles20passed(20),Tests110passed(110);exit0.
-BUILD command: npm run build;productionbuild completed withtypecheck;exit0.
+Input fixedclockHMAC/localHTTP/realWS/UTF8/cumulative/null/error/truncation/timeout/cancel/encryptedtriplet. Literal output: Test Files 3 passed (3); Tests 22 passed (22). Exit0.
+UNIT command: npm test. Literal output: Test Files 20 passed (20); Tests 110 passed (110). Exit0.
+BUILD command: npm run build. Production build completed withtsc;exit0.
 UI command: npx playwright test tests/e2e/native-apis.spec.ts
-InputtwoisolatedElectronprofiles/localHTTPandWSfixtures/200page32MiB PDF;nativeform+encryptedsecret+fixedtest+currentblockCruise;literal2passed(5.6s);exit0.
-ROLLBACK command: node scripts/check-native-apis-rollback.mjs (executableROLLBACK.sh samecommand).
-Inputboundedisolatedcopy+originalSHA256+200page32MiB fixture.
-Literal: ROLLBACK: NATIVE_PROTOCOLS=0; CRUISE=1; SCHEMA=4; LIVE_SOURCE_UNCHANGED=YES
-Exit0. Restored0.1.13protocolUI inCOPY; live nativeprotocolscode remainsmodified; personalDB/PDF untouched.
-Official docschecked2026-10-17:
-https://www.alibabacloud.com/help/zh/model-studio/qwen-api-via-dashscope
-https://www.xfyun.cn/doc/spark/Web.html
-https://www.xfyun.cn/doc/spark/general_url_authentication.html
-No realpaidvendorcalls. Nodebuilt-inWSdirectdoesnotinheritElectronHTTPproxy, UIlabel statesit. No newruntime dependency.
+Input isolatedElectronprofiles/localHTTPandWS/200page32MiB PDF;nativeform+encryptedsecret+fixedtest+currentblockCruise. Literal output: 2 passed (5.6s). Exit0.
+ROLLBACK command: C:/Program Files/Git/bin/bash.exe -c 'chmod +x evidence/native-apis/ROLLBACK.sh && ./evidence/native-apis/ROLLBACK.sh'
+Equivalent internal command node scripts/check-native-apis-rollback.mjs. Input boundedcopy+originalSHA256+200page32MiB fixture.
+Literal output: ROLLBACK: NATIVE_PROTOCOLS=0; CRUISE=1; SCHEMA=4; LIVE_SOURCE_UNCHANGED=YES
+Exit0. Restored0.1.13protocolUI inCOPY; live nativecode remainsmodified; personalDB/PDF untouched.
+RELEASE command: npm run release:verified
+Input final0.1.14EXE/all95flows/localAPIfixtures/200page32MiB1000annotations/scanned200pages/dense1000strokes.
+Literal output: 95 passed (4.1m); PACKAGED_READER: PASS; PORTABLE_STARTUP_SQLITE: PASS; PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS.
+Literal output: VERIFIED_RELEASE: 0.1.14 D:\codex project\Enlumor\release\Enlumor-0.1.14-win.zip SHA256=cf3a7a2492caa529df70375ed5cc484d1cc9421326be7f9eb476e47ecdd90fb3
+Exit0. ZIP hash rechecked; EXE reopened MZ. Edge and Spark settings screenshots actually inspected, secret fields blank.
+Text pressure: startupmedian465.2ms/framep9516.2ms/savep955.6ms; scanned456.5ms/14.1ms/7.6ms;zero longtasks,8bodycanvases,<=4thumbnailcanvases. Dense1000strokes eraseundo514ms zero longtasks.
+First fullgate exit1:110+8 passed,94UIpassed1failed; Windows blur() actually stayedfocused {before:true,after:true}. Fixed fixture uses second native window and asserts focusedfalse/visibletrue; repeated2passed35.7s. No product focus polling patch retained.
+Second fullgate exit1:110+8+95 passed,scansetup thumbnail default5s timeout. Same isolatedcommand failed; diagnostics measured thumbnailready5146.2888ms, renderedcorrectly. Setup readiness wait changedto30s likebodycanvas; measured performance budgets unchanged (1500ms/34ms/20ms/canvaslimits). This is not claimed as preparation latency optimization;5.15s followup tracked. Failure logs retained RELEASE_FIRST_FAILED/RELEASE_SECOND_FAILED.
+Official docschecked2026-10-17: alibabacloud.com/help/zh/model-studio/qwen-api-via-dashscope ; help.aliyun.com/en/model-studio/stream ; xfyun.cn/doc/spark/Web.html ; xfyun.cn/doc/spark/general_url_authentication.html . No real paidvendorcalls. NodeWSdirectdoesnotinheritElectronHTTPproxy; UI/docs stateit. No newruntime dependency.
 Artifacts:
 D:/codex project/Enlumor/evidence/native-apis/MODIFIED_FILE.ts
 D:/codex project/Enlumor/evidence/native-apis/DIFF.patch
 D:/codex project/Enlumor/evidence/native-apis/VERIFICATION.txt
 D:/codex project/Enlumor/evidence/native-apis/ROLLBACK.sh
-
-ReviewRED: npx vitest run tests/dashscope.test.ts;officialstringnull/SSE incremental+cumulative;Tests2failed7passed;exit1. Same commandGREEN9passedexit0 included22focused. NativeUI screenshot actually inspected, credentials blankafter save. 0.1.14 fullgate pending.
-
-First full release: npm run release:verified;110unit+8Python passed, packagedUI94passed1failed;exit1. latestremained0.1.13.
-Diagnosis: native blur() no-op under current Windows focus state. FOCUS_DIAG.log literal BLUR_NATIVE { before: true, after: true }. Ensuringfocus beforeblur alone still2failed; product foreground polling experiment discarded (notrootcause, notcommitted).
-Corrected fixture creates another native visiblewindow and asserts mainwindow{focused:false,visible:true}; existing nativeblur/background behavior remains unchanged. npx playwright test tests/e2e/cruise.spec.ts -g "auto pacing" --repeat-each=2 =>2 passed (35.7s),exit0. No weaker pause/network assertions. Fullgate rerun pending.
-
-Second fullgate:110unit+8Python+95packagedUI passed; scannedbenchmark readiness failed before measurement,exit1;latest0.1.13. Same isolatedscan command failedagain. Diagnostic originalassertion state showed valid thumbnails shortlyafter timeout; measured readiness5146.2888ms with30s diagnosticwait. Diagnosticperformance:framep9516.1ms/savep957.2ms/startupmedian460.23ms,zero longtasks.
-Benchmark setup now uses same explicit30s readiness wait asbodycanvas; no change to startupmedian1500ms/framep9534ms/savep9520ms/canvas budgets. Not claimed as latency optimization. Firstscan-thumbnail~5.15s kept asfollowupperformance issue. No product rendering code modified. Fullgate rerun pending.

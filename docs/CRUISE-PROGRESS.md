@@ -11,9 +11,9 @@
 - Task1：模型设置与四协议底座已实现，专项31项单测、2项实际Electron流程通过；已提交9bafc46；全部66项单测通过，开发构建通过。不是完整Cruise，也不是正式发布。
 - Task2：完成并提交e91e19e；11项分块/生命周期测试、全部77项单测、4项实际Electron（设置2＋定位2）通过；四种裁剪源旋转、150%/200%显示缩放。临时强调不入批注表。Task1+2独立review的1项Important和2项Minor均已修复并有回归测试。
 - Task3+4：完成且统一review通过修复，提交14b50c6 / 1d72b3f / dbd7668。2项Important各RED→GREEN；0.1.13完整release:verified已通过，最新指针已更新。
-- Task5/6：DashScope/星火原生尚未实现；不能在设置中作为可用协议出现。
+- Task5/6：用户日间继续后已完成，统一review修复通过，发布0.1.14；本地契约与Electron模拟测试，不是厂商真实密钥实测。
 - 两任务一review：Task1+2与Task3+4均完成唯一独立review及Important修复，不重复派审。Task5/6后移，本轮优先候选发布门禁。
-- 当前最新已验证发布为0.1.13（保留0.1.12目录），开发源代码为SQLite v4模型配置/会话表；个人userData未迁移，测试全用临时profile。
+- 当前最新已验证发布为0.1.14（保留0.1.13/0.1.12目录），开发源代码为SQLite v4模型配置/会话表；个人userData未迁移，测试全用临时profile。
 
 ## Task1 已做与证据
 
@@ -110,3 +110,11 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 - 诊断观察到缩略图已渲染、截图显示正确；以30秒诊断等待测得实际首缩略图5146ms，略超默认5s。随后framep9516.1ms、保存p957.2ms、启动中位460ms、零长任务，实际预算通过。
 - 基准仅把扫描/文本首缩略图“准备阶段”等待改为和正文canvas一样30秒；不放宽计时阶段34ms/20ms/1500ms/canvas预算，不把等待延长标成性能优化。记录大扫描样本首缩略图~5.15秒为后续性能专项；本轮未改PDF渲染代码。
 - 正在第三次完整release:verified，不跳过失败步骤。前两次日志保留native-apis/RELEASE_FIRST_FAILED.log和RELEASE_SECOND_FAILED.log。
+
+## 15:28 0.1.14完成
+- 第三次完整release:verified退出0：110Vitest+8Python+95最终EXE（4.1m），PACKAGED_READER/PORTABLE_STARTUP_SQLITE/PORTABLE_NO_PYTHON_OPEN_EXPORT均PASS。新版Spark设置与Edge高亮/便签截图已实际查看。
+- latest0.1.14，EXE release/Enlumor-0.1.14-win-x64/Enlumor.exe；ZIP release/Enlumor-0.1.14-win.zip；SHA256 cf3a7a2492caa529df70375ed5cc484d1cc9421326be7f9eb476e47ecdd90fb3，已重新打开核验。0.1.13仍保留。
+- 最终文本压力：启动中位465.2ms、framep9516.2ms、保存p955.6ms；扫描456.5ms/14.1ms/7.6ms；均零长任务、8正文canvas与≤4缩略图。1000条画笔擦除撤销514ms、零长任务。
+- 真正执行LF/可执行ROLLBACK.sh再次通过native0/Cruise1/schema4/live unchanged；原文件hash核验，个人数据未改。
+- Task5+6完成，三批两项一review全部按约完成。无在途实施/测试；旧夜间定时任务已经PAUSED，本次交互继续没有重启它。未推GitHub/调用真实付费API。
+- 仍待后续：真实厂商密钥连接；扫描首缩略图准备约5.15s专项优化；原计划后续白板/注意力等功能另行推进。
