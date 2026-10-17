@@ -9,3 +9,4 @@ __pycache__/
 .superpowers/
 public/pdf-assets/
 .cache-audit.json
+.worktrees/
