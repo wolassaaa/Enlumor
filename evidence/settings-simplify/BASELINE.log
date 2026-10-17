@@ -1,0 +1,45 @@
+
+Running 1 test using 1 worker
+
+(node:52488) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  x  1 tests\e2e\settings-simple.spec.ts:6:1 › simple provider setup defaults model, validates inline, saves and tests current draft (6.0s)
+
+
+  1) tests\e2e\settings-simple.spec.ts:6:1 › simple provider setup defaults model, validates inline, saves and tests current draft 
+
+    Error: expect(locator).toHaveValue(expected) failed
+
+    Locator:  getByLabel('模型 ID', { exact: true })
+    Expected: "deepseek-chat"
+    Received: ""
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveValue" getByLabel('模型 ID', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('模型 ID', { exact: true })
+        14 × locator resolved to <input value="" maxlength="200" list="ai-models" aria-label="模型 ID" placeholder="填写服务商模型 ID"/>
+           - unexpected value ""
+
+
+      11 |  try{const page=await app.firstWindow();await page.getByRole('button',{name:'模型设置',exact:true}).click();
+      12 |  await page.getByLabel('厂商预设',{exact:true}).selectOption({label:'DeepSeek'});
+    > 13 |  await expect(page.getByLabel('模型 ID',{exact:true})).toHaveValue('deepseek-chat');
+         |                                                      ^
+      14 |  await expect(page.getByLabel('协议',{exact:true})).not.toBeVisible();
+      15 |  await expect(page.getByLabel('协议参数 JSON',{exact:true})).not.toBeVisible();
+      16 |  await page.getByLabel('模型 ID',{exact:true}).fill('');await page.getByRole('button',{name:'保存并测试',exact:true}).click();
+        at D:\codex project\Enlumor\tests\e2e\settings-simple.spec.ts:13:54
+
+    Error Context: test-results\settings-simple-simple-pro-a33d7-ves-and-tests-current-draft\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\settings-simple-simple-pro-a33d7-ves-and-tests-current-draft\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\settings-simple-simple-pro-a33d7-ves-and-tests-current-draft\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\settings-simple.spec.ts:6:1 › simple provider setup defaults model, validates inline, saves and tests current draft 

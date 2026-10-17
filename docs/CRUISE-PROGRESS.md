@@ -118,3 +118,11 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 - 真正执行LF/可执行ROLLBACK.sh再次通过native0/Cruise1/schema4/live unchanged；原文件hash核验，个人数据未改。
 - Task5+6完成，三批两项一review全部按约完成。无在途实施/测试；旧夜间定时任务已经PAUSED，本次交互继续没有重启它。未推GitHub/调用真实付费API。
 - 仍待后续：真实厂商密钥连接；扫描首缩略图准备约5.15s专项优化；原计划后续白板/注意力等功能另行推进。
+
+## 2026-10-17 17:09 配置简化 0.1.15
+- 用户截图定位 DeepSeek preset 没有模型默认值，主进程合法拒绝但UI只报错误码；先Electron RED复现空模型，再加入默认deepseek-chat、字段级错误与保存并测试链路。
+- 常用服务商/密钥/模型留首屏，协议/地址/名称/超时/输出/JSON折叠高级设置；保持六协议、自定义模型、原加密与主进程校验，未改数据库。
+- 两项一review：唯一settings_simplify_review无actionable findings。专项9项与追加认证失败/重试2项通过；完整release:verified退出0，110+8+97通过，latest0.1.15。
+- 文本启动中位629.7ms/framep9515.4ms/保存p959.2ms；扫描420.4ms/15.1ms/8ms；零长任务，原预算不变。Edge导出与1024x768设置截图已实际检查。
+- 副本回退真实启动确认旧空模型/高级字段/错误码恢复、原始hash一致，live修改保留；个人数据未改，未推GitHub、未使用真实厂商密钥。
+- 证据evidence/settings-simplify/VERIFICATION.txt；发布ZIP SHA256 1a766d7659c2d9affd4d71f563824b68e6e9ab9f40062563c30447279094da11。

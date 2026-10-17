@@ -1,0 +1,18 @@
+
+Running 9 tests using 1 worker
+
+(node:52608) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok 1 tests\e2e\ai-settings.spec.ts:4:1 › model settings save masked configuration and preserve it after restart (2.1s)
+  ok 2 tests\e2e\ai-settings.spec.ts:5:1 › connection test uses only fixed text and modal errors retain the editable draft (1.1s)
+
+  ok 3 tests\e2e\cruise.spec.ts:7:1 › Cruise streams current block only, valid reference, pause/manual takeover/cancel and exit preserve PDF (3.5s)
+  ok 4 tests\e2e\cruise.spec.ts:8:1 › missing configuration guides settings and refreshes service after closing settings (1.4s)
+  ok 5 tests\e2e\cruise.spec.ts:9:1 › auto pacing waits for explanation/save, pause stops timer, restart resumes paused without API (16.8s)
+
+  ok 6 tests\e2e\cruise.spec.ts:10:1 › scan pages can be skipped sequentially without a fake block or navigation loop (2.1s)
+  ok 7 tests\e2e\native-apis.spec.ts:3:53 › dashscope native configuration and actual Cruise explanation use shared controls (2.6s)
+  ok 8 tests\e2e\native-apis.spec.ts:3:53 › spark native configuration and actual Cruise explanation use shared controls (2.4s)
+  ok 9 tests\e2e\settings-simple.spec.ts:6:1 › simple provider setup defaults model, validates inline, saves and tests current draft (1.2s)
+
+  9 passed (34.5s)

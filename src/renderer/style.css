@@ -75,3 +75,17 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
 .cruise-block-list{padding:12px 16px;background:var(--paper);border-bottom:1px solid var(--line);max-height:200px;overflow:auto;flex:none}.cruise-block-list>div{display:flex;align-items:center;justify-content:space-between;font-size:12px}.cruise-block-list>button{display:block;width:100%;text-align:left;white-space:pre-wrap;margin-top:8px;font-size:12px;line-height:1.65}.cruise-block-list p{font-size:12px;color:var(--muted)}
 
 .cruise-panel{flex:none;max-height:44vh;overflow:auto;padding:14px 20px;background:#faf9f5;border-bottom:1px solid #ddd9ce}.cruise-panel header,.cruise-panel footer,.cruise-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap}.cruise-panel header strong{margin-right:auto}.cruise-panel header span{font-size:12px;color:#647353}.cruise-controls{margin-top:10px}.cruise-controls select{max-width:260px}.cruise-panel p,.cruise-answer{font-size:14px;line-height:1.65}.cruise-source{margin:12px 0}.cruise-source blockquote{white-space:pre-wrap;margin:6px 0;border-left:2px solid #879773;padding-left:12px;font-size:13px;max-height:100px;overflow:auto}.cruise-answer{white-space:pre-wrap;overflow-wrap:anywhere;margin-bottom:8px}.cruise-panel footer{margin-top:10px}.cruise-panel small{color:#7d8273}
+
+/* Model connection: quiet, compact first-run surface; expert controls stay available. */
+.ai-settings{width:min(520px,92vw);padding:28px;border-radius:12px;box-shadow:0 24px 90px #18251e35}
+.ai-heading{margin-bottom:22px}.ai-eyebrow{font-size:10px;letter-spacing:.18em;color:var(--muted)}
+.ai-settings .ai-heading h2{margin:8px 0;font-size:25px}.ai-heading p{margin:0;color:var(--muted)}
+.ai-settings .ai-full{grid-column:1/-1}.ai-settings fieldset{gap:16px}
+.ai-settings input,.ai-settings select,.ai-settings textarea{font:inherit;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:var(--ink);padding:10px 12px}
+.ai-settings input:focus,.ai-settings select:focus,.ai-settings textarea:focus{outline:2px solid var(--accent);outline-offset:2px}
+.ai-settings input[aria-invalid=true]{border-color:#a04732}.ai-field-error{font-size:12px;color:#a04732}.ai-help{font-size:11px;color:var(--muted);line-height:1.6}
+.ai-advanced{margin-top:22px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);padding:14px 0}
+.ai-advanced summary{cursor:pointer;font-size:12px;color:var(--muted)}.ai-advanced[open] summary{margin-bottom:16px}
+.ai-secondary{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.ai-secondary button{font-size:11px}
+.ai-actions{margin-top:22px}.ai-settings .ai-primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+@media(max-width:560px){.ai-settings{padding:20px}.ai-settings fieldset{grid-template-columns:1fr}}

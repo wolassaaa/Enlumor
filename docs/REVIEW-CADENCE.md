@@ -137,3 +137,6 @@ Task1+2统一review：宽双栏串行/错误quad Important，先两条真实栏�
 
 ## 国内原生协议两项（0.1.14）
 Task5 DashScope＋Task6 Spark统一一次readonly review（native_api_batch_review）。1Important：官方SSE字符串null生成中被误判截断；增量/累计两条先失败后通过，实际Electron模拟也覆盖。发布门禁先后暴露失焦测试没有实际转移焦点、扫描首缩略图默认5秒准备等待不足；按真实诊断修正测试前置/分离准备阶段，产品未增加错误根因补丁，计时性能预算未变。最终110+8+95、两样本与密集画笔门禁通过，不重复派审。
+
+## 配置修复与交互简化（0.1.15）
+DeepSeek空模型根因修复＋配置渐进披露两项统一独立readonly review（settings_simplify_review），无actionable findings。真实RED→GREEN，追加保存后认证失败与凭据保留重试测试，最终110+8+97与原性能门禁通过；副本回退已启动检验。详见evidence/settings-simplify/VERIFICATION.txt。本周期计数归零。

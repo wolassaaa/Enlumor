@@ -1,0 +1,12 @@
+[
+  {
+    "source": "evidence/settings-simplify/ORIGINAL.tsx",
+    "target": "src/renderer/model-settings.tsx",
+    "sha256": "40404d9c38cc64955c6bdcc419cb56db3fbcf926403f0ba0682c4cbb6c457db8"
+  },
+  {
+    "source": "evidence/settings-simplify/ORIGINAL.css",
+    "target": "src/renderer/style.css",
+    "sha256": "b5de5f6da4a90ae784c50284d551e6db45b5af8224368c5d0ddceebb20d496c9"
+  }
+]

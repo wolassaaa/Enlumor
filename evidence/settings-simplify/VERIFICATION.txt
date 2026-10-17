@@ -1,0 +1,47 @@
+Enlumor 0.1.15 / branch feat/cruise-overnight
+Changed fields/branches: provider DeepSeek -> model='deepseek-chat'; primary save(true) persists latest draft then tests returned profile ID; basic provider/key/model visible, expert fields in details; per-field validation before IPC; failed test retains saved configuration and encrypted credential.
+Artifacts (absolute):
+D:/codex project/Enlumor/evidence/settings-simplify/MODIFIED_FILE.tsx
+D:/codex project/Enlumor/evidence/settings-simplify/DIFF.patch
+D:/codex project/Enlumor/evidence/settings-simplify/VERIFICATION.txt
+D:/codex project/Enlumor/evidence/settings-simplify/ROLLBACK.sh
+
+CWD (all commands): D:/codex project/Enlumor
+BASELINE command: npx playwright test tests/e2e/settings-simple.spec.ts
+Input: original 0.1.14 renderer, new isolated temporary userData; choose DeepSeek.
+Literal output: Expected: "deepseek-chat" / Received: "" / 1 failed
+Exit status: 1 (expected RED).
+
+Intermediate failure: after implementation, field error appeared but focus failed because target fieldset was still disabled while busy. Deferred focus until next animation frame; same assertion then passed. No assertion removed.
+MODIFIED focused command: npm run build; npx playwright test tests/e2e/settings-simple.spec.ts tests/e2e/ai-settings.spec.ts tests/e2e/native-apis.spec.ts tests/e2e/cruise.spec.ts
+Input: modified renderer, local HTTP/WS services, synthetic PDFs and temporary userData.
+Literal output: 9 passed (34.5s)
+Exit status: 0.
+Additional credential failure/retry command: npm run build; npx playwright test tests/e2e/settings-simple.spec.ts
+Literal output: 2 passed (3.5s)
+Exit status: 0.
+
+MODIFIED final command: npm run release:verified
+Input: 0.1.15 final packaged EXE; entire suite; 200-page text/scanned samples ~32MiB and 1000 annotations; local mocked AI endpoints, no real vendor credentials.
+Literal outputs:
+Tests  110 passed (110)
+Ran 8 tests in 0.682s
+OK
+97 passed (4.3m)
+PACKAGED_READER: PASS
+EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+VERIFIED_RELEASE: 0.1.15 D:\codex project\Enlumor\release\Enlumor-0.1.15-win.zip SHA256=1a766d7659c2d9affd4d71f563824b68e6e9ab9f40062563c30447279094da11
+Exit status: 0.
+Text: portable startup median 629.7261ms; frame p95 15.4ms; save p95 9.2ms; zero long tasks; 8 body and 3 thumbnail canvases.
+Scan: portable startup median 420.3666ms; frame p95 15.1ms; save p95 8ms; zero long tasks; 8 body and 3 thumbnail canvases.
+No performance budgets changed. Screenshots inspected at full resolution and 1024x768; Edge highlighter and notes correct.
+
+ROLLBACK exact command (PowerShell): & 'C:\Program Files\Git\bin\bash.exe' -lc 'chmod +x evidence/settings-simplify/ROLLBACK.sh && ./evidence/settings-simplify/ROLLBACK.sh'
+Input: live source COPY in bounded .cache/settings-rollback/run-*; original snapshot SHA256 validated; separate temporary userData. Script compiles and launches copied restored app.
+Literal output: ROLLBACK: ORIGINAL_HASHES=PASS; DEEPSEEK_MODEL=EMPTY; ADVANCED_VISIBLE=YES; SAVE=AI_INVALID_CONFIG; LIVE_SOURCE_UNCHANGED=YES
+Exit status: 0.
+Restored behavior: original 0.1.14 settings visible expert fields, empty DeepSeek model, original save rejection. Live MODIFIED_FILE/source remain simplified; personal PDF/database/credentials unchanged. Original binary hashes are in originals.json; snapshot originals protected against Git newline conversion.
+Review: one independent readonly reviewer settings_simplify_review; No actionable findings.
+Release ZIP hash reopened and matched latest.json; executable exists; 0.1.14 retained. No GitHub push.

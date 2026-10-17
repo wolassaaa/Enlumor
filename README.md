@@ -2,6 +2,10 @@
 
 Windows-first, local-first PDF reader foundation. Electron + React + TypeScript + PDF.js; SQLite workspace; PyMuPDF native annotation export. 普通阅读无需账户或云服务；可选 Cruise 使用用户配置的模型 API。
 
+## 0.1.15 模型配置简化
+
+模型设置默认仅显示服务商、API 密钥和模型；DeepSeek 预设自动填写 `deepseek-chat`，支持手填模型 ID。协议、地址、名称、超时、输出上限、JSON 与维护操作折叠到“高级设置”。主按钮“保存并测试”使用当前编辑内容，字段缺失就地提示；连接失败后保留已保存配置与凭据，可直接修改重试。连接测试只发固定短句，不发送 PDF。110 单测、8 Python、97 最终 EXE 流程和原性能门禁全部通过；真实厂商密钥仍需实际连接验收。
+
 ## 启动
 
 项目目录：`D:\codex project\Enlumor`

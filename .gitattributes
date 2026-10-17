@@ -24,3 +24,5 @@ evidence/cruise-control/originals/* -text
 evidence/cruise-session/originals/* -text
 evidence/native-apis/originals/* -text
 evidence/native-apis/ROLLBACK.sh text eol=lf
+
+evidence/settings-simplify/ORIGINAL.* -text
