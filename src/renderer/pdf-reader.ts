@@ -8,7 +8,7 @@ import { getDocument, GlobalWorkerOptions, type PDFDocumentLoadingTask } from 'p
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { EventBus, PDFViewer, PDFLinkService, PDFFindController, ScrollMode } from 'pdfjs-dist/web/pdf_viewer.mjs';
 import 'pdfjs-dist/web/pdf_viewer.css';
-import { screenRectToQuad, quadToScreen, transform } from '../shared/geometry';
+import { screenRectToQuad, quadToScreen, transform, validateAnnotation } from '../shared/geometry';
 import type { Annotation, OpenedDocument, ReadingState } from '../shared/model';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
@@ -145,8 +145,9 @@ export class PdfReader {
   }
   clearCruiseFocus(){clearTimeout(this.flashTimer);this.flash=undefined;this.paint();}
   locateCruiseBlock(block:CruiseBlock){
-    if(!this.active||block.documentId!==this.active.id||block.fingerprint!==this.active.fingerprint)throw new Error('CRUISE_SOURCE_CHANGED');
-    this.focus({...block,type:'highlight',author:'user',color:'#f4cf58',note:''});
+    if(!this.active||!this.ready||!this.viewer.pdfDocument||block.documentId!==this.active.id||block.fingerprint!==this.active.fingerprint)throw new Error('CRUISE_SOURCE_CHANGED');
+    const mark={...block,type:'highlight',author:'user',color:'#f4cf58',note:''};
+    validateAnnotation(mark,this.active.pageCount);this.focus(mark);
   }
   setMarks(marks: Annotation[], changedIds?: string[]) { this.marks = marks; this.paint(undefined,changedIds?new Set(changedIds):undefined); }
   setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}

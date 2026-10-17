@@ -1,0 +1,100 @@
+COMMAND: npx playwright test tests/e2e/cruise.spec.ts -g "manual Cruise stays"
+(node:20132) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:18712) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:18712) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  1 tests\e2e\cruise.spec.ts:9:1 › manual Cruise stays on saved block beyond 20 seconds; foreground pause and legacy auto restart never request on their own (27.7s)
+
+
+  1) tests\e2e\cruise.spec.ts:9:1 › manual Cruise stays on saved block beyond 20 seconds; foreground pause and legacy auto restart never request on their own 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('Cruise 状态', { exact: true })
+    Expected: "等待继续"
+    Received: "已暂停"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('Cruise 状态', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Cruise 状态', { exact: true })
+        14 × locator resolved to <span aria-live="polite" aria-label="Cruise 状态">已暂停</span>
+           - unexpected value "已暂停"
+
+
+      24 |   if(await page.getByLabel('Cruise 状态',{exact:true}).textContent()==='已暂停')await page.getByRole('button',{name:'继续 Cruise',exact:true}).click();
+      25 |   const quote=await page.getByLabel('Cruise 原文',{exact:true}).textContent();
+    > 26 |   await page.waitForTimeout(21050);expect(calls).toBe(1);await expect(page.getByLabel('Cruise 原文',{exact:true})).toHaveText(quote!);await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('等待继续');
+         |                                                                                                                                                                                             ^
+      27 |   await expect(page.getByLabel('Cruise 推进模式',{exact:true})).toHaveCount(0);await expect(page.getByLabel('Cruise 节奏',{exact:true})).toHaveCount(0);await expect(page.getByLabel('Cruise 倒计时',{exact:true})).toHaveCount(0);await expect(page.locator('.cruise-panel')).not.toContainText('自动推进');
+      28 |   const coverId=await app.evaluate(async({BrowserWindow})=>{const cover=new BrowserWindow({width:260,height:160,show:true});await cover.loadURL('about:blank');cover.focus();return cover.id;});
+      29 |   await expect.poll(()=>app.evaluate(({BrowserWindow},coverId)=>{const main=BrowserWindow.getAllWindows().find(w=>w.id!==coverId)!;return{focused:main.isFocused(),visible:main.isVisible()};},coverId)).toEqual({focused:false,visible:true});await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:26:189
+
+    Error Context: test-results\cruise-manual-Cruise-stays-db411--never-request-on-their-own\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-manual-Cruise-stays-db411--never-request-on-their-own\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-manual-Cruise-stays-db411--never-request-on-their-own\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\cruise.spec.ts:9:1 › manual Cruise stays on saved block beyond 20 seconds; foreground pause and legacy auto restart never request on their own 
+EXIT STATUS: 1
+COMMAND: npx playwright test tests/e2e/cruise.spec.ts -g "manual Cruise stays" (corrected expected UI assertion before foreground hold)
+(node:59352) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:49680) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:49680) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  1 tests\e2e\cruise.spec.ts:9:1 › manual Cruise stays on saved block beyond 20 seconds; foreground pause and legacy auto restart never request on their own (6.6s)
+
+
+  1) tests\e2e\cruise.spec.ts:9:1 › manual Cruise stays on saved block beyond 20 seconds; foreground pause and legacy auto restart never request on their own 
+
+    Error: expect(locator).toHaveCount(expected) failed
+
+    Locator:  getByLabel('Cruise 推进模式', { exact: true })
+    Expected: 0
+    Received: 1
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveCount" getByLabel('Cruise 推进模式', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Cruise 推进模式', { exact: true })
+        14 × locator resolved to 1 element
+           - unexpected value "1"
+
+
+      23 |   await app.evaluate(({BrowserWindow})=>{const main=BrowserWindow.getAllWindows()[0];main.setAlwaysOnTop(true);main.focus();});await expect.poll(()=>app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].isFocused())).toBe(true);
+      24 |   if(await page.getByLabel('Cruise 状态',{exact:true}).textContent()==='已暂停')await page.getByRole('button',{name:'继续 Cruise',exact:true}).click();
+    > 25 |   await expect(page.getByLabel('Cruise 推进模式',{exact:true})).toHaveCount(0);await expect(page.getByLabel('Cruise 节奏',{exact:true})).toHaveCount(0);await expect(page.getByLabel('Cruise 倒计时',{exact:true})).toHaveCount(0);await expect(page.locator('.cruise-panel')).not.toContainText('自动推进');
+         |                                                             ^
+      26 |   const quote=await page.getByLabel('Cruise 原文',{exact:true}).textContent();
+      27 |   await page.waitForTimeout(21050);expect(calls).toBe(1);await expect(page.getByLabel('Cruise 原文',{exact:true})).toHaveText(quote!);await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('等待继续');
+      28 |   await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].setAlwaysOnTop(false));
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:25:61
+
+    Error Context: test-results\cruise-manual-Cruise-stays-db411--never-request-on-their-own\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-manual-Cruise-stays-db411--never-request-on-their-own\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-manual-Cruise-stays-db411--never-request-on-their-own\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\cruise.spec.ts:9:1 › manual Cruise stays on saved block beyond 20 seconds; foreground pause and legacy auto restart never request on their own 
+EXIT STATUS: 1

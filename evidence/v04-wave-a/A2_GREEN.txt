@@ -1,0 +1,26 @@
+COMMAND: npx vitest run tests/reading-commands.test.ts tests/cruise.test.ts tests/cruise-session.test.ts
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:28232) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  3 passed (3)
+      Tests  29 passed (29)
+   Start at  23:48:54
+   Duration  287ms (transform 44%, tests 37%, import 15%, worker 4%)
+
+EXIT STATUS: 0
+COMMAND: npx vitest run tests/reading-commands.test.ts tests/cruise.test.ts tests/cruise-session.test.ts (typed direct import; manual-finished/invalid legacy regression)
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:16864) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  3 passed (3)
+      Tests  30 passed (30)
+   Start at  23:49:15
+   Duration  293ms (tests 43%, transform 33%, import 20%, worker 4%)
+
+EXIT STATUS: 0

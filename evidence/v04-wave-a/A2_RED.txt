@@ -1,0 +1,197 @@
+COMMAND: npx vitest run tests/reading-commands.test.ts tests/cruise.test.ts tests/cruise-session.test.ts
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:4076) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/cruise.test.ts (7 tests | 1 failed) 11ms
+   × restores legacy auto finished as paused without explaining or replacing original model results 7ms
+ ❯ tests/reading-commands.test.ts (11 tests | 11 failed) 14ms
+   × show_evidence uses reader locate once; clear and pause are local and retain permanent annotations 7ms
+   × rejects unknown or malformed command null before any location 1ms
+   × rejects unknown or malformed command {} before any location 1ms
+   × rejects unknown or malformed command {"type":"start_model"} before any location 0ms
+   × rejects unknown or malformed command {"type":"show_evidence"} before any location 0ms
+   × reader-bound show_evidence rejects document without locating or writing annotations 1ms
+   × reader-bound show_evidence rejects fingerprint without locating or writing annotations 1ms
+   × reader-bound show_evidence rejects not-ready without locating or writing annotations 1ms
+   × reader-bound show_evidence rejects missing-pdf without locating or writing annotations 1ms
+   × reader-bound show_evidence rejects invalid-page without locating or writing annotations 0ms
+   × reader-bound show_evidence rejects invalid-geometry without locating or writing annotations 0ms
+ ❯ tests/cruise-session.test.ts (7 tests | 3 failed) 102ms
+   × legacy auto rows load manual and paused while results, source and annotations remain intact 21ms
+   × legacy auto input saves manual and paused without deleting results 12ms
+   × saves transaction and reopens paused with source model unchanged 13ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 15 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/cruise-session.test.ts > legacy auto rows load manual and paused while results, source and annotations remain intact
+AssertionError: expected { …(8) } to deeply equal { …(8) }
+
+- Expected
++ Received
+
+@@ -18,11 +18,11 @@
+      ],
+      "quote": "quote",
+    },
+    "documentId": "ef9787ab-df7a-4eb2-913d-c8f8c09b3494",
+    "fingerprint": "f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d",
+-   "mode": "manual",
++   "mode": "auto",
+    "pace": "normal",
+    "profileId": "p",
+    "results": {
+      "b1": {
+        "source": {
+@@ -31,7 +31,7 @@
+          "profileId": "p",
+        },
+        "text": "answer",
+      },
+    },
+-   "status": "paused",
++   "status": "finished",
+  }
+
+ ❯ tests/cruise-session.test.ts:4:381
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/15]⎯
+
+ FAIL  tests/cruise-session.test.ts > legacy auto input saves manual and paused without deleting results
+AssertionError: expected { …(8) } to deeply equal { …(8) }
+
+- Expected
++ Received
+
+@@ -18,11 +18,11 @@
+      ],
+      "quote": "quote",
+    },
+    "documentId": "b9922e15-a886-4fe6-a5f2-ed56f93f7b41",
+    "fingerprint": "f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d",
+-   "mode": "manual",
++   "mode": "auto",
+    "pace": "normal",
+    "profileId": "p",
+    "results": {
+      "b1": {
+        "source": {
+@@ -31,7 +31,7 @@
+          "profileId": "p",
+        },
+        "text": "answer",
+      },
+    },
+-   "status": "paused",
++   "status": "finished",
+  }
+
+ ❯ tests/cruise-session.test.ts:5:301
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/15]⎯
+
+ FAIL  tests/cruise-session.test.ts > saves transaction and reopens paused with source model unchanged
+AssertionError: expected { …(8) } to deeply equal { …(8) }
+
+- Expected
++ Received
+
+@@ -18,11 +18,11 @@
+      ],
+      "quote": "quote",
+    },
+    "documentId": "e9c68032-2da3-41f4-9085-06d0d07d4ec1",
+    "fingerprint": "f16d05ec6b29248d2c61adb1e9263f78e4f7bace1b955014a2d17872cfe4064d",
+-   "mode": "manual",
++   "mode": "auto",
+    "pace": "normal",
+    "profileId": "p",
+    "results": {
+      "b1": {
+        "source": {
+
+ ❯ tests/cruise-session.test.ts:6:242
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/15]⎯
+
+ FAIL  tests/cruise.test.ts > restores legacy auto finished as paused without explaining or replacing original model results
+AssertionError: expected { status: 'finished', …(7) } to match object { status: 'paused', index: +0, …(4) }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+@@ -12,8 +12,8 @@
+      },
+    },
+    "source": {
+      "model": "original-model",
+    },
+-   "status": "paused",
++   "status": "finished",
+    "text": "Legacy explanation",
+  }
+
+ ❯ tests/cruise.test.ts:12:448
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/15]⎯
+
+ FAIL  tests/reading-commands.test.ts > show_evidence uses reader locate once; clear and pause are local and retain permanent annotations
+AssertionError: expected undefined to be type of 'function'
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ Object.execute tests/reading-commands.test.ts:16:62
+     14|  let state=cruiseReducer(initialCruise(),{type:'loaded',blocks:[block]…
+     15|  const ports={showEvidence:(b:CruiseBlock)=>r.locateCruiseBlock(b),cle…
+     16|  const execute=(command:any)=>{expect(executeReadingCommand).toBeTypeO…
+       |                                                              ^
+     17|  return{r,annotations,ports,execute,snapshot:()=>({locations,pauses,st…
+     18| }
+ ❯ tests/reading-commands.test.ts:19:220
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/15]⎯
+
+ FAIL  tests/reading-commands.test.ts > rejects unknown or malformed command null before any location
+ FAIL  tests/reading-commands.test.ts > rejects unknown or malformed command {} before any location
+ FAIL  tests/reading-commands.test.ts > rejects unknown or malformed command {"type":"start_model"} before any location
+ FAIL  tests/reading-commands.test.ts > rejects unknown or malformed command {"type":"show_evidence"} before any location
+AssertionError: expected undefined to be type of 'function'
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ tests/reading-commands.test.ts:20:186
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/15]⎯
+
+ FAIL  tests/reading-commands.test.ts > reader-bound show_evidence rejects document without locating or writing annotations
+ FAIL  tests/reading-commands.test.ts > reader-bound show_evidence rejects fingerprint without locating or writing annotations
+ FAIL  tests/reading-commands.test.ts > reader-bound show_evidence rejects not-ready without locating or writing annotations
+ FAIL  tests/reading-commands.test.ts > reader-bound show_evidence rejects missing-pdf without locating or writing annotations
+ FAIL  tests/reading-commands.test.ts > reader-bound show_evidence rejects invalid-page without locating or writing annotations
+ FAIL  tests/reading-commands.test.ts > reader-bound show_evidence rejects invalid-geometry without locating or writing annotations
+AssertionError: expected undefined to be type of 'function'
+
+Expected: "function"
+Received: "undefined"
+
+ ❯ tests/reading-commands.test.ts:21:549
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/15]⎯
+
+
+ Test Files  3 failed (3)
+      Tests  15 failed | 10 passed (25)
+   Start at  23:46:29
+   Duration  312ms (transform 40%, tests 38%, import 17%, worker 4%)
+
+EXIT STATUS: 1

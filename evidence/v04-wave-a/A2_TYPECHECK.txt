@@ -1,0 +1,6 @@
+COMMAND: npm run typecheck (final test-only native fixture change)
+
+> enlumor@0.1.15 typecheck
+> tsc --noEmit
+
+EXIT STATUS: 0

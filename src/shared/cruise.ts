@@ -7,7 +7,7 @@ export const initialCruise=():CruiseState=>({status:'idle',blocks:[],index:0,tex
 export type CruiseAction={type:'load'}|{type:'loaded';blocks:CruiseBlock[];index:number}|{type:'explain';requestId:string;source:CruiseSource}|{type:'text';event:AiTextEvent}|{type:'pause';reason:string}|{type:'move';index:number}|{type:'finish'}|{type:'stop'}|{type:'failure';code:string}|{type:'restore';session:CruiseSession;blocks:CruiseBlock[]};
 export function cruiseReducer(s:CruiseState,a:CruiseAction):CruiseState{
  switch(a.type){
- case'restore':{const index=a.blocks.findIndex(b=>b.id===a.session.block?.id);if(index<0)return{...s,status:'error',error:'CRUISE_SOURCE_CHANGED'};const result=a.session.results[a.blocks[index].id];return{...initialCruise(),status:a.session.status,blocks:a.blocks,index,results:a.session.results,text:result?.text||'',source:result?.source||null};}
+ case'restore':{const index=a.blocks.findIndex(b=>b.id===a.session.block?.id);if(index<0)return{...s,status:'error',error:'CRUISE_SOURCE_CHANGED'};const result=a.session.results[a.blocks[index].id];return{...initialCruise(),status:a.session.mode==='auto'?'paused':a.session.status,blocks:a.blocks,index,results:a.session.results,text:result?.text||'',source:result?.source||null};}
  case'stop':return initialCruise();
  case'load':return{...s,status:'loading',requestId:null,error:'',text:''};
  case'loaded':{const index=Math.max(0,Math.min(a.index,a.blocks.length-1)),result=s.results[a.blocks[index]?.id];return{...s,status:'ready',blocks:a.blocks,index,requestId:null,text:result?.text||'',source:result?.source||null,error:''};}
@@ -20,5 +20,5 @@ export function cruiseReducer(s:CruiseState,a:CruiseAction):CruiseState{
  }
 }
 
+// Legacy auto/pace fields stay readable; new sessions are explicitly manual.
 export type CruiseSession={documentId:string;fingerprint:string;block:CruiseBlock|null;profileId:string;mode:'manual'|'auto';pace:'slow'|'normal'|'fast';status:'paused'|'finished';results:Record<string,CruiseResult>};
-export function advanceDelay(s:CruiseState,mode:CruiseSession['mode'],pace:CruiseSession['pace'],visible:boolean,saved:boolean):number|null{return visible&&saved&&mode==='auto'&&s.status==='ready'&&!!s.results[s.blocks[s.index]?.id]?{slow:20000,normal:12000,fast:6000}[pace]:null;}
