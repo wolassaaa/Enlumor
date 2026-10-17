@@ -1,0 +1,22 @@
+[
+  {
+    "name": "0-ai-client.ts",
+    "target": "src/main/ai-client.ts",
+    "sha256": "f1cf9c8c148d1e7b6a96326fd16e36f30f8df115acd9292961f7c88ed1663ed2"
+  },
+  {
+    "name": "1-model-settings.tsx",
+    "target": "src/renderer/model-settings.tsx",
+    "sha256": "adfd20532cfcfd7f6c2d357b76f1bd0d47980974532c0433ab7a2947f0efb365"
+  },
+  {
+    "name": "2-ai-profiles.ts",
+    "target": "src/main/ai-profiles.ts",
+    "sha256": "9a114083719d220d133df85beadb672d2d5e2a2ec8001d8e28a7f80eb73fc17d"
+  },
+  {
+    "name": "3-ai.ts",
+    "target": "src/shared/ai.ts",
+    "sha256": "9bbc568ed0ad8973f68e547075c9f2ee70912ff06894b4e0bf5baa2a268e00d2"
+  }
+]

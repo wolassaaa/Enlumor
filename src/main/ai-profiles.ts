@@ -12,7 +12,8 @@ export class AiProfiles {
   validateAiProfile(input);const{credential}=input;
   const metadata={id:input.id,name:input.name,protocol:input.protocol,endpoint:input.endpoint,model:input.model,maxOutputTokens:input.maxOutputTokens,timeoutMs:input.timeoutMs,parameters:input.parameters};
   const old=this.db.prepare('SELECT secret,payload FROM ai_profiles WHERE id=?').get(input.id);
-  const changedOrigin=!!old&&new URL(JSON.parse(old.payload as string).endpoint).origin!==new URL(input.endpoint).origin;
+  const prior=old?JSON.parse(old.payload as string):null;
+  const changedOrigin=!!prior&&(new URL(prior.endpoint).origin!==new URL(input.endpoint).origin||prior.protocol!==input.protocol);
   let secret=(old?.secret as Uint8Array|null)||null;
   if(changedOrigin&&!credential)secret=null;
   let temporary:AiCredential|undefined;

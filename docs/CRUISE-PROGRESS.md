@@ -85,3 +85,11 @@ Workspace schema3迁移前备份：v2->v3，旧文档/偏好保留。原v1迁移
 
 ## 07:06 定时任务状态
 - enlumor已通过工具更新，ACTIVE，每15分钟仅做已验证包/证据复核至08:00；无新问题安静，到点PAUSED。当前无在途实施/测试。工作树产品代码已提交，latest0.1.13。
+
+## 2026-10-17 用户再次回复“继续吧”：日间Task5+6
+- 新的交互继续请求覆盖已结束夜间窗口；未重新创建定时任务，不受旧08:00实施截止约束；不上传GitHub、不做真实付费厂商调用。
+- Task5原生DashScope HTTP/SSE已实现b8fe15d：native input/parameters/SSE header；逐字节UTF8、增量/显式累计、结束/错误/超时/取消；复用同一Cruise和网络边界。官方文档2026-10-13版已核对，现有dashscope域名仍有效，支持填写业务空间完整endpoint。模型列表原生不伪造路径，仍可手填。
+- Task6原生Spark WS正在收尾：Node内置WebSocket，无新增依赖，HMAC-SHA256 URL签名、APPID/APIKey/APISecret加密、domain与官方路径校验/参数界限、超时/取消/错误/seq/截断；Lite等不支持system角色时折入单条user输入。WS直连不继承Electron HTTP代理，设置界面明确提示。
+- 108单测、2项真实Electron native设置→固定连接测试→实际PDF块Cruise解释通过，本地HTTP/WS模拟；不冒充厂商密钥实测。
+- 两项统一只读reviewer native_api_batch_review进行中，勿重复派审；Important先RED→GREEN。latest仍0.1.13，完整0.1.14门禁前不更新。
+- 隔离回退实际通过：NATIVE_PROTOCOLS0 CRUISE1 SCHEMA4 LIVE_SOURCE_UNCHANGED=YES；只用副本/临时profile，不降级个人库。

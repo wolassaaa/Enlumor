@@ -1,0 +1,352 @@
+diff --git a/scripts/check-native-apis-rollback.mjs b/scripts/check-native-apis-rollback.mjs
+new file mode 100644
+index 0000000..7582e83
+--- /dev/null
++++ b/scripts/check-native-apis-rollback.mjs
+@@ -0,0 +1,38 @@
++import { build } from 'esbuild';
++import { build as viteBuild } from 'vite';
++import react from '@vitejs/plugin-react';
++import { _electron as electron, expect } from '@playwright/test';
++import { mkdirSync, mkdtempSync, cpSync, copyFileSync, readFileSync, unlinkSync } from 'node:fs';
++import { createHash } from 'node:crypto';
++import { DatabaseSync } from 'node:sqlite';
++import path from 'node:path';
++import { copyAssets } from './assets.mjs';
++const root=path.resolve('.');
++const sha=file=>createHash('sha256').update(readFileSync(file)).digest('hex');
++const live=sha('src/renderer/main.tsx')+sha('src/renderer/pdf-reader.ts')+sha('src/renderer/style.css');
++const base=path.join(root,'.cache/native-apis-rollback');mkdirSync(base,{recursive:true});
++const copy=mkdtempSync(path.join(base,'run-'));
++if(!copy.startsWith(base+path.sep))throw Error('Unexpected rollback target');
++cpSync('src',path.join(copy,'src'),{recursive:true});
++cpSync('python',path.join(copy,'python'),{recursive:true});
++for(const file of ['package.json','index.html'])copyFileSync(file,path.join(copy,file));
++const originals=JSON.parse(readFileSync('evidence/native-apis/originals.json','utf8'));
++for(const {name,target,sha256} of originals){const file=path.join(root,'evidence/native-apis/originals',name),destination=path.resolve(copy,target);if(!destination.startsWith(copy+path.sep))throw Error('Unexpected original target');if(sha(file)!==sha256)throw Error('Original hash mismatch');mkdirSync(path.dirname(destination),{recursive:true});copyFileSync(file,destination);}
++for(const target of ['src/main/spark-client.ts','src/main/ai-config.ts']){const file=path.resolve(copy,target);if(!file.startsWith(copy+path.sep))throw Error('Unexpected added file');unlinkSync(file);}
++await build({entryPoints:[path.join(copy,'src/main/index.ts'),path.join(copy,'src/main/preload.ts')],outdir:path.join(copy,'dist/main'),bundle:true,platform:'node',format:'cjs',outExtension:{'.js':'.cjs'},external:['electron']});
++await viteBuild({configFile:false,root:copy,plugins:[react()],base:'./',build:{outDir:path.join(copy,'dist/renderer')}});
++copyAssets(path.join(copy,'dist/renderer/pdf-assets'));
++const app=await electron.launch({args:[copy,`--user-data-dir=${path.join(copy,'profile')}`],env:{...process.env,ENLUMOR_PYTHON:path.join(root,'.venv/Scripts/python.exe')}});
++try{
++ const page=await app.firstWindow(),source=path.join(root,'.cache/benchmark/200-pages-32MiB.pdf');
++ await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);
++ await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ await expect(page.getByRole('button',{name:'模型设置',exact:true})).toHaveCount(1);
++ await expect(page.getByRole('button',{name:'读取本页阅读块',exact:true})).toHaveCount(1);
++ await expect(page.getByRole('button',{name:'打开 Cruise',exact:true})).toHaveCount(1);
++ await page.getByRole('button',{name:'打开 Cruise',exact:true}).click();await expect(page.getByLabel('Cruise 推进模式',{exact:true})).toHaveCount(1);
++ await page.getByRole('button',{name:'模型设置',exact:true}).first().click();await expect(page.getByLabel('协议',{exact:true}).locator('option[value="spark"]')).toHaveCount(0);await expect(page.getByLabel('协议',{exact:true}).locator('option[value="dashscope"]')).toHaveCount(0);
++ const db=new DatabaseSync(path.join(copy,'profile/workspace.sqlite'),{readOnly:true});try{if(Number(db.prepare('PRAGMA user_version').get().user_version)!==4)throw Error('Original schema not restored');}finally{db.close();}
++ if(sha('src/renderer/main.tsx')+sha('src/renderer/pdf-reader.ts')+sha('src/renderer/style.css')!==live)throw Error('Live source changed');
++ console.log('ROLLBACK: NATIVE_PROTOCOLS=0; CRUISE=1; SCHEMA=4; LIVE_SOURCE_UNCHANGED=YES');
++}finally{await app.close();}
+diff --git a/src/main/ai-client.ts b/src/main/ai-client.ts
+index c22f2a6..b4336b0 100644
+--- a/src/main/ai-client.ts
++++ b/src/main/ai-client.ts
+@@ -1,41 +1,12 @@
++import{generateSpark}from'./spark-client';
++import{validateAiProfile}from'./ai-config';
++export{validateAiProfile}from'./ai-config';
+ import type {AiProfileInput,AiPrompt} from '../shared/ai';
+ 
+ const MAX_RESPONSE_BYTES=4*1024*1024,MAX_EVENT_BYTES=512*1024;
+-const protocols=['openai-chat','openai-responses','anthropic-messages','gemini'];
+ const invalid=()=>new Error('AI_INVALID_CONFIG');
+ const failure=(code:string)=>new Error(code);
+ 
+-/** Caller supplies an explicitly selected service; no redirects or URL credentials. */
+-export function validateAiProfile(profile:AiProfileInput):URL {
+- if(!profile||typeof profile!=='object'||!protocols.includes(profile.protocol)||typeof profile.id!=='string'||!/^[\w-]{1,100}$/.test(profile.id)||typeof profile.name!=='string'||profile.name.length>100||!profile.name.trim()||typeof profile.model!=='string'||!profile.model.trim()||profile.model.length>200||typeof profile.endpoint!=='string'||profile.endpoint.length>2000||!Number.isInteger(profile.maxOutputTokens)||profile.maxOutputTokens<1||profile.maxOutputTokens>32768||!Number.isInteger(profile.timeoutMs)||profile.timeoutMs<100||profile.timeoutMs>120000)throw invalid();
+- let url:URL;try{url=new URL(profile.endpoint);}catch{throw invalid();}
+- const local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
+- if((url.protocol!=='https:'&&!(url.protocol==='http:'&&local))||url.username||url.password||url.search||url.hash)throw invalid();
+- if(profile.credential&&(profile.credential.kind!=='api-key'||typeof profile.credential.apiKey!=='string'||profile.credential.apiKey.length>8192||!profile.credential.apiKey.trim()||/[\r\n]/.test(profile.credential.apiKey)))throw invalid();
+- const p=profile.parameters;if(!p||typeof p!=='object'||Array.isArray(p)||Object.getPrototypeOf(p)!==Object.prototype)throw invalid();
+- // Protocol-specific controls, never authentication/routing/prompts or arbitrary request fields.
+- const allowed:Record<string,string[]>={
+-  'openai-chat':['temperature','top_p','seed','presence_penalty','frequency_penalty','reasoning_effort','enable_thinking'],
+-  'openai-responses':['temperature','top_p'],
+-  'anthropic-messages':['temperature','top_p','top_k'],
+-  gemini:['temperature','topP','topK'],
+- };
+- for(const [key,value]of Object.entries(p)){
+-  if(!allowed[profile.protocol].includes(key))throw invalid();
+-  if(key==='reasoning_effort'){if(typeof value!=='string'||!['none','minimal','low','medium','high','xhigh'].includes(value))throw invalid();}
+-  else if(key==='enable_thinking'){if(typeof value!=='boolean')throw invalid();}
+-  else {
+-   if(typeof value!=='number'||!Number.isFinite(value))throw invalid();
+-   if(key==='temperature'&&(value<0||value>(profile.protocol==='anthropic-messages'?1:2)))throw invalid();
+-   if(['top_p','topP'].includes(key)&&(value<0||value>1))throw invalid();
+-   if(['top_k','topK'].includes(key)&&(!Number.isInteger(value)||value<1||value>10000))throw invalid();
+-   if(['presence_penalty','frequency_penalty'].includes(key)&&Math.abs(value)>2)throw invalid();
+-   if(key==='seed'&&(!Number.isInteger(value)||Math.abs(value)>2147483647))throw invalid();
+-  }
+- }
+- return url;
+-}
+-
+ export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=true):{url:string;headers:Record<string,string>;body:any} {
+  const url=validateAiProfile(profile);
+  if(!prompt||typeof prompt.system!=='string'||typeof prompt.user!=='string'||!prompt.user.trim()||prompt.system.length+prompt.user.length>200000)throw failure('AI_INVALID_PROMPT');
+@@ -54,6 +25,12 @@ export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=tru
+   case'anthropic-messages':
+    addPath('/messages','/v1');if(key)headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';
+    body={model:profile.model,system:prompt.system,messages:[{role:'user',content:prompt.user}],max_tokens:profile.maxOutputTokens,stream,...profile.parameters};break;
++  case'dashscope':{
++   const full='/api/v1/services/aigc/text-generation/generation',base=url.pathname.replace(/\/+$/,'');
++   if(!base)url.pathname=full;else if(base.endsWith('/api/v1'))url.pathname=base+'/services/aigc/text-generation/generation';else if(!base.endsWith(full))throw invalid();
++   if(key)headers.Authorization='Bearer '+key;if(stream)headers['X-DashScope-SSE']='enable';
++   body={model:profile.model,input:{messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user}]},parameters:{max_tokens:profile.maxOutputTokens,result_format:'message',incremental_output:stream,...profile.parameters}};break;
++  }
+   case'gemini':{
+    let base=url.pathname.replace(/\/+$/,'')||'/v1beta';
+    if(/:(?:streamGenerateContent|generateContent)$/.test(base))base=base.replace(/:(?:streamGenerateContent|generateContent)$/,stream?':streamGenerateContent':':generateContent');
+@@ -94,6 +71,12 @@ function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:str
+    else if(value.type==='message_delta'&&value.delta?.stop_reason==='max_tokens')throw failure('AI_INCOMPLETE');
+    else if(value.type==='message_stop')done=true;
+    break;
++  case'dashscope':{
++   if(value.code||(typeof value.status_code==='number'&&value.status_code>=400))throw failure('AI_REMOTE_ERROR');
++   const output=value.output,c=output?.choices?.[0],content=c?.message?.content??output?.text,finish=c?.finish_reason??output?.finish_reason;
++   if(typeof content!=='string')throw failure('AI_INVALID_RESPONSE');
++   if(finish&&finish!=='stop')throw failure('AI_INCOMPLETE');text=content;done=finish==='stop';if(!stream&&!done)throw failure('AI_INCOMPLETE');break;
++  }
+   case'gemini':{
+    const c=value.candidates?.[0];if(!c){if(value.promptFeedback?.blockReason)throw failure('AI_REMOTE_ERROR');if(!Array.isArray(value.candidates))throw failure('AI_INVALID_RESPONSE');return{text:'',done:false};}
+    if(c.finishReason&&c.finishReason!=='STOP')throw failure('AI_INCOMPLETE');
+@@ -106,6 +89,7 @@ function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:str
+ }
+ 
+ export async function listAiModels(profile:AiProfileInput,options:{signal?:AbortSignal;fetch?:typeof fetch}={}):Promise<string[]>{
++ if(profile.protocol==='dashscope'||profile.protocol==='spark')throw failure('AI_MODEL_DISCOVERY_UNSUPPORTED');
+  const request=buildAiRequest(profile,{system:'',user:'Model discovery'},false),url=new URL(request.url);
+  if(profile.protocol==='gemini')url.pathname=url.pathname.replace(/\/models\/[^/]+:generateContent$/,'/models');
+  else url.pathname=url.pathname.replace(/\/(chat\/completions|responses|messages)$/,'/models');
+@@ -124,6 +108,7 @@ export async function listAiModels(profile:AiProfileInput,options:{signal?:Abort
+ }
+ 
+ export async function generateText(profile:AiProfileInput,prompt:AiPrompt,options:{stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;fetch?:typeof fetch}={}):Promise<string>{
++ if(profile.protocol==='spark')return generateSpark(profile,prompt,options);
+  const stream=options.stream!==false,request=buildAiRequest(profile,prompt,stream),timer=new AbortController();
+  const timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);
+  const signal=options.signal?AbortSignal.any([options.signal,timer.signal]):timer.signal;
+@@ -142,7 +127,7 @@ export async function generateText(profile:AiProfileInput,prompt:AiPrompt,option
+    if(event==='error')throw failure('AI_REMOTE_ERROR');if(!data)return;
+    if(data==='[DONE]'){if(profile.protocol!=='openai-chat')throw failure('AI_INVALID_RESPONSE');done=true;return;}
+    let value;try{value=JSON.parse(data);}catch{throw failure('AI_INVALID_RESPONSE');}
+-   const decoded=decodeObject(profile,value,true);emit(decoded.text);done||=decoded.done;
++   const decoded=decodeObject(profile,value,true);let delta=decoded.text;if(profile.protocol==='dashscope'&&profile.parameters.incremental_output===false){if(!delta.startsWith(text))throw failure('AI_INVALID_RESPONSE');delta=delta.slice(text.length);}emit(delta);done||=decoded.done;
+   };
+   while(!done){
+    const chunk=await reader.read();if(chunk.done){pending+=decoder.decode();break;}
+diff --git a/src/main/ai-config.ts b/src/main/ai-config.ts
+new file mode 100644
+index 0000000..ff5347d
+--- /dev/null
++++ b/src/main/ai-config.ts
+@@ -0,0 +1,45 @@
++import type{AiProfileInput}from'../shared/ai';
++const protocols=['openai-chat','openai-responses','anthropic-messages','gemini','dashscope','spark'];
++const invalid=()=>new Error('AI_INVALID_CONFIG');
++/** Caller supplies an explicitly selected service; no redirects or URL credentials. */
++export function validateAiProfile(profile:AiProfileInput):URL {
++ if(!profile||typeof profile!=='object'||!protocols.includes(profile.protocol)||typeof profile.id!=='string'||!/^[\w-]{1,100}$/.test(profile.id)||typeof profile.name!=='string'||profile.name.length>100||!profile.name.trim()||typeof profile.model!=='string'||!profile.model.trim()||profile.model.length>200||typeof profile.endpoint!=='string'||profile.endpoint.length>2000||!Number.isInteger(profile.maxOutputTokens)||profile.maxOutputTokens<1||profile.maxOutputTokens>32768||!Number.isInteger(profile.timeoutMs)||profile.timeoutMs<100||profile.timeoutMs>120000)throw invalid();
++ let url:URL;try{url=new URL(profile.endpoint);}catch{throw invalid();}
++ const local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
++ const secure=profile.protocol==='spark'?'wss:':'https:',plain=profile.protocol==='spark'?'ws:':'http:';
++ if((url.protocol!==secure&&!(url.protocol===plain&&local))||url.username||url.password||url.search||url.hash)throw invalid();
++ if(profile.credential){const c=profile.credential;if(profile.protocol==='spark'){if(c.kind!=='spark'||[c.appId,c.apiKey,c.apiSecret].some(v=>typeof v!=='string'||!v.trim()||v.length>8192||/[\r\n"\\]/.test(v)))throw invalid();}else if(c.kind!=='api-key'||typeof c.apiKey!=='string'||c.apiKey.length>8192||!c.apiKey.trim()||/[\r\n]/.test(c.apiKey))throw invalid();}
++ if(profile.protocol==='spark'){
++  const routes:Record<string,string>={lite:'/v1.1/chat',generalv3:'/v3.1/chat','pro-128k':'/chat/pro-128k','generalv3.5':'/v3.5/chat','max-32k':'/chat/max-32k','4.0Ultra':'/v4.0/chat',Ultra:'/v4.0/chat'};
++  if(url.hostname==='spark-api.xf-yun.com'&&routes[profile.model]!==url.pathname)throw invalid();
++  const cap=profile.model==='lite'?4096:profile.model==='generalv3'||profile.model==='generalv3.5'?8192:32768;if(profile.maxOutputTokens>cap)throw invalid();
++ }
++
++ const p=profile.parameters;if(!p||typeof p!=='object'||Array.isArray(p)||Object.getPrototypeOf(p)!==Object.prototype)throw invalid();
++ // Protocol-specific controls, never authentication/routing/prompts or arbitrary request fields.
++ const allowed:Record<string,string[]>={
++  'openai-chat':['temperature','top_p','seed','presence_penalty','frequency_penalty','reasoning_effort','enable_thinking'],
++  'openai-responses':['temperature','top_p'],
++  'anthropic-messages':['temperature','top_p','top_k'],
++  gemini:['temperature','topP','topK'],
++  spark:['temperature','top_k'],
++  dashscope:['temperature','top_p','top_k','seed','repetition_penalty','enable_thinking','incremental_output'],
++ };
++ for(const [key,value]of Object.entries(p)){
++  if(!allowed[profile.protocol].includes(key))throw invalid();
++  if(key==='reasoning_effort'){if(typeof value!=='string'||!['none','minimal','low','medium','high','xhigh'].includes(value))throw invalid();}
++  else if(key==='enable_thinking'||key==='incremental_output'){if(typeof value!=='boolean')throw invalid();}
++  else {
++   if(typeof value!=='number'||!Number.isFinite(value))throw invalid();
++   if(profile.protocol==='spark'&&((key==='temperature'&&(value<=0||value>1))||(key==='top_k'&&value>6)))throw invalid();
++   if(key==='temperature'&&(value<0||value>(profile.protocol==='anthropic-messages'?1:2)))throw invalid();
++   if(['top_p','topP'].includes(key)&&(value<0||value>1))throw invalid();
++   if(['top_k','topK'].includes(key)&&(!Number.isInteger(value)||value<1||value>10000))throw invalid();
++   if(['presence_penalty','frequency_penalty'].includes(key)&&Math.abs(value)>2)throw invalid();
++   if(key==='repetition_penalty'&&(value<=0||value>2))throw invalid();
++   if(key==='seed'&&(!Number.isInteger(value)||Math.abs(value)>2147483647))throw invalid();
++  }
++ }
++ return url;
++}
++
+diff --git a/src/main/ai-profiles.ts b/src/main/ai-profiles.ts
+index 5610a73..44a28c8 100644
+--- a/src/main/ai-profiles.ts
++++ b/src/main/ai-profiles.ts
+@@ -12,7 +12,8 @@ export class AiProfiles {
+   validateAiProfile(input);const{credential}=input;
+   const metadata={id:input.id,name:input.name,protocol:input.protocol,endpoint:input.endpoint,model:input.model,maxOutputTokens:input.maxOutputTokens,timeoutMs:input.timeoutMs,parameters:input.parameters};
+   const old=this.db.prepare('SELECT secret,payload FROM ai_profiles WHERE id=?').get(input.id);
+-  const changedOrigin=!!old&&new URL(JSON.parse(old.payload as string).endpoint).origin!==new URL(input.endpoint).origin;
++  const prior=old?JSON.parse(old.payload as string):null;
++  const changedOrigin=!!prior&&(new URL(prior.endpoint).origin!==new URL(input.endpoint).origin||prior.protocol!==input.protocol);
+   let secret=(old?.secret as Uint8Array|null)||null;
+   if(changedOrigin&&!credential)secret=null;
+   let temporary:AiCredential|undefined;
+diff --git a/src/main/spark-client.ts b/src/main/spark-client.ts
+new file mode 100644
+index 0000000..37ad3ba
+--- /dev/null
++++ b/src/main/spark-client.ts
+@@ -0,0 +1,27 @@
++import{createHmac}from'node:crypto';import type{AiProfileInput,AiPrompt}from'../shared/ai';import{validateAiProfile}from'./ai-config';
++const fail=(code:string)=>new Error(code);
++export function signSparkUrl(profile:AiProfileInput,now=new Date()):string{
++ const url=validateAiProfile(profile),c=profile.credential;if(profile.protocol!=='spark'||c?.kind!=='spark')throw fail('AI_KEY_REQUIRED');if(!Number.isFinite(now.getTime()))throw fail('AI_INVALID_CONFIG');const date=now.toUTCString(),host=url.host;
++ const signature=createHmac('sha256',c.apiSecret).update(`host: ${host}\ndate: ${date}\nGET ${url.pathname} HTTP/1.1`).digest('base64');
++ url.searchParams.set('authorization',Buffer.from(`api_key="${c.apiKey}", algorithm="hmac-sha256", headers="host date request-line", signature="${signature}"`).toString('base64'));url.searchParams.set('date',date);url.searchParams.set('host',host);return url.toString();
++}
++export async function generateSpark(profile:AiProfileInput,prompt:AiPrompt,options:{signal?:AbortSignal;onDelta?:(text:string)=>void;stream?:boolean}={}):Promise<string>{
++ const url=signSparkUrl(profile),c=profile.credential!;if(c.kind!=='spark')throw fail('AI_KEY_REQUIRED');if(!prompt||typeof prompt.system!=='string'||typeof prompt.user!=='string'||!prompt.user.trim()||prompt.system.length+prompt.user.length>200000)throw fail('AI_INVALID_PROMPT');if(options.signal?.aborted)throw fail('AI_CANCELLED');
++ const supportsSystem=['generalv3.5','max-32k','4.0Ultra','Ultra'].includes(profile.model),messages=supportsSystem?[{role:'system',content:prompt.system},{role:'user',content:prompt.user}]:[{role:'user',content:prompt.system+'\n\n原文数据：\n'+prompt.user}];
++ return new Promise((resolve,reject)=>{
++  let socket:WebSocket,settled=false,text='',bytes=0,lastSeq=-1;
++  const finish=(code?:string)=>{if(settled)return;settled=true;clearTimeout(timer);options.signal?.removeEventListener('abort',abort);try{socket?.close();}catch{}if(code)reject(fail(code));else resolve(text);};
++  const abort=()=>finish('AI_CANCELLED'),timer=setTimeout(()=>finish('AI_TIMEOUT'),profile.timeoutMs);options.signal?.addEventListener('abort',abort,{once:true});
++  try{socket=new WebSocket(url);}catch{finish('AI_REQUEST_FAILED');return;}
++  socket.addEventListener('open',()=>{if(settled)return;try{socket.send(JSON.stringify({header:{app_id:c.appId},parameter:{chat:{domain:profile.model,max_tokens:profile.maxOutputTokens,...profile.parameters}},payload:{message:{text:messages}}}));}catch{finish('AI_REQUEST_FAILED');}});
++  socket.addEventListener('message',event=>{if(settled)return;try{
++   if(typeof event.data!=='string'||Buffer.byteLength(event.data)>512*1024)throw fail('AI_RESPONSE_TOO_LARGE');bytes+=Buffer.byteLength(event.data);if(bytes>4*1024*1024)throw fail('AI_RESPONSE_TOO_LARGE');let v;try{v=JSON.parse(event.data);}catch{throw fail('AI_INVALID_RESPONSE');}if(!v?.header||!Number.isInteger(v.header.code))throw fail('AI_INVALID_RESPONSE');if(v.header.code!==0)throw fail('AI_REMOTE_ERROR');const choice=v.payload?.choices;
++   if(!choice||![0,1,2].includes(choice.status)||!Number.isInteger(choice.seq)||choice.seq<=lastSeq||!Array.isArray(choice.text))throw fail('AI_INVALID_RESPONSE');lastSeq=choice.seq;
++   for(const part of choice.text){if(part.role!=='assistant'||typeof part.content!=='string')throw fail('AI_INVALID_RESPONSE');if(part.index!==undefined&&part.index!==0)throw fail('AI_INVALID_RESPONSE');text+=part.content;if(text.length>4*1024*1024)throw fail('AI_RESPONSE_TOO_LARGE');if(part.content)options.onDelta?.(part.content);}
++   if(choice.status===2){if(!text.trim())throw fail('AI_INCOMPLETE');finish();}
++  }catch(error){finish(error instanceof Error&&/^AI_[A-Z_0-9]+$/.test(error.message)?error.message:'AI_INVALID_RESPONSE');}});
++  socket.addEventListener('error',()=>finish(text?'AI_INCOMPLETE':'AI_REQUEST_FAILED'));
++  socket.addEventListener('close',()=>finish('AI_INCOMPLETE'));
++ });
++}
++
+diff --git a/src/renderer/model-settings.tsx b/src/renderer/model-settings.tsx
+index d45f08a..85e5ea0 100644
+--- a/src/renderer/model-settings.tsx
++++ b/src/renderer/model-settings.tsx
+@@ -10,27 +10,31 @@ const presets=[
+  ['腾讯混元','openai-chat','https://api.hunyuan.cloud.tencent.com/v1'],
+  ['Claude','anthropic-messages','https://api.anthropic.com/v1/messages'],
+  ['Gemini','gemini','https://generativelanguage.googleapis.com/v1beta'],
++ ['讯飞星火 WebSocket（Lite）','spark','wss://spark-api.xf-yun.com/v1.1/chat'],
++ ['百炼 DashScope 原生文本','dashscope','https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'],
+ ] as const;
+ const empty=():AiProfileInput=>({id:crypto.randomUUID(),name:'新模型配置',protocol:'openai-chat',endpoint:presets[0][2],model:'',maxOutputTokens:1024,timeoutMs:30000,parameters:{}});
+ export function ModelSettings({close,returnFocus}:{close:()=>void;returnFocus:HTMLElement|null}){
+  const dialog=useRef<HTMLDialogElement>(null);const[profiles,setProfiles]=useState<AiProfileView[]>([]),[draft,setDraft]=useState(empty),[key,setKey]=useState(''),[selected,setSelected]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[parameters,setParameters]=useState('{}');
+- const [models,setModels]=useState<string[]>([]);
++ const [models,setModels]=useState<string[]>([]),[appId,setAppId]=useState(''),[apiSecret,setApiSecret]=useState('');
++ const clearSecrets=()=>{setKey('');setAppId('');setApiSecret('');};
+  const selectedView=profiles.find(p=>p.id===selected);
+  const refresh=async()=>{const list=unwrap(await window.enlumor.listAiProfiles());setProfiles(list);return list;};
+  useLayoutEffect(()=>{const el=dialog.current!;el.showModal();void refresh().catch(e=>setError(String(e)));return()=>{el.close();queueMicrotask(()=>returnFocus?.isConnected&&returnFocus.focus());};},[]);
+- const choose=(id:string)=>{setModels([]);setSelected(id);const p=profiles.find(p=>p.id===id);setDraft(p?{id:p.id,name:p.name,protocol:p.protocol,endpoint:p.endpoint,model:p.model,maxOutputTokens:p.maxOutputTokens,timeoutMs:p.timeoutMs,parameters:p.parameters}:empty());setParameters(JSON.stringify(p?.parameters||{},null,2));setKey('');setMessage('');setError('');};
++ const choose=(id:string)=>{setModels([]);setSelected(id);const p=profiles.find(p=>p.id===id);setDraft(p?{id:p.id,name:p.name,protocol:p.protocol,endpoint:p.endpoint,model:p.model,maxOutputTokens:p.maxOutputTokens,timeoutMs:p.timeoutMs,parameters:p.parameters}:empty());setParameters(JSON.stringify(p?.parameters||{},null,2));clearSecrets();setMessage('');setError('');};
+  const run=async(fn:()=>Promise<void>)=>{setBusy(true);setMessage('');setError('');try{await fn();}catch(e){setError(e instanceof Error?e.message:String(e));}finally{setBusy(false);}};
+- const save=()=>run(async()=>{let parsed;try{parsed=JSON.parse(parameters);}catch{throw Error('AI_INVALID_CONFIG: 参数必须是 JSON 对象');}const saved=unwrap(await window.enlumor.saveAiProfile({...draft,parameters:parsed,credential:key?{kind:'api-key',apiKey:key}:undefined}));await refresh();setDraft({...draft,id:saved.id,parameters:parsed});setSelected(saved.id);setKey('');setMessage('配置已保存');});
++ const save=()=>run(async()=>{let parsed;try{parsed=JSON.parse(parameters);}catch{throw Error('AI_INVALID_CONFIG: 参数必须是 JSON 对象');}if(draft.protocol==='spark'&&(key||appId||apiSecret)&&!(key&&appId&&apiSecret))throw Error('AI_INVALID_CONFIG: Spark 三项凭据一起填写，或全部留空保留原凭据');const credential=draft.protocol==='spark'?(key?{kind:'spark' as const,appId,apiKey:key,apiSecret}:undefined):(key?{kind:'api-key' as const,apiKey:key}:undefined);const saved=unwrap(await window.enlumor.saveAiProfile({...draft,parameters:parsed,credential}));await refresh();setDraft({...draft,id:saved.id,parameters:parsed});setSelected(saved.id);clearSecrets();setMessage('配置已保存');});
+  return <dialog ref={dialog} className="ai-settings" aria-modal="true" aria-labelledby="ai-title" onCancel={event=>{event.preventDefault();if(!busy)close();}}><form onSubmit={event=>{event.preventDefault();void save();}}>
+   <h2 id="ai-title">模型设置</h2><p>服务与协议独立配置。仅“测试连接”发送固定短句；不会发送 PDF。</p>
+   <fieldset disabled={busy}>
+    <label>已有配置<select aria-label="已有配置" value={selected} onChange={e=>choose(e.target.value)}><option value="">新建配置</option>{profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
+-   <label>厂商预设<select aria-label="厂商预设" defaultValue="" onChange={e=>{if(!e.target.value)return;const p=presets[Number(e.target.value)];setDraft({...draft,name:p[0],protocol:p[1],endpoint:p[2],model:''});}}><option value="">选择或手动配置</option>{presets.map((p,i)=><option key={p[0]} value={i}>{p[0]}</option>)}</select></label>
++   <label>厂商预设<select aria-label="厂商预设" defaultValue="" onChange={e=>{if(!e.target.value)return;const p=presets[Number(e.target.value)];clearSecrets();setParameters('{}');setDraft({...draft,name:p[0],protocol:p[1],endpoint:p[2],model:p[1]==='spark'?'lite':'',parameters:{}});}}><option value="">选择或手动配置</option>{presets.map((p,i)=><option key={p[0]} value={i}>{p[0]}</option>)}</select></label>
+    <label>配置名称<input aria-label="配置名称" autoFocus value={draft.name} maxLength={100} onChange={e=>setDraft({...draft,name:e.target.value})}/></label>
+-   <label>协议<select aria-label="协议" value={draft.protocol} onChange={e=>setDraft({...draft,protocol:e.target.value as AiProtocol})}><option value="openai-chat">OpenAI Chat Completions</option><option value="openai-responses">OpenAI Responses</option><option value="anthropic-messages">Claude Messages</option><option value="gemini">Gemini GenerateContent</option></select></label>
++   <label>协议<select aria-label="协议" value={draft.protocol} onChange={e=>{clearSecrets();setParameters('{}');setDraft({...draft,protocol:e.target.value as AiProtocol,parameters:{}});}}><option value="openai-chat">OpenAI Chat Completions</option><option value="openai-responses">OpenAI Responses</option><option value="anthropic-messages">Claude Messages</option><option value="gemini">Gemini GenerateContent</option><option value="dashscope">DashScope 原生文本</option><option value="spark">Spark WebSocket</option></select></label>
+    <label>接口地址<input aria-label="接口地址" value={draft.endpoint} maxLength={2000} onChange={e=>setDraft({...draft,endpoint:e.target.value})}/></label>
+-   <datalist id="ai-models">{models.map(id=><option key={id} value={id}/>)}</datalist><label>模型 ID<input list="ai-models" aria-label="模型 ID" value={draft.model} maxLength={200} placeholder="填写服务商模型 ID" onChange={e=>setDraft({...draft,model:e.target.value})}/></label>
++   <datalist id="ai-models">{models.map(id=><option key={id} value={id}/>)}</datalist><label>模型 ID<input list="ai-models" aria-label="模型 ID" value={draft.model} maxLength={200} placeholder={draft.protocol==='spark'?'填写 domain，如 lite / generalv3.5':'填写服务商模型 ID'} onChange={e=>setDraft({...draft,model:e.target.value})}/></label>
+    <label>API 密钥<input aria-label="API 密钥" type="password" autoComplete="off" value={key} placeholder={selectedView?.hasCredential?'已保存；留空保留原密钥':'填写密钥，本地服务可留空'} onChange={e=>setKey(e.target.value)}/></label>
++   {draft.protocol==='spark'&&<><label>APPID<input aria-label="Spark APPID" autoComplete="off" value={appId} onChange={e=>setAppId(e.target.value)} placeholder="留空保留已保存的三项凭据"/></label><label>APISecret<input aria-label="Spark APISecret" type="password" autoComplete="off" value={apiSecret} onChange={e=>setApiSecret(e.target.value)}/></label><p>模型 ID 在此填写 Spark domain，必须与接口版本对应。WebSocket 使用 Node 内置直连；不自动继承 Electron HTTP 代理。</p></>}
+    <label>最大输出 tokens<input aria-label="最大输出 tokens" type="number" min={1} max={32768} value={draft.maxOutputTokens} onChange={e=>setDraft({...draft,maxOutputTokens:Number(e.target.value)})}/></label>
+    <label>超时（毫秒）<input aria-label="超时（毫秒）" type="number" min={100} max={120000} value={draft.timeoutMs} onChange={e=>setDraft({...draft,timeoutMs:Number(e.target.value)})}/></label>
+    <label>协议参数 JSON<textarea aria-label="协议参数 JSON" value={parameters} onChange={e=>setParameters(e.target.value)}/></label>
+diff --git a/tests/ai-profiles.test.ts b/tests/ai-profiles.test.ts
+index 1eb8ff8..ef53ea2 100644
+--- a/tests/ai-profiles.test.ts
++++ b/tests/ai-profiles.test.ts
+@@ -10,3 +10,5 @@ it('migration from version2 creates a backup and retains preferences',()=>{const
+ it('invalid profile updates retain previously saved metadata and encrypted credential',()=>{const w=new Workspace(path.join(mkdtempSync(path.join(tmpdir(),'ai-invalid-')),'state.sqlite'));try{const profiles=new AiProfiles(w.db,box);profiles.save(profile);expect(()=>profiles.save({...profile,endpoint:'http://remote.example/v1',name:'bad'})).toThrow(/AI_INVALID/);expect(profiles.list()[0].name).toBe(profile.name);expect(profiles.resolve('local').credential).toEqual(profile.credential);expect(()=>profiles.resolve('missing')).toThrow('AI_PROFILE_MISSING');}finally{w.close();}});
+ it('persists only whitelisted metadata, not extra input secrets',()=>{const w=new Workspace(path.join(mkdtempSync(path.join(tmpdir(),'ai-extra-')),'state.sqlite'));try{const profiles=new AiProfiles(w.db,box);profiles.save({...profile,accidentalSecret:'extra-private-value'} as typeof profile);expect(JSON.stringify(w.db.prepare('select payload from ai_profiles').get())).not.toContain('extra-private-value');expect(JSON.stringify(profiles.list())).not.toContain('extra-private-value');}finally{w.close();}});
+ it('changing service origin does not silently reuse the old API credential',()=>{const w=new Workspace(path.join(mkdtempSync(path.join(tmpdir(),'ai-origin-')),'state.sqlite'));try{const profiles=new AiProfiles(w.db,box);profiles.save(profile);profiles.save({...profile,endpoint:'http://localhost:12345/v1',credential:undefined});expect(profiles.list()[0].hasCredential).toBe(false);expect(profiles.resolve(profile.id).credential).toBeUndefined();}finally{w.close();}});
++
++it('Spark triplet stays encrypted and protocol changes clear incompatible credentials',()=>{const w=new Workspace(path.join(mkdtempSync(path.join(tmpdir(),'spark-secret-')),'state.sqlite'));try{const profiles=new AiProfiles(w.db,box),p={...profile,protocol:'spark' as const,endpoint:'wss://spark-api.xf-yun.com/v1.1/chat',model:'lite',credential:{kind:'spark' as const,appId:'app',apiKey:'fixture-key',apiSecret:'fixture-private-secret'}};profiles.save(p);expect(JSON.stringify(profiles.list())).not.toContain('fixture-private-secret');expect(JSON.stringify(w.db.prepare('select * from ai_profiles').all())).not.toContain('fixture-private-secret');expect(profiles.resolve(p.id).credential).toEqual(p.credential);profiles.save({...profile,protocol:'dashscope',endpoint:'https://same.example/api/v1',credential:undefined});profiles.save({...profile,protocol:'openai-chat',endpoint:'https://same.example/api/v1',credential:{kind:'api-key',apiKey:'old'}});profiles.save({...profile,protocol:'anthropic-messages',endpoint:'https://same.example/api/v1',credential:undefined});expect(profiles.list()[0].hasCredential).toBe(false);}finally{w.close();}});
+diff --git a/tests/dashscope.test.ts b/tests/dashscope.test.ts
+new file mode 100644
+index 0000000..4e48ba1
+--- /dev/null
++++ b/tests/dashscope.test.ts
+@@ -0,0 +1,13 @@
++import{it,expect}from'vitest';import{buildAiRequest,generateText,listAiModels}from'../src/main/ai-client';import type{AiProfileInput}from'../src/shared/ai';
++const profile:AiProfileInput={id:'native',name:'DashScope',protocol:'dashscope',endpoint:'http://127.0.0.1:9000',model:'qwen-test',parameters:{},maxOutputTokens:100,timeoutMs:1000};const prompt={system:'system',user:'中文原文'};
++const output=(content:string,finish_reason:any=null)=>({output:{choices:[{message:{role:'assistant',content},finish_reason}]},usage:{output_tokens:1},request_id:'fixture'});
++const mock=(body:any)=>async()=>new Response(JSON.stringify(body),{headers:{'Content-Type':'application/json'}});
++const stream=(frames:any[])=>{const bytes=new TextEncoder().encode(frames.map(f=>'data: '+JSON.stringify(f)+'\r\n\r\n').join(''));return async()=>new Response(new ReadableStream({start(c){for(const b of bytes)c.enqueue(Uint8Array.of(b));c.close();}}),{headers:{'Content-Type':'text/event-stream'}});};
++it('builds native endpoint/input/controlled parameters and SSE header without OpenAI stream field',()=>{const req=buildAiRequest({...profile,credential:{kind:'api-key',apiKey:'fixture-key'}},prompt);expect(req.url).toBe(profile.endpoint+'/api/v1/services/aigc/text-generation/generation');expect(req.headers['X-DashScope-SSE']).toBe('enable');expect(req.headers.Authorization).toBe('Bearer fixture-key');expect(req.body).toEqual({model:'qwen-test',input:{messages:[{role:'system',content:'system'},{role:'user',content:'中文原文'}]},parameters:{max_tokens:100,result_format:'message',incremental_output:true}});expect(buildAiRequest({...profile,endpoint:req.url},prompt).url).toBe(req.url);});
++it('ordinary native JSON emits text and no streaming header',async()=>{expect(buildAiRequest(profile,prompt,false).headers['X-DashScope-SSE']).toBeUndefined();expect(await generateText(profile,prompt,{stream:false,fetch:mock(output('中文答案','stop')) as any})).toBe('中文答案');});
++it('decodes byte-split UTF8 incremental frames including terminal text',async()=>{const deltas:string[]=[];expect(await generateText(profile,prompt,{fetch:stream([output('你'),output('好','stop')]) as any,onDelta:t=>deltas.push(t)})).toBe('你好');expect(deltas).toEqual(['你','好']);});
++it('explicit cumulative mode emits only appended suffix, rejects revised prefixes',async()=>{const p={...profile,parameters:{incremental_output:false}};expect(await generateText(p,prompt,{fetch:stream([output('你'),output('你好','stop')]) as any})).toBe('你好');await expect(generateText(p,prompt,{fetch:stream([output('old'),output('new','stop')]) as any})).rejects.toThrow('AI_INVALID_RESPONSE');});
++it('rejects vendor error body, length-limit finish and missing terminal, never leaks body',async()=>{for(const body of [{code:'InvalidApiKey',message:'SECRET KEY'},output('partial','length')])await expect(generateText(profile,prompt,{stream:false,fetch:mock(body) as any})).rejects.toThrow(/^AI_(REMOTE_ERROR|INCOMPLETE)$/);await expect(generateText(profile,prompt,{fetch:stream([output('partial')]) as any})).rejects.toThrow('AI_INCOMPLETE');});
++it('does not issue invented native model discovery endpoint; rejects request overrides',async()=>{await expect(listAiModels(profile)).rejects.toThrow('AI_MODEL_DISCOVERY_UNSUPPORTED');for(const parameters of [{input:{}},{max_tokens:99},{result_format:'text'},{incremental_output:'true'}])expect(()=>buildAiRequest({...profile,parameters},prompt)).toThrow('AI_INVALID_CONFIG');});
++import{createServer}from'node:http';
++it('native HTTP timeout and cancellation stop streaming without leaking server text',async()=>{const s=createServer((_req,res)=>{res.writeHead(200,{'Content-Type':'text/event-stream'});res.write(':waiting\n\n');});await new Promise<void>(r=>s.listen(0,'127.0.0.1',r));try{const p={...profile,endpoint:'http://127.0.0.1:'+(s.address() as any).port,timeoutMs:100};await expect(generateText(p,prompt)).rejects.toThrow('AI_TIMEOUT');const controller=new AbortController(),job=generateText({...p,timeoutMs:1000},prompt,{signal:controller.signal});setTimeout(()=>controller.abort(),20);await expect(job).rejects.toThrow('AI_CANCELLED');}finally{s.closeAllConnections();await new Promise<void>(r=>s.close(()=>r()));}});
+diff --git a/tests/e2e/native-apis.spec.ts b/tests/e2e/native-apis.spec.ts
+new file mode 100644
+index 0000000..eac5502
+--- /dev/null
++++ b/tests/e2e/native-apis.spec.ts
+@@ -0,0 +1,3 @@
++import{test,expect,_electron as electron}from'@playwright/test';import{createServer}from'node:http';import{mkdtempSync}from'node:fs';import path from'node:path';import{tmpdir}from'node:os';import{wsFixture}from'../helpers/ws-fixture';
++const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-native-')),python=path.join(root,'.venv/Scripts/python.exe');
++for(const protocol of ['dashscope','spark']as const)test(`${protocol} native configuration and actual Cruise explanation use shared controls`,async()=>{let received:any;const ws=protocol==='spark'?await wsFixture((input,send)=>{received=input;send({header:{code:0,status:2},payload:{choices:{status:2,seq:0,text:[{role:'assistant',content:'Native fixture explanation',index:0}]}}});}):null;const http=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;received=JSON.parse(raw);if(req.headers['x-dashscope-sse']==='enable'){res.setHeader('Content-Type','text/event-stream');res.end('data: '+JSON.stringify({output:{choices:[{message:{content:'Native fixture explanation'},finish_reason:'stop'}]}})+'\n\n');}else{res.setHeader('Content-Type','application/json');res.end(JSON.stringify({output:{choices:[{message:{content:'OK'},finish_reason:'stop'}]}}));}});await new Promise<void>(r=>http.listen(0,'127.0.0.1',r));const endpoint=ws?.url||'http://127.0.0.1:'+(http.address() as any).port;const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,protocol)],env:{...process.env,ENLUMOR_PYTHON:python}});try{const page=await app.firstWindow();await page.getByRole('button',{name:'模型设置',exact:true}).click();await page.getByLabel('协议',{exact:true}).selectOption(protocol,{timeout:2000});await page.getByLabel('配置名称',{exact:true}).fill('Native fixture');await page.getByLabel('接口地址',{exact:true}).fill(endpoint);await page.getByLabel('模型 ID',{exact:true}).fill(protocol==='spark'?'lite':'qwen-fixture');await page.getByLabel('API 密钥',{exact:true}).fill('fixture-key');if(protocol==='spark'){await page.getByLabel('Spark APPID',{exact:true}).fill('fixture-app');await page.getByLabel('Spark APISecret',{exact:true}).fill('fixture-secret');}await page.getByRole('button',{name:'保存配置',exact:true}).click();await expect(page.getByText('配置已保存',{exact:true})).toBeVisible();const profiles=await page.evaluate(()=>window.enlumor.listAiProfiles());expect(JSON.stringify(profiles)).not.toContain('fixture-secret');expect(JSON.stringify(profiles)).not.toContain('fixture-key');await page.getByRole('button',{name:'测试连接',exact:true}).click();await expect(page.getByText('连接测试成功',{exact:true})).toBeVisible();if(protocol==='spark')await expect(page.getByLabel('Spark APISecret',{exact:true})).toHaveValue('');await page.keyboard.press('Escape');const source=path.join(root,'.cache/benchmark/200-pages-32MiB.pdf');await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();await page.getByRole('button',{name:'打开 Cruise',exact:true}).click();await page.getByRole('button',{name:'开始 Cruise',exact:true}).click();await expect(page.getByLabel('Cruise 解释',{exact:true})).toContainText('Native fixture explanation');await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');const body=protocol==='spark'?received.payload.message.text:received.input.messages;expect(JSON.stringify(body)).toContain('Evidence page 1');expect(JSON.stringify(body)).not.toContain('Evidence page 2');}finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});await ws?.close();http.closeAllConnections();await new Promise<void>(r=>http.close(()=>r()));}});
+diff --git a/tests/helpers/ws-fixture.ts b/tests/helpers/ws-fixture.ts
+new file mode 100644
+index 0000000..95a8658
+--- /dev/null
++++ b/tests/helpers/ws-fixture.ts
+@@ -0,0 +1,10 @@
++/** Minimal bounded local RFC6455 fixture; not used by product/runtime. */
++import{createServer}from'node:http';import{createHash}from'node:crypto';import type{Socket}from'node:net';
++export async function wsFixture(handler:(input:any,send:(value:any)=>void,close:()=>void)=>void){
++ const sockets=new Set<Socket>(),urls:string[]=[];const server=createServer();
++ server.on('upgrade',(req,socket,head)=>{const s=socket as Socket;sockets.add(s);s.on('error',()=>{});s.on('close',()=>sockets.delete(s));urls.push(req.url||'');const accept=createHash('sha1').update(String(req.headers['sec-websocket-key'])+'258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');s.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: '+accept+'\r\n\r\n');
++  const send=(value:any)=>{const bytes=Buffer.from(JSON.stringify(value)),header=Buffer.alloc(bytes.length<126?2:4);header[0]=0x81;if(bytes.length<126)header[1]=bytes.length;else{header[1]=126;header.writeUInt16BE(bytes.length,2);}s.write(Buffer.concat([header,bytes]));};let pending=Buffer.from(head);
++  const parse=()=>{while(pending.length>=2){const opcode=pending[0]&15;if(opcode===8){s.end(Buffer.from([0x88,0]));return;}let length=pending[1]&127,offset=2;if(length===126){if(pending.length<4)return;length=pending.readUInt16BE(2);offset=4;}else if(length===127){if(pending.length<10)return;length=Number(pending.readBigUInt64BE(2));offset=10;}if(length>200000){s.destroy();return;}const masked=!!(pending[1]&128),end=offset+(masked?4:0)+length;if(pending.length<end)return;const mask=pending.subarray(offset,offset+4),body=Buffer.from(pending.subarray(offset+(masked?4:0),end));if(masked)for(let i=0;i<body.length;i++)body[i]^=mask[i%4];pending=pending.subarray(end);if(opcode===1)handler(JSON.parse(body.toString('utf8')),send,()=>s.destroy());}};
++  s.on('data',data=>{pending=Buffer.concat([pending,data]);parse();});parse();
++ });await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));return{url:'ws://127.0.0.1:'+(server.address() as any).port,urls,close:async()=>{for(const s of sockets)s.destroy();await new Promise<void>(r=>server.close(()=>r()));}};
++}
+diff --git a/tests/spark.test.ts b/tests/spark.test.ts
+new file mode 100644
+index 0000000..71afe28
+--- /dev/null
++++ b/tests/spark.test.ts
+@@ -0,0 +1,8 @@
++import{it,expect}from'vitest';import{createHmac}from'node:crypto';import{signSparkUrl,generateSpark}from'../src/main/spark-client';import{validateAiProfile,generateText}from'../src/main/ai-client';import type{AiProfileInput}from'../src/shared/ai';import{wsFixture}from'./helpers/ws-fixture';
++const p:AiProfileInput={id:'spark',name:'Spark fixture',protocol:'spark',endpoint:'wss://spark-api.xf-yun.com/v1.1/chat',model:'lite',credential:{kind:'spark',appId:'fixture-app',apiKey:'fixture-key',apiSecret:'fixture-secret'},parameters:{},maxOutputTokens:100,timeoutMs:500};const prompt={system:'system data',user:'中文原文'};const frame=(content:string,status=1,seq=0)=>({header:{code:0,status},payload:{choices:{status,seq,text:[{content,role:'assistant',index:0}]}}});
++it('fixed clock HMAC vector uses host/date/GET request-line and encoded query',()=>{const now=new Date('2026-10-17T00:00:00Z'),url=new URL(signSparkUrl(p,now)),date=now.toUTCString();const signature=createHmac('sha256','fixture-secret').update('host: spark-api.xf-yun.com\ndate: '+date+'\nGET /v1.1/chat HTTP/1.1').digest('base64');expect(url.searchParams.get('date')).toBe(date);expect(url.searchParams.get('host')).toBe('spark-api.xf-yun.com');expect(Buffer.from(url.searchParams.get('authorization')!,'base64').toString()).toBe('api_key="fixture-key", algorithm="hmac-sha256", headers="host date request-line", signature="'+signature+'"');expect(url.toString()).not.toContain('fixture-secret');});
++it('validates WSS/loopback WS, explicit domain and credential triplet, rejects overrides',()=>{expect(()=>validateAiProfile(p)).not.toThrow();for(const update of [{endpoint:'ws://remote.example/chat'},{credential:{kind:'api-key',apiKey:'x'}},{parameters:{domain:'other'}},{parameters:{temperature:0}},{parameters:{top_k:7}}])expect(()=>validateAiProfile({...p,...update} as any)).toThrow('AI_INVALID_CONFIG');});
++it('real local WebSocket sends bounded native request and joins Chinese frames',async()=>{let received:any;const server=await wsFixture((input,send)=>{received=input;send(frame('你',0,0));send(frame('好',2,1));});try{const deltas:string[]=[];expect(await generateText({...p,endpoint:server.url+'/v1.1/chat'},prompt,{onDelta:t=>deltas.push(t)})).toBe('你好');expect(deltas).toEqual(['你','好']);expect(received).toEqual({header:{app_id:'fixture-app'},parameter:{chat:{domain:'lite',max_tokens:100}},payload:{message:{text:[{role:'user',content:'system data\n\n原文数据：\n中文原文'}]}}});expect(server.urls[0]).toContain('authorization=');}finally{await server.close();}});
++it('remote errors and premature close stay sanitized; never report truncated success',async()=>{for(const error of [true,false]){const s=await wsFixture((_input,send,close)=>{if(error)send({header:{code:10000,message:'SECRET signedURL'}});else{send(frame('partial'));setTimeout(close,5);}});try{await expect(generateSpark({...p,endpoint:s.url},prompt)).rejects.toThrow(error?'AI_REMOTE_ERROR':'AI_INCOMPLETE');}finally{await s.close();}}});
++it('timeout and external cancellation close transport and return fixed codes',async()=>{const s=await wsFixture(()=>{});try{await expect(generateSpark({...p,endpoint:s.url,timeoutMs:100},prompt)).rejects.toThrow('AI_TIMEOUT');const c=new AbortController(),job=generateSpark({...p,endpoint:s.url},prompt,{signal:c.signal});setTimeout(()=>c.abort(),20);await expect(job).rejects.toThrow('AI_CANCELLED');}finally{await s.close();}});
++it('rejects repeated sequences and unsupported output frames rather than duplicating text',async()=>{const s=await wsFixture((_input,send)=>{send(frame('one',0,0));send(frame('one',2,0));});try{await expect(generateSpark({...p,endpoint:s.url},prompt)).rejects.toThrow('AI_INVALID_RESPONSE');}finally{await s.close();}});

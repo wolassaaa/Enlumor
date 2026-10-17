@@ -1,0 +1,22 @@
+Branch feat/cruise-overnight. Fields: protocol=dashscope/spark, nativeinput/parameters/incremental_output, signedWS/authtriplet/domain/seq. Task5+6reviewpending, latest0.1.13 unchanged.
+BASELINE command: npx vitest run tests/dashscope.test.ts. InputnativeHTTP/SSEcontracts;literalTests6failed(6);exit1. Additional SPARK_RED missingmodule exit1; CREDENTIAL_RED protocolchangedkeyretained1failed6passed exit1; UI_RED Sparkoptionmissing1failed1passed exit1.
+MODIFIED command: npx vitest run tests/dashscope.test.ts tests/spark.test.ts tests/ai-profiles.test.ts
+InputfixedclockHMAC/localHTTP/realWS/UTF8/cumulative/error/truncation/timeout/cancel/encryptedtriplet;literalTestFiles3passed(3),Tests20passed(20);exit0.
+UNIT command: npm test;literalTestFiles20passed(20),Tests108passed(108);exit0.
+BUILD command: npm run build;productionbuild completed withtypecheck;exit0.
+UI command: npx playwright test tests/e2e/native-apis.spec.ts
+InputtwoisolatedElectronprofiles/localHTTPandWSfixtures/200page32MiB PDF;nativeform+encryptedsecret+fixedtest+currentblockCruise;literal2passed(6.7s);exit0.
+ROLLBACK command: node scripts/check-native-apis-rollback.mjs (executableROLLBACK.sh samecommand).
+Inputboundedisolatedcopy+originalSHA256+200page32MiB fixture.
+Literal: ROLLBACK: NATIVE_PROTOCOLS=0; CRUISE=1; SCHEMA=4; LIVE_SOURCE_UNCHANGED=YES
+Exit0. Restored0.1.13protocolUI inCOPY; live nativeprotocolscode remainsmodified; personalDB/PDF untouched.
+Official docschecked2026-10-17:
+https://www.alibabacloud.com/help/zh/model-studio/qwen-api-via-dashscope
+https://www.xfyun.cn/doc/spark/Web.html
+https://www.xfyun.cn/doc/spark/general_url_authentication.html
+No realpaidvendorcalls. Nodebuilt-inWSdirectdoesnotinheritElectronHTTPproxy, UIlabel statesit. No newruntime dependency.
+Artifacts:
+D:/codex project/Enlumor/evidence/native-apis/MODIFIED_FILE.ts
+D:/codex project/Enlumor/evidence/native-apis/DIFF.patch
+D:/codex project/Enlumor/evidence/native-apis/VERIFICATION.txt
+D:/codex project/Enlumor/evidence/native-apis/ROLLBACK.sh

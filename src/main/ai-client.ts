@@ -1,42 +1,11 @@
+import{generateSpark}from'./spark-client';
+import{validateAiProfile}from'./ai-config';
+export{validateAiProfile}from'./ai-config';
 import type {AiProfileInput,AiPrompt} from '../shared/ai';
 
 const MAX_RESPONSE_BYTES=4*1024*1024,MAX_EVENT_BYTES=512*1024;
-const protocols=['openai-chat','openai-responses','anthropic-messages','gemini','dashscope'];
 const invalid=()=>new Error('AI_INVALID_CONFIG');
 const failure=(code:string)=>new Error(code);
-
-/** Caller supplies an explicitly selected service; no redirects or URL credentials. */
-export function validateAiProfile(profile:AiProfileInput):URL {
- if(!profile||typeof profile!=='object'||!protocols.includes(profile.protocol)||typeof profile.id!=='string'||!/^[\w-]{1,100}$/.test(profile.id)||typeof profile.name!=='string'||profile.name.length>100||!profile.name.trim()||typeof profile.model!=='string'||!profile.model.trim()||profile.model.length>200||typeof profile.endpoint!=='string'||profile.endpoint.length>2000||!Number.isInteger(profile.maxOutputTokens)||profile.maxOutputTokens<1||profile.maxOutputTokens>32768||!Number.isInteger(profile.timeoutMs)||profile.timeoutMs<100||profile.timeoutMs>120000)throw invalid();
- let url:URL;try{url=new URL(profile.endpoint);}catch{throw invalid();}
- const local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
- if((url.protocol!=='https:'&&!(url.protocol==='http:'&&local))||url.username||url.password||url.search||url.hash)throw invalid();
- if(profile.credential&&(profile.credential.kind!=='api-key'||typeof profile.credential.apiKey!=='string'||profile.credential.apiKey.length>8192||!profile.credential.apiKey.trim()||/[\r\n]/.test(profile.credential.apiKey)))throw invalid();
- const p=profile.parameters;if(!p||typeof p!=='object'||Array.isArray(p)||Object.getPrototypeOf(p)!==Object.prototype)throw invalid();
- // Protocol-specific controls, never authentication/routing/prompts or arbitrary request fields.
- const allowed:Record<string,string[]>={
-  'openai-chat':['temperature','top_p','seed','presence_penalty','frequency_penalty','reasoning_effort','enable_thinking'],
-  'openai-responses':['temperature','top_p'],
-  'anthropic-messages':['temperature','top_p','top_k'],
-  gemini:['temperature','topP','topK'],
-  dashscope:['temperature','top_p','top_k','seed','repetition_penalty','enable_thinking','incremental_output'],
- };
- for(const [key,value]of Object.entries(p)){
-  if(!allowed[profile.protocol].includes(key))throw invalid();
-  if(key==='reasoning_effort'){if(typeof value!=='string'||!['none','minimal','low','medium','high','xhigh'].includes(value))throw invalid();}
-  else if(key==='enable_thinking'||key==='incremental_output'){if(typeof value!=='boolean')throw invalid();}
-  else {
-   if(typeof value!=='number'||!Number.isFinite(value))throw invalid();
-   if(key==='temperature'&&(value<0||value>(profile.protocol==='anthropic-messages'?1:2)))throw invalid();
-   if(['top_p','topP'].includes(key)&&(value<0||value>1))throw invalid();
-   if(['top_k','topK'].includes(key)&&(!Number.isInteger(value)||value<1||value>10000))throw invalid();
-   if(['presence_penalty','frequency_penalty'].includes(key)&&Math.abs(value)>2)throw invalid();
-   if(key==='repetition_penalty'&&(value<=0||value>2))throw invalid();
-   if(key==='seed'&&(!Number.isInteger(value)||Math.abs(value)>2147483647))throw invalid();
-  }
- }
- return url;
-}
 
 export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=true):{url:string;headers:Record<string,string>;body:any} {
  const url=validateAiProfile(profile);
@@ -120,7 +89,7 @@ function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:str
 }
 
 export async function listAiModels(profile:AiProfileInput,options:{signal?:AbortSignal;fetch?:typeof fetch}={}):Promise<string[]>{
- if(profile.protocol==='dashscope')throw failure('AI_MODEL_DISCOVERY_UNSUPPORTED');
+ if(profile.protocol==='dashscope'||profile.protocol==='spark')throw failure('AI_MODEL_DISCOVERY_UNSUPPORTED');
  const request=buildAiRequest(profile,{system:'',user:'Model discovery'},false),url=new URL(request.url);
  if(profile.protocol==='gemini')url.pathname=url.pathname.replace(/\/models\/[^/]+:generateContent$/,'/models');
  else url.pathname=url.pathname.replace(/\/(chat\/completions|responses|messages)$/,'/models');
@@ -139,6 +108,7 @@ export async function listAiModels(profile:AiProfileInput,options:{signal?:Abort
 }
 
 export async function generateText(profile:AiProfileInput,prompt:AiPrompt,options:{stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;fetch?:typeof fetch}={}):Promise<string>{
+ if(profile.protocol==='spark')return generateSpark(profile,prompt,options);
  const stream=options.stream!==false,request=buildAiRequest(profile,prompt,stream),timer=new AbortController();
  const timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);
  const signal=options.signal?AbortSignal.any([options.signal,timer.signal]):timer.signal;
