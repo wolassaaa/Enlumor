@@ -9,6 +9,10 @@ import {execFileSync} from 'node:child_process';
 import {copyAssets} from './assets.mjs';
 const root=path.resolve('.'),sha=f=>createHash('sha256').update(readFileSync(f)).digest('hex');
 const originals=JSON.parse(readFileSync('evidence/v04-wave-a/originals.json','utf8'));
+// A partial manifest cannot establish original-app rollback: check every changed source path.
+const sourceChanges=execFileSync('git',['diff','--name-status','a7ff6aa','HEAD','--','src'],{encoding:'utf8',windowsHide:true}).trim().split('\n').filter(Boolean).map(line=>line.split('\t'));
+const removedAdditions=['src/renderer/reading-commands.ts'];
+for(const [status,file] of sourceChanges){if(status==='M'&&!originals.some(o=>o.target===file))throw Error('Missing source original: '+file);if(status==='A'&&!removedAdditions.includes(file))throw Error('Unrestored added source: '+file);if(!['M','A'].includes(status))throw Error('Unsupported source change: '+status);}
 const live=originals.map(o=>sha(o.target));
 const base=path.join(root,'.cache/wave-a-rollback');mkdirSync(base,{recursive:true});const copy=mkdtempSync(path.join(base,'run-'));
 if(!copy.startsWith(base+path.sep))throw Error('Unexpected rollback path');
@@ -26,5 +30,5 @@ try{const page=await app.firstWindow();await page.getByRole('button',{name:'打�
  await page.getByRole('button',{name:'打开 Cruise',exact:true}).click();await expect(page.getByLabel('Cruise 推进模式',{exact:true})).toBeVisible();
  await page.getByLabel('Cruise 推进模式',{exact:true}).selectOption('auto');await expect(page.getByLabel('Cruise 推进模式',{exact:true})).toHaveValue('auto');
  if(originals.some((o,i)=>sha(o.target)!==live[i]))throw Error('Live source changed');
- console.log('ROLLBACK: ORIGINAL_HASHES=PASS; ORIGINAL_APP_START=PASS; PDF_READ=PASS; AUTO_OPTION_RESTORED=YES; LIVE_SOURCE_UNCHANGED=YES');
+ console.log('ROLLBACK: SOURCE_COVERAGE=PASS; ORIGINAL_HASHES=PASS; ORIGINAL_APP_START=PASS; PDF_READ=PASS; AUTO_OPTION_RESTORED=YES; LIVE_SOURCE_UNCHANGED=YES');
 }finally{await app.close();}

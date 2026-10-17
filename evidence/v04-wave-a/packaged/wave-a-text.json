@@ -1,0 +1,26 @@
+{
+  "label": "wave-a-text",
+  "fixture": "200 pages / 32MiB unused PDF stream / 1000 annotations",
+  "startupMs": [
+    455.5549,
+    483.4332999999999,
+    469.3418999999999
+  ],
+  "portableStartupMs": [
+    446.01140000000123,
+    400.1175999999996,
+    423.3777000000009
+  ],
+  "scrolling": {
+    "frameP50Ms": 8.200000002980232,
+    "frameP95Ms": 13.600000008940697,
+    "longTasks": 0,
+    "worstLongTaskMs": 0,
+    "retainedCanvases": 8,
+    "thumbnailCanvases": 3
+  },
+  "readingSave": {
+    "p50Ms": 1.0999999940395355,
+    "p95Ms": 5.9000000059604645
+  }
+}

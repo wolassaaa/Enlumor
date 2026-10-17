@@ -3,16 +3,16 @@ transforming...
 ✓ 35 modules transformed.
 rendering chunks...
 computing gzip size...
-.cache/wave-a-rollback/run-Ov6ilC/dist/renderer/index.html                                          0.60 kB │ gzip:   0.38 kB
-.cache/wave-a-rollback/run-Ov6ilC/dist/renderer/assets/cursor-editorTextHighlight-kG3uUOwL.svg      5.40 kB │ gzip:   2.20 kB
-.cache/wave-a-rollback/run-Ov6ilC/dist/renderer/assets/pdf.worker.min-CjEcRF4W.mjs              1,264.34 kB
-.cache/wave-a-rollback/run-Ov6ilC/dist/renderer/assets/index-CE15q006.css                         249.23 kB │ gzip:  46.54 kB
-.cache/wave-a-rollback/run-Ov6ilC/dist/renderer/assets/index-CvBK5yPh.js                          899.17 kB │ gzip: 274.68 kB
+.cache/wave-a-rollback/run-YbzVso/dist/renderer/index.html                                          0.60 kB │ gzip:   0.38 kB
+.cache/wave-a-rollback/run-YbzVso/dist/renderer/assets/cursor-editorTextHighlight-kG3uUOwL.svg      5.40 kB │ gzip:   2.20 kB
+.cache/wave-a-rollback/run-YbzVso/dist/renderer/assets/pdf.worker.min-CjEcRF4W.mjs              1,264.34 kB
+.cache/wave-a-rollback/run-YbzVso/dist/renderer/assets/index-CE15q006.css                         249.23 kB │ gzip:  46.54 kB
+.cache/wave-a-rollback/run-YbzVso/dist/renderer/assets/index-CMCrcAcL.js                          897.64 kB │ gzip: 274.10 kB
 
-✓ built in 294ms
+✓ built in 303ms
 [plugin builtin:vite-reporter] 
 (!) Some chunks are larger than 500 kB after minification. Consider:
 - Using dynamic import() to code-split the application
 - Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
 - Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
-ROLLBACK: ORIGINAL_HASHES=PASS; ORIGINAL_APP_START=PASS; PDF_READ=PASS; AUTO_OPTION_RESTORED=YES; LIVE_SOURCE_UNCHANGED=YES
+ROLLBACK: SOURCE_COVERAGE=PASS; ORIGINAL_HASHES=PASS; ORIGINAL_APP_START=PASS; PDF_READ=PASS; AUTO_OPTION_RESTORED=YES; LIVE_SOURCE_UNCHANGED=YES

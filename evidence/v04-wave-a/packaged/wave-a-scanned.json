@@ -1,0 +1,26 @@
+{
+  "label": "wave-a-scanned",
+  "fixture": "200 scanned image pages / approximately 32MB / 1000 annotations",
+  "startupMs": [
+    496.2249999999999,
+    538.6878999999999,
+    513.0744
+  ],
+  "portableStartupMs": [
+    392.85589999999866,
+    443.9795000000013,
+    402.10339999999997
+  ],
+  "scrolling": {
+    "frameP50Ms": 8,
+    "frameP95Ms": 14.700000002980232,
+    "longTasks": 0,
+    "worstLongTaskMs": 0,
+    "retainedCanvases": 8,
+    "thumbnailCanvases": 3
+  },
+  "readingSave": {
+    "p50Ms": 0.7000000029802322,
+    "p95Ms": 7.800000011920929
+  }
+}

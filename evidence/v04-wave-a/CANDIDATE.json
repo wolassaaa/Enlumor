@@ -1,0 +1,14 @@
+{
+  "status": "CANDIDATE_NOT_RELEASED",
+  "branch": "feat/v04-wave-ab",
+  "sourceCommit": "eda05b2",
+  "exe": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.cache\\v04-wave-a-package\\win-unpacked\\Enlumor.exe",
+  "exeSha256": "05c85d715d904e435fcfe95fd9a36814216567dfbee6299682b6fd9f169982c9",
+  "launcher": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\Wave A \u9a8c\u6536.cmd",
+  "liveApi": "NOT_EXECUTED",
+  "primaryRelease": "0.1.15",
+  "unit": 139,
+  "python": 8,
+  "packagedElectron": 101,
+  "manual": true
+}

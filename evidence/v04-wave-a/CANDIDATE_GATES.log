@@ -1,0 +1,8 @@
+PACKAGED_READER: PASS
+{"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
+EDGE_PDF_OPEN: PASS (visual screenshot requires inspection)
+PORTABLE_STARTUP_SQLITE: PASS
+PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS
+{"label":"wave-a-text","fixture":"200 pages / 32MiB unused PDF stream / 1000 annotations","startupMs":[455.5549,483.4332999999999,469.3418999999999],"portableStartupMs":[446.01140000000123,400.1175999999996,423.3777000000009],"scrolling":{"frameP50Ms":8.200000002980232,"frameP95Ms":13.600000008940697,"longTasks":0,"worstLongTaskMs":0,"retainedCanvases":8,"thumbnailCanvases":3},"readingSave":{"p50Ms":1.0999999940395355,"p95Ms":5.9000000059604645}}
+{"label":"wave-a-scanned","fixture":"200 scanned image pages / approximately 32MB / 1000 annotations","startupMs":[496.2249999999999,538.6878999999999,513.0744],"portableStartupMs":[392.85589999999866,443.9795000000013,402.10339999999997],"scrolling":{"frameP50Ms":8,"frameP95Ms":14.700000002980232,"longTasks":0,"worstLongTaskMs":0,"retainedCanvases":8,"thumbnailCanvases":3},"readingSave":{"p50Ms":0.7000000029802322,"p95Ms":7.800000011920929}}
+CANDIDATE_PERFORMANCE: PASS

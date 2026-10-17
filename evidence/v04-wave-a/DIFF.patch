@@ -1,3 +1,239 @@
+diff --git a/.gitattributes b/.gitattributes
+index 7691036..2c3bdba 100644
+--- a/.gitattributes
++++ b/.gitattributes
+@@ -26,3 +26,5 @@ evidence/native-apis/originals/* -text
+ evidence/native-apis/ROLLBACK.sh text eol=lf
+ 
+ evidence/settings-simplify/ORIGINAL.* -text
++
++evidence/v04-wave-a/originals/* -text
+diff --git "a/Wave A \351\252\214\346\224\266.cmd" "b/Wave A \351\252\214\346\224\266.cmd"
+new file mode 100644
+index 0000000..ecf3009
+--- /dev/null
++++ "b/Wave A \351\252\214\346\224\266.cmd"	
+@@ -0,0 +1,9 @@
++@echo off
++setlocal
++cd /d "%~dp0"
++if not exist "%~dp0.cache\v04-wave-a-package\win-unpacked\Enlumor.exe" (
++  echo Candidate build not found.
++  pause
++  exit /b 1
++)
++start "" "%~dp0.cache\v04-wave-a-package\win-unpacked\Enlumor.exe" "--user-data-dir=%~dp0.cache\wave-a-live-userdata"
+diff --git a/docs/V04-PROGRESS.md b/docs/V04-PROGRESS.md
+new file mode 100644
+index 0000000..d40c6f7
+--- /dev/null
++++ b/docs/V04-PROGRESS.md
+@@ -0,0 +1,42 @@
++# Enlumor v0.4 执行进度
++
++日期：2026-10-17（Asia/Taipei）。状态：Wave A自动化/审查/验收候选通过，真实API待验收，未发布。
++
++## 工作区
++- 原项目：D:/codex project/Enlumor，保留已验证0.1.15。
++- 隔离实施：D:/codex project/Enlumor/.worktrees/v04-wave-ab。
++- 分支：feat/v04-wave-ab；起点a7ff6aa。
++- 用户已批准计划与子代理执行。实施者逐项独立上下文；每项审查，每两项整体review。
++- 原生worktree工具在父目录返回Not a git repository，已使用Git隔离worktree；依赖和Python虚拟环境使用现有锁定运行时的目录联接，不共享.cache/测试数据库。
++
++## 已观察基线
++- 初次测试5项因新worktree没有.cache父目录报ENOENT；补建工作区缓存目录后110单测全部通过，build通过。
++- 未修改原PDF、个人数据库、原PRD、主目录产品源文件或latest版本指针。
++
++## 任务
++- A1：自动化错误恢复与验收准备已完成并审查通过；真实API尚未执行，任务整体未完成。
++- A2：手动Cruise与薄命令入口已实现，任务审查及整轮审查通过。
++- B1/B2：等待Wave A真实API、review和完整打包门禁，不提前实施。
++
++## 真实验收依赖
++用户提供服务商deepseek，模型显示名DeepSeek v4.1 flash。
++这不等于已验证API model ID或已完成真实连接。真实论文已提供并通过本地读取与标题锚点校验；仍缺隔离实例的实际连接/验收结果。
++不读取个人加密凭据，不擅自替换模型名，不使用模拟输出冒充真实结果。
++
++## 执行裁定
++A1真实验收待完成不阻止同轮A2自动化实施；整轮A不标完成、不发布、不推进B。
++C/D、Surfing与定时任务不在当前执行范围。
++
++## 实施更新
++- A1自动化提交836ae3e：实际空回答成功误判RED后修复；121单测/12Electron通过；独立任务review PASS，无发现。
++- A2实施提交eda05b2：移除自动推进、旧auto归一化paused/manual、三种薄本地命令；139单测/build/typecheck/10Electron通过；任务review PASS，无发现。
++- 真实论文11页/SHA256d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537；本地实际Electron读取/标题定位/PyMuPDF校验通过，网络请求0；不冒充真实API验收。
++
++## 2026-10-18 Wave A 验收候选
++- 整轮A1+A2 review完成：产品无发现；P2回退清单漏reader已补齐、增加覆盖守卫并实际重跑，定向复核通过。
++- 候选包139单测+8Python+101最终EXE流程全通过；reader/SQLite/无外部Python和两样本/密集画笔门禁通过。
++- 文本启动中位423.4ms/滚动p9513.6ms/保存p955.9ms；扫描402.1ms/14.7ms/7.8ms；零长任务；预算未放宽。
++- 真实论文最终EXE本地读取和标题锚点核验通过；只验证标题，不称整篇语义验收。外发0，原文件哈希不变。
++- 独立验收入口：D:/codex project/Enlumor/.worktrees/v04-wave-ab/Wave A 验收.cmd，使用单独.cache/wave-a-live-userdata；尚未自动启动用户交互实例。
++- 正式版仍0.1.15；真实DeepSeek连接/解释/暂停/重试闭环NOT EXECUTED。A1整体未完成、A轮未发布、B未启动。
++- 用户下一步：打开验收入口，在模型设置填服务商实际API模型ID和密钥，点击保存并测试（密钥无需发到聊天）。成功后对该真实论文完成共读验收，再进入B。
+diff --git a/docs/acceptance/wave-a-real-api.md b/docs/acceptance/wave-a-real-api.md
+new file mode 100644
+index 0000000..8cefbaf
+--- /dev/null
++++ b/docs/acceptance/wave-a-real-api.md
+@@ -0,0 +1,67 @@
++# Wave A / A1：真实 API 闭环与错误恢复验收
++
++## 状态
++
++- 自动化准备：已运行本地 fixture 单元测试、构建和 Electron 验收；实际结果见 `evidence/v04-wave-a/A1_*.txt`。
++- **真实服务验收：NOT EXECUTED（未执行）。A1 整体门槛保持未完成；A 阶段不发布，B 阶段不启动。**
++- 用户提供厂商 `deepseek`、显示名称 `DeepSeek v4.1 flash`。该名称不是已验证的 API 模型 ID；本轮没有据此猜测或替换模型 ID。
++- 用户随后提供下载目录中的《Attention Is All You Need》；已定位11页真实PDF并完成本地阅读/标题锚点核验。用户明确表示DeepSeek连接尚未测试；本轮没有读取个人凭据或发起真实厂商请求。
++- 本地 fixture 的通过只证明自动化准备，不证明真实厂商、模型或真实论文闭环通过。
++
++## 已验证的自动化行为
++
++- 主进程收到空或纯空白的成功返回时发出 `AI_INCOMPLETE`，不发出 `done`。
++- 本地 HTTP fixture 覆盖空回答、429、断流、部分回答后超时；错误不写入成功结果，保留手工重试入口。
++- 手工重试成功后同一个块仅保存一份成功结果；失败的部分文本不拼入重试答案。
++- 暂停后的旧 delta/done 即使忽略 abort 仍不覆盖暂停状态；原有 requestId 接口不变。
++- Electron fixture 检查重试不新增或改变用户批注、原 PDF SHA256 不变、暂停/恢复不重复发送；既有引用定位、滚动接管、退出和重启恢复 paused 场景继续执行。
++- 六类协议保持原实现；本次没有基于未发生的问题扩展协议。
++
++## 真实验收开始条件
++
++1. 在隔离验收实例中配置真实服务；由用户确认厂商、服务端点、精确 API 模型 ID，以及允许发送当前块。
++2. 用户选择一篇获准使用的真实论文。先记录原 PDF SHA256、文档指纹和已有批注快照；不记录密钥或原始认证头。
++3. 使用独立 userData，不打开、迁移、覆盖或降级个人数据库。真实 PDF 保持只读。
++
++## 待执行检查表
++
++| 顺序 | 操作与预期 | 当前结果 |
++| --- | --- | --- |
++| 1 | 确认仅当前块外发；解释当前块得到非空完整回答，并记录来源 | NOT EXECUTED |
++| 2 | 点引用或返回当前原文，核对锚点页码与引用文本 | NOT EXECUTED |
++| 3 | 滚动接管后保持 paused，旧流不改变答案；手工恢复 | NOT EXECUTED |
++| 4 | 模拟断网，错误不显示成功；恢复网络后仅手工重试，结果不重复 | NOT EXECUTED |
++| 5 | 退出 Cruise 回 Reader，原有批注仍在 | NOT EXECUTED |
++| 6 | 退出应用后重启，恢复为 paused，不自动发送请求 | NOT EXECUTED |
++| 7 | 再算 PDF SHA256 与批注快照，核对原文和批注未被改变 | NOT EXECUTED |
++
++## 真实执行记录模板（只写实际观察，不记录密钥）
++
++```text
++结果: PASS / FAIL / NOT EXECUTED
++服务厂商 / endpoint origin:
++精确 API 模型 ID:
++模型显示名称:
++用户确认当前块外发的时间:
++文档指纹 / 原 PDF SHA256（前 / 后）:
++测试时间（含时区）:
++解释块 ID / 锚点页码:
++引用定位结果:
++滚动接管 / 暂停后旧流结果:
++断网错误 / 手工重试结果 / 成功结果条数:
++退出 Reader / 重启 paused 结果:
++批注前后核对结果:
++失败项与恢复结果:
++```
++
++## 本轮结论
++
++真实执行字段全部待填。模拟测试与真实 API 验收分开记录；完整打包、独立 review 与真实验收门槛另行完成，本轮没有发布。
++
++## 真实论文的本地检查（不等于真实API验收）
++
++- 文件：C:/Users/woola/Downloads/NIPS-2017-attention-is-all-you-need-Paper.pdf；11页，569417字节。
++- SHA256：d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537，检查前后相同。
++- `node scripts/check-wave-a-paper.mjs <明确PDF路径>`：真实Electron打开，Cruise手动定位标题，PyMuPDF verify-block验证实际文字/四边形；临时userData，无远程请求。
++- 实际结果：PDF_READ=PASS / ANCHOR_VERIFIED=PASS / MANUAL=PASS / REMOTE_REQUESTS=0 / SOURCE_UNCHANGED=YES。
++- 仅验证当前标题块，不宣称全部论文锚点或语义回答通过；上方真实API七项检查仍NOT EXECUTED。
+diff --git a/docs/superpowers/plans/2026-10-17-v04-wave-ab.md b/docs/superpowers/plans/2026-10-17-v04-wave-ab.md
+index e66535d..a410e88 100644
+--- a/docs/superpowers/plans/2026-10-17-v04-wave-ab.md
++++ b/docs/superpowers/plans/2026-10-17-v04-wave-ab.md
+@@ -1,6 +1,6 @@
+ # Enlumor v0.4 Wave A/B Implementation Plan
+ 
+-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
++> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+ 
+ **Goal:** 用户带着问题，在原文中得到可验证、不过度推断的证据与解释，始终控制推进。
+ 
+@@ -10,7 +10,7 @@
+ 
+ **Spec:** D:/codex project/Enlumor/docs/superpowers/specs/2026-10-17-v04-wave-ab-baseline.md（包含用户附件路径及SHA256、最新决定）。
+ 
+-**Status:** 工程计划待用户审阅；未实施。建议本会话串行实施，每轮两项一次独立review。A真实验收不通过，不宣称A完成或发布。
++**Status:** 用户已批准子代理执行。A1自动化与A2实现审查通过，验收候选139单测/8Python/101打包Electron及原性能门禁通过；A1真实API尚未验收，A不标完成、不发布，B未启动。每轮两项整体review保留。
+ 
+ ## Global Constraints
+ - Windows first / Local first / Source first；原始PDF只读，SQLite是权威存储。
+diff --git a/scripts/check-wave-a-paper.mjs b/scripts/check-wave-a-paper.mjs
+new file mode 100644
+index 0000000..1662585
+--- /dev/null
++++ b/scripts/check-wave-a-paper.mjs
+@@ -0,0 +1,23 @@
++import {_electron as electron,expect} from '@playwright/test';
++import {mkdtempSync,mkdirSync,readFileSync,writeFileSync} from 'node:fs';
++import {tmpdir} from 'node:os';
++import {createHash} from 'node:crypto';
++import {execFileSync} from 'node:child_process';
++import path from 'node:path';
++const root=path.resolve('.'),source=path.resolve(process.argv[2]||'');if(!process.argv[2]||path.extname(source).toLowerCase()!=='.pdf')throw Error('Pass explicit PDF path');
++const sha=()=>createHash('sha256').update(readFileSync(source)).digest('hex'),before=sha(),profile=mkdtempSync(path.join(tmpdir(),'enlumor-real-paper-'));
++mkdirSync('evidence/v04-wave-a',{recursive:true});
++const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+profile],env:{...process.env,ENLUMOR_PYTHON:path.join(root,'.venv/Scripts/python.exe')}});
++try{
++ await app.evaluate(({session,dialog},source)=>{globalThis.__wavePaperRequests=[];session.defaultSession.webRequest.onBeforeRequest({urls:['https://*/*','http://*/*']},(details,callback)=>{globalThis.__wavePaperRequests.push(details.url);callback({cancel:true});});dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);
++ const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ await page.getByRole('button',{name:'打开 Cruise',exact:true}).click();await page.getByRole('button',{name:'开始 Cruise',exact:true}).click();await expect(page.getByLabel('Cruise 原文',{exact:true})).toBeVisible();await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');
++ await page.getByRole('button',{name:'返回当前原文',exact:true}).click();await expect(page.locator('.flash')).toHaveCount(1);
++ const state=await page.evaluate(async()=>{const docs=await window.enlumor.listDocuments();if(!docs.ok||docs.value.length!==1)throw Error('Document missing');const doc=docs.value[0],session=await window.enlumor.getCruiseSession(doc.id);if(!session.ok||!session.value?.block)throw Error('Block missing');return{doc,session:session.value};});
++ const verified=JSON.parse(execFileSync(path.join(root,'.venv/Scripts/python.exe'),['python/export_pdf.py'],{input:JSON.stringify({operation:'verify-block',source,fingerprint:before,block:state.session.block}),encoding:'utf8',windowsHide:true}));if(!verified.ok||!verified.value.verified)throw Error('Real anchor not verified');
++ if(state.session.mode!=='manual')throw Error('Unexpected automatic mode');
++ const requests=await app.evaluate(()=>globalThis.__wavePaperRequests);if(requests.length)throw Error('Unexpected remote request');if(sha()!==before)throw Error('Source modified');
++ await page.screenshot({path:'evidence/v04-wave-a/real-paper-reader.png'});
++ writeFileSync('evidence/v04-wave-a/REAL_PAPER_READER.json',JSON.stringify({source,sha256:before,pages:state.doc.pageCount,firstBlock:state.session.block,verification:verified.value,remoteRequests:0,remoteApi:'NOT_EXECUTED',sourceUnchanged:true},null,2));
++ console.log('REAL_PAPER_LOCAL: PDF_READ=PASS; ANCHOR_VERIFIED=PASS; MANUAL=PASS; REMOTE_REQUESTS=0; SOURCE_UNCHANGED=YES; LIVE_API=NOT_EXECUTED');
++}finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}
+diff --git a/scripts/check-wave-a-rollback.mjs b/scripts/check-wave-a-rollback.mjs
+new file mode 100644
+index 0000000..e7fc80e
+--- /dev/null
++++ b/scripts/check-wave-a-rollback.mjs
+@@ -0,0 +1,34 @@
++import {build} from 'esbuild';
++import {build as viteBuild} from 'vite';
++import react from '@vitejs/plugin-react';
++import {_electron as electron,expect} from '@playwright/test';
++import {mkdirSync,mkdtempSync,cpSync,copyFileSync,readFileSync,existsSync,unlinkSync} from 'node:fs';
++import {createHash} from 'node:crypto';
++import path from 'node:path';
++import {execFileSync} from 'node:child_process';
++import {copyAssets} from './assets.mjs';
++const root=path.resolve('.'),sha=f=>createHash('sha256').update(readFileSync(f)).digest('hex');
++const originals=JSON.parse(readFileSync('evidence/v04-wave-a/originals.json','utf8'));
++// A partial manifest cannot establish original-app rollback: check every changed source path.
++const sourceChanges=execFileSync('git',['diff','--name-status','a7ff6aa','HEAD','--','src'],{encoding:'utf8',windowsHide:true}).trim().split('\n').filter(Boolean).map(line=>line.split('\t'));
++const removedAdditions=['src/renderer/reading-commands.ts'];
++for(const [status,file] of sourceChanges){if(status==='M'&&!originals.some(o=>o.target===file))throw Error('Missing source original: '+file);if(status==='A'&&!removedAdditions.includes(file))throw Error('Unrestored added source: '+file);if(!['M','A'].includes(status))throw Error('Unsupported source change: '+status);}
++const live=originals.map(o=>sha(o.target));
++const base=path.join(root,'.cache/wave-a-rollback');mkdirSync(base,{recursive:true});const copy=mkdtempSync(path.join(base,'run-'));
++if(!copy.startsWith(base+path.sep))throw Error('Unexpected rollback path');
++cpSync('src',path.join(copy,'src'),{recursive:true});cpSync('python',path.join(copy,'python'),{recursive:true});
++for(const file of ['package.json','index.html'])copyFileSync(file,path.join(copy,file));
++for(const o of originals){if(sha(o.source)!==o.sha256)throw Error('Original hash mismatch');const target=path.resolve(copy,o.target);if(!target.startsWith(copy+path.sep))throw Error('Unexpected target');mkdirSync(path.dirname(target),{recursive:true});copyFileSync(o.source,target);if(sha(target)!==o.sha256)throw Error('Restoration mismatch');}
++const newModule=path.join(copy,'src/renderer/reading-commands.ts');if(existsSync(newModule))unlinkSync(newModule);
++await build({entryPoints:[path.join(copy,'src/main/index.ts'),path.join(copy,'src/main/preload.ts')],outdir:path.join(copy,'dist/main'),bundle:true,platform:'node',format:'cjs',outExtension:{'.js':'.cjs'},external:['electron']});
++await viteBuild({configFile:false,root:copy,plugins:[react()],base:'./',build:{outDir:path.join(copy,'dist/renderer')}});copyAssets(path.join(copy,'dist/renderer/pdf-assets'));
++const source=path.join(copy,'rollback-source.pdf');execFileSync(path.join(root,'.venv/Scripts/python.exe'),['-c','import pymupdf as f;d=f.open();p=d.new_page();p.insert_text((60,100),"Wave A rollback original evidence");d.save('+JSON.stringify(source)+')']);
++const app=await electron.launch({args:[copy,'--user-data-dir='+path.join(copy,'profile')],env:{...process.env,ENLUMOR_PYTHON:path.join(root,'.venv/Scripts/python.exe')}});
++try{const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().waitFor();
++ await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);
++ await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
++ await page.getByRole('button',{name:'打开 Cruise',exact:true}).click();await expect(page.getByLabel('Cruise 推进模式',{exact:true})).toBeVisible();
++ await page.getByLabel('Cruise 推进模式',{exact:true}).selectOption('auto');await expect(page.getByLabel('Cruise 推进模式',{exact:true})).toHaveValue('auto');
++ if(originals.some((o,i)=>sha(o.target)!==live[i]))throw Error('Live source changed');
++ console.log('ROLLBACK: SOURCE_COVERAGE=PASS; ORIGINAL_HASHES=PASS; ORIGINAL_APP_START=PASS; PDF_READ=PASS; AUTO_OPTION_RESTORED=YES; LIVE_SOURCE_UNCHANGED=YES');
++}finally{await app.close();}
 diff --git a/src/main/cruise-requests.ts b/src/main/cruise-requests.ts
 index 8b2f55e..9e2d56b 100644
 --- a/src/main/cruise-requests.ts

@@ -48,5 +48,10 @@
     "target": "tests/e2e/cruise.spec.ts",
     "source": "evidence/v04-wave-a/originals/09-cruise.spec.ts",
     "sha256": "60ea36e2d3fd83c5b7a832332672443328c16ac4d8215db1f034fb934f15999c"
+  },
+  {
+    "target": "src/renderer/pdf-reader.ts",
+    "source": "evidence/v04-wave-a/originals/10-pdf-reader.ts",
+    "sha256": "a6499ee8206f8416b97d010fa573be85cb3773c60bb812e9cff570dcc90c5114"
   }
 ]

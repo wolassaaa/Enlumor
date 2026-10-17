@@ -1,0 +1,158 @@
+
+> enlumor@0.1.15 build
+> tsc --noEmit && node scripts/build.mjs
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 36 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/renderer/index.html                                          0.60 kB │ gzip:   0.38 kB
+dist/renderer/assets/cursor-editorTextHighlight-kG3uUOwL.svg      5.40 kB │ gzip:   2.20 kB
+dist/renderer/assets/pdf.worker.min-CjEcRF4W.mjs              1,264.34 kB
+dist/renderer/assets/index-CE15q006.css                         249.23 kB │ gzip:  46.54 kB
+dist/renderer/assets/index-DLK_ORd-.js                          898.52 kB │ gzip: 274.47 kB
+
+✓ built in 311ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+
+> enlumor@0.1.15 test
+> vitest run
+
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:36824) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:57928) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:21796) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:51572) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:15664) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:38716) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  21 passed (21)
+      Tests  139 passed (139)
+   Start at  23:59:33
+   Duration  801ms (tests 63%, import 18%, transform 15%, worker 4%)
+
+
+> enlumor@0.1.15 test:python
+> node scripts/python.mjs -m unittest discover -s tests/python -v
+
+test_native_crop_rotations_reject_wrong_quote_and_geometry_without_source_write (test_cruise.CruiseAnchorTests.test_native_crop_rotations_reject_wrong_quote_and_geometry_without_source_write) ... ok
+test_arrow_ends_crop_rotation_repeat (test_export.ExportTests.test_arrow_ends_crop_rotation_repeat) ... ok
+test_cli_accepts_utf8_chinese_paths_with_windows_legacy_encoding (test_export.ExportTests.test_cli_accepts_utf8_chinese_paths_with_windows_legacy_encoding) ... ok
+test_ink_crop_rotation_order_repeat (test_export.ExportTests.test_ink_crop_rotation_order_repeat) ... ok
+test_rejects_overwrite_stale_and_invalid_without_output (test_export.ExportTests.test_rejects_overwrite_stale_and_invalid_without_output) ... ok
+test_rotation_crop_native_marks_and_repeat_exports (test_export.ExportTests.test_rotation_crop_native_marks_and_repeat_exports) ... ok
+test_strikeout_and_line_crop_rotation_repeat_exports (test_export.ExportTests.test_strikeout_and_line_crop_rotation_repeat_exports) ... ok
+test_underline_standard_subtype_crop_rotation_and_repeat_export (test_export.ExportTests.test_underline_standard_subtype_crop_rotation_and_repeat_export) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.587s
+
+OK
+
+> enlumor@0.1.15 build:worker
+> node scripts/build-worker.mjs
+
+282 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.8
+282 INFO: Python: 3.14.3
+318 INFO: Platform: Windows-11-10.0.26200-SP0
+319 INFO: Python environment: D:\codex project\Enlumor\.worktrees\v04-wave-ab\.venv
+319 INFO: wrote .cache\enlumor-pdf-worker.spec
+324 INFO: Removing temporary files and cleaning cache in C:\Users\woola\AppData\Local\pyinstaller
+1104 INFO: Module search paths (PYTHONPATH):
+['D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab',
+ 'C:\\Python314\\python314.zip',
+ 'C:\\Python314\\DLLs',
+ 'C:\\Python314\\Lib',
+ 'C:\\Python314',
+ 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv',
+ 'D:\\codex '
+ 'project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages',
+ 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\python']
+1411 INFO: Appending 'binaries' from .spec
+1411 INFO: Appending 'datas' from .spec
+1418 INFO: checking Analysis
+1418 INFO: Building Analysis because Analysis-00.toc is non existent
+1418 INFO: Looking for Python shared library...
+1418 INFO: Using Python shared library: C:\Python314\python314.dll
+1418 INFO: Running Analysis Analysis-00.toc
+1418 INFO: Target bytecode optimization level: 0
+1419 INFO: Initializing module dependency graph...
+1420 INFO: Initializing module graph hook caches...
+1452 INFO: Analyzing modules for base_library.zip ...
+3018 INFO: Processing standard module hook 'hook-encodings.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3456 INFO: Processing standard module hook 'hook-math.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5156 INFO: Processing standard module hook 'hook-difflib.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5169 INFO: Processing standard module hook 'hook-heapq.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5318 INFO: Processing standard module hook 'hook-pickle.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+7115 INFO: Caching module dependency graph...
+7145 INFO: Analyzing D:\codex project\Enlumor\.worktrees\v04-wave-ab\python\export_pdf.py
+9881 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+10124 INFO: Processing standard module hook 'hook-xml.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+10511 INFO: Processing standard module hook 'hook-sysconfig.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+10520 INFO: Processing standard module hook 'hook-_ctypes.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+10589 INFO: Processing standard module hook 'hook-platform.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+10960 INFO: Analyzing hidden import 'pymupdf.__main__'
+11003 INFO: Processing module hooks (post-graph stage)...
+11067 INFO: Performing binary vs. data reclassification (117 entries)
+11101 INFO: Looking for ctypes DLLs
+11116 INFO: Analyzing run-time hooks ...
+11117 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+11120 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+11123 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+11130 INFO: Creating base_library.zip...
+11151 INFO: Looking for dynamic libraries
+11429 INFO: Extra DLL search directories (AddDllDirectory): []
+11429 INFO: Extra DLL search directories (PATH): []
+11923 INFO: Warnings written to D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pyinstaller-build\enlumor-pdf-worker\warn-enlumor-pdf-worker.txt
+11940 INFO: Graph cross-reference written to D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pyinstaller-build\enlumor-pdf-worker\xref-enlumor-pdf-worker.html
+11959 INFO: checking PYZ
+11959 INFO: Building PYZ because PYZ-00.toc is non existent
+11959 INFO: Building PYZ (ZlibArchive) D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pyinstaller-build\enlumor-pdf-worker\PYZ-00.pyz
+12201 INFO: Building PYZ (ZlibArchive) D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pyinstaller-build\enlumor-pdf-worker\PYZ-00.pyz completed successfully.
+12212 INFO: checking PKG
+12212 INFO: Building PKG because PKG-00.toc is non existent
+12212 INFO: Building PKG (CArchive) enlumor-pdf-worker.pkg
+12227 INFO: Building PKG (CArchive) enlumor-pdf-worker.pkg completed successfully.
+12228 INFO: Bootloader D:\codex project\Enlumor\.worktrees\v04-wave-ab\.venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+12228 INFO: checking EXE
+12228 INFO: Building EXE because EXE-00.toc is non existent
+12228 INFO: Building EXE from EXE-00.toc
+12228 INFO: Copying bootloader EXE to D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pyinstaller-build\enlumor-pdf-worker\enlumor-pdf-worker.exe
+12231 INFO: Copying icon to EXE
+12234 INFO: Copying 0 resources to EXE
+12234 INFO: Embedding manifest in EXE
+12236 INFO: Appending PKG archive to EXE
+12238 INFO: Fixing EXE headers
+12295 INFO: Building EXE from EXE-00.toc completed successfully.
+12298 INFO: checking COLLECT
+12298 INFO: Building COLLECT because COLLECT-00.toc is non existent
+12298 INFO: Building COLLECT COLLECT-00.toc
+12462 INFO: Building COLLECT COLLECT-00.toc completed successfully.
+12466 INFO: Build complete! The results are available in: D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pdf-worker
+  • electron-builder  version=26.15.3 os=10.0.26200
+  • loaded configuration  file=package.json ("build" field)
+  • executing @electron/rebuild  electronVersion=44.7.2 arch=x64 buildFromSource=false workspaceRoot=D:\codex project\Enlumor\.worktrees\v04-wave-ab projectDir=./ appDir=./
+  • installing native dependencies  arch=x64
+  • completed installing native dependencies
+  • packaging       platform=win32 arch=x64 electron=44.7.2 appOutDir=.cache\v04-wave-a-package\win-unpacked
+  • using custom unpacked Electron distribution  electronDist=node_modules\electron\dist
+  • copying unpacked Electron  source=D:\codex project\Enlumor\.worktrees\v04-wave-ab\node_modules\electron\dist destination=D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\v04-wave-a-package\win-unpacked
+  • searching for node modules  pm=npm searchDir=D:\codex project\Enlumor\.worktrees\v04-wave-ab
+  • cannot find path for dependency  dependencies=["scheduler@undefined"]
+  • updating asar integrity executable resource  executablePath=.cache\v04-wave-a-package\win-unpacked\Enlumor.exe
+  • signing with signtool.exe  path=.cache\v04-wave-a-package\win-unpacked\resources\pdf-worker\enlumor-pdf-worker.exe
+  • default Electron icon is used  reason=application icon is not set
+  • signing with signtool.exe  path=.cache\v04-wave-a-package\win-unpacked\Enlumor.exe

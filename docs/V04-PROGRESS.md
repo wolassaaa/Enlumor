@@ -1,6 +1,6 @@
 # Enlumor v0.4 执行进度
 
-日期：2026-10-17（Asia/Taipei）。状态：Wave A进行中，未发布。
+日期：2026-10-17（Asia/Taipei）。状态：Wave A自动化/审查/验收候选通过，真实API待验收，未发布。
 
 ## 工作区
 - 原项目：D:/codex project/Enlumor，保留已验证0.1.15。
@@ -14,8 +14,8 @@
 - 未修改原PDF、个人数据库、原PRD、主目录产品源文件或latest版本指针。
 
 ## 任务
-- A1：子代理实施自动化错误恢复与真实验收准备；真实API尚未执行。
-- A2：等待A1自动化实施及审查后，实施手动Cruise与薄命令入口。
+- A1：自动化错误恢复与验收准备已完成并审查通过；真实API尚未执行，任务整体未完成。
+- A2：手动Cruise与薄命令入口已实现，任务审查及整轮审查通过。
 - B1/B2：等待Wave A真实API、review和完整打包门禁，不提前实施。
 
 ## 真实验收依赖
@@ -29,5 +29,14 @@ C/D、Surfing与定时任务不在当前执行范围。
 
 ## 实施更新
 - A1自动化提交836ae3e：实际空回答成功误判RED后修复；121单测/12Electron通过；独立任务review PASS，无发现。
-- A2实施提交eda05b2：移除自动推进、旧auto归一化paused/manual、三种薄本地命令；139单测/build/typecheck/10Electron通过；任务review进行中。
+- A2实施提交eda05b2：移除自动推进、旧auto归一化paused/manual、三种薄本地命令；139单测/build/typecheck/10Electron通过；任务review PASS，无发现。
 - 真实论文11页/SHA256d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537；本地实际Electron读取/标题定位/PyMuPDF校验通过，网络请求0；不冒充真实API验收。
+
+## 2026-10-18 Wave A 验收候选
+- 整轮A1+A2 review完成：产品无发现；P2回退清单漏reader已补齐、增加覆盖守卫并实际重跑，定向复核通过。
+- 候选包139单测+8Python+101最终EXE流程全通过；reader/SQLite/无外部Python和两样本/密集画笔门禁通过。
+- 文本启动中位423.4ms/滚动p9513.6ms/保存p955.9ms；扫描402.1ms/14.7ms/7.8ms；零长任务；预算未放宽。
+- 真实论文最终EXE本地读取和标题锚点核验通过；只验证标题，不称整篇语义验收。外发0，原文件哈希不变。
+- 独立验收入口：D:/codex project/Enlumor/.worktrees/v04-wave-ab/Wave A 验收.cmd，使用单独.cache/wave-a-live-userdata；尚未自动启动用户交互实例。
+- 正式版仍0.1.15；真实DeepSeek连接/解释/暂停/重试闭环NOT EXECUTED。A1整体未完成、A轮未发布、B未启动。
+- 用户下一步：打开验收入口，在模型设置填服务商实际API模型ID和密钥，点击保存并测试（密钥无需发到聊天）。成功后对该真实论文完成共读验收，再进入B。
