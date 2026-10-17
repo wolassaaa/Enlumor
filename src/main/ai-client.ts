@@ -1,7 +1,7 @@
 import type {AiProfileInput,AiPrompt} from '../shared/ai';
 
 const MAX_RESPONSE_BYTES=4*1024*1024,MAX_EVENT_BYTES=512*1024;
-const protocols=['openai-chat','openai-responses','anthropic-messages','gemini'];
+const protocols=['openai-chat','openai-responses','anthropic-messages','gemini','dashscope'];
 const invalid=()=>new Error('AI_INVALID_CONFIG');
 const failure=(code:string)=>new Error(code);
 
@@ -19,17 +19,19 @@ export function validateAiProfile(profile:AiProfileInput):URL {
   'openai-responses':['temperature','top_p'],
   'anthropic-messages':['temperature','top_p','top_k'],
   gemini:['temperature','topP','topK'],
+  dashscope:['temperature','top_p','top_k','seed','repetition_penalty','enable_thinking','incremental_output'],
  };
  for(const [key,value]of Object.entries(p)){
   if(!allowed[profile.protocol].includes(key))throw invalid();
   if(key==='reasoning_effort'){if(typeof value!=='string'||!['none','minimal','low','medium','high','xhigh'].includes(value))throw invalid();}
-  else if(key==='enable_thinking'){if(typeof value!=='boolean')throw invalid();}
+  else if(key==='enable_thinking'||key==='incremental_output'){if(typeof value!=='boolean')throw invalid();}
   else {
    if(typeof value!=='number'||!Number.isFinite(value))throw invalid();
    if(key==='temperature'&&(value<0||value>(profile.protocol==='anthropic-messages'?1:2)))throw invalid();
    if(['top_p','topP'].includes(key)&&(value<0||value>1))throw invalid();
    if(['top_k','topK'].includes(key)&&(!Number.isInteger(value)||value<1||value>10000))throw invalid();
    if(['presence_penalty','frequency_penalty'].includes(key)&&Math.abs(value)>2)throw invalid();
+   if(key==='repetition_penalty'&&(value<=0||value>2))throw invalid();
    if(key==='seed'&&(!Number.isInteger(value)||Math.abs(value)>2147483647))throw invalid();
   }
  }
@@ -54,6 +56,12 @@ export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=tru
   case'anthropic-messages':
    addPath('/messages','/v1');if(key)headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';
    body={model:profile.model,system:prompt.system,messages:[{role:'user',content:prompt.user}],max_tokens:profile.maxOutputTokens,stream,...profile.parameters};break;
+  case'dashscope':{
+   const full='/api/v1/services/aigc/text-generation/generation',base=url.pathname.replace(/\/+$/,'');
+   if(!base)url.pathname=full;else if(base.endsWith('/api/v1'))url.pathname=base+'/services/aigc/text-generation/generation';else if(!base.endsWith(full))throw invalid();
+   if(key)headers.Authorization='Bearer '+key;if(stream)headers['X-DashScope-SSE']='enable';
+   body={model:profile.model,input:{messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user}]},parameters:{max_tokens:profile.maxOutputTokens,result_format:'message',incremental_output:stream,...profile.parameters}};break;
+  }
   case'gemini':{
    let base=url.pathname.replace(/\/+$/,'')||'/v1beta';
    if(/:(?:streamGenerateContent|generateContent)$/.test(base))base=base.replace(/:(?:streamGenerateContent|generateContent)$/,stream?':streamGenerateContent':':generateContent');
@@ -94,6 +102,12 @@ function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:str
    else if(value.type==='message_delta'&&value.delta?.stop_reason==='max_tokens')throw failure('AI_INCOMPLETE');
    else if(value.type==='message_stop')done=true;
    break;
+  case'dashscope':{
+   if(value.code||(typeof value.status_code==='number'&&value.status_code>=400))throw failure('AI_REMOTE_ERROR');
+   const output=value.output,c=output?.choices?.[0],content=c?.message?.content??output?.text,finish=c?.finish_reason??output?.finish_reason;
+   if(typeof content!=='string')throw failure('AI_INVALID_RESPONSE');
+   if(finish&&finish!=='stop')throw failure('AI_INCOMPLETE');text=content;done=finish==='stop';if(!stream&&!done)throw failure('AI_INCOMPLETE');break;
+  }
   case'gemini':{
    const c=value.candidates?.[0];if(!c){if(value.promptFeedback?.blockReason)throw failure('AI_REMOTE_ERROR');if(!Array.isArray(value.candidates))throw failure('AI_INVALID_RESPONSE');return{text:'',done:false};}
    if(c.finishReason&&c.finishReason!=='STOP')throw failure('AI_INCOMPLETE');
@@ -106,6 +120,7 @@ function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:str
 }
 
 export async function listAiModels(profile:AiProfileInput,options:{signal?:AbortSignal;fetch?:typeof fetch}={}):Promise<string[]>{
+ if(profile.protocol==='dashscope')throw failure('AI_MODEL_DISCOVERY_UNSUPPORTED');
  const request=buildAiRequest(profile,{system:'',user:'Model discovery'},false),url=new URL(request.url);
  if(profile.protocol==='gemini')url.pathname=url.pathname.replace(/\/models\/[^/]+:generateContent$/,'/models');
  else url.pathname=url.pathname.replace(/\/(chat\/completions|responses|messages)$/,'/models');
@@ -142,7 +157,7 @@ export async function generateText(profile:AiProfileInput,prompt:AiPrompt,option
    if(event==='error')throw failure('AI_REMOTE_ERROR');if(!data)return;
    if(data==='[DONE]'){if(profile.protocol!=='openai-chat')throw failure('AI_INVALID_RESPONSE');done=true;return;}
    let value;try{value=JSON.parse(data);}catch{throw failure('AI_INVALID_RESPONSE');}
-   const decoded=decodeObject(profile,value,true);emit(decoded.text);done||=decoded.done;
+   const decoded=decodeObject(profile,value,true);let delta=decoded.text;if(profile.protocol==='dashscope'&&profile.parameters.incremental_output===false){if(!delta.startsWith(text))throw failure('AI_INVALID_RESPONSE');delta=delta.slice(text.length);}emit(delta);done||=decoded.done;
   };
   while(!done){
    const chunk=await reader.read();if(chunk.done){pending+=decoder.decode();break;}

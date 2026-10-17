@@ -10,6 +10,7 @@ const presets=[
  ['腾讯混元','openai-chat','https://api.hunyuan.cloud.tencent.com/v1'],
  ['Claude','anthropic-messages','https://api.anthropic.com/v1/messages'],
  ['Gemini','gemini','https://generativelanguage.googleapis.com/v1beta'],
+ ['百炼 DashScope 原生文本','dashscope','https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'],
 ] as const;
 const empty=():AiProfileInput=>({id:crypto.randomUUID(),name:'新模型配置',protocol:'openai-chat',endpoint:presets[0][2],model:'',maxOutputTokens:1024,timeoutMs:30000,parameters:{}});
 export function ModelSettings({close,returnFocus}:{close:()=>void;returnFocus:HTMLElement|null}){
@@ -27,7 +28,7 @@ export function ModelSettings({close,returnFocus}:{close:()=>void;returnFocus:HT
    <label>已有配置<select aria-label="已有配置" value={selected} onChange={e=>choose(e.target.value)}><option value="">新建配置</option>{profiles.map(p=><option key={p.id} value={p.id}>{p.name}</option>)}</select></label>
    <label>厂商预设<select aria-label="厂商预设" defaultValue="" onChange={e=>{if(!e.target.value)return;const p=presets[Number(e.target.value)];setDraft({...draft,name:p[0],protocol:p[1],endpoint:p[2],model:''});}}><option value="">选择或手动配置</option>{presets.map((p,i)=><option key={p[0]} value={i}>{p[0]}</option>)}</select></label>
    <label>配置名称<input aria-label="配置名称" autoFocus value={draft.name} maxLength={100} onChange={e=>setDraft({...draft,name:e.target.value})}/></label>
-   <label>协议<select aria-label="协议" value={draft.protocol} onChange={e=>setDraft({...draft,protocol:e.target.value as AiProtocol})}><option value="openai-chat">OpenAI Chat Completions</option><option value="openai-responses">OpenAI Responses</option><option value="anthropic-messages">Claude Messages</option><option value="gemini">Gemini GenerateContent</option></select></label>
+   <label>协议<select aria-label="协议" value={draft.protocol} onChange={e=>setDraft({...draft,protocol:e.target.value as AiProtocol})}><option value="openai-chat">OpenAI Chat Completions</option><option value="openai-responses">OpenAI Responses</option><option value="anthropic-messages">Claude Messages</option><option value="gemini">Gemini GenerateContent</option><option value="dashscope">DashScope 原生文本</option></select></label>
    <label>接口地址<input aria-label="接口地址" value={draft.endpoint} maxLength={2000} onChange={e=>setDraft({...draft,endpoint:e.target.value})}/></label>
    <datalist id="ai-models">{models.map(id=><option key={id} value={id}/>)}</datalist><label>模型 ID<input list="ai-models" aria-label="模型 ID" value={draft.model} maxLength={200} placeholder="填写服务商模型 ID" onChange={e=>setDraft({...draft,model:e.target.value})}/></label>
    <label>API 密钥<input aria-label="API 密钥" type="password" autoComplete="off" value={key} placeholder={selectedView?.hasCredential?'已保存；留空保留原密钥':'填写密钥，本地服务可留空'} onChange={e=>setKey(e.target.value)}/></label>
