@@ -187,3 +187,22 @@ for(const control of ['wheel','key-page','page','selection','key-selection','zoo
   mkdirSync('evidence/v051-wave-a',{recursive:true});await page.screenshot({path:'evidence/v051-wave-a/TASK2-manual-'+control+'.png'});
  });
 });
+
+// Selection predates the request: the popover action itself must cancel, not the selection callback.
+for(const action of ['高亮','下划线','删除线','写便签'] as const)test(`retained-selection popover ${action} invalidates follow-up before late events`,async()=>{
+ let late:any;await followUpFixture('retained-popover-'+action,(data,res)=>{if(!data.question){fixtureDone(res,'Original completed explanation');return;}fixtureDelta(res,'Old partial');late=res;},async(page,app,requests,before)=>{
+  await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('等待继续');
+  await selectFixtureText(page);await expect(page.getByRole('toolbar',{name:'选区工具',exact:true})).toBeVisible();
+  await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');const original=await cruiseSnapshot(page);
+  await page.evaluate(()=>{window.enlumor.onAiText(e=>{if(e.text==='Old partial')(window as any).__popoverFollowId=e.requestId;});});
+  await page.getByLabel('当前原文追问',{exact:true}).fill('Retained selection question');await page.getByRole('button',{name:'提交追问',exact:true}).click();await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');
+  await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('正在追问');const oldId=await page.evaluate(()=>(window as any).__popoverFollowId as string);expect(oldId).toBeTruthy();
+  await page.getByRole('toolbar',{name:'选区工具',exact:true}).getByRole('button',{name:action,exact:true}).click();
+  if(action==='写便签')await expect(page.getByRole('dialog',{name:'添加便签',exact:true})).toBeVisible();else await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);
+  const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}));
+  if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+  await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消');await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retained selection question');expect(await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}))).toEqual(viewport);
+  if(action==='写便签')await page.getByRole('dialog',{name:'添加便签',exact:true}).getByRole('button',{name:'取消',exact:true}).click();
+  await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');const after=await cruiseSnapshot(page);expect(after.session).toEqual(original.session);expect(after.annotations).toHaveLength(action==='写便签'?0:1);if(action!=='写便签')expect(after.annotations[0]).toMatchObject({type:action==='高亮'?'highlight':action==='下划线'?'underline':'strikeout',author:'user'});expect(requests).toHaveLength(2);expect(createHash('sha256').update(readFileSync(source)).digest('hex')).toBe(before);
+ });
+});
