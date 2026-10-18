@@ -2,8 +2,8 @@
   "version": 1,
   "baseline": "v0.5.1",
   "wave": "A",
-  "status": "READY",
-  "task1": "TODO_CURRENT_BLOCK_FOLLOWUP",
+  "status": "DISPATCHING_TASK1",
+  "task1": "AUTOMATED_BASELINE_PASS_READY_TO_IMPLEMENT",
   "task2": "TODO_CONTROL_AUDIT_AND_PACKAGE",
   "liveAcceptance": "NOT_EXECUTED",
   "surfing": "NOT_STARTED",
@@ -13,5 +13,12 @@
   "checklist": "docs/WAVE_A_TASKS.md",
   "automationId": "enlumor",
   "schedule": "every 30 minutes; pause on completion or required user action",
-  "notes": "No real credentials inspected; previous candidate139/8/101 are historical, not new test runs."
+  "notes": "No real credentials inspected; previous candidate139/8/101 are historical, not new test runs.",
+  "automationStatus": "ACTIVE",
+  "automationTargetThread": "01a13b64-f084-72e0-9e85-1ec042414811",
+  "lastVerifiedBaseline": {
+    "unit": 139,
+    "build": "PASS"
+  },
+  "updatedAt": "2026-10-18T13:56:50.972396+00:00"
 }
