@@ -1,0 +1,9 @@
+COMMAND: npm run build
+INPUT: Task1 current sources
+
+> enlumor@0.1.15 build
+> tsc --noEmit && node scripts/build.mjs
+
+tests/e2e/cruise.spec.ts(145,51): error TS7031: Binding element 'BrowserWindow' implicitly has an 'any' type.
+tests/e2e/cruise.spec.ts(145,201): error TS7031: Binding element 'BrowserWindow' implicitly has an 'any' type.
+EXIT_STATUS: 1

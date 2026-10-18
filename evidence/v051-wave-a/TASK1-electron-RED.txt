@@ -1,0 +1,51 @@
+COMMAND: npx playwright test tests/e2e/cruise.spec.ts -g 'current-block follow-up streams separately'
+INPUT: generated local PDF and localhost SSE fixture; built pre-task code
+(node:18996) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:64380) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:64380) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  1 tests\e2e\cruise.spec.ts:109:1 › current-block follow-up streams separately, bounds previous completed explanation, and never persists question/answer (7.4s)
+
+
+  1) tests\e2e\cruise.spec.ts:109:1 › current-block follow-up streams separately, bounds previous completed explanation, and never persists question/answer 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByLabel('当前原文追问', { exact: true })
+    Expected: visible
+    Timeout: 5000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toBeVisible" getByLabel('当前原文追问', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('当前原文追问', { exact: true })
+
+
+      111 |   await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('等待继续');await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');
+      112 |   const original=await cruiseSnapshot(page),explanation=await page.getByLabel('Cruise 解释',{exact:true}).textContent();
+    > 113 |   await expect(page.getByLabel('当前原文追问',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'提交追问',exact:true})).toBeDisabled();
+          |                                                        ^
+      114 |   await page.getByLabel('当前原文追问',{exact:true}).fill('Why does the current evidence matter?');await page.getByRole('button',{name:'提交追问',exact:true}).click();
+      115 |   await expect(page.getByLabel('追问回答',{exact:true})).toContainText('Follow-up partial');await expect(page.getByRole('button',{name:'解释当前块',exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'提交追问',exact:true})).toBeDisabled();
+      116 |   await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已完成');await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Follow-up partial complete');
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:113:56
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:110:2
+
+    Error Context: test-results\cruise-current-block-follo-d62ac-er-persists-question-answer\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-current-block-follo-d62ac-er-persists-question-answer\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-current-block-follo-d62ac-er-persists-question-answer\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\cruise.spec.ts:109:1 › current-block follow-up streams separately, bounds previous completed explanation, and never persists question/answer 
+EXIT_STATUS: 1

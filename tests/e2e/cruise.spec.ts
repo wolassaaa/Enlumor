@@ -1,4 +1,4 @@
-import{test,expect,_electron as electron}from'@playwright/test';import{createServer}from'node:http';import{mkdtempSync,readFileSync,mkdirSync}from'node:fs';import path from'node:path';import{tmpdir}from'node:os';import{execFileSync}from'node:child_process';import{createHash}from'node:crypto';import{DatabaseSync}from'node:sqlite';
+import{test,expect,_electron as electron,type Page,type ElectronApplication}from'@playwright/test';import{createServer}from'node:http';import{mkdtempSync,readFileSync,mkdirSync}from'node:fs';import path from'node:path';import{tmpdir}from'node:os';import{execFileSync}from'node:child_process';import{createHash}from'node:crypto';import{DatabaseSync}from'node:sqlite';
 const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-cruise-')),python=path.join(root,'.venv/Scripts/python.exe'),source=path.join(folder,'Cruise source.pdf');
 execFileSync(python,['-c',`import pymupdf as f;d=f.open()
 for n in range(2):
@@ -90,4 +90,63 @@ for(const failure of ['empty','429','truncated','timeout'] as const)test(`Cruise
   expect(createHash('sha256').update(readFileSync(source)).digest('hex')).toBe(before);
   mkdirSync('evidence/v04-wave-a',{recursive:true});await page.screenshot({path:`evidence/v04-wave-a/a1-${failure}-recovered.png`});
  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+});
+
+// A wrong follow-up route, missing cancellation, or a cache write must break these real Electron/HTTP fixtures.
+async function followUpFixture(name:string,respond:(data:any,res:any)=>void,run:(page:Page,app:ElectronApplication,requests:any[],before:string)=>Promise<void>,timeout=5000){
+ const requests:any[]=[];const before=createHash('sha256').update(readFileSync(source)).digest('hex');
+ const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const body=JSON.parse(raw),data=JSON.parse(body.messages[1].content);requests.push(data);res.setHeader('content-type','text/event-stream');respond(data,res);});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const endpoint='http://127.0.0.1:'+(server.address() as any).port+'/v1';
+ const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,'follow-up-'+name)],env:{...process.env,ENLUMOR_PYTHON:python}});
+ try{const page=await app.firstWindow();await page.evaluate(async({endpoint,timeout})=>{for(const id of ['local','other']){const r=await window.enlumor.saveAiProfile({id,name:id,protocol:'openai-chat',endpoint,model:'fixture-model',parameters:{},maxOutputTokens:5000,timeoutMs:timeout});if(!r.ok)throw Error(r.error.message);}}, {endpoint,timeout});
+  await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();await page.getByRole('button',{name:'打开 Cruise',exact:true}).click();await page.getByRole('button',{name:'开始 Cruise',exact:true}).click();await run(page,app,requests,before);
+ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+}
+function fixtureDelta(res:any,text:string){res.write('data: '+JSON.stringify({choices:[{delta:{content:text},finish_reason:null}]})+'\n\n');}
+function fixtureDone(res:any,text:string){res.end('data: '+JSON.stringify({choices:[{delta:{content:text},finish_reason:'stop'}]})+'\n\ndata: [DONE]\n\n');}
+async function cruiseSnapshot(page:Page){return page.evaluate(async()=>{const docs=await window.enlumor.listDocuments();if(!docs.ok)throw Error('documents');const id=docs.value[0].id;const session=await window.enlumor.getCruiseSession(id),annotations=await window.enlumor.getAnnotations(id);if(!session.ok||!annotations.ok)throw Error('snapshot');return{session:session.value,annotations:annotations.value};});}
+
+test('current-block follow-up streams separately, bounds previous completed explanation, and never persists question/answer',async()=>{
+ await followUpFixture('success',(data,res)=>{if(!data.question){fixtureDone(res,'Completed explanation '+'.'.repeat(8300));return;}fixtureDelta(res,'Follow-up partial');setTimeout(()=>fixtureDone(res,' complete'),300);},async(page,_app,requests,before)=>{
+  await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('等待继续');await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');
+  await page.evaluate(async()=>{const docs=await window.enlumor.listDocuments();if(!docs.ok)throw Error('docs');const session=await window.enlumor.getCruiseSession(docs.value[0].id);if(!session.ok||!session.value?.block)throw Error('session');const saved=await window.enlumor.applyAnnotationChange({documentId:docs.value[0].id,upserts:[{...session.value.block,id:'keep-follow-up-annotation',type:'highlight',author:'user',color:'#f4cf58',note:'Keep user annotation'}],deletes:[]});if(!saved.ok)throw Error('annotation');});const original=await cruiseSnapshot(page),explanation=await page.getByLabel('Cruise 解释',{exact:true}).textContent();
+  await expect(page.getByLabel('当前原文追问',{exact:true})).toBeVisible();await expect(page.getByRole('button',{name:'提交追问',exact:true})).toBeDisabled();await page.getByLabel('当前原文追问',{exact:true}).fill('  ');await expect(page.getByRole('button',{name:'提交追问',exact:true})).toBeDisabled();
+  await page.getByLabel('当前原文追问',{exact:true}).fill('Why does the current evidence matter?');await page.getByRole('button',{name:'提交追问',exact:true}).click();
+  await expect(page.getByLabel('追问回答',{exact:true})).toContainText('Follow-up partial');await expect(page.getByRole('button',{name:'解释当前块',exact:true})).toBeDisabled();await expect(page.getByRole('button',{name:'提交追问',exact:true})).toBeDisabled();
+  await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已完成');await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Follow-up partial complete');
+  await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText(explanation!);expect(requests).toHaveLength(2);expect(Object.keys(requests[1]).sort()).toEqual(['blockId','previousAnswer','question','text']);expect(requests[1]).toMatchObject({blockId:requests[0].blockId,text:'Original evidence page 1',question:'Why does the current evidence matter?'});expect(requests[1].previousAnswer).toHaveLength(8192);expect(requests[1].previousAnswer).toBe(explanation!.slice(0,8192));
+  expect(await cruiseSnapshot(page)).toEqual(original);expect(createHash('sha256').update(readFileSync(source)).digest('hex')).toBe(before);
+  await expect(page.locator('.cruise-panel')).toContainText('解释摘录不是原文');mkdirSync('evidence/v051-wave-a',{recursive:true});await page.screenshot({path:'evidence/v051-wave-a/TASK1-follow-up-complete.png'});
+  await page.getByRole('button',{name:'退出 Cruise',exact:true}).click();await page.getByRole('button',{name:'打开 Cruise',exact:true}).click();await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('');await expect(page.getByLabel('追问回答',{exact:true})).not.toContainText('Follow-up');expect(requests).toHaveLength(2);
+ });
+});
+for(const failure of ['cancel','429','truncated','timeout'] as const)test(`current-block follow-up ${failure} retains question and only manual retry succeeds without changing explanation/cache/source`,async()=>{
+ let followCalls=0;await followUpFixture(failure,(data,res)=>{if(!data.question){fixtureDone(res,'Original completed explanation');return;}followCalls++;if(followCalls>1){fixtureDone(res,'Recovered follow-up');return;}if(failure==='429'){res.writeHead(429);res.end('private fixture diagnostic');return;}fixtureDelta(res,'Partial follow-up');if(failure==='truncated')res.end();},async(page,_app,requests,before)=>{
+  await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('等待继续');await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');const original=await cruiseSnapshot(page);
+  await page.getByLabel('当前原文追问',{exact:true}).fill('Keep this question');await page.getByRole('button',{name:'提交追问',exact:true}).click();
+  if(failure==='cancel'){await expect(page.getByLabel('追问回答',{exact:true})).toContainText('Partial follow-up');await page.getByRole('button',{name:'取消追问',exact:true}).click();await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消');}
+  else await expect(page.locator('.cruise-follow-up [role="alert"]')).toContainText(failure==='429'?'AI_HTTP_429':failure==='timeout'?'AI_TIMEOUT':'AI_INCOMPLETE');
+  await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Keep this question');expect(requests).toHaveLength(2);await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');
+  await page.getByRole('button',{name:'重试追问',exact:true}).click();await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已完成');await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Recovered follow-up');expect(requests).toHaveLength(3);expect(requests[2]).toEqual(requests[1]);expect(await cruiseSnapshot(page)).toEqual(original);expect(createHash('sha256').update(readFileSync(source)).digest('hex')).toBe(before);
+ },failure==='timeout'?500:5000);
+});
+test('failed normal partial is not sent as previous model answer in a follow-up',async()=>{
+ await followUpFixture('failed-normal',(data,res)=>{if(data.question){fixtureDone(res,'Answer without previous success');return;}fixtureDelta(res,'Failed normal partial');res.end();},async(page,_app,requests)=>{
+  await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('解释未完成');await page.getByLabel('当前原文追问',{exact:true}).fill('What does the source say?');await page.getByRole('button',{name:'提交追问',exact:true}).click();await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已完成');expect(requests[1]).toEqual({blockId:requests[0].blockId,text:'Original evidence page 1',question:'What does the source say?'});await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Failed normal partial');
+ });
+});
+for(const context of ['pause','block','profile','settings','background','unmount','document'] as const)test(`follow-up ${context} invalidates ownership before late provider completion`,async()=>{
+ let late:any;await followUpFixture('context-'+context,(data,res)=>{if(!data.question){fixtureDone(res,'Original completed explanation');return;}fixtureDelta(res,'Old partial');late=res;},async(page,app,requests)=>{
+  await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('等待继续');await page.evaluate(()=>{window.enlumor.onAiText(e=>{if(e.text==='Old partial')(window as any).__oldFollowId=e.requestId;});});await page.getByLabel('当前原文追问',{exact:true}).fill('Old question');await page.getByRole('button',{name:'提交追问',exact:true}).click();await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');
+  const oldId=await page.evaluate(()=>(window as any).__oldFollowId as string);expect(oldId).toBeTruthy();
+  if(context==='pause')await page.getByRole('button',{name:'暂停 Cruise',exact:true}).click();
+  if(context==='block')await page.getByRole('button',{name:'略过当前块',exact:true}).click();
+  if(context==='profile')await page.getByLabel('Cruise 服务',{exact:true}).selectOption('other');
+  if(context==='settings'){await page.locator('.cruise-panel').getByRole('button',{name:'模型设置',exact:true}).click();await page.keyboard.press('Escape');}
+  if(context==='background'){await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].hide());await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消');await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].show());}
+  if(context==='unmount'){await page.getByRole('button',{name:'退出 Cruise',exact:true}).click();await page.getByRole('button',{name:'打开 Cruise',exact:true}).click();}
+  if(context==='document'){const next=path.join(folder,'another document.pdf');execFileSync(python,['-c',"import pymupdf as f;d=f.open();p=d.new_page();p.insert_text((60,100),'Another document evidence');d.save("+JSON.stringify(next)+" )"]);await app.evaluate(({dialog},next)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[next]});},next);await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.cruise-panel')).toHaveCount(0);await page.getByRole('button',{name:'打开 Cruise',exact:true}).click();await page.getByRole('button',{name:'开始 Cruise',exact:true}).click();await expect(page.getByLabel('Cruise 原文',{exact:true})).toContainText('Another document evidence');await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('等待继续');}
+  if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).not.toContainText('WRONG');await expect(page.getByLabel('Cruise 解释',{exact:true})).not.toContainText('WRONG');expect(requests).toHaveLength(context==='document'?3:2);
+  if(['block','profile','unmount','document'].includes(context)){await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('');await expect(page.getByLabel('追问回答',{exact:true})).not.toContainText('Old partial');}else{await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消');await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Old question');}
+ });
 });

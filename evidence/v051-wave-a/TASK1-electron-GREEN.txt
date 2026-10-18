@@ -1,0 +1,36 @@
+COMMAND: npx playwright test tests/e2e/cruise.spec.ts
+INPUT: generated local PDFs, temporary userData and localhost SSE fixtures; no remote API
+(node:62208) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 21 tests using 1 worker
+
+(node:63232) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:63232) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  1 tests\e2e\cruise.spec.ts:7:1 › Cruise streams current block only, valid reference, pause/manual takeover/cancel and exit preserve PDF (3.4s)
+  ok  2 tests\e2e\cruise.spec.ts:8:1 › missing configuration guides settings and refreshes service after closing settings (2.1s)
+  ok  3 tests\e2e\cruise.spec.ts:9:1 › manual Cruise stays on saved block beyond 20 seconds; foreground pause and legacy auto restart never request on their own (26.1s)
+
+  ok  4 tests\e2e\cruise.spec.ts:46:1 › scan pages can be skipped sequentially without a fake block or navigation loop (2.0s)
+  ok  5 tests\e2e\cruise.spec.ts:48:69 › Cruise empty stays incomplete; manual retry saves one result and preserves annotations/source (2.7s)
+  ok  6 tests\e2e\cruise.spec.ts:48:69 › Cruise 429 stays incomplete; manual retry saves one result and preserves annotations/source (2.8s)
+  ok  7 tests\e2e\cruise.spec.ts:48:69 › Cruise truncated stays incomplete; manual retry saves one result and preserves annotations/source (2.7s)
+  ok  8 tests\e2e\cruise.spec.ts:48:69 › Cruise timeout stays incomplete; manual retry saves one result and preserves annotations/source (3.3s)
+  ok  9 tests\e2e\cruise.spec.ts:109:1 › current-block follow-up streams separately, bounds previous completed explanation, and never persists question/answer (3.1s)
+  ok 10 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up cancel retains question and only manual retry succeeds without changing explanation/cache/source (2.9s)
+  ok 11 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up 429 retains question and only manual retry succeeds without changing explanation/cache/source (2.9s)
+  ok 12 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up truncated retains question and only manual retry succeeds without changing explanation/cache/source (2.4s)
+  ok 13 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up timeout retains question and only manual retry succeeds without changing explanation/cache/source (3.4s)
+  ok 14 tests\e2e\cruise.spec.ts:133:1 › failed normal partial is not sent as previous model answer in a follow-up (2.0s)
+  ok 15 tests\e2e\cruise.spec.ts:138:104 › follow-up pause invalidates ownership before late provider completion (2.7s)
+  ok 16 tests\e2e\cruise.spec.ts:138:104 › follow-up block invalidates ownership before late provider completion (2.8s)
+  ok 17 tests\e2e\cruise.spec.ts:138:104 › follow-up profile invalidates ownership before late provider completion (2.7s)
+  ok 18 tests\e2e\cruise.spec.ts:138:104 › follow-up settings invalidates ownership before late provider completion (3.0s)
+  ok 19 tests\e2e\cruise.spec.ts:138:104 › follow-up background invalidates ownership before late provider completion (2.7s)
+  ok 20 tests\e2e\cruise.spec.ts:138:104 › follow-up unmount invalidates ownership before late provider completion (2.2s)
+
+  ok 21 tests\e2e\cruise.spec.ts:138:104 › follow-up document invalidates ownership before late provider completion (3.7s)
+
+  21 passed (1.4m)
+EXIT_STATUS: 0

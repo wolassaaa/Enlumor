@@ -1,0 +1,25 @@
+COMMAND: npx playwright test tests/e2e/cruise.spec.ts -g 'current-block follow-up|failed normal partial|invalidates ownership'
+INPUT: generated local PDF and localhost SSE fixtures
+(node:55584) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 12 tests using 1 worker
+
+(node:54332) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:54332) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  1 tests\e2e\cruise.spec.ts:109:1 › current-block follow-up streams separately, bounds previous completed explanation, and never persists question/answer (2.5s)
+  ok  2 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up cancel retains question and only manual retry succeeds without changing explanation/cache/source (2.9s)
+  ok  3 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up 429 retains question and only manual retry succeeds without changing explanation/cache/source (3.1s)
+  ok  4 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up truncated retains question and only manual retry succeeds without changing explanation/cache/source (2.5s)
+  ok  5 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up timeout retains question and only manual retry succeeds without changing explanation/cache/source (3.4s)
+  ok  6 tests\e2e\cruise.spec.ts:133:1 › failed normal partial is not sent as previous model answer in a follow-up (2.5s)
+  ok  7 tests\e2e\cruise.spec.ts:138:93 › follow-up pause invalidates ownership before late provider completion (2.8s)
+  ok  8 tests\e2e\cruise.spec.ts:138:93 › follow-up block invalidates ownership before late provider completion (2.2s)
+  ok  9 tests\e2e\cruise.spec.ts:138:93 › follow-up profile invalidates ownership before late provider completion (2.2s)
+  ok 10 tests\e2e\cruise.spec.ts:138:93 › follow-up settings invalidates ownership before late provider completion (2.7s)
+  ok 11 tests\e2e\cruise.spec.ts:138:93 › follow-up background invalidates ownership before late provider completion (2.8s)
+  ok 12 tests\e2e\cruise.spec.ts:138:93 › follow-up unmount invalidates ownership before late provider completion (2.2s)
+
+  12 passed (33.3s)
+EXIT_STATUS: 0

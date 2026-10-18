@@ -1,0 +1,12 @@
+COMMAND: npx vitest run tests/cruise-requests.test.ts
+INPUT: local request fixtures; no remote API
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+
+ Test Files  1 passed (1)
+      Tests  24 passed (24)
+   Start at  22:04:31
+   Duration  355ms (tests 82%, transform 11%, import 6%, worker 2%)
+
+EXIT_STATUS: 0

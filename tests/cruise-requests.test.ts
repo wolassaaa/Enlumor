@@ -42,3 +42,32 @@ for(const code of ['AI_HTTP_429','AI_TIMEOUT','AI_INCOMPLETE'])it(`${code} retai
  expect(state).toMatchObject({status:'ready',text:'complete',results:{b:{text:'complete',source}}});
  expect(Object.keys(state.results)).toEqual(['b']);expect(events.filter(e=>e.type==='done')).toEqual([{requestId:'manual-retry',type:'done'}]);expect(calls).toBe(2);
 });
+
+for(const followUp of [null,[],{},'question',{question:1},{question:''},{question:' \n\t'},{question:'x'.repeat(1001)},{question:'why?',previousAnswer:1},{question:'why?',previousAnswer:'x'.repeat(8193)}])it(`rejects malformed or unbounded follow-up before verify/network (${JSON.stringify(followUp)?.slice(0,70)})`,async()=>{
+ let verifies=0,calls=0;const events:any[]=[];
+ const r=new ExplanationRequests(async()=>{verifies++;},()=>profile,async()=>{calls++;return'answer';},e=>events.push(e));
+ await expect(r.start({...input,followUp} as any)).rejects.toThrow('CRUISE_INVALID_REQUEST');
+ expect(verifies).toBe(0);expect(calls).toBe(0);expect(events).toEqual([]);
+});
+it('serializes only current evidence, bounded question and explicitly non-evidence previous model answer',async()=>{
+ const prompts:any[]=[],events:any[]=[];let verifies=0;
+ const r=new ExplanationRequests(async()=>{verifies++;},()=>profile,async(_p,prompt,o)=>{prompts.push(prompt);o.onDelta('follow-up answer');return'follow-up answer';},e=>events.push(e));
+ await r.start({...input,followUp:{question:'Why does this matter?',previousAnswer:'Prior model interpretation'},otherPage:'DO NOT SEND'} as any);await new Promise(r=>setTimeout(r,0));
+ expect(verifies).toBe(1);expect(JSON.parse(prompts[0].user)).toEqual({blockId:'b',text:'original',question:'Why does this matter?',previousAnswer:'Prior model interpretation'});
+ expect(prompts[0].system).toContain('previousAnswer');expect(prompts[0].system).toContain('不是原文');expect(prompts[0].system).toContain('question');
+ expect(events.map(e=>e.type)).toEqual(['delta','done']);
+});
+it('accepts inclusive follow-up boundaries and omits absent previous answer',async()=>{
+ const prompts:any[]=[];const r=new ExplanationRequests(async()=>{},()=>profile,async(_p,prompt,o)=>{prompts.push(prompt);o.onDelta('answer');return'answer';},()=>{});
+ await r.start({...input,followUp:{question:'q'.repeat(1000),previousAnswer:'p'.repeat(8192)}} as any);await new Promise(r=>setTimeout(r,0));
+ expect(JSON.parse(prompts[0].user)).toEqual({blockId:'b',text:'original',question:'q'.repeat(1000),previousAnswer:'p'.repeat(8192)});
+ await r.start({...input,followUp:{question:'why?'}} as any);await new Promise(r=>setTimeout(r,0));expect(JSON.parse(prompts[1].user)).toEqual({blockId:'b',text:'original',question:'why?'});
+});
+it('follow-up shares the normal explanation active slot and still rejects unverified evidence',async()=>{
+ const jobs:any[]=[],events:any[]=[];let valid=true;
+ const r=new ExplanationRequests(async()=>{if(!valid)throw Error('invalid anchor');},()=>profile,(_p,_prompt,o)=>new Promise(resolve=>jobs.push({o,resolve})),e=>events.push(e));
+ await r.start(input);await r.start({...input,requestId:'follow-up',followUp:{question:'why?'}} as any);
+ expect(jobs[0].o.signal.aborted).toBe(true);jobs[0].o.onDelta('old answer');jobs[0].resolve('old answer');jobs[1].o.onDelta('new answer');jobs[1].resolve('new answer');await new Promise(r=>setTimeout(r,0));
+ expect(events).toEqual([{requestId:'follow-up',type:'delta',text:'new answer'},{requestId:'follow-up',type:'done'}]);
+ valid=false;await r.start({...input,requestId:'unverified',followUp:{question:'why?'}} as any);expect(jobs).toHaveLength(2);expect(events.at(-1)).toEqual({requestId:'unverified',type:'error',code:'CRUISE_ANCHOR_INVALID'});
+});

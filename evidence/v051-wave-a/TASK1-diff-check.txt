@@ -1,0 +1,7 @@
+COMMAND: git diff --check
+INPUT: final Task1 candidate diff
+warning: in the working copy of 'src/renderer/CruisePanel.tsx', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'src/renderer/style.css', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'tests/cruise-requests.test.ts', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'tests/e2e/cruise.spec.ts', CRLF will be replaced by LF the next time Git touches it
+EXIT_STATUS: 0

@@ -89,3 +89,5 @@ input,textarea{border:1px solid var(--line);border-radius:5px;background:#fffdf9
 .ai-secondary{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.ai-secondary button{font-size:11px}
 .ai-actions{margin-top:22px}.ai-settings .ai-primary{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 @media(max-width:560px){.ai-settings{padding:20px}.ai-settings fieldset{grid-template-columns:1fr}}
+.cruise-follow-up{margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}.cruise-follow-up label{display:block;font-size:13px}.cruise-follow-up textarea{display:block;width:100%;box-sizing:border-box;margin:6px 0;padding:8px 10px;resize:vertical;min-height:64px;max-height:160px;border:1px solid var(--line);border-radius:6px;background:var(--paper);color:inherit;font:inherit;line-height:1.5}.cruise-follow-up small{display:block;font-size:12px;line-height:1.5}.cruise-follow-up .cruise-answer{margin-top:8px}.cruise-follow-up [aria-label="追问状态"]{font-size:12px;color:var(--muted)}
+.cruise-follow-up-title{display:block;margin-top:10px;font-size:13px;font-weight:600}
