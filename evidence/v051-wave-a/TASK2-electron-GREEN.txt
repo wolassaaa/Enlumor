@@ -1,0 +1,65 @@
+(node:57412) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 49 tests using 1 worker
+
+(node:40772) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\cruise-anchors.spec.ts:10:35 › page blocks retain right-column occurrence through crop source rotation zoom at display scale 1.5 without permanent annotations (2.3s)
+  ok  2 tests\e2e\cruise-anchors.spec.ts:10:35 › page blocks retain right-column occurrence through crop source rotation zoom at display scale 2 without permanent annotations (2.4s)
+(node:40772) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  3 tests\e2e\cruise.spec.ts:7:1 › Cruise streams current block only, valid reference, pause/manual takeover/cancel and exit preserve PDF (3.5s)
+  ok  4 tests\e2e\cruise.spec.ts:8:1 › missing configuration guides settings and refreshes service after closing settings (2.0s)
+  ok  5 tests\e2e\cruise.spec.ts:9:1 › manual Cruise stays on saved block beyond 20 seconds; foreground pause and legacy auto restart never request on their own (25.8s)
+
+  ok  6 tests\e2e\cruise.spec.ts:46:1 › scan pages can be skipped sequentially without a fake block or navigation loop (2.2s)
+  ok  7 tests\e2e\cruise.spec.ts:48:69 › Cruise empty stays incomplete; manual retry saves one result and preserves annotations/source (2.7s)
+  ok  8 tests\e2e\cruise.spec.ts:48:69 › Cruise 429 stays incomplete; manual retry saves one result and preserves annotations/source (2.8s)
+  ok  9 tests\e2e\cruise.spec.ts:48:69 › Cruise truncated stays incomplete; manual retry saves one result and preserves annotations/source (2.8s)
+  ok 10 tests\e2e\cruise.spec.ts:48:69 › Cruise timeout stays incomplete; manual retry saves one result and preserves annotations/source (3.2s)
+  ok 11 tests\e2e\cruise.spec.ts:109:1 › current-block follow-up streams separately, bounds previous completed explanation, and never persists question/answer (3.0s)
+  ok 12 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up cancel retains question and only manual retry succeeds without changing explanation/cache/source (2.8s)
+  ok 13 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up 429 retains question and only manual retry succeeds without changing explanation/cache/source (2.7s)
+  ok 14 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up truncated retains question and only manual retry succeeds without changing explanation/cache/source (2.3s)
+  ok 15 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up timeout retains question and only manual retry succeeds without changing explanation/cache/source (3.3s)
+  ok 16 tests\e2e\cruise.spec.ts:133:1 › failed normal partial is not sent as previous model answer in a follow-up (1.9s)
+  ok 17 tests\e2e\cruise.spec.ts:138:104 › follow-up pause invalidates ownership before late provider completion (2.1s)
+  ok 18 tests\e2e\cruise.spec.ts:138:104 › follow-up block invalidates ownership before late provider completion (2.7s)
+  ok 19 tests\e2e\cruise.spec.ts:138:104 › follow-up profile invalidates ownership before late provider completion (2.3s)
+  ok 20 tests\e2e\cruise.spec.ts:138:104 › follow-up settings invalidates ownership before late provider completion (2.2s)
+  ok 21 tests\e2e\cruise.spec.ts:138:104 › follow-up background invalidates ownership before late provider completion (2.2s)
+  ok 22 tests\e2e\cruise.spec.ts:138:104 › follow-up unmount invalidates ownership before late provider completion (2.2s)
+
+  ok 23 tests\e2e\cruise.spec.ts:138:104 › follow-up document invalidates ownership before late provider completion (4.2s)
+  ok 24 tests\e2e\cruise.spec.ts:155:243 › follow-up manual wheel cancels before late completion and preserves user viewport/cache/source (2.6s)
+  ok 25 tests\e2e\cruise.spec.ts:155:243 › follow-up manual key-page cancels before late completion and preserves user viewport/cache/source (3.1s)
+  ok 26 tests\e2e\cruise.spec.ts:155:243 › follow-up manual page cancels before late completion and preserves user viewport/cache/source (3.0s)
+  ok 27 tests\e2e\cruise.spec.ts:155:243 › follow-up manual selection cancels before late completion and preserves user viewport/cache/source (3.0s)
+  ok 28 tests\e2e\cruise.spec.ts:155:243 › follow-up manual key-selection cancels before late completion and preserves user viewport/cache/source (2.5s)
+  ok 29 tests\e2e\cruise.spec.ts:155:243 › follow-up manual zoom cancels before late completion and preserves user viewport/cache/source (3.0s)
+  ok 30 tests\e2e\cruise.spec.ts:155:243 › follow-up manual zoom-out cancels before late completion and preserves user viewport/cache/source (2.5s)
+  ok 31 tests\e2e\cruise.spec.ts:155:243 › follow-up manual fit-width cancels before late completion and preserves user viewport/cache/source (3.1s)
+  ok 32 tests\e2e\cruise.spec.ts:155:243 › follow-up manual fit-page cancels before late completion and preserves user viewport/cache/source (3.0s)
+  ok 33 tests\e2e\cruise.spec.ts:155:243 › follow-up manual annotation cancels before late completion and preserves user viewport/cache/source (3.1s)
+  ok 34 tests\e2e\cruise.spec.ts:155:243 › follow-up manual annotation-source cancels before late completion and preserves user viewport/cache/source (3.1s)
+  ok 35 tests\e2e\cruise.spec.ts:155:243 › follow-up manual drawing cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok 36 tests\e2e\cruise.spec.ts:155:243 › follow-up manual search cancels before late completion and preserves user viewport/cache/source (2.8s)
+  ok 37 tests\e2e\cruise.spec.ts:155:243 › follow-up manual search-next cancels before late completion and preserves user viewport/cache/source (3.3s)
+  ok 38 tests\e2e\cruise.spec.ts:155:243 › follow-up manual rotation cancels before late completion and preserves user viewport/cache/source (3.0s)
+  ok 39 tests\e2e\cruise.spec.ts:155:243 › follow-up manual layout cancels before late completion and preserves user viewport/cache/source (3.0s)
+  ok 40 tests\e2e\cruise.spec.ts:155:243 › follow-up manual blocks cancels before late completion and preserves user viewport/cache/source (3.1s)
+  ok 41 tests\e2e\cruise.spec.ts:155:243 › follow-up manual sidebar cancels before late completion and preserves user viewport/cache/source (3.6s)
+  ok 42 tests\e2e\cruise.spec.ts:155:243 › follow-up manual divider cancels before late completion and preserves user viewport/cache/source (3.1s)
+
+  ok 43 tests\e2e\page-navigation.spec.ts:9:43 › continuous: boundary buttons and actual page ignore unsubmitted draft (1.8s)
+  ok 44 tests\e2e\page-navigation.spec.ts:9:43 › single: boundary buttons and actual page ignore unsubmitted draft (1.8s)
+  ok 45 tests\e2e\page-navigation.spec.ts:13:1 › same-page viewport updates retain invalid feedback and unsubmitted draft (1.7s)
+  ok 46 tests\e2e\page-navigation.spec.ts:19:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps (2.1s)
+
+  ok 47 tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages (3.2s)
+  ok 48 tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source (3.9s)
+  ok 49 tests\e2e\reading-tools.spec.ts:47:1 › single-page cached overlays reflect offscreen deletion and undo when pages remount (2.2s)
+
+  49 passed (2.7m)
+EXIT: 0

@@ -1,0 +1,162 @@
+[
+  {
+    "target": "src/main/ai-client.ts",
+    "source": "evidence/v051-wave-a/originals/00-ai-client.ts",
+    "sha256": "dd569cc8d002a5446e06c383c29c92fa71a469be173c72d8bcbee48eccab4bb2"
+  },
+  {
+    "target": "src/main/ai-config.ts",
+    "source": "evidence/v051-wave-a/originals/01-ai-config.ts",
+    "sha256": "d61ea571329248f96ce6afa2172ce18032865f36e330afab4ec6cb1f440e45b4"
+  },
+  {
+    "target": "src/main/ai-profiles.ts",
+    "source": "evidence/v051-wave-a/originals/02-ai-profiles.ts",
+    "sha256": "e9f45a96989ebd4bb99fd164959b2e472dced6839e91d6ab69d8b2c3704ade6d"
+  },
+  {
+    "target": "src/main/cruise-requests.ts",
+    "source": "evidence/v051-wave-a/originals/03-cruise-requests.ts",
+    "sha256": "52f7f4480c438b82f676237e25aec4bec851eac1acec6af58aacaebed1024dda"
+  },
+  {
+    "target": "src/main/cruise-sessions.ts",
+    "source": "evidence/v051-wave-a/originals/04-cruise-sessions.ts",
+    "sha256": "a8055f0f2d6d63c65fee1d41c02ae7808848ab0cd330d1a03109e8e801b1f7f3"
+  },
+  {
+    "target": "src/main/index.ts",
+    "source": "evidence/v051-wave-a/originals/05-index.ts",
+    "sha256": "b6e14a891d954bb99ab5147c16da4c5cb91db58d3b9118a7af3b8e62a967de37"
+  },
+  {
+    "target": "src/main/pdf-runtime.ts",
+    "source": "evidence/v051-wave-a/originals/06-pdf-runtime.ts",
+    "sha256": "1d41b887acaf9f36685eeb3cc3fd332ed1143b6a4a89badf5fad19c7d1cb96d6"
+  },
+  {
+    "target": "src/main/preload.ts",
+    "source": "evidence/v051-wave-a/originals/07-preload.ts",
+    "sha256": "ef8127315285f821e92b52e850f85b144268257468ecc1eefc483b9822c3dd93"
+  },
+  {
+    "target": "src/main/python.ts",
+    "source": "evidence/v051-wave-a/originals/08-python.ts",
+    "sha256": "64e49a1d5d6ee61a6f870a223290487a16804cb7372b17cf507f059c8cc9e09d"
+  },
+  {
+    "target": "src/main/spark-client.ts",
+    "source": "evidence/v051-wave-a/originals/09-spark-client.ts",
+    "sha256": "7768e9f323c29180facfc28886a4bb0b869584e296bc9456c7244460d566a2b0"
+  },
+  {
+    "target": "src/main/workspace.ts",
+    "source": "evidence/v051-wave-a/originals/10-workspace.ts",
+    "sha256": "af0ea3c3ca6d5dd5e5c79056b3cb3a6ab64c147b7d8d2756ec59f07ffea686e5"
+  },
+  {
+    "target": "src/renderer/CruisePanel.tsx",
+    "source": "evidence/v051-wave-a/originals/11-CruisePanel.tsx",
+    "sha256": "0d101d39569ec88e1683ab6c7c6d350631995c72c09a323f704b54d605c97bdc"
+  },
+  {
+    "target": "src/renderer/cruise-blocks.ts",
+    "source": "evidence/v051-wave-a/originals/12-cruise-blocks.ts",
+    "sha256": "87b8683190128cf0e5ba3e022d66b1b9a2af6b219e06a24d14c29770a24a9703"
+  },
+  {
+    "target": "src/renderer/drawing-svg.ts",
+    "source": "evidence/v051-wave-a/originals/13-drawing-svg.ts",
+    "sha256": "a2d36d408356fa6486973a6b470faa0a97887ac0de091d0a31b8e18cd1f5e1bd"
+  },
+  {
+    "target": "src/renderer/eraser-tool.ts",
+    "source": "evidence/v051-wave-a/originals/14-eraser-tool.ts",
+    "sha256": "d15bdd69a1d66012ebf18bbfbe9bfd649fe5817d3c2796000e914b4976d987bf"
+  },
+  {
+    "target": "src/renderer/layout.ts",
+    "source": "evidence/v051-wave-a/originals/15-layout.ts",
+    "sha256": "021d2feaf0a0924be87ec4de3a3b0cd75683e028b2b474f159e3e59d7c3e3b38"
+  },
+  {
+    "target": "src/renderer/line-tool.ts",
+    "source": "evidence/v051-wave-a/originals/16-line-tool.ts",
+    "sha256": "08bb6b1563f47718b620d7d423bcd273d232a2c5655daac63e38c75c3cadd3cb"
+  },
+  {
+    "target": "src/renderer/main.tsx",
+    "source": "evidence/v051-wave-a/originals/17-main.tsx",
+    "sha256": "d491ea3dcb7810de28d6d1fe625cee1d9f7a7b55d2387b11bedb8e41f0e540a0"
+  },
+  {
+    "target": "src/renderer/model-settings.tsx",
+    "source": "evidence/v051-wave-a/originals/18-model-settings.tsx",
+    "sha256": "70473d4bf45cc1a5df30fcb370da46fdff88f640dd87434b3043b0df9928592c"
+  },
+  {
+    "target": "src/renderer/note-dialog.tsx",
+    "source": "evidence/v051-wave-a/originals/19-note-dialog.tsx",
+    "sha256": "3c4c48bd3533e6e9a71e678b6b8f24f28fb6ec0551b5ba694f3569a76494ee74"
+  },
+  {
+    "target": "src/renderer/panel-divider.tsx",
+    "source": "evidence/v051-wave-a/originals/20-panel-divider.tsx",
+    "sha256": "a7752a0720a4cb86bd4906a88074d5f3375964057bbee10ae2a7a0e712db49b5"
+  },
+  {
+    "target": "src/renderer/pdf-reader.ts",
+    "source": "evidence/v051-wave-a/originals/21-pdf-reader.ts",
+    "sha256": "c64662a600480f354e37bbf958761b6ccd03b9fa8f3fe6d688756cfb681056dd"
+  },
+  {
+    "target": "src/renderer/reading-commands.ts",
+    "source": "evidence/v051-wave-a/originals/22-reading-commands.ts",
+    "sha256": "e5c3059880dc0c681c7ea3dfb36b9184cb8c3952f1f816de4a27d34ad75b8a65"
+  },
+  {
+    "target": "src/renderer/style.css",
+    "source": "evidence/v051-wave-a/originals/23-style.css",
+    "sha256": "3725625c603413c54fb6477238951805a9cb2d95ae38a4a8bbe700c3675d3875"
+  },
+  {
+    "target": "src/renderer/thumbnail-render.ts",
+    "source": "evidence/v051-wave-a/originals/24-thumbnail-render.ts",
+    "sha256": "477d9a7c47a21ddb8f6e9f2989ef75d4a67168ae8be25b1fd5fae68fc205ef96"
+  },
+  {
+    "target": "src/renderer/thumbnails.tsx",
+    "source": "evidence/v051-wave-a/originals/25-thumbnails.tsx",
+    "sha256": "e1515603cf11eba724585dc56d9613dc7fb83a2fe874251027ef9cc9d19bd35b"
+  },
+  {
+    "target": "src/shared/ai.ts",
+    "source": "evidence/v051-wave-a/originals/26-ai.ts",
+    "sha256": "9bbc568ed0ad8973f68e547075c9f2ee70912ff06894b4e0bf5baa2a268e00d2"
+  },
+  {
+    "target": "src/shared/cruise.ts",
+    "source": "evidence/v051-wave-a/originals/27-cruise.ts",
+    "sha256": "2827a40b61569d1dd3c07096fdd676b77a32fa0eedaa15868a495a5dd5a30237"
+  },
+  {
+    "target": "src/shared/geometry.ts",
+    "source": "evidence/v051-wave-a/originals/28-geometry.ts",
+    "sha256": "e2c3973d6b2f225ab46575e247c4e1023533ad930ca161af361d7e1164598282"
+  },
+  {
+    "target": "src/shared/model.ts",
+    "source": "evidence/v051-wave-a/originals/29-model.ts",
+    "sha256": "4a05be639a1107eb174831d8249482e3ff5f01456c40059c6b27c4799164cc33"
+  },
+  {
+    "target": "tests/cruise-requests.test.ts",
+    "source": "evidence/v051-wave-a/originals/30-cruise-requests.test.ts",
+    "sha256": "00f9506f00d7441f664dba98d92801d00a88b47d1db65be5594cc1b6e746f93c"
+  },
+  {
+    "target": "tests/e2e/cruise.spec.ts",
+    "source": "evidence/v051-wave-a/originals/31-cruise.spec.ts",
+    "sha256": "45be5871a3b26212eb18c10c94fab9e5b43c565353f8fd4ca4968784f541c2a9"
+  }
+]

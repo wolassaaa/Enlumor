@@ -1,0 +1,14 @@
+  • electron-builder  version=26.15.3 os=10.0.26200
+  • loaded configuration  file=package.json ("build" field)
+  • executing @electron/rebuild  electronVersion=44.7.2 arch=x64 buildFromSource=false workspaceRoot=D:\codex project\Enlumor\.worktrees\v04-wave-ab projectDir=./ appDir=./
+  • installing native dependencies  arch=x64
+  • completed installing native dependencies
+  • packaging       platform=win32 arch=x64 electron=44.7.2 appOutDir=.cache\v051-wave-a-package\win-unpacked
+  • using custom unpacked Electron distribution  electronDist=node_modules\electron\dist
+  • copying unpacked Electron  source=D:\codex project\Enlumor\.worktrees\v04-wave-ab\node_modules\electron\dist destination=D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\v051-wave-a-package\win-unpacked
+  • searching for node modules  pm=npm searchDir=D:\codex project\Enlumor\.worktrees\v04-wave-ab
+  • cannot find path for dependency  dependencies=["scheduler@undefined"]
+  • updating asar integrity executable resource  executablePath=.cache\v051-wave-a-package\win-unpacked\Enlumor.exe
+  • signing with signtool.exe  path=.cache\v051-wave-a-package\win-unpacked\resources\pdf-worker\enlumor-pdf-worker.exe
+  • default Electron icon is used  reason=application icon is not set
+  • signing with signtool.exe  path=.cache\v051-wave-a-package\win-unpacked\Enlumor.exe

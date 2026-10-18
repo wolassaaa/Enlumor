@@ -2,9 +2,9 @@
   "version": 1,
   "baseline": "v0.5.1",
   "wave": "A",
-  "status": "DISPATCHING_TASK1",
-  "task1": "AUTOMATED_BASELINE_PASS_READY_TO_IMPLEMENT",
-  "task2": "TODO_CONTROL_AUDIT_AND_PACKAGE",
+  "status": "WAITING_FOR_USER_LIVE_ACCEPTANCE",
+  "task1": "OFFLINE_REVIEW_PASS_LIVE_PENDING",
+  "task2": "OFFLINE_AGGREGATE_EXE_PERFORMANCE_ROLLBACK_PASS",
   "liveAcceptance": "NOT_EXECUTED",
   "surfing": "NOT_STARTED",
   "inFlight": null,
@@ -13,12 +13,31 @@
   "checklist": "docs/WAVE_A_TASKS.md",
   "automationId": "enlumor",
   "schedule": "every 30 minutes; pause on completion or required user action",
-  "notes": "No real credentials inspected; previous candidate139/8/101 are historical, not new test runs.",
-  "automationStatus": "ACTIVE",
+  "notes": "Offline two-task closeout passed; pending user-operated isolated DeepSeek connection and actual-paper interpretation/followup/pause/retry/restart. No release, push, Surfing or frontend rewrite.",
+  "automationStatus": "PAUSED",
   "automationTargetThread": "01a13b64-f084-72e0-9e85-1ec042414811",
   "lastVerifiedBaseline": {
     "unit": 139,
     "build": "PASS"
   },
-  "updatedAt": "2026-10-18T13:56:50.972396+00:00"
+  "updatedAt": "2026-10-18T17:12:14.0554092+00:00",
+  "task1Commit": "dc9f231",
+  "lastVerified": {
+    "unit": 155,
+    "python": 8,
+    "packagedElectron": 137,
+    "build": "PASS",
+    "textPerformance": "PASS",
+    "scanPerformance": "PASS",
+    "denseInk": "PASS",
+    "rollback": "PASS",
+    "aggregateReview": "PASS",
+    "sourceCommit": "2165ece",
+    "liveApi": "NOT_EXECUTED"
+  },
+  "afterWaveA": [
+    "Cruise/Surfing shared thin foundation",
+    "UI/UX Pro Max frontend redesign; separate plan after live gate"
+  ],
+  "task2Commit": "2165ece"
 }

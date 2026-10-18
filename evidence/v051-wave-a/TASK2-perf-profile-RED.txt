@@ -1,0 +1,10 @@
+
+Running 1 test using 1 worker
+
+(node:60720) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+DENSE_INK {"count":1000,"pointsPerStroke":256,"scrollP95Ms":12.700000017881393,"pointerP95Ms":2.5999999940395355,"frameP95Ms":8.899999976158142,"longTasks":0,"worstLongTaskMs":0,"saveMs":1,"eraseUndoMs":404,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok 1 tests\e2e\dense-ink.spec.ts:8:34 › dense 1000 x 256 points: scroll erase save undo (5.1s)
+
+  1 passed (6.2s)
+EXIT: 0

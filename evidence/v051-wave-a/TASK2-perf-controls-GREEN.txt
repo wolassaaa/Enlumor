@@ -1,0 +1,34 @@
+(node:56460) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 23 tests using 1 worker
+
+(node:64208) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:64208) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  1 tests\e2e\cruise.spec.ts:155:243 › follow-up manual wheel cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok  2 tests\e2e\cruise.spec.ts:155:243 › follow-up manual key-page cancels before late completion and preserves user viewport/cache/source (2.3s)
+  ok  3 tests\e2e\cruise.spec.ts:155:243 › follow-up manual page cancels before late completion and preserves user viewport/cache/source (2.8s)
+  ok  4 tests\e2e\cruise.spec.ts:155:243 › follow-up manual selection cancels before late completion and preserves user viewport/cache/source (2.9s)
+  ok  5 tests\e2e\cruise.spec.ts:155:243 › follow-up manual key-selection cancels before late completion and preserves user viewport/cache/source (2.3s)
+  ok  6 tests\e2e\cruise.spec.ts:155:243 › follow-up manual zoom cancels before late completion and preserves user viewport/cache/source (2.3s)
+  ok  7 tests\e2e\cruise.spec.ts:155:243 › follow-up manual zoom-out cancels before late completion and preserves user viewport/cache/source (2.3s)
+  ok  8 tests\e2e\cruise.spec.ts:155:243 › follow-up manual fit-width cancels before late completion and preserves user viewport/cache/source (2.2s)
+  ok  9 tests\e2e\cruise.spec.ts:155:243 › follow-up manual fit-page cancels before late completion and preserves user viewport/cache/source (2.8s)
+  ok 10 tests\e2e\cruise.spec.ts:155:243 › follow-up manual annotation cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok 11 tests\e2e\cruise.spec.ts:155:243 › follow-up manual annotation-source cancels before late completion and preserves user viewport/cache/source (2.8s)
+  ok 12 tests\e2e\cruise.spec.ts:155:243 › follow-up manual drawing cancels before late completion and preserves user viewport/cache/source (2.3s)
+  ok 13 tests\e2e\cruise.spec.ts:155:243 › follow-up manual search cancels before late completion and preserves user viewport/cache/source (3.1s)
+  ok 14 tests\e2e\cruise.spec.ts:155:243 › follow-up manual search-next cancels before late completion and preserves user viewport/cache/source (2.6s)
+  ok 15 tests\e2e\cruise.spec.ts:155:243 › follow-up manual rotation cancels before late completion and preserves user viewport/cache/source (2.3s)
+  ok 16 tests\e2e\cruise.spec.ts:155:243 › follow-up manual layout cancels before late completion and preserves user viewport/cache/source (2.3s)
+  ok 17 tests\e2e\cruise.spec.ts:155:243 › follow-up manual blocks cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok 18 tests\e2e\cruise.spec.ts:155:243 › follow-up manual sidebar cancels before late completion and preserves user viewport/cache/source (2.8s)
+  ok 19 tests\e2e\cruise.spec.ts:155:243 › follow-up manual divider cancels before late completion and preserves user viewport/cache/source (2.8s)
+  ok 20 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 高亮 invalidates follow-up before late events (2.0s)
+  ok 21 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 下划线 invalidates follow-up before late events (2.0s)
+  ok 22 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 删除线 invalidates follow-up before late events (2.5s)
+  ok 23 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 写便签 invalidates follow-up before late events (2.6s)
+
+  23 passed (58.2s)
+EXIT: 0

@@ -1,0 +1,14 @@
+
+Running 3 tests using 1 worker
+
+(node:47804) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+DENSE_INK {"count":30,"pointsPerStroke":256,"scrollP95Ms":8.5,"pointerP95Ms":0.30000001192092896,"frameP95Ms":8.5,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.9000000059604645,"eraseUndoMs":59,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok 1 tests\e2e\dense-ink.spec.ts:8:34 › dense 30 x 256 points: scroll erase save undo (2.6s)
+DENSE_INK {"count":300,"pointsPerStroke":256,"scrollP95Ms":9.400000005960464,"pointerP95Ms":1.2000000178813934,"frameP95Ms":9.099999994039536,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.9000000059604645,"eraseUndoMs":137,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok 2 tests\e2e\dense-ink.spec.ts:8:34 › dense 300 x 256 points: scroll erase save undo (2.9s)
+DENSE_INK {"count":1000,"pointsPerStroke":256,"scrollP95Ms":12.5,"pointerP95Ms":2.699999988079071,"frameP95Ms":9.200000017881393,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.800000011920929,"eraseUndoMs":377,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok 3 tests\e2e\dense-ink.spec.ts:8:34 › dense 1000 x 256 points: scroll erase save undo (4.2s)
+
+  3 passed (10.7s)
+EXIT: 0

@@ -1,0 +1,15 @@
+(node:57700) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+(node:59524) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:59524) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 1 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 高亮 invalidates follow-up before late events (2.6s)
+  ok 2 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 下划线 invalidates follow-up before late events (2.6s)
+  ok 3 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 删除线 invalidates follow-up before late events (2.1s)
+  ok 4 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 写便签 invalidates follow-up before late events (2.1s)
+
+  4 passed (10.5s)
+EXIT: 0

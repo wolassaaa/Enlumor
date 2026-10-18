@@ -1,0 +1,265 @@
+COMMAND: npx playwright test tests/e2e/cruise.spec.ts -g "follow-up manual"
+(node:62824) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 8 tests using 1 worker
+
+(node:56808) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:56808) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 1 tests\e2e\cruise.spec.ts:155:109 › follow-up manual wheel cancels before late completion and preserves user viewport/cache/source (3.9s)
+  ok 2 tests\e2e\cruise.spec.ts:155:109 › follow-up manual page cancels before late completion and preserves user viewport/cache/source (3.1s)
+  x  3 tests\e2e\cruise.spec.ts:155:109 › follow-up manual selection cancels before late completion and preserves user viewport/cache/source (4.5s)
+(node:57196) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:57196) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  4 tests\e2e\cruise.spec.ts:155:109 › follow-up manual zoom cancels before late completion and preserves user viewport/cache/source (4.1s)
+(node:44984) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:44984) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  5 tests\e2e\cruise.spec.ts:155:109 › follow-up manual annotation cancels before late completion and preserves user viewport/cache/source (4.2s)
+(node:64368) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:64368) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  6 tests\e2e\cruise.spec.ts:155:109 › follow-up manual search cancels before late completion and preserves user viewport/cache/source (4.5s)
+(node:61280) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:61280) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  7 tests\e2e\cruise.spec.ts:155:109 › follow-up manual rotation cancels before late completion and preserves user viewport/cache/source (4.1s)
+(node:68884) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:68884) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  8 tests\e2e\cruise.spec.ts:155:109 › follow-up manual layout cancels before late completion and preserves user viewport/cache/source (4.1s)
+
+
+  1) tests\e2e\cruise.spec.ts:155:109 › follow-up manual selection cancels before late completion and preserves user viewport/cache/source 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('追问状态', { exact: true })
+    Expected: "追问已取消"
+    Received: "正在追问"
+    Timeout:  1500ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('追问状态', { exact: true }) with timeout 1500ms
+      - waiting for getByLabel('追问状态', { exact: true })
+        15 × locator resolved to <span aria-label="追问状态" aria-live="polite">正在追问</span>
+           - unexpected value "正在追问"
+
+
+      169 |   if(control==='rotation')await page.getByRole('button',{name:'旋转页面',exact:true}).click();
+      170 |   if(control==='layout'){await page.getByLabel('阅读模式',{exact:true}).selectOption('single');await expect(page.getByLabel('阅读模式',{exact:true})).toHaveValue('single');}
+    > 171 |   await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消',{timeout:1500});await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');
+          |                                                      ^
+      172 |   await page.waitForTimeout(200);const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft})),quote=await page.getByLabel('Cruise 原文',{exact:true}).textContent();
+      173 |   if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+      174 |   await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('Cruise 原文',{exact:true})).toHaveText(quote!);await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retain the manual question');
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:171:54
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:156:15
+
+    Error Context: test-results\cruise-follow-up-manual-se-48cf1--user-viewport-cache-source\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-follow-up-manual-se-48cf1--user-viewport-cache-source\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-follow-up-manual-se-48cf1--user-viewport-cache-source\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\cruise.spec.ts:155:109 › follow-up manual zoom cancels before late completion and preserves user viewport/cache/source 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('追问状态', { exact: true })
+    Expected: "追问已取消"
+    Received: "正在追问"
+    Timeout:  1500ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('追问状态', { exact: true }) with timeout 1500ms
+      - waiting for getByLabel('追问状态', { exact: true })
+        15 × locator resolved to <span aria-label="追问状态" aria-live="polite">正在追问</span>
+           - unexpected value "正在追问"
+
+
+      169 |   if(control==='rotation')await page.getByRole('button',{name:'旋转页面',exact:true}).click();
+      170 |   if(control==='layout'){await page.getByLabel('阅读模式',{exact:true}).selectOption('single');await expect(page.getByLabel('阅读模式',{exact:true})).toHaveValue('single');}
+    > 171 |   await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消',{timeout:1500});await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');
+          |                                                      ^
+      172 |   await page.waitForTimeout(200);const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft})),quote=await page.getByLabel('Cruise 原文',{exact:true}).textContent();
+      173 |   if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+      174 |   await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('Cruise 原文',{exact:true})).toHaveText(quote!);await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retain the manual question');
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:171:54
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:156:15
+
+    Error Context: test-results\cruise-follow-up-manual-zo-44f27--user-viewport-cache-source\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-follow-up-manual-zo-44f27--user-viewport-cache-source\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-follow-up-manual-zo-44f27--user-viewport-cache-source\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests\e2e\cruise.spec.ts:155:109 › follow-up manual annotation cancels before late completion and preserves user viewport/cache/source 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('追问状态', { exact: true })
+    Expected: "追问已取消"
+    Received: "正在追问"
+    Timeout:  1500ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('追问状态', { exact: true }) with timeout 1500ms
+      - waiting for getByLabel('追问状态', { exact: true })
+        15 × locator resolved to <span aria-label="追问状态" aria-live="polite">正在追问</span>
+           - unexpected value "正在追问"
+
+
+      169 |   if(control==='rotation')await page.getByRole('button',{name:'旋转页面',exact:true}).click();
+      170 |   if(control==='layout'){await page.getByLabel('阅读模式',{exact:true}).selectOption('single');await expect(page.getByLabel('阅读模式',{exact:true})).toHaveValue('single');}
+    > 171 |   await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消',{timeout:1500});await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');
+          |                                                      ^
+      172 |   await page.waitForTimeout(200);const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft})),quote=await page.getByLabel('Cruise 原文',{exact:true}).textContent();
+      173 |   if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+      174 |   await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('Cruise 原文',{exact:true})).toHaveText(quote!);await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retain the manual question');
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:171:54
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:156:15
+
+    Error Context: test-results\cruise-follow-up-manual-an-26ffd--user-viewport-cache-source\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-follow-up-manual-an-26ffd--user-viewport-cache-source\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-follow-up-manual-an-26ffd--user-viewport-cache-source\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests\e2e\cruise.spec.ts:155:109 › follow-up manual search cancels before late completion and preserves user viewport/cache/source 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('追问状态', { exact: true })
+    Expected: "追问已取消"
+    Received: "正在追问"
+    Timeout:  1500ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('追问状态', { exact: true }) with timeout 1500ms
+      - waiting for getByLabel('追问状态', { exact: true })
+        15 × locator resolved to <span aria-label="追问状态" aria-live="polite">正在追问</span>
+           - unexpected value "正在追问"
+
+
+      169 |   if(control==='rotation')await page.getByRole('button',{name:'旋转页面',exact:true}).click();
+      170 |   if(control==='layout'){await page.getByLabel('阅读模式',{exact:true}).selectOption('single');await expect(page.getByLabel('阅读模式',{exact:true})).toHaveValue('single');}
+    > 171 |   await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消',{timeout:1500});await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');
+          |                                                      ^
+      172 |   await page.waitForTimeout(200);const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft})),quote=await page.getByLabel('Cruise 原文',{exact:true}).textContent();
+      173 |   if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+      174 |   await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('Cruise 原文',{exact:true})).toHaveText(quote!);await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retain the manual question');
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:171:54
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:156:15
+
+    Error Context: test-results\cruise-follow-up-manual-se-87d33--user-viewport-cache-source\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-follow-up-manual-se-87d33--user-viewport-cache-source\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-follow-up-manual-se-87d33--user-viewport-cache-source\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  5) tests\e2e\cruise.spec.ts:155:109 › follow-up manual rotation cancels before late completion and preserves user viewport/cache/source 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('追问状态', { exact: true })
+    Expected: "追问已取消"
+    Received: "正在追问"
+    Timeout:  1500ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('追问状态', { exact: true }) with timeout 1500ms
+      - waiting for getByLabel('追问状态', { exact: true })
+        15 × locator resolved to <span aria-label="追问状态" aria-live="polite">正在追问</span>
+           - unexpected value "正在追问"
+
+
+      169 |   if(control==='rotation')await page.getByRole('button',{name:'旋转页面',exact:true}).click();
+      170 |   if(control==='layout'){await page.getByLabel('阅读模式',{exact:true}).selectOption('single');await expect(page.getByLabel('阅读模式',{exact:true})).toHaveValue('single');}
+    > 171 |   await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消',{timeout:1500});await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');
+          |                                                      ^
+      172 |   await page.waitForTimeout(200);const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft})),quote=await page.getByLabel('Cruise 原文',{exact:true}).textContent();
+      173 |   if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+      174 |   await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('Cruise 原文',{exact:true})).toHaveText(quote!);await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retain the manual question');
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:171:54
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:156:15
+
+    Error Context: test-results\cruise-follow-up-manual-ro-00697--user-viewport-cache-source\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-follow-up-manual-ro-00697--user-viewport-cache-source\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-follow-up-manual-ro-00697--user-viewport-cache-source\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6) tests\e2e\cruise.spec.ts:155:109 › follow-up manual layout cancels before late completion and preserves user viewport/cache/source 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('追问状态', { exact: true })
+    Expected: "追问已取消"
+    Received: "正在追问"
+    Timeout:  1500ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('追问状态', { exact: true }) with timeout 1500ms
+      - waiting for getByLabel('追问状态', { exact: true })
+        15 × locator resolved to <span aria-label="追问状态" aria-live="polite">正在追问</span>
+           - unexpected value "正在追问"
+
+
+      169 |   if(control==='rotation')await page.getByRole('button',{name:'旋转页面',exact:true}).click();
+      170 |   if(control==='layout'){await page.getByLabel('阅读模式',{exact:true}).selectOption('single');await expect(page.getByLabel('阅读模式',{exact:true})).toHaveValue('single');}
+    > 171 |   await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消',{timeout:1500});await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');
+          |                                                      ^
+      172 |   await page.waitForTimeout(200);const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft})),quote=await page.getByLabel('Cruise 原文',{exact:true}).textContent();
+      173 |   if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+      174 |   await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('Cruise 原文',{exact:true})).toHaveText(quote!);await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retain the manual question');
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:171:54
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:156:15
+
+    Error Context: test-results\cruise-follow-up-manual-la-b10c4--user-viewport-cache-source\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-follow-up-manual-la-b10c4--user-viewport-cache-source\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-follow-up-manual-la-b10c4--user-viewport-cache-source\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  6 failed
+    tests\e2e\cruise.spec.ts:155:109 › follow-up manual selection cancels before late completion and preserves user viewport/cache/source 
+    tests\e2e\cruise.spec.ts:155:109 › follow-up manual zoom cancels before late completion and preserves user viewport/cache/source 
+    tests\e2e\cruise.spec.ts:155:109 › follow-up manual annotation cancels before late completion and preserves user viewport/cache/source 
+    tests\e2e\cruise.spec.ts:155:109 › follow-up manual search cancels before late completion and preserves user viewport/cache/source 
+    tests\e2e\cruise.spec.ts:155:109 › follow-up manual rotation cancels before late completion and preserves user viewport/cache/source 
+    tests\e2e\cruise.spec.ts:155:109 › follow-up manual layout cancels before late completion and preserves user viewport/cache/source 
+  2 passed (38.7s)
+EXIT: 1

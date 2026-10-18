@@ -1,0 +1,177 @@
+(node:60164) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 4 tests using 1 worker
+
+(node:22088) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22088) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  1 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 高亮 invalidates follow-up before late events (7.8s)
+(node:67244) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:67244) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  2 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 下划线 invalidates follow-up before late events (7.1s)
+(node:52992) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:52992) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  3 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 删除线 invalidates follow-up before late events (7.6s)
+(node:67840) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:67840) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  4 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 写便签 invalidates follow-up before late events (7.6s)
+
+
+  1) tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 高亮 invalidates follow-up before late events 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('追问回答', { exact: true })
+    Expected: "Old partial"
+    Received: "Old partial WRONG LATE ANSWER"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('追问回答', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('追问回答', { exact: true })
+        14 × locator resolved to <div aria-label="追问回答" aria-live="polite" class="cruise-answer">Old partial WRONG LATE ANSWER</div>
+           - unexpected value "Old partial WRONG LATE ANSWER"
+
+
+      202 |   const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}));
+      203 |   if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+    > 204 |   await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消');await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retained selection question');expect(await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}))).toEqual(viewport);
+          |                                                                                     ^
+      205 |   if(action==='写便签')await page.getByRole('dialog',{name:'添加便签',exact:true}).getByRole('button',{name:'取消',exact:true}).click();
+      206 |   await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');const after=await cruiseSnapshot(page);expect(after.session).toEqual(original.session);expect(after.annotations).toHaveLength(action==='写便签'?0:1);if(action!=='写便签')expect(after.annotations[0]).toMatchObject({type:action==='高亮'?'highlight':action==='下划线'?'underline':'strikeout',author:'user'});expect(requests).toHaveLength(2);expect(createHash('sha256').update(readFileSync(source)).digest('hex')).toBe(before);
+      207 |  });
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:204:85
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:193:15
+
+    Error Context: test-results\cruise-retained-selection--53aa0-ollow-up-before-late-events\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-retained-selection--53aa0-ollow-up-before-late-events\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-retained-selection--53aa0-ollow-up-before-late-events\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 下划线 invalidates follow-up before late events 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('追问回答', { exact: true })
+    Expected: "Old partial"
+    Received: "Old partial WRONG LATE ANSWER"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('追问回答', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('追问回答', { exact: true })
+        14 × locator resolved to <div aria-label="追问回答" aria-live="polite" class="cruise-answer">Old partial WRONG LATE ANSWER</div>
+           - unexpected value "Old partial WRONG LATE ANSWER"
+
+
+      202 |   const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}));
+      203 |   if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+    > 204 |   await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消');await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retained selection question');expect(await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}))).toEqual(viewport);
+          |                                                                                     ^
+      205 |   if(action==='写便签')await page.getByRole('dialog',{name:'添加便签',exact:true}).getByRole('button',{name:'取消',exact:true}).click();
+      206 |   await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');const after=await cruiseSnapshot(page);expect(after.session).toEqual(original.session);expect(after.annotations).toHaveLength(action==='写便签'?0:1);if(action!=='写便签')expect(after.annotations[0]).toMatchObject({type:action==='高亮'?'highlight':action==='下划线'?'underline':'strikeout',author:'user'});expect(requests).toHaveLength(2);expect(createHash('sha256').update(readFileSync(source)).digest('hex')).toBe(before);
+      207 |  });
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:204:85
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:193:15
+
+    Error Context: test-results\cruise-retained-selection--2167c-ollow-up-before-late-events\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-retained-selection--2167c-ollow-up-before-late-events\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-retained-selection--2167c-ollow-up-before-late-events\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 删除线 invalidates follow-up before late events 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('追问回答', { exact: true })
+    Expected: "Old partial"
+    Received: "Old partial WRONG LATE ANSWER"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('追问回答', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('追问回答', { exact: true })
+        14 × locator resolved to <div aria-label="追问回答" aria-live="polite" class="cruise-answer">Old partial WRONG LATE ANSWER</div>
+           - unexpected value "Old partial WRONG LATE ANSWER"
+
+
+      202 |   const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}));
+      203 |   if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+    > 204 |   await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消');await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retained selection question');expect(await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}))).toEqual(viewport);
+          |                                                                                     ^
+      205 |   if(action==='写便签')await page.getByRole('dialog',{name:'添加便签',exact:true}).getByRole('button',{name:'取消',exact:true}).click();
+      206 |   await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');const after=await cruiseSnapshot(page);expect(after.session).toEqual(original.session);expect(after.annotations).toHaveLength(action==='写便签'?0:1);if(action!=='写便签')expect(after.annotations[0]).toMatchObject({type:action==='高亮'?'highlight':action==='下划线'?'underline':'strikeout',author:'user'});expect(requests).toHaveLength(2);expect(createHash('sha256').update(readFileSync(source)).digest('hex')).toBe(before);
+      207 |  });
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:204:85
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:193:15
+
+    Error Context: test-results\cruise-retained-selection--9c093-ollow-up-before-late-events\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-retained-selection--9c093-ollow-up-before-late-events\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-retained-selection--9c093-ollow-up-before-late-events\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4) tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 写便签 invalidates follow-up before late events 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('追问回答', { exact: true })
+    Expected: "Old partial"
+    Received: "Old partial WRONG LATE ANSWER"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('追问回答', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('追问回答', { exact: true })
+        14 × locator resolved to <div aria-label="追问回答" aria-live="polite" class="cruise-answer">Old partial WRONG LATE ANSWER</div>
+           - unexpected value "Old partial WRONG LATE ANSWER"
+
+
+      202 |   const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}));
+      203 |   if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+    > 204 |   await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消');await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retained selection question');expect(await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}))).toEqual(viewport);
+          |                                                                                     ^
+      205 |   if(action==='写便签')await page.getByRole('dialog',{name:'添加便签',exact:true}).getByRole('button',{name:'取消',exact:true}).click();
+      206 |   await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');const after=await cruiseSnapshot(page);expect(after.session).toEqual(original.session);expect(after.annotations).toHaveLength(action==='写便签'?0:1);if(action!=='写便签')expect(after.annotations[0]).toMatchObject({type:action==='高亮'?'highlight':action==='下划线'?'underline':'strikeout',author:'user'});expect(requests).toHaveLength(2);expect(createHash('sha256').update(readFileSync(source)).digest('hex')).toBe(before);
+      207 |  });
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:204:85
+        at followUpFixture (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:102:401)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\cruise.spec.ts:193:15
+
+    Error Context: test-results\cruise-retained-selection--49dbe-ollow-up-before-late-events\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\cruise-retained-selection--49dbe-ollow-up-before-late-events\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\cruise-retained-selection--49dbe-ollow-up-before-late-events\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  4 failed
+    tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 高亮 invalidates follow-up before late events 
+    tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 下划线 invalidates follow-up before late events 
+    tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 删除线 invalidates follow-up before late events 
+    tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 写便签 invalidates follow-up before late events 
+EXIT: 1

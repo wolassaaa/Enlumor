@@ -1,0 +1,54 @@
+Enlumor v0.5.1 Wave A OFFLINE VERIFICATION — 2026-10-19
+Branch feat/v04-wave-ab; baseline7b87bdb; modified2165ece9823525addf98727d0e60900400debfc8.
+Changed fields/branches: ExplanationInput.followUp.question<=1000; previousAnswer<=8192; current-block verified follow-up payload, ephemeral answer/ownership/cancel/retry; existing manual takeover callbacks, closed-panel notification no-op.
+FOUR ARTIFACTS
+D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\v051-wave-a\MODIFIED_FILE.tsx
+D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\v051-wave-a\DIFF.patch
+D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\v051-wave-a\VERIFICATION.txt
+D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\v051-wave-a\ROLLBACK.sh
+BASELINE
+Command: npm test
+Input: source7b87bdb, locked dependencies, generated fixtures.
+Literal output: Test Files 21 passed (21); Tests 139 passed (139).
+Exit0; BASELINE_UNIT.log. npm run build also Exit0, BASELINE_BUILD.log.
+MODIFIED
+Command: npm test
+Input: source2165ece (155 tests, including real JSX notifier handlers through mocked hooks, not live AI).
+Literal output: Test Files 22 passed (22); Tests 155 passed (155).
+Exit0; TASK2-perf-unit-FULL.txt. npm run build Exit0; TASK2-perf-build.txt, 36 modules/built344ms.
+Command: npm run test:python
+Literal output: Ran 8 tests in 0.741s; OK. Exit0; FINAL_PYTHON.txt.
+Command: node node_modules/electron-builder/cli.js --win dir --config.directories.output=.cache/v051-wave-a-package
+Input: built2165ece + bundled Python worker. Exit0; FINAL_PACKAGE_BUILD.txt.
+Command (PowerShell): $env:ENLUMOR_TEST_APP=(Resolve-Path '.cache/v051-wave-a-package/win-unpacked/Enlumor.exe').Path; $env:ENLUMOR_EVIDENCE_DIR='evidence/v051-wave-a/final'; npx playwright test
+Input: final packaged EXE2165ece; generated PDFs/temp userData/localhost SSE. Real API NOT EXECUTED.
+Literal output: 137 passed (5.4m). Exit0; FINAL_EXE_E2E.txt. Execution harness session57653 completed Exit0; sequential stages aborted on any nonzero exit.
+Command: node scripts/check-package.mjs
+Literal output: PACKAGED_READER: PASS; EDGE_PDF_OPEN: PASS (visual screenshot requires inspection). Exit0.
+Runtime: Electron44.7.2, Node24.21.0, SQLite3.53.4. FINAL_PACKAGE_CHECK.txt.
+Edge screenshot final/edge-export.png reopened: correct text highlight and source/new note symbols visible. Not an Adobe acceptance claim.
+Command: node scripts/check-portable.mjs $env:ENLUMOR_TEST_APP
+Literal output: PORTABLE_STARTUP_SQLITE: PASS; PORTABLE_NO_PYTHON_OPEN_EXPORT: PASS. Exit0; FINAL_PORTABLE_CHECK.txt.
+Commands: node scripts/benchmark.mjs final-text $env:ENLUMOR_TEST_APP --thumbnails
+node scripts/benchmark.mjs final-scanned $env:ENLUMOR_TEST_APP --thumbnails --scanned
+Inputs: 200pages~32MiB/1000annotations text and scanned fixtures. Both Exit0.
+Text startupmedian378.6182ms/framep9511.100000023841858/savep955.9000000059604645/canvas8/thumb4.
+Scan startupmedian360.9178ms/framep9513.5/savep955.4000000059604645/canvas8/thumb3.
+Original assertPerformance applied to final/final-text.json and final/final-scanned.json.
+Literal output: final-text: ORIGINAL_PERFORMANCE_BUDGET=PASS; final-scanned: ORIGINAL_PERFORMANCE_BUDGET=PASS. Exit0; FINAL_PERFORMANCE_GATE.txt.
+Dense1000x256 points final: scroll10.8ms/pointer2.4ms/frame9.3ms/save1.2ms/eraseUndo365ms; observed mutationWorstLongTaskMs0, no observed longtask (not zero work). Original <=50ms threshold retained.
+Historical failure preserved PERF_FAILED_EXE_E2E.txt: 136passed/1failed, mutation52ms; DENSE_DIAGNOSTIC.txt54ms. Guard removes demonstrated unnecessary closed-panel updates, but causality of original timing outlier is unproven; pre-fix profile also passed. No threshold relaxation. Fresh scoped aggregate review PASS/ImportantP2 addressed in AGGREGATE_REVIEW_FINAL.md.
+ROLLBACK
+Exact command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' -lc './evidence/v051-wave-a/ROLLBACK.sh'
+Input: new isolated .cache/v051-wave-a-rollback/run-* source copy,32original snapshots (30src+2tests), generated one-pagePDF; Git status coverage includes all modified existing src.
+Literal output: ROLLBACK: SOURCE_COVERAGE=PASS; ORIGINAL_HASHES=PASS; PDF_READ=PASS; FOLLOWUP_ABSENT=YES; MANUAL_RETAINED=YES; LIVE_SOURCE_UNCHANGED=YES
+Exit0; ROLLBACK_FINAL.txt. Restored baseline source behavior in copy: PDF readable, no followup, no auto-mode selector. Live working sources remain changed. Oldauto paused/manual restart/no unsolicited requests proven separately in Cruise tests, not selector assertion alone.
+Command: node scripts/check-wave-a-paper.mjs 'C:/Users/woola/Downloads/NIPS-2017-attention-is-all-you-need-Paper.pdf'
+Input: final packaged EXE/temp profile/all remoteHTTP blocked.
+Literal output: REAL_PAPER_LOCAL: PDF_READ=PASS; ANCHOR_VERIFIED=PASS; MANUAL=PASS; REMOTE_REQUESTS=0; SOURCE_UNCHANGED=YES; LIVE_API=NOT_EXECUTED
+Exit0; REAL_PAPER_FINAL.txt. Source SHA256 d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537 unchanged. Only title anchor, not paper semantic acceptance.
+STATUS
+Offline task+aggregate review PASS. RealDeepSeek connection/explanation/followup/pause/retry/restart NOT EXECUTED.
+Automation enlumor PAUSED pending user-operated isolated config/real paper acceptance. Launcher Wave A 验收.cmd points to v051 candidate and .cache/wave-a-live-userdata.
+Primary formal0.1.15/latest.json SHA256 c7013f37a9d96f0c8de198909cc8964eb1d7cfffa0c916990ec5c900f28e5437 unchanged; personalDB/sourcePDF not modified, no release/push/Surfing/sharedbase/UIrewrite.
+Known nonfatal advisories retained: SQLiteexperimental/NO_COLOR/FORCE_COLOR/Vitechunk>500kB/electronbuilder scheduler@undefined, defaulticon/signingmessages. Packaged runtime gates passed; no claim pristine logs.

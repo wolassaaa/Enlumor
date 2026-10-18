@@ -1,0 +1,30 @@
+(node:49320) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 19 tests using 1 worker
+
+(node:28372) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:28372) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  1 tests\e2e\cruise.spec.ts:155:243 › follow-up manual wheel cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok  2 tests\e2e\cruise.spec.ts:155:243 › follow-up manual key-page cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok  3 tests\e2e\cruise.spec.ts:155:243 › follow-up manual page cancels before late completion and preserves user viewport/cache/source (2.9s)
+  ok  4 tests\e2e\cruise.spec.ts:155:243 › follow-up manual selection cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok  5 tests\e2e\cruise.spec.ts:155:243 › follow-up manual key-selection cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok  6 tests\e2e\cruise.spec.ts:155:243 › follow-up manual zoom cancels before late completion and preserves user viewport/cache/source (2.3s)
+  ok  7 tests\e2e\cruise.spec.ts:155:243 › follow-up manual zoom-out cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok  8 tests\e2e\cruise.spec.ts:155:243 › follow-up manual fit-width cancels before late completion and preserves user viewport/cache/source (3.0s)
+  ok  9 tests\e2e\cruise.spec.ts:155:243 › follow-up manual fit-page cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok 10 tests\e2e\cruise.spec.ts:155:243 › follow-up manual annotation cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok 11 tests\e2e\cruise.spec.ts:155:243 › follow-up manual annotation-source cancels before late completion and preserves user viewport/cache/source (2.9s)
+  ok 12 tests\e2e\cruise.spec.ts:155:243 › follow-up manual drawing cancels before late completion and preserves user viewport/cache/source (2.3s)
+  ok 13 tests\e2e\cruise.spec.ts:155:243 › follow-up manual search cancels before late completion and preserves user viewport/cache/source (2.7s)
+  ok 14 tests\e2e\cruise.spec.ts:155:243 › follow-up manual search-next cancels before late completion and preserves user viewport/cache/source (2.7s)
+  ok 15 tests\e2e\cruise.spec.ts:155:243 › follow-up manual rotation cancels before late completion and preserves user viewport/cache/source (2.2s)
+  ok 16 tests\e2e\cruise.spec.ts:155:243 › follow-up manual layout cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok 17 tests\e2e\cruise.spec.ts:155:243 › follow-up manual blocks cancels before late completion and preserves user viewport/cache/source (3.1s)
+  ok 18 tests\e2e\cruise.spec.ts:155:243 › follow-up manual sidebar cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok 19 tests\e2e\cruise.spec.ts:155:243 › follow-up manual divider cancels before late completion and preserves user viewport/cache/source (3.0s)
+
+  19 passed (50.0s)
+EXIT: 0

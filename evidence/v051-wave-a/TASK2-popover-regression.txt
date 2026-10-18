@@ -1,0 +1,25 @@
+(node:49608) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 13 tests using 1 worker
+
+(node:63352) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:63352) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  1 tests\e2e\cruise.spec.ts:155:243 › follow-up manual selection cancels before late completion and preserves user viewport/cache/source (2.9s)
+  ok  2 tests\e2e\cruise.spec.ts:155:243 › follow-up manual key-selection cancels before late completion and preserves user viewport/cache/source (2.9s)
+  ok  3 tests\e2e\cruise.spec.ts:155:243 › follow-up manual annotation cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok  4 tests\e2e\cruise.spec.ts:155:243 › follow-up manual annotation-source cancels before late completion and preserves user viewport/cache/source (2.4s)
+  ok  5 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 高亮 invalidates follow-up before late events (2.6s)
+  ok  6 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 下划线 invalidates follow-up before late events (2.1s)
+  ok  7 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 删除线 invalidates follow-up before late events (2.6s)
+  ok  8 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 写便签 invalidates follow-up before late events (2.1s)
+
+  ok  9 tests\e2e\note-recovery.spec.ts:13:1 › note modal traps keyboard focus and restores its trigger after cancellation (1.1s)
+  ok 10 tests\e2e\note-recovery.spec.ts:21:1 › note saves its captured original anchor even if background selection is cleared (1.2s)
+  ok 11 tests\e2e\note-recovery.spec.ts:28:1 › failed note save retains draft and exact retry after closing details or Escape (1.4s)
+  ok 12 tests\e2e\note-recovery.spec.ts:36:1 › closing save error details keeps pending recovery visible and commits original delete on retry (1.3s)
+  ok 13 tests\e2e\note-recovery.spec.ts:43:1 › explicitly discarding a failed note edit preserves the previously saved note (1.4s)
+
+  13 passed (28.1s)
+EXIT: 0

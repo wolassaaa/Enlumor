@@ -1,0 +1,67 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/cruise-takeover.test.ts (3 tests | 2 failed) 144ms
+   × closed Cruise capture notifications schedule no App state work 10ms
+   × the once-installed reader selection callback sees later open and closed state 3ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/cruise-takeover.test.ts > closed Cruise capture notifications schedule no App state work
+AssertionError: expected [ Array(4) ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   [
++     [Function anonymous],
++   ],
++   [
++     [Function anonymous],
++   ],
++   [
++     [Function anonymous],
++   ],
++   [
++     [Function anonymous],
++   ],
++ ]
+
+ ❯ tests/cruise-takeover.test.ts:38:85
+     36|   expect(node?.props.onClickCapture).toBeTypeOf('function');node.props…
+     37|  }
+     38|  expect(hooks.slots.filter(entry=>entry?.set).flatMap(entry=>entry.set…
+       |                                                                                     ^
+     39| });
+     40|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/cruise-takeover.test.ts > the once-installed reader selection callback sees later open and closed state
+AssertionError: expected 1 to be +0 // Object.is equality
+
+- Expected
++ Received
+
+- 0
++ 1
+
+ ❯ tests/cruise-takeover.test.ts:51:40
+     49| it('the once-installed reader selection callback sees later open and c…
+     50|  render();hooks.effects[0]();const selected=hooks.selected,takeover=sl…
+     51|  selected([{}]);expect(takeover.value).toBe(0);
+       |                                        ^
+     52|  open.set(true);render();selected([{}]);expect(takeover.value).toBe(1);
+     53|  selected([]);expect(takeover.value).toBe(1);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 1 passed (3)
+   Start at  23:58:36
+   Duration  331ms (tests 76%, transform 15%, import 6%, worker 2%)
+
+EXIT: 1

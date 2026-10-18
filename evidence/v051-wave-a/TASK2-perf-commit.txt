@@ -1,0 +1,4 @@
+[feat/v04-wave-ab 2165ece] perf: skip Cruise takeover updates while panel is closed
+ 2 files changed, 70 insertions(+), 12 deletions(-)
+ create mode 100644 tests/cruise-takeover.test.ts
+EXIT: 0

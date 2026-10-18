@@ -1,0 +1,15 @@
+BASE=85e50d8
+COMMIT=2165ece9823525addf98727d0e60900400debfc8
+ORIGINAL_MAIN_SHA256=5733849a087e5a4bb72c726747da93479cbb345130f054677243441427715ba8
+MODIFIED_MAIN_SHA256=d629d0ef629929a11bd6ca336a21eef34504dd0b1238a4c93685600c846a91ff
+TEST_SHA256=49ff6351eb950a100a61e989288c1fb186b40ce1cdae373a3c95a9fb74e16174
+PROFILE_DURATION_MS=657.898
+PROFILE_SAMPLES=360
+(program): 361.310ms {"functionName":"(program)","scriptId":"0","url":"","lineNumber":-1,"columnNumber":-1}
+(idle): 143.473ms {"functionName":"(idle)","scriptId":"0","url":"","lineNumber":-1,"columnNumber":-1}
+(garbage collector): 9.485ms {"functionName":"(garbage collector)","scriptId":"0","url":"","lineNumber":-1,"columnNumber":-1}
+jf: 31.513ms {"functionName":"jf","scriptId":"8","url":"enlumor://app/assets/index-C3V-rIMd.js","lineNumber":7,"columnNumber":136281}
+Af: 16.894ms {"functionName":"Af","scriptId":"8","url":"enlumor://app/assets/index-C3V-rIMd.js","lineNumber":7,"columnNumber":135951}
+setMarks: 14.304ms {"functionName":"setMarks","scriptId":"8","url":"enlumor://app/assets/index-C3V-rIMd.js","lineNumber":606,"columnNumber":28522}
+Interpretation: sampled inclusive sums are not long-task durations; (program) includes unattributed browser/native work. No extra mutation render proven.
+EXIT: 0
