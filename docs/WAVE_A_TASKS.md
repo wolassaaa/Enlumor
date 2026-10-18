@@ -1,4 +1,4 @@
-# Enlumor v0.5.1 · 当前Wave A收口任务清单
+﻿# Enlumor v0.5.1 · 当前Wave A收口任务清单
 
 日期：2026-10-18。用户已授权列清单、设置定时任务并开始执行；沿用子代理方式。
 产品基线：docs/product/Enlumor_Product_Plan_v0.5.1.md。仅当前Wave两项，后续Wave不展开。
@@ -43,4 +43,3 @@ B：Surfing MVP；C：Cruise深度研究/切换；D：可靠性完善。A真实�
 - enlumor已PAUSED；仅剩用户真实DeepSeek配置和论文解释/定位/追问/暂停/重试/重启验收，NOT EXECUTED。
 - Wave A 验收.cmd现指向v051独立候选；模型显示名不是API ID。密钥只在候选设置本地输入，不发聊天。
 - A真实通过前不发布、不进Surfing或前端重写。后续共享薄底座/UIUX需求保留Backlog POST-A-01。
-
