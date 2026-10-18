@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "baseline": "v0.5.1",
+  "wave": "A",
+  "status": "READY",
+  "task1": "TODO_CURRENT_BLOCK_FOLLOWUP",
+  "task2": "TODO_CONTROL_AUDIT_AND_PACKAGE",
+  "liveAcceptance": "NOT_EXECUTED",
+  "surfing": "NOT_STARTED",
+  "inFlight": null,
+  "worktree": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab",
+  "plan": "docs/superpowers/plans/2026-10-18-v051-wave-a-closeout.md",
+  "checklist": "docs/WAVE_A_TASKS.md",
+  "automationId": "enlumor",
+  "schedule": "every 30 minutes; pause on completion or required user action",
+  "notes": "No real credentials inspected; previous candidate139/8/101 are historical, not new test runs."
+}
