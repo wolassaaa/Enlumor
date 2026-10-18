@@ -150,3 +150,40 @@ for(const context of ['pause','block','profile','settings','background','unmount
   if(['block','profile','unmount','document'].includes(context)){await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('');await expect(page.getByLabel('追问回答',{exact:true})).not.toContainText('Old partial');}else{await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消');await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Old question');}
  });
 });
+
+async function selectFixtureText(page:Page,keyboard=false){await page.evaluate(keyboard=>{const span=document.querySelector('.textLayer span')!;const range=document.createRange();range.selectNodeContents(span);const selection=window.getSelection()!;selection.removeAllRanges();selection.addRange(range);document.querySelector('#viewerContainer')!.dispatchEvent(keyboard?new KeyboardEvent('keyup',{key:'ArrowRight',shiftKey:true,bubbles:true}):new MouseEvent('mouseup',{bubbles:true}));},keyboard);}
+for(const control of ['wheel','key-page','page','selection','key-selection','zoom','zoom-out','fit-width','fit-page','annotation','annotation-source','drawing','search','search-next','rotation','layout','blocks','sidebar','divider'] as const)test(`follow-up manual ${control} cancels before late completion and preserves user viewport/cache/source`,async()=>{
+ let late:any;await followUpFixture('manual-'+control,(data,res)=>{if(!data.question){fixtureDone(res,'Original completed explanation');return;}fixtureDelta(res,'Old partial');late=res;},async(page,app,requests,before)=>{
+  await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('等待继续');
+  if(control==='annotation'||control==='annotation-source'){await selectFixtureText(page);await page.getByRole('button',{name:'高亮选区',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);}
+  if(control==='search-next'){await page.getByLabel('全文搜索',{exact:true}).fill('Original evidence');await page.getByLabel('全文搜索',{exact:true}).press('Enter');await expect(page.locator('.textLayer .highlight').first()).toBeVisible();}
+  await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');const original=await cruiseSnapshot(page);
+  await page.evaluate(()=>{window.enlumor.onAiText(e=>{if(e.text==='Old partial')(window as any).__manualFollowId=e.requestId;});});
+  await page.getByLabel('当前原文追问',{exact:true}).fill('Retain the manual question');await page.getByRole('button',{name:'提交追问',exact:true}).click();await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');
+  const oldId=await page.evaluate(()=>(window as any).__manualFollowId as string);expect(oldId).toBeTruthy();
+  if(control==='wheel')await page.locator('#viewerContainer').dispatchEvent('wheel',{deltaY:100});
+  if(control==='key-page')await page.locator('#viewerContainer').press('PageDown');
+  if(control==='page'){await page.getByLabel('跳转页码',{exact:true}).fill('2');await page.getByLabel('跳转页码',{exact:true}).press('Enter');await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('2');}
+  if(control==='selection'){await selectFixtureText(page);await expect(page.getByRole('button',{name:'高亮选区',exact:true})).toBeEnabled();}
+  if(control==='key-selection'){await selectFixtureText(page,true);await expect(page.getByRole('button',{name:'高亮选区',exact:true})).toBeEnabled();}
+  if(control==='zoom'){await page.getByRole('button',{name:'放大',exact:true}).click();await expect(page.locator('.zoom-label')).toHaveText('110%');}
+  if(control==='zoom-out'){await page.getByRole('button',{name:'缩小',exact:true}).click();await expect(page.locator('.zoom-label')).toHaveText('91%');}
+  if(control==='fit-width'||control==='fit-page')await page.getByRole('button',{name:control==='fit-width'?'适宽':'适页',exact:true}).click();
+  if(control==='annotation'){await page.getByRole('button',{name:'应用颜色',exact:true}).click();await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1);}
+  if(control==='annotation-source')await page.locator('.annotation-source').click();
+  if(control==='drawing'){await page.getByRole('button',{name:'绘制画笔',exact:true}).click();await expect(page.getByRole('button',{name:'绘制画笔',exact:true})).toHaveAttribute('aria-pressed','true');}
+  if(control==='search'){await page.getByLabel('全文搜索',{exact:true}).fill('Second independent');await page.getByLabel('全文搜索',{exact:true}).press('Enter');await expect(page.locator('.textLayer .highlight').first()).toBeVisible();}
+  if(control==='search-next')await page.getByRole('button',{name:'下一个搜索结果',exact:true}).click();
+  if(control==='rotation')await page.getByRole('button',{name:'旋转页面',exact:true}).click();
+  if(control==='layout'){await page.getByLabel('阅读模式',{exact:true}).selectOption('single');await expect(page.getByLabel('阅读模式',{exact:true})).toHaveValue('single');}
+  if(control==='blocks'){await page.getByRole('button',{name:'读取本页阅读块',exact:true}).click();await page.getByRole('button',{name:'定位阅读块 2',exact:true}).click();}
+  if(control==='sidebar'){await page.getByRole('button',{name:'收起批注栏',exact:true}).click();await expect(page.locator('.annotations')).toBeHidden();}
+  if(control==='divider')await page.getByRole('separator',{name:'调整批注栏宽度',exact:true}).press('ArrowLeft');
+  await expect(page.getByLabel('追问状态',{exact:true})).toHaveText('追问已取消',{timeout:1500});await expect(page.getByLabel('Cruise 状态',{exact:true})).toHaveText('已暂停');
+  await page.waitForTimeout(200);const viewport=await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft})),quote=await page.getByLabel('Cruise 原文',{exact:true}).textContent();
+  if(late&&!late.destroyed)fixtureDone(late,' WRONG LATE ANSWER');await app.evaluate(({BrowserWindow},requestId)=>{const wc=BrowserWindow.getAllWindows()[0].webContents;wc.send('cruise:text',{requestId,type:'delta',text:'WRONG INJECTED LATE'});wc.send('cruise:text',{requestId,type:'done'});wc.send('cruise:text',{requestId,type:'error',code:'AI_FAILED'});},oldId);
+  await page.waitForTimeout(150);await expect(page.getByLabel('追问回答',{exact:true})).toHaveText('Old partial');await expect(page.getByLabel('Cruise 解释',{exact:true})).toHaveText('Original completed explanation');await expect(page.getByLabel('Cruise 原文',{exact:true})).toHaveText(quote!);await expect(page.getByLabel('当前原文追问',{exact:true})).toHaveValue('Retain the manual question');
+  expect(await page.locator('#viewerContainer').evaluate(el=>({top:el.scrollTop,left:el.scrollLeft}))).toEqual(viewport);await expect(page.getByLabel('Cruise 保存状态',{exact:true})).toHaveText('已保存');expect(await cruiseSnapshot(page)).toEqual(original);expect(requests).toHaveLength(2);expect(createHash('sha256').update(readFileSync(source)).digest('hex')).toBe(before);
+  mkdirSync('evidence/v051-wave-a',{recursive:true});await page.screenshot({path:'evidence/v051-wave-a/TASK2-manual-'+control+'.png'});
+ });
+});
