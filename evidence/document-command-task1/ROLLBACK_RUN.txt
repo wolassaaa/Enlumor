@@ -1,0 +1,12 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab/.cache/document-command-task1-rollback/run-LB74FW
+
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  23:51:32
+   Duration  226ms (transform 71%, import 20%, tests 7%, worker 3%)
+
+ROLLBACK: ORIGINAL_HASH=PASS; LEGACY_API=PASS; EXECUTOR_ABSENT=YES; LEGACY_TESTS=PASS; LIVE_MODIFIED_FILES_UNCHANGED=YES
+
+EXIT: 0

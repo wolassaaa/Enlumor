@@ -1,0 +1,6 @@
+{
+  "snapshot": "evidence/document-command-task1/originals/reading-commands.ts",
+  "sha256": "e5c3059880dc0c681c7ea3dfb36b9184cb8c3952f1f816de4a27d34ad75b8a65",
+  "target": "src/renderer/reading-commands.ts",
+  "baseline": "1c01790"
+}

@@ -1,0 +1,9 @@
+Task1 checkpoint before full unit/build:
+- New shared contracts and strict executor; old executeReadingCommand body unchanged.
+- Actual initial RED: 87 failed (missing function), EXIT 1, TASK1-RED.txt.
+- Initial GREEN: 102 passed focused, EXIT 0, TASK1-GREEN.txt.
+- Three getter/mutable-source regression tests observed RED: 3 failed | 92 passed, EXIT 1, TASK1-GETTER-RED.txt. Root cause: rereading getters after validation. Fix: validate and execute same once-captured primitives/geometry snapshot.
+- Current focused: 110 passed (95 new +15 legacy), EXIT 0, TASK1-FINAL-FOCUSED.txt.
+- Next: npm test once and npm run build once. No Task2, real API, packaging, IPC, database or UI changes.
+
+Completed: npm test 23 files /250 tests passed EXIT0; npm run build successful EXIT0. Commit653acb4aff2a5bce07a9c457e6248834a1f89b80 contains exactly three owned paths. Report saved and reopened .superpowers/sdd/2026-10-19-document-command-foundation/task-1-report.md. Parent freshreview/rollback pending; Task2 not started.

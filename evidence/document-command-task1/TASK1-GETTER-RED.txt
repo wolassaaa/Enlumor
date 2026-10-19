@@ -1,0 +1,98 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/document-commands.test.ts (95 tests | 3 failed) 25ms
+   ❯ validated document command executor (95)
+     × captures request and context primitive getters only once 5ms
+     × captures the validated command page before getters can retarget it 2ms
+     × validates the exact source-bound block snapshot passed to focus 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > captures request and context primitive getters only once
+AssertionError: expected { requestId: 'retargeted', …(2) } to deeply equal { requestId: 'request-1', …(2) }
+
+- Expected
++ Received
+
+  {
+-   "ok": true,
+-   "requestId": "request-1",
+-   "result": {
+-     "kind": "paused",
++   "error": {
++     "code": "COMMAND_STALE",
++     "message": "The reading context has changed.",
+    },
++   "ok": false,
++   "requestId": "retargeted",
+  }
+
+ ❯ tests/document-commands.test.ts:149:37
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > captures the validated command page before getters can retarget it
+AssertionError: expected { requestId: 'request-1', …(2) } to match object { ok: true, result: { …(2) } }
+(1 matching property omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "ok": true,
+    "result": {
+      "kind": "navigated",
+-     "pageIndex": 0,
++     "pageIndex": 1,
+    },
+  }
+
+ ❯ tests/document-commands.test.ts:155:37
+    153|     const h = host(); let reads = 0;
+    154|     const input = request({ type: 'go_to_page', get pageIndex() { retu…
+    155|     expect(await execute(input, h)).toMatchObject({ ok: true, result: …
+       |                                     ^
+    156|     expect(h.effects).toEqual([['navigate', 0]]);
+    157|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > validates the exact source-bound block snapshot passed to focus
+AssertionError: expected [ [ 'focus', …(1) ] ] to deeply equal [ [ 'focus', …(1) ] ]
+
+- Expected
++ Received
+
+@@ -1,10 +1,10 @@
+  [
+    [
+      "focus",
+      {
+-       "documentId": "doc",
++       "documentId": "other",
+        "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "id": "passage-1",
+        "pageIndex": 0,
+        "quads": [
+          [
+
+ ❯ tests/document-commands.test.ts:162:23
+    160|     h.ports.readPage = async () => [{ ...block, get documentId() { ret…
+    161|     expect(await execute(request({ type: 'show_evidence', pageIndex: 0…
+    162|     expect(h.effects).toEqual([['focus', block]]);
+       |                       ^
+    163|   });
+    164|   it.each(['navigate', 'focus'] as const)('cancels delayed %s at its g…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 92 passed (95)
+   Start at  23:49:12
+   Duration  179ms (transform 40%, tests 36%, import 19%, worker 5%)
+
+
+EXIT: 1

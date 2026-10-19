@@ -1,6 +1,8 @@
 ﻿# Enlumor v0.5.1 · 当前Wave A收口任务清单
 
-> 当前下一批：先搭基础文档指令系统；新计划为[2026-10-19基础指令计划](superpowers/plans/2026-10-19-document-command-foundation.md)，两项分别为合同/执行器与真实阅读器接入，待计划审阅。高级混合高亮、全文模型接入和浮动标识界面不进入首批。
+> 当前下一批：先搭基础文档指令系统；新计划为[2026-10-19基础指令计划](superpowers/plans/2026-10-19-document-command-foundation.md)，两项分别为合同/执行器与真实阅读器接入；Task1已获批准并完成，Task2尚未开始。高级混合高亮、全文模型接入和浮动标识界面不进入首批。
+
+> 当前交付：用户已批准先做执行器；Task1已在653acb4实现五类命令，110专项/250完整单测、build、独立Review及隔离副本回退通过，证据见evidence/document-command-task1/VERIFICATION.txt。Task2真实阅读器接入尚未开始；不能据此称新Cruise或AI翻页已上线。
 
 > 2026-10-19方向修订：用户否定当前逐块Cruise交互，要求重建AI共读底座，并先搭建全文上下文与阅读操作库。下列A1/A2勾选是旧实现的历史工程结果，不代表产品验收通过。当前不是“仅等密钥配置”；用户报告DeepSeek已配置可用，完整真实验收仍无记录。当前动作是审阅[新设计](superpowers/specs/2026-10-19-reading-command-foundation-design.md)，确认后另拆两项实施任务。旧单块输入约束及要求先完成旧产品验收才允许重建的顺序不再适用；新流程发布闸门保留。自动任务保持暂停，不自动进入Surfing或远期沉浸交互。
 

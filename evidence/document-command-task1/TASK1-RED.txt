@@ -1,0 +1,415 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/document-commands.test.ts (87 tests | 87 failed) 18ms
+   ❯ validated document command executor (87)
+     × returns source-bound page text without navigation 3ms
+     × navigates exactly once to zero-based boundary page 0 0ms
+     × navigates exactly once to zero-based boundary page 1 0ms
+     × resolves evidence by ID from the requested source page 0ms
+     × clear_focus changes only local focus/session state, not annotations 0ms
+     × pause changes only local focus/session state, not annotations 0ms
+     × allows pause to invalidate its own host revision and signal 0ms
+     × rejects malformed input before touching host: null 0ms
+     × rejects malformed input before touching host: undefined 0ms
+     × rejects malformed input before touching host: {} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0},"extra":true} 0ms
+     × rejects malformed input before touching host: {"requestId":"","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"  ","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"  ","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"f","revision":3},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg","revision":3},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":-1},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":null},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":null},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":1.1},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":9007199254740992},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":"3"},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3,"extra":true},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0,"quads":[]}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"clear_focus","pageIndex":0}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"pause","script":"x"}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"start_model"}} 1ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page"}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":null}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":null}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":1.1}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":"0"}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":9007199254740992}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"show_evidence","pageIndex":0,"passageId":""}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"show_evidence","pageIndex":0,"passageId":"  "}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"show_evidence","pageIndex":0,"passageId":"ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"show_evidence","pageIndex":0,"passageId":1}} 0ms
+     × rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}} 0ms
+     × catches throwing input accessors as invalid and preserves validated request identity 0ms
+     × rejects out-of-range page -1 without host effects 0ms
+     × rejects out-of-range page 2 without host effects 0ms
+     × rejects stale source null 0ms
+     × rejects stale source {"documentId":"other","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3} 0ms
+     × rejects stale source {"documentId":"doc","fingerprint":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","revision":3} 0ms
+     × rejects stale source {"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":4} 0ms
+     × rejects absent evidence without focusing 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"other","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":1,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"  ","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":42,"quads":[[1,10,20,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,2]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20000000,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[20,10,1,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,null,20,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[null,null,null,null,null,null,null,null]]} 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[null]} 0ms
+     × rejects malformed host evidence before returning or focusing: undefined 0ms
+     × rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]} 0ms
+     × rejects malformed host evidence before returning or focusing: null 0ms
+     × rejects malformed host evidence before returning or focusing: null 0ms
+     × returns empty pages as empty text, not fabricated evidence 0ms
+     × blocks delayed read completion after revision changes 0ms
+     × blocks delayed read completion after abort changes 0ms
+     × rejects an already canceled command without effects 0ms
+     × gives deferred navigate a live guard and rejects late completion 0ms
+     × gives deferred focus a live guard and rejects late completion 0ms
+     × snapshots caller input and output geometry across awaits 0ms
+     × normalizes readPage errors without leaking error text or trusting error code identity 0ms
+     × normalizes navigate errors without leaking error text or trusting error code identity 0ms
+     × normalizes focus errors without leaking error text or trusting error code identity 0ms
+     × normalizes clearFocus errors without leaking error text or trusting error code identity 0ms
+     × normalizes pause errors without leaking error text or trusting error code identity 0ms
+     × normalizes getContext errors without leaking error text or trusting error code identity 0ms
+     × normalizes getPageCount errors without leaking error text or trusting error code identity 0ms
+     × rejects malformed host page count 0 0ms
+     × rejects malformed host page count -1 0ms
+     × rejects malformed host page count 1.5 0ms
+     × rejects malformed host page count null 0ms
+     × rejects malformed host page count null 0ms
+     × rejects malformed host page count "2" 0ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 87 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > returns source-bound page text without navigation
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ tests/document-commands.test.ts:41:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > navigates exactly once to zero-based boundary page 0
+ FAIL  tests/document-commands.test.ts > validated document command executor > navigates exactly once to zero-based boundary page 1
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ tests/document-commands.test.ts:46:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > resolves evidence by ID from the requested source page
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ tests/document-commands.test.ts:51:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > clear_focus changes only local focus/session state, not annotations
+ FAIL  tests/document-commands.test.ts > validated document command executor > pause changes only local focus/session state, not annotations
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ tests/document-commands.test.ts:56:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > allows pause to invalidate its own host revision and signal
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ tests/document-commands.test.ts:63:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: null
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: undefined
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0},"extra":true}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"  ","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"  ","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"ddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"f","revision":3},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"gggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggggg","revision":3},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":-1},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":null},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":null},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":1.1},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":9007199254740992},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":"3"},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3,"extra":true},"command":{"type":"read_page","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0,"quads":[]}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"clear_focus","pageIndex":0}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"pause","script":"x"}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"start_model"}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page"}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":null}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":null}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":1.1}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":"0"}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":9007199254740992}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"show_evidence","pageIndex":0,"passageId":""}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"show_evidence","pageIndex":0,"passageId":"  "}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"show_evidence","pageIndex":0,"passageId":"ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp"}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"show_evidence","pageIndex":0,"passageId":1}}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed input before touching host: {"requestId":"request-1","context":{"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3},"command":{"type":"read_page","pageIndex":0}}
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ failure tests/document-commands.test.ts:26:24
+ ❯ tests/document-commands.test.ts:81:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > catches throwing input accessors as invalid and preserves validated request identity
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ failure tests/document-commands.test.ts:26:24
+ ❯ tests/document-commands.test.ts:86:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects out-of-range page -1 without host effects
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects out-of-range page 2 without host effects
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ failure tests/document-commands.test.ts:26:24
+ ❯ tests/document-commands.test.ts:89:29
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects stale source null
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects stale source {"documentId":"other","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":3}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects stale source {"documentId":"doc","fingerprint":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","revision":3}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects stale source {"documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","revision":4}
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ failure tests/document-commands.test.ts:26:24
+ ❯ tests/document-commands.test.ts:92:51
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects absent evidence without focusing
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ failure tests/document-commands.test.ts:26:24
+ ❯ tests/document-commands.test.ts:95:29
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"other","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":1,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"  ","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"ppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppppp","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":42,"quads":[[1,10,20,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,2]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20000000,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[20,10,1,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,null,20,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[null,null,null,null,null,null,null,null]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[null]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: undefined
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: {"id":"passage-1","documentId":"doc","fingerprint":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","pageIndex":0,"quote":"Original text","quads":[[1,10,20,10,1,1,20,1]]}
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: null
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host evidence before returning or focusing: null
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ failure tests/document-commands.test.ts:26:24
+ ❯ tests/document-commands.test.ts:107:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > returns empty pages as empty text, not fabricated evidence
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ tests/document-commands.test.ts:112:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > blocks delayed read completion after revision changes
+ FAIL  tests/document-commands.test.ts > validated document command executor > blocks delayed read completion after abort changes
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ tests/document-commands.test.ts:117:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects an already canceled command without effects
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ failure tests/document-commands.test.ts:26:24
+ ❯ tests/document-commands.test.ts:125:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > gives deferred navigate a live guard and rejects late completion
+ FAIL  tests/document-commands.test.ts > validated document command executor > gives deferred focus a live guard and rejects late completion
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ tests/document-commands.test.ts:131:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > snapshots caller input and output geometry across awaits
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ tests/document-commands.test.ts:141:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > normalizes readPage errors without leaking error text or trusting error code identity
+ FAIL  tests/document-commands.test.ts > validated document command executor > normalizes navigate errors without leaking error text or trusting error code identity
+ FAIL  tests/document-commands.test.ts > validated document command executor > normalizes focus errors without leaking error text or trusting error code identity
+ FAIL  tests/document-commands.test.ts > validated document command executor > normalizes clearFocus errors without leaking error text or trusting error code identity
+ FAIL  tests/document-commands.test.ts > validated document command executor > normalizes pause errors without leaking error text or trusting error code identity
+ FAIL  tests/document-commands.test.ts > validated document command executor > normalizes getContext errors without leaking error text or trusting error code identity
+ FAIL  tests/document-commands.test.ts > validated document command executor > normalizes getPageCount errors without leaking error text or trusting error code identity
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ failure tests/document-commands.test.ts:26:24
+ ❯ tests/document-commands.test.ts:149:26
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/87]⎯
+
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host page count 0
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host page count -1
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host page count 1.5
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host page count null
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host page count null
+ FAIL  tests/document-commands.test.ts > validated document command executor > rejects malformed host page count "2"
+TypeError: runDocumentCommand is not a function
+ ❯ execute tests/document-commands.test.ts:24:88
+     22|   return { ports, effects, annotations, setContext: (value: CommandCon…
+     23| }
+     24| const execute = (input: unknown, h = host(), signal = new AbortControl…
+       |                                                                                        ^
+     25| async function failure(input: unknown, code: string, h = host(), signa…
+     26|   const result = await execute(input, h, signal);
+ ❯ failure tests/document-commands.test.ts:26:24
+ ❯ tests/document-commands.test.ts:153:11
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/87]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  87 failed (87)
+   Start at  23:47:31
+   Duration  389ms (transform 43%, tests 30%, import 21%, worker 6%)
+
+
+EXIT: 1

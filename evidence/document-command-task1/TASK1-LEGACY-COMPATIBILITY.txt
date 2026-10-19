@@ -1,0 +1,2 @@
+Legacy executeReadingCommand prefix unchanged from base 1c0179091940e8b55c4701dd1ee552df18998d43: PASS
+EXIT: 0

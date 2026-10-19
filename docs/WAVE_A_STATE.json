@@ -2,7 +2,7 @@
   "version": 1,
   "baseline": "v0.5.1",
   "wave": "A",
-  "status": "DOCUMENT_COMMAND_PLAN_REVIEW",
+  "status": "DOCUMENT_COMMAND_EXECUTOR_TASK1_COMPLETE",
   "task1": "OFFLINE_REVIEW_PASS_LIVE_PENDING",
   "task2": "OFFLINE_AGGREGATE_EXE_PERFORMANCE_ROLLBACK_PASS",
   "liveAcceptance": "NOT_EXECUTED",
@@ -13,14 +13,14 @@
   "checklist": "docs/WAVE_A_TASKS.md",
   "automationId": "enlumor",
   "schedule": "every 30 minutes; pause on completion or required user action",
-  "notes": "User narrowed immediate work to basic document command system; hybrid brush/line-recognition highlight deferred FUTURE-03. Two-task implementation plan awaiting review; subagent execution method preserved. No new runtime code or API calls.",
+  "notes": "User-authorized Task1 only completed653acb4;250unit/110focused/build/isolatedrollback and fresh taskreview PASS. Task2 real reader integration NOT STARTED. No model calls/newCruise/UI/publish; automation PAUSED.",
   "automationStatus": "PAUSED",
   "automationTargetThread": "01a13b64-f084-72e0-9e85-1ec042414811",
   "lastVerifiedBaseline": {
     "unit": 139,
     "build": "PASS"
   },
-  "updatedAt": "2026-10-19T15:40:52.5552798+00:00",
+  "updatedAt": "2026-10-19T15:54:20.5323829+00:00",
   "task1Commit": "dc9f231",
   "lastVerified": {
     "unit": 155,
@@ -41,5 +41,16 @@
   ],
   "task2Commit": "2165ece",
   "productAcceptance": "REJECTED_CURRENT_CRUISE_INTERACTION",
-  "designSpec": "docs/superpowers/specs/2026-10-19-reading-command-foundation-design.md"
+  "designSpec": "docs/superpowers/specs/2026-10-19-reading-command-foundation-design.md",
+  "documentCommands": {
+    "executor": "IMPLEMENTED_REVIEW_PASS",
+    "executorCommit": "653acb4",
+    "readerIntegration": "NOT_STARTED",
+    "realModel": "NOT_CALLED",
+    "unit": 250,
+    "focused": 110,
+    "build": "PASS",
+    "rollback": "PASS",
+    "reviewReport": "evidence/document-command-task1/TASK1_REVIEW.md"
+  }
 }

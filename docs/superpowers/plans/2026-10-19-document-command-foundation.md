@@ -45,12 +45,12 @@
 - `runDocumentCommand(input:unknown,ports:DocumentCommandPorts,signal:AbortSignal):Promise<CommandResult>`；接口类型不暴露任意路径或脚本。解析错误COMMAND_INVALID，失效COMMAND_STALE，取消COMMAND_CANCELED，页越界PAGE_OUT_OF_RANGE，ID不存在EVIDENCE_NOT_FOUND，底层失败COMMAND_FAILED。
 - requestId/文档ID非空且≤100字符，fingerprint为64位SHA256 hex，revision非负安全整数，passageId非空且≤200字符；命令拒绝额外字段、非有限数字、错误类型。输入只有证据ID，不接收模型quads。readPage返回的证据还要校验文档指纹、页号与现有geometry校验后才定位。
 
-- [ ] 写RED：合法五类命令、解析拒绝、首末页转换、源版本不符、延迟readPage后换revision、AbortSignal取消、证据ID伪造、越界geometry、底层错误、clear/pause不读写批注。
-- [ ] 运行`npx vitest run tests/document-commands.test.ts`，保存实际失败日志与退出码；不能把预期失败当已观察失败。
-- [ ] 实现最小严格解析与执行；每个await前后及实际navigate/focus副作用处校验isCurrent；pause使宿主旧任务失效，不能无意取消自身的完成记录。
-- [ ] 同一请求不分批偷偷执行多个动作；未知命令立即拒绝。show_evidence先从当前页读取并验证passageId映射，再进行定位。
-- [ ] `npx vitest run tests/document-commands.test.ts tests/reading-commands.test.ts`及`npm run build`通过；记录literal结果、退出码与旧入口兼容证据。
-- [ ] 明确路径提交`feat: add validated document command contracts and executor`，新鲜任务Review通过后再Task2。
+- [x] 写RED：合法五类命令、解析拒绝、首末页转换、源版本不符、延迟readPage后换revision、AbortSignal取消、证据ID伪造、越界geometry、底层错误、clear/pause不读写批注。
+- [x] 运行`npx vitest run tests/document-commands.test.ts`，保存实际失败日志与退出码；不能把预期失败当已观察失败。
+- [x] 实现最小严格解析与执行；每个await前后及实际navigate/focus副作用处校验isCurrent；pause使宿主旧任务失效，不能无意取消自身的完成记录。
+- [x] 同一请求不分批偷偷执行多个动作；未知命令立即拒绝。show_evidence先从当前页读取并验证passageId映射，再进行定位。
+- [x] `npx vitest run tests/document-commands.test.ts tests/reading-commands.test.ts`及`npm run build`通过；记录literal结果、退出码与旧入口兼容证据。
+- [x] 明确路径提交`feat: add validated document command contracts and executor`，新鲜任务Review通过后再Task2。
 
 ### Task 2: 接入真实阅读器并证明指令有效
 
@@ -73,6 +73,6 @@
 
 ## 执行交接与自查
 
-本计划待用户审阅；执行方式沿用单一子代理实施＋独立Review，不另问执行方式。当前自动任务暂停，不因生成计划而自动恢复。审阅确认后从Task1 RED开始，不重复实施旧Wave A。
+用户已批准先实施Task1；执行器已在653acb4完成并通过独立Review、250单测/build/隔离回退。当前交付只包含Task1，Task2真实阅读器接入仍未开始。执行方式沿用单一子代理实施＋独立Review，自动任务保持暂停，不自动扩大范围。
 
 自查：五类Review Focus均有归属测试；Task2只消费Task1定义的接口；未安排任何高级高亮、标识模型迁移或真实请求。指令库之外的规格属于明确后续批次，不借本轮宣称整套重建已完成。预计结果不是测试报告，实际执行需另写证据。

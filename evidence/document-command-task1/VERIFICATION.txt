@@ -1,0 +1,30 @@
+Enlumor Document Command Executor — Task1 verification (2026-10-19)
+Branch feat/v04-wave-ab; baseline1c01790; modified653acb4aff2a5bce07a9c457e6248834a1f89b80.
+Changed fields/branches: CommandContext(documentId,fingerprint,revision); CommandRequest(requestId,context,command); five commands read_page/go_to_page/show_evidence/clear_focus/pause; fixed CommandResult success/error variants. Legacy executeReadingCommand preserved unchanged.
+ARTIFACTS
+D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\document-command-task1\MODIFIED_FILE.ts
+D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\document-command-task1\DIFF.patch
+D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\document-command-task1\VERIFICATION.txt
+D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\document-command-task1\ROLLBACK.sh
+BASELINE exact command: npm test
+Input: baseline1c01790, locked local dependencies and deterministic fixtures, no API.
+Literal output: Test Files 22 passed (22); Tests 155 passed (155). EXIT:0. BASELINE.txt.
+Original src/renderer/reading-commands.ts SHA256 e5c3059880dc0c681c7ea3dfb36b9184cb8c3952f1f816de4a27d34ad75b8a65; original snapshot and manifest retained.
+MODIFIED RED exact command: npx vitest run tests/document-commands.test.ts
+Input: tests written before new executor. Literal output: Tests 87 failed (87); TypeError: runDocumentCommand is not a function. EXIT:1. TASK1-RED.txt.
+Getter-regression RED: same command after adding accessor fixtures. Literal output: Tests 3 failed | 92 passed (95). EXIT:1. TASK1-GETTER-RED.txt.
+MODIFIED exact command: npx vitest run tests/document-commands.test.ts tests/reading-commands.test.ts
+Input:653acb4, deterministic ports, hostile/malformed requests and source/cancellation fixtures.
+Literal output: Test Files 2 passed (2); Tests 110 passed (110). EXIT:0. TASK1-FINAL-FOCUSED.txt.
+MODIFIED exact command: npm test
+Input:653acb4 full locked unit suite. Literal output: Test Files 23 passed (23); Tests 250 passed (250). EXIT:0. TASK1-FULL-UNIT.txt.
+MODIFIED exact command: npm run build
+Literal output: tsc --noEmit && node scripts/build.mjs; 36 modules transformed; built in 381ms. EXIT:0. TASK1-BUILD.txt.
+ROLLBACK exact command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' -lc 'chmod +x evidence/document-command-task1/ROLLBACK.sh; ./evidence/document-command-task1/ROLLBACK.sh'
+Input: new bounded .cache/document-command-task1-rollback/run-* source copy; restore original reading-commands.ts by hash, remove added shared/document-commands.ts only in copy, compile baseline CJS, run copied baseline tests/reading-commands.test.ts.
+Literal output: Test Files 1 passed (1); Tests 15 passed (15).
+ROLLBACK: ORIGINAL_HASH=PASS; LEGACY_API=PASS; EXECUTOR_ABSENT=YES; LEGACY_TESTS=PASS; LIVE_MODIFIED_FILES_UNCHANGED=YES
+EXIT:0. ROLLBACK_RUN.txt. Restored legacy pause_session and old three-command API in isolated copy; new runDocumentCommand absent. Working modified source/type/tests left changed. No rollback against personal data.
+REVIEW: fresh task-scoped spec PASS, quality Approved, no findings. TASK1_REVIEW.md. No repeated reviewer suites.
+BOUNDARIES: Task1 executor only. Ports are tested deterministically; actual PdfReader adapter/viewport navigation is Task2 NOT STARTED. Adapter must check isCurrent at delayed effects. Abort invalidates late results/effects after host read settles; current port contract does not forcibly abort underlying reads. No model connection/fulltext context/newCruise/UI/highlightchange/DBmigration/EXErelease/push. Formal0.1.15 and original PDFs/userDB unchanged. Automation remains PAUSED.
+Known nonblocking baseline advisories: Node SQLite experimental; Vite chunk>500kB. Not hidden or claimed pristine.
