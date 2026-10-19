@@ -1,4 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+vi.mock('pdfjs-dist', () => ({ getDocument: vi.fn(), GlobalWorkerOptions: {} }));
+vi.mock('pdfjs-dist/web/pdf_viewer.mjs', () => ({ EventBus: class {}, PDFViewer: class {}, PDFLinkService: class {}, PDFFindController: class {}, ScrollMode: {} }));
+import { PdfReader } from '../src/renderer/pdf-reader';
+import { createReaderCommandHost } from '../src/renderer/document-command-reader';
 import { runDocumentCommand } from '../src/renderer/reading-commands';
 import type { CommandContext, DocumentCommand, DocumentCommandPorts } from '../src/shared/document-commands';
 import type { CruiseBlock } from '../src/shared/cruise';
@@ -194,4 +198,85 @@ describe('validated document command executor', () => {
     const h = host(); h.ports.getPageCount = () => count as number;
     await failure(request({ type: 'read_page', pageIndex: 0 }), 'COMMAND_FAILED', h); expect(h.effects).toEqual([]);
   });
+});
+
+// Real PdfReader methods, with only the PDF.js/DOM boundary supplied. No fake
+// focus/navigate port: retained frames exercise the actual viewport mutation.
+function readerFixture() {
+ const frames: FrameRequestCallback[] = [];
+ vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => { frames.push(callback); return frames.length; });
+ const reader: any = Object.create(PdfReader.prototype);
+ const paint = vi.fn();
+ const page = { view: [0, 0, 600, 800], getTextContent: async () => ({ styles: {}, items: [{ str: 'Native source', width: 100, height: 14, transform: [14, 0, 0, 14, 40, 700], fontName: 'f' }] }) };
+ Object.assign(reader, { generation: 1, focusEpoch: 0, ready: true, active: { id: 'doc', fingerprint: context.fingerprint, pageCount: 3 }, blockCache: new Map(),
+  viewer: { currentPageNumber: 1, pdfDocument: { getPage: async () => page }, getPageView: () => ({ viewport: { transform: [1, 0, 0, 1, 0, 0] }, div: { offsetTop: 800 } }) },
+  container: { scrollTop: 23, clientHeight: 600 }, paint });
+ return { reader, frames, paint, page, flush: () => { for (const callback of frames.splice(0)) callback(0); } };
+}
+function sourceMark() { return { ...structuredClone(block), type: 'highlight', author: 'user', color: '#ffff00', note: '' }; }
+afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
+it.each(['clear', 'source', 'guard'])('real reader rejects a retained focus frame after %s invalidation', async change => {
+ vi.useFakeTimers(); const h = readerFixture(); let current = true;
+ const pending = h.reader.focus(sourceMark(), () => current);
+ expect(h.reader.flash?.quote).toBe('Original text'); expect(h.frames).toHaveLength(1);
+ if (change === 'clear') h.reader.clearCruiseFocus();
+ if (change === 'source') { h.reader.generation++; h.reader.active = { ...h.reader.active, id: 'new' }; h.reader.flash = undefined; }
+ if (change === 'guard') current = false;
+ h.reader.container.scrollTop = 47; h.flush(); await pending;
+ expect(h.reader.container.scrollTop).toBe(47);
+ if (change !== 'source') expect(h.reader.flash).toBeUndefined();
+});
+it('real reader keeps the newest focus when an older retained frame arrives', async () => {
+ vi.useFakeTimers(); const h = readerFixture();
+ const old = h.reader.focus(sourceMark());
+ const latest = h.reader.focus({ ...sourceMark(), id: 'new-evidence', quads: [[10, 100, 50, 100, 10, 90, 50, 90]] });
+ const newestFrame = h.frames.pop()!; newestFrame(0); await latest;
+ const position = h.reader.container.scrollTop; h.flush(); await old;
+ expect(h.reader.container.scrollTop).toBe(position); expect(h.reader.flash.id).toBe('new-evidence');
+});
+
+it.each(['pause', 'takeover', 'switch', 'source-hash'] as const)('real reader text delayed across %s never returns old evidence; next command uses latest refs', async change => {
+ const h = readerFixture(), text = deferred<any>();
+ const nativeText = h.page.getTextContent;
+ h.page.getTextContent = () => text.promise;
+ let document = h.reader.active;
+ const host = createReaderCommandHost(() => h.reader, () => document);
+ const pending = host.run({ type: 'read_page', pageIndex: 0 });
+ await Promise.resolve(); // The real PdfReader is waiting in getTextContent.
+ if (change === 'pause') expect(await host.run({ type: 'pause' })).toMatchObject({ ok: true, result: { kind: 'paused' } });
+ else host.invalidate();
+ if (change === 'switch' || change === 'source-hash') {
+  document = { ...document, id: change === 'switch' ? 'latest-doc' : document.id, fingerprint: 'b'.repeat(64) };
+  h.reader.active = document; h.reader.generation++; h.reader.blockCache.clear();
+ }
+ text.resolve(await nativeText());
+ expect(await pending).toMatchObject({ ok: false, error: { code: 'COMMAND_CANCELED' } });
+ h.page.getTextContent = nativeText;
+ const latest = await host.run({ type: 'read_page', pageIndex: 2 });
+ expect(latest).toMatchObject({ ok: true, result: { kind: 'page', blocks: [{ documentId: document.id, fingerprint: document.fingerprint, pageIndex: 2, quote: 'Native source' }] } });
+ expect(h.reader.viewer.currentPageNumber).toBe(1); expect(h.reader.flash).toBeUndefined();
+});
+it('clear_focus cancels a pending real focus result and frame while reporting its own completion', async () => {
+ vi.useFakeTimers(); const h = readerFixture();
+ const host = createReaderCommandHost(() => h.reader, () => h.reader.active);
+ const page = await host.run({ type: 'read_page', pageIndex: 0 });
+ if (!page.ok || page.result.kind !== 'page') throw Error('native page fixture failed');
+ const pending = host.run({ type: 'show_evidence', pageIndex: 0, passageId: page.result.blocks[0].id });
+ for (let i = 0; i < 8; i++) await Promise.resolve();
+ expect(h.frames).toHaveLength(1); expect(h.reader.flash).toBeDefined();
+ expect(await host.run({ type: 'clear_focus' })).toMatchObject({ ok: true, result: { kind: 'cleared' } });
+ h.flush();
+ expect(await pending).toMatchObject({ ok: false, error: { code: 'COMMAND_CANCELED' } });
+ expect(h.reader.flash).toBeUndefined(); expect(h.reader.container.scrollTop).toBe(23);
+});
+it('a detached reader cannot report successful navigation with a still-mounted document ref', async () => {
+ const h = readerFixture();
+ const host = createReaderCommandHost(() => null, () => h.reader.active);
+ expect(await host.run({ type: 'go_to_page', pageIndex: 2 })).toMatchObject({ ok: false });
+ expect(h.reader.viewer.currentPageNumber).toBe(1);
+});
+it('closed-focus takeovers only invalidate refs and do not repaint every page', () => {
+ const h = readerFixture(), host = createReaderCommandHost(() => h.reader, () => h.reader.active);
+ host.invalidate(); host.invalidate();
+ expect(h.paint).not.toHaveBeenCalled();
 });

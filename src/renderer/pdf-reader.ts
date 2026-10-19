@@ -23,6 +23,7 @@ export class PdfReader {
   private active?: OpenedDocument;
   private generation = 0;
   private flash?: Annotation;
+  private focusEpoch = 0;
   private flashTimer?: ReturnType<typeof setTimeout>;
   private ready = false;
   private lineTool: LineTool;
@@ -143,11 +144,12 @@ export class PdfReader {
     this.blockCache.set(pageIndex,blocks);if(this.blockCache.size>6)this.blockCache.delete(this.blockCache.keys().next().value!);
     return structuredClone(blocks);
   }
-  clearCruiseFocus(){clearTimeout(this.flashTimer);this.flash=undefined;this.paint();}
-  locateCruiseBlock(block:CruiseBlock){
+  clearCruiseFocus(){this.focusEpoch=(this.focusEpoch||0)+1;clearTimeout(this.flashTimer);const hadFlash=!!this.flash;this.flash=undefined;if(hadFlash)this.paint();}
+  locateCruiseBlock(block:CruiseBlock,isCurrent:()=>boolean=()=>true){
+    if(!isCurrent())return Promise.resolve();
     if(!this.active||!this.ready||!this.viewer.pdfDocument||block.documentId!==this.active.id||block.fingerprint!==this.active.fingerprint)throw new Error('CRUISE_SOURCE_CHANGED');
     const mark={...block,type:'highlight',author:'user',color:'#f4cf58',note:''};
-    validateAnnotation(mark,this.active.pageCount);this.focus(mark);
+    validateAnnotation(mark,this.active.pageCount);return this.focus(mark,isCurrent);
   }
   setMarks(marks: Annotation[], changedIds?: string[]) { this.marks = marks; this.paint(undefined,changedIds?new Set(changedIds):undefined); }
   setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
@@ -163,7 +165,7 @@ export class PdfReader {
   zoom(value: number) { if (this.ready) this.viewer.currentScale = Math.max(.25, Math.min(4, value)); }
   fit(mode: 'page-width' | 'page-fit') { if (this.ready) this.viewer.currentScaleValue = mode; }
   rotate() { if (this.ready) this.viewer.pagesRotation = (this.viewer.pagesRotation + 90) % 360; }
-  go(page: number) { if (this.ready && Number.isInteger(page) && page >= 1 && page <= (this.active?.pageCount || 0)) this.viewer.currentPageNumber = page; }
+  go(page: number, isCurrent:()=>boolean=()=>true) { if (isCurrent() && this.ready && Number.isInteger(page) && page >= 1 && page <= (this.active?.pageCount || 0)) this.viewer.currentPageNumber = page; }
   search(query: string, again = false, backwards = false) {
     if (!this.ready) return;
     this.bus.dispatch('find', { source: this, type: again ? 'again' : '', query, caseSensitive: false, entireWord: false, highlightAll: true, findPrevious: backwards, matchDiacritics: false });
@@ -201,15 +203,25 @@ export class PdfReader {
     }
     return parts;
   }
-  focus(mark: Annotation) {
+  focus(mark: Annotation, isCurrent:()=>boolean=()=>true):Promise<void> {
+    const generation=this.generation,epoch=this.focusEpoch=(this.focusEpoch||0)+1;
+    const current=()=>epoch===this.focusEpoch&&generation===this.generation&&this.ready&&mark.documentId===this.active?.id&&mark.fingerprint===this.active?.fingerprint&&isCurrent();
+    if(!current())return Promise.resolve();
     this.go(mark.pageIndex + 1); this.flash = mark; this.paint();
-    clearTimeout(this.flashTimer); this.flashTimer = setTimeout(() => { this.flash = undefined; this.paint(); }, 1800);
-    requestAnimationFrame(() => {
+    clearTimeout(this.flashTimer); this.flashTimer = setTimeout(() => { if(epoch===this.focusEpoch&&generation===this.generation){this.flash = undefined; this.paint();} }, 1800);
+    return new Promise(resolve=>requestAnimationFrame(() => {
+      if(!current()){
+        // An obsolete frame may clear only its own flash, never a newer focus.
+        if(epoch===this.focusEpoch&&generation===this.generation){this.flash=undefined;this.paint();}
+        resolve();return;
+      }
       const view = this.viewer.getPageView(mark.pageIndex);
-      if (!view) return;
+      if (!view) {resolve();return;}
       const rect = quadToScreen(mark.quads[0], view.viewport.transform);
+      if(!current()){resolve();return;}
       this.container.scrollTop = Math.max(0, view.div.offsetTop + rect[1] - this.container.clientHeight / 3);
-    });
+      resolve();
+    }));
   }
   private paint(pageIndex?: number, changed?: Set<string>) {
     if (!this.active) return;
