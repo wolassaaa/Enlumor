@@ -2,7 +2,7 @@
   "version": 1,
   "baseline": "v0.5.1",
   "wave": "A",
-  "status": "DOCUMENT_COMMAND_EXECUTOR_TASK1_COMPLETE",
+  "status": "EDITING_COMMAND_LIBRARY_SPEC_REVIEW",
   "task1": "OFFLINE_REVIEW_PASS_LIVE_PENDING",
   "task2": "OFFLINE_AGGREGATE_EXE_PERFORMANCE_ROLLBACK_PASS",
   "liveAcceptance": "NOT_EXECUTED",
@@ -13,14 +13,14 @@
   "checklist": "docs/WAVE_A_TASKS.md",
   "automationId": "enlumor",
   "schedule": "every 30 minutes; pause on completion or required user action",
-  "notes": "User-authorized Task1 only completed653acb4;250unit/110focused/build/isolatedrollback and fresh taskreview PASS. Task2 real reader integration NOT STARTED. No model calls/newCruise/UI/publish; automation PAUSED.",
+  "notes": "Basic executor653acb4 complete. User next requests full document editing command library; draft covers7marktypes/create/update/geometry/delete/erase/history/visibility/retention/batch/export. No runtime edits yet; reader integration remains NOT STARTED. No advanced hybrid highlight/API/publish.",
   "automationStatus": "PAUSED",
   "automationTargetThread": "01a13b64-f084-72e0-9e85-1ec042414811",
   "lastVerifiedBaseline": {
     "unit": 139,
     "build": "PASS"
   },
-  "updatedAt": "2026-10-19T15:54:20.5323829+00:00",
+  "updatedAt": "2026-10-19T16:01:23.8875515+00:00",
   "task1Commit": "dc9f231",
   "lastVerified": {
     "unit": 155,
@@ -52,5 +52,10 @@
     "build": "PASS",
     "rollback": "PASS",
     "reviewReport": "evidence/document-command-task1/TASK1_REVIEW.md"
+  },
+  "editingCommands": {
+    "status": "SPEC_DRAFT",
+    "spec": "docs/superpowers/specs/2026-10-19-editing-command-library-design.md",
+    "runtimeImplemented": false
   }
 }
