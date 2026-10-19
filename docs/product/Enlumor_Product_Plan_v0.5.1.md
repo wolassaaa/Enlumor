@@ -1,5 +1,7 @@
 # Enlumor Product Plan v0.5.1
 
+> **2026-10-19工程方向修订：** 用户否定现有逐块Cruise交互，确认重建AI共读底座，先设计全文上下文与阅读操作库。本文原Wave A单块输入约束及“仅待真实配置验收”的工程描述保留为历史，不再指导新Cruise实施；其余阅读/持久化/性能/用户控制原则保留。用户报告DeepSeek已配置可用，不等于完整真实验收通过。新设计见[全文上下文与阅读操作库设计](../superpowers/specs/2026-10-19-reading-command-foundation-design.md)，当前为待书面审阅草案，尚未实施；不要求先验收被否定的旧交互才准许重建，新流程发布仍须真实验收和完整回归。
+
 > **Human-Centered Reading · 以人为本的 AI 原文共读**<br>
 > **Product principle:** *Remove the friction, not the thinking.*<br>
 > **Interaction principle:** *AI adapts to your thinking, not the other way around.*<br>

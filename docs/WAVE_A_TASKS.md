@@ -1,5 +1,7 @@
 ﻿# Enlumor v0.5.1 · 当前Wave A收口任务清单
 
+> 2026-10-19方向修订：用户否定当前逐块Cruise交互，要求重建AI共读底座，并先搭建全文上下文与阅读操作库。下列A1/A2勾选是旧实现的历史工程结果，不代表产品验收通过。当前不是“仅等密钥配置”；用户报告DeepSeek已配置可用，完整真实验收仍无记录。当前动作是审阅[新设计](superpowers/specs/2026-10-19-reading-command-foundation-design.md)，确认后另拆两项实施任务。旧单块输入约束及要求先完成旧产品验收才允许重建的顺序不再适用；新流程发布闸门保留。自动任务保持暂停，不自动进入Surfing或远期沉浸交互。
+
 日期：2026-10-18。用户已授权列清单、设置定时任务并开始执行；沿用子代理方式。
 产品基线：docs/product/Enlumor_Product_Plan_v0.5.1.md。仅当前Wave两项，后续Wave不展开。
 工作区：D:/codex project/Enlumor/.worktrees/v04-wave-ab；正式0.1.15保持不变。
