@@ -1,0 +1,33 @@
+Enlumor production integration design — 2026-10-20
+Changed field: productionIntegration.status=WRITTEN_SPEC_REVIEW_PENDING; implemented=false; userReviewed=false; approachApproved=true.
+User OK approved the proposed direction, not a still-unwritten spec/implementation plan. This deliverable is the written architecture for review, with two work packages. No detailed coding plan or runtime implementation started.
+
+Four reopened artifacts:
+MODIFIED_FILE=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/production-integration-design/MODIFIED_FILE.md
+DIFF_FILE=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/production-integration-design/DIFF.patch
+VERIFICATION=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/production-integration-design/VERIFICATION.txt
+ROLLBACK=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/production-integration-design/ROLLBACK.sh
+Written spec=D:/codex project/Enlumor/.worktrees/v04-wave-ab/docs/superpowers/specs/2026-10-20-editing-production-integration-design.md
+
+BASELINE exact command/input:
+PowerShell: $spec='docs/superpowers/specs/2026-10-20-editing-production-integration-design.md'; "SPEC_PRESENT=$([int](Test-Path -LiteralPath $spec)); PRODUCT_FILES=$($files.Count); EXIT_STATUS=0"
+$files was git ls-files src tests python package.json package-lock.json, recorded in PRODUCT_HASHES.json.
+Literal output: SPEC_PRESENT=0; PRODUCT_FILES=84; EXIT_STATUS=0
+Exit status: 0
+
+MODIFIED exact command: node evidence/production-integration-design/CHECK.mjs
+Input: written spec, saved84-product-file hashes, updated shared state.
+Literal output: MODIFIED: DESIGN_SECTIONS=9/9; WORK_PACKAGES=2; PRODUCT_HASHES=84/84; IMPLEMENTED=false; WRITTEN_SPEC_REVIEW_PENDING=true
+Exit status: 0
+Initial structural check failed because literal COMMIT was absent although immediate commit was described in Chinese. Raw failure MODIFIED_ATTEMPT1.txt exit1 preserved; spec now explicitly names the durable COMMIT linearization point. No product code changed.
+
+ROLLBACK exact command: bash evidence/production-integration-design/ROLLBACK.sh
+Invoker: C:/Program Files/Git/bin/bash.exe -lc 'bash evidence/production-integration-design/ROLLBACK.sh'
+Input: new isolated .cache/production-integration-design-rollback/run-* copy only; saved original state/checklist bytes and newly written spec.
+Literal output: ROLLBACK: ORIGINAL_DOCS=2/2; SPEC_ABSENT_IN_COPY=YES; LIVE_SPEC_RETAINED=YES; PRODUCT_HASHES=84/84
+Exit status: 0
+Restored behavior/status: copy returned to original two state/checklist files and absent new spec. Live design kept changed; all84 product hashes unchanged. Original snapshots retained in originals/. No runtime/database/PDF/API action performed.
+
+Self-review: nine sections/two packages; source verification vs old raw data, no invalid legacy marks fed to executor, trusted host/session vs renderer payload, native geometry vs display placement, atomic commit vs late UI effects, immutable old archive vs long-term dual writes, old export vs new unsupported snapshot export all separated.
+Actual code inspected: Workspace v4, Annotation/Bridge contracts, main/preload IPC, edit-host API, renderer write/history/projection and Python verify_block. A first attempted shared/api.ts read found no such file; inspected actual shared/model.ts instead. Existing verify_block rectangle/x-order limitations are not silently reused as full editing-source verification.
+No product tests rerun: prior416/155/EXE141 remain historical counts, not document verification or new integration acceptance. Product implementation and detailed TDD plan follow written-spec approval.

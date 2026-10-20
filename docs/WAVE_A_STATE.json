@@ -13,14 +13,14 @@
   "checklist": "docs/WAVE_A_TASKS.md",
   "automationId": "enlumor",
   "schedule": "every 30 minutes; pause on completion or required user action",
-  "notes": "Approved editing-library two-task plan complete. Task1 and Task2 independent reviews plus aggregate PASS; final416 unit/155 focused/build; rollback261 and77 hashes PASS. No production UI/Workspace/API/PDF export integration, no publish/push/merge. Next integration needs its own design and acceptance.",
+  "notes": "User approved next-batch direction with OK emoji. Written production integration design drafted; no runtime changes or personal data migration. Written spec review precedes detailed implementation plan.",
   "automationStatus": "PAUSED",
   "automationTargetThread": "01a13b64-f084-72e0-9e85-1ec042414811",
   "lastVerifiedBaseline": {
     "unit": 139,
     "build": "PASS"
   },
-  "updatedAt": "2026-10-20T11:39:00.3037562+08:00",
+  "updatedAt": "2026-10-20T21:17:41.2646747+08:00",
   "task1Commit": "dc9f231",
   "lastVerified": {
     "unit": 155,
@@ -85,10 +85,21 @@
   "heartbeatExecution": {
     "automationId": "20min-enlumor-2",
     "cadenceMinutes": 20,
-    "lastTrigger": "2026-10-19T20:28:13.992Z",
-    "result": "EDITING_LIBRARY_TWO_TASKS_REVIEW_AND_ROLLBACK_PASS",
-    "nextTask": "BATCH_COMPLETE_NEXT_PRODUCTION_INTEGRATION_REQUIRES_SEPARATE_PLAN",
+    "lastTrigger": "2026-10-20T03:48:20.713Z",
+    "result": "TWO_EDITING_TASKS_DONE_RESEARCH_THEN_PRODUCTION_AUDIT_COMPLETE",
+    "nextTask": "WAIT_FOR_WRITTEN_PRODUCTION_SPEC_REVIEW_NO_IMPLEMENTATION",
     "completedSinceResearch": 1,
-    "lastResearchReport": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0428/SPEC_REVIEW.md"
+    "lastResearchReport": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-1148/MODIFIED_FILE.md"
+  },
+  "productionIntegration": {
+    "status": "WRITTEN_SPEC_REVIEW_PENDING",
+    "implemented": false,
+    "audit": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-1148/MODIFIED_FILE.md",
+    "baselineCommit": "b6ad3a9eba1afa3406c5964f697c5e193f718b7c",
+    "staticFacts": 10,
+    "pendingChoice": "Approach approved by user; written production integration design pending review, then detailed implementation plan.",
+    "userReviewed": false,
+    "approachApproved": true,
+    "spec": "docs/superpowers/specs/2026-10-20-editing-production-integration-design.md"
   }
 }

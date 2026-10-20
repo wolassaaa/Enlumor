@@ -35,3 +35,5 @@ evidence/document-command-task2/originals/* -text
 evidence/document-command-task2/baseline-tests/** -text
 evidence/editing-command-library/originals/** -text -diff
 evidence/editing-command-library/*.txt -text -diff
+evidence/production-integration-design/originals/** -text -diff
+evidence/production-integration-design/*.txt -text -diff
