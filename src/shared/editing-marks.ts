@@ -74,13 +74,28 @@ export function validateGeometry(value: unknown, type: EditMark['type'], bounds:
   object(value, ['quads'], ['points']);
   if (!Array.isArray(value.quads) || !value.quads.length) invalid();
   if (value.quads.length > 10000) invalid('EDIT_TOO_LARGE');
+  const isPath = type === 'line' || type === 'arrow' || type === 'ink';
   for (const q of value.quads) {
     if (!Array.isArray(q) || q.length !== 8) invalid();
     q.forEach(finite);
-    if (q[0] !== q[4] || q[2] !== q[6] || q[1] !== q[3] || q[5] !== q[7] || q[2] <= q[0] || q[1] <= q[5]) invalid();
+    if (isPath) {
+      // Path endpoint containment below uses an axis-aligned bounding rectangle.
+      if (q[0] !== q[4] || q[2] !== q[6] || q[1] !== q[3] || q[5] !== q[7] || q[2] <= q[0] || q[1] <= q[5]) invalid();
+    } else {
+      // PDF quads store top-left/top-right/bottom-left/bottom-right, not perimeter order.
+      // Preserve source vertices, accepting strict convex quads in either orientation.
+      const perimeter = [0, 2, 6, 4];
+      let orientation = 0;
+      for (let i = 0; i < 4; i++) {
+        const a = perimeter[i], b = perimeter[(i + 1) % 4], c = perimeter[(i + 2) % 4];
+        const cross = (q[b] - q[a]) * (q[c + 1] - q[b + 1]) - (q[b + 1] - q[a + 1]) * (q[c] - q[b]);
+        const sign = Math.sign(cross);
+        if (!sign || orientation && sign !== orientation) invalid();
+        orientation = sign;
+      }
+    }
     for (let i = 0; i < 8; i += 2) if (!inBounds(q[i], q[i + 1], bounds)) invalid();
   }
-  const isPath = type === 'line' || type === 'arrow' || type === 'ink';
   if (!isPath) { if (Object.hasOwn(value, 'points')) invalid(); return; }
   const p = value.points, q = value.quads[0];
   if (!Array.isArray(p) || p.length < 4 || p.length % 2 || p.length > 8192 || value.quads.length !== 1 || (type !== 'ink' && p.length !== 4)) invalid();

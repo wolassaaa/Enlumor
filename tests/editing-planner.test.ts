@@ -218,4 +218,35 @@ describe('pure editing contract', () => {
     const r = prepared(prepareEdit(request({ type: 'create_mark', markType: 'note', pageIndex: 0, color: '#123456', note: '', geometry: { quads: [[...quad]] } }), s, env()));
     expect(r.deltas[0]).toMatchObject({ expectedVersion: 0, after: { version: 1 } });
   });
+  it.each(['highlight', 'underline', 'strikeout', 'note'] as const)('preserves trusted skewed source vertices when creating %s', markType => {
+    const e = env(); e.anchors[0].quads = [[0, 20, 30, 25, 0, 2, 30, 7]];
+    const result = prepared(run({ type: 'create_mark', markType, pageIndex: 0, color: '#123456', note: '', anchorId: 'source' }, [], e));
+    expect(result.deltas[0].after).toMatchObject({ quads: [[0, 20, 30, 25, 0, 2, 30, 7]], quote: '真实原文', anchorId: 'source' });
+    e.anchors[0].quads[0][0] = 4;
+    expect(result.deltas[0].after!.quads[0][0]).toBe(0);
+  });
+  it.each(['list_marks', 'get_mark'] as const)('reads existing skewed source marks using %s', type => {
+    const m = mark(); m.quads = [[0, 20, 30, 25, 0, 2, 30, 7]];
+    const result = run(type === 'get_mark' ? { type, id: 'mark' } : { type }, [m]);
+    expect(result).toMatchObject({ ok: true, kind: 'read', read: type === 'get_mark' ? m : [m] });
+  });
+  it.each(['highlight', 'underline', 'strikeout', 'note'] as const)('replaces %s anchor without rectifying its real source vertices', type => {
+    const e = env(); e.anchors[1].quads = [[0, 20, 30, 25, 0, 2, 30, 7]];
+    const result = prepared(run({ type: 'replace_mark_anchor', id: 'mark', expectedVersion: 4, anchorId: 'next' }, [mark(type)], e));
+    expect(result.deltas[0].after).toMatchObject({ quads: [[0, 20, 30, 25, 0, 2, 30, 7]], pageIndex: 1, quote: '第二页', anchorId: 'next' });
+    error({ type: 'set_mark_geometry', id: 'mark', expectedVersion: 4, geometry: { quads: [[0, 20, 30, 25, 0, 2, 30, 7]] } }, 'EDIT_INVALID', [mark(type)], e);
+  });
+  it('does not reject unrelated requests because an unused verified anchor is skewed', () => {
+    const e = env(); e.anchors[1].quads = [[0, 20, 30, 25, 0, 2, 30, 7]];
+    expect(run({ type: 'list_marks' }, [], e)).toMatchObject({ ok: true, kind: 'read', read: [] });
+  });
+  it.each([
+    [0, 20, 10, 15, 20, 10, 30, 5], // collinear
+    [0, 20, 30, 25, 30, 7, 0, 2], // self-crossing in PDF quad perimeter order
+    [0, 20, 30, 25, 0, 2, 5, 18], // concave
+    [-11, 20, 30, 25, 0, 2, 30, 7], // outside trusted crop
+  ])('rejects degenerate/nonconvex/out-of-page source vertices: %j', (...q) => {
+    const e = env(); e.anchors[0].quads = [q];
+    error({ type: 'create_mark', markType: 'highlight', pageIndex: 0, color: '#123456', note: '', anchorId: 'source' }, 'EDIT_INVALID', [], e);
+  });
 });
