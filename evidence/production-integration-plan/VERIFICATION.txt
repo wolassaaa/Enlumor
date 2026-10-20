@@ -1,0 +1,37 @@
+Enlumor production integration implementation plan — 2026-10-20
+Changed fields: productionIntegration.userReviewed=true (written design approved); productionIntegration.planReviewed=false; productionIntegration.status=IMPLEMENTATION_PLAN_REVIEW_PENDING; implemented=false.
+No implementation has started. User's 好，开始 approved the presented written design; this new detailed plan is the next review artifact. Previously selected single-implementer subagents/reviews preserved, not asked again.
+
+Four reopened artifacts:
+MODIFIED_FILE=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/production-integration-plan/MODIFIED_FILE.md
+DIFF_FILE=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/production-integration-plan/DIFF.patch
+VERIFICATION=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/production-integration-plan/VERIFICATION.txt
+ROLLBACK=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/production-integration-plan/ROLLBACK.sh
+Plan=D:/codex project/Enlumor/.worktrees/v04-wave-ab/docs/superpowers/plans/2026-10-20-editing-production-integration.md
+
+BASELINE exact command/input:
+PowerShell $p='docs/superpowers/plans/2026-10-20-editing-production-integration.md'; "PLAN_PRESENT=$([int](Test-Path -LiteralPath $p)); PRODUCT_HASHES=84/84; EXIT_STATUS=0"
+Input: before writing new plan; existing PRODUCT_HASHES.json records current84 source/test/python/package files (later actual recheck below).
+Literal output: PLAN_PRESENT=0; PRODUCT_HASHES=84/84; EXIT_STATUS=0
+Exit status: 0
+
+MODIFIED exact command: node evidence/production-integration-plan/CHECK.mjs
+Input: detailed plan, current stage state, original84 file hashes.
+Literal output: MODIFIED: TASKS=2/2; REVIEW_FOCUS=5/5; PRODUCT_HASHES=84/84; SPEC_APPROVED=true; PLAN_REVIEW_PENDING=true; IMPLEMENTED=false
+Exit status: 0
+
+ROLLBACK exact command: bash evidence/production-integration-plan/ROLLBACK.sh
+Invoker: C:/Program Files/Git/bin/bash.exe -lc 'bash evidence/production-integration-plan/ROLLBACK.sh'
+Input: new .cache/production-integration-plan-rollback/run-* isolated copy, three original document snapshots in originals/. Only the new copy's plan file is removed.
+Literal output: ROLLBACK: ORIGINAL_DOCS=3/3; PLAN_ABSENT_IN_COPY=YES; LIVE_PLAN_RETAINED=YES; PRODUCT_HASHES=84/84
+Exit status: 0
+Restored behavior/status: copy restored original state/checklist/spec bytes and no new plan. Live detailed plan remains changed; all84 product file hashes unchanged. No migration/database/PDF/model action performed.
+
+Writing-plan self-review:
+Task1->Task2: stable WorkspaceEdits view/transaction/history, EditingSourceService and EditingView/LegacyMarkView/AnchorCandidate; APIs defined before consumed.
+Task1 internal: v4->v5 independent backup validation, transactional source-version recheck, real-node:sqlite tests, native source/cancellation and old-readonly conversion. Missing optional-source cancellation test file explicitly assigned.
+Task2 internal: preview capability query, isolated launch, page preparation API, user-only IPC/context, stable retry/receipt, actual seven-tool projection/history and honest unsupported export. getEditingView does not secretly import; prepareEditingPage owns conversion work.
+Five focus inputs assigned: backup race Task1; ambiguous source Task1; conversion+deletion+export Task1/2; late response Task2; genuine new-route performance Task2.
+Self-review corrections applied: added metadata-only editing-document operation for all native bounds, lazy page preparation bridge, default capabilities query, view versions/diagnostics/consistent read snapshot, explicit controller APIs, export guard remains true after deleting converted marks.
+Precise performance semantics: local scripts/performance-gate.mjs checks readingSave.p95Ms<=20, not annotation/anchor subprocess duration; startup<=1500/frame<=34/canvas<=30/thumb<=8 unchanged. New edit/anchor latency separately measured; old stress data must not bypass trusted new input checks.
+Plan defines future tests and commits, not results. No unit/Electron/performance gate rerun or claimed as new product acceptance. No implementation agent dispatched before written-plan review.

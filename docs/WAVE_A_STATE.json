@@ -2,7 +2,7 @@
   "version": 1,
   "baseline": "v0.5.1",
   "wave": "A",
-  "status": "EDITING_COMMAND_LIBRARY_BATCH_COMPLETE",
+  "status": "EDITING_PRODUCTION_PLAN_REVIEW_PENDING",
   "task1": "OFFLINE_REVIEW_PASS_LIVE_PENDING",
   "task2": "OFFLINE_AGGREGATE_EXE_PERFORMANCE_ROLLBACK_PASS",
   "liveAcceptance": "NOT_EXECUTED",
@@ -13,14 +13,14 @@
   "checklist": "docs/WAVE_A_TASKS.md",
   "automationId": "enlumor",
   "schedule": "every 30 minutes; pause on completion or required user action",
-  "notes": "User approved next-batch direction with OK emoji. Written production integration design drafted; no runtime changes or personal data migration. Written spec review precedes detailed implementation plan.",
+  "notes": "User approved written production integration spec with 好，开始. Two-task implementation plan created, still requires written plan review. No runtime/product changes or personal-data migration.",
   "automationStatus": "PAUSED",
   "automationTargetThread": "01a13b64-f084-72e0-9e85-1ec042414811",
   "lastVerifiedBaseline": {
     "unit": 139,
     "build": "PASS"
   },
-  "updatedAt": "2026-10-20T21:17:41.2646747+08:00",
+  "updatedAt": "2026-10-20T21:31:54.7800778+08:00",
   "task1Commit": "dc9f231",
   "lastVerified": {
     "unit": 155,
@@ -87,19 +87,22 @@
     "cadenceMinutes": 20,
     "lastTrigger": "2026-10-20T03:48:20.713Z",
     "result": "TWO_EDITING_TASKS_DONE_RESEARCH_THEN_PRODUCTION_AUDIT_COMPLETE",
-    "nextTask": "WAIT_FOR_WRITTEN_PRODUCTION_SPEC_REVIEW_NO_IMPLEMENTATION",
+    "nextTask": "WAIT_FOR_WRITTEN_PRODUCTION_PLAN_REVIEW_NO_IMPLEMENTATION",
     "completedSinceResearch": 1,
     "lastResearchReport": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-1148/MODIFIED_FILE.md"
   },
   "productionIntegration": {
-    "status": "WRITTEN_SPEC_REVIEW_PENDING",
+    "status": "IMPLEMENTATION_PLAN_REVIEW_PENDING",
     "implemented": false,
     "audit": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-1148/MODIFIED_FILE.md",
     "baselineCommit": "b6ad3a9eba1afa3406c5964f697c5e193f718b7c",
     "staticFacts": 10,
-    "pendingChoice": "Approach approved by user; written production integration design pending review, then detailed implementation plan.",
-    "userReviewed": false,
+    "pendingChoice": "Written spec approved by user. Detailed two-task implementation plan ready for written review; preserved subagent execution method.",
+    "userReviewed": true,
     "approachApproved": true,
-    "spec": "docs/superpowers/specs/2026-10-20-editing-production-integration-design.md"
+    "spec": "docs/superpowers/specs/2026-10-20-editing-production-integration-design.md",
+    "plan": "docs/superpowers/plans/2026-10-20-editing-production-integration.md",
+    "planReviewed": false,
+    "executionMethod": "SUBAGENT_SINGLE_IMPLEMENTER_PER_TASK_REVIEW_THEN_AGGREGATE"
   }
 }

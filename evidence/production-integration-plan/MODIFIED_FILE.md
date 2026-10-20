@@ -1,0 +1,131 @@
+# Enlumor Editing Production Integration Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development。沿用用户选择：单一实施者，每项独立Review，两项后整体Review。本文经用户书面审阅后实施；不重复询问执行方式。
+
+**Goal:** 在隔离候选中把已验收编辑库接入同一真实Workspace、原文核验与现有人工PDF工具，完成保存/撤销/恢复闭环。
+**Architecture:** 主进程独占可信来源、会话、SQLite与命令执行；renderer只经窄桥接提交人工操作并显示只读投影。结构升级与旧批注按页核验分离，不长期双写旧annotations，不推倒PDF阅读底座。
+**Tech Stack:** 现有Electron/TypeScript/node:sqlite/PDF.js、本地PyMuPDF组件、Vitest/Playwright/unittest；依赖与正式版本号不变。
+**Spec:** docs/superpowers/specs/2026-10-20-editing-production-integration-design.md。用户已认可书面设计；本实施计划待审阅。
+
+## Global Constraints
+
+- 固定工作目录D:/codex project/Enlumor/.worktrees/v04-wave-ab；不触碰正式0.1.15、个人数据库或原PDF，不发布、不推送、不调用模型API或读取个人凭据。
+- 所有候选启动必须同时带`--editing-preview`与绝对`--user-data-dir`，目录限本工作区.cache或测试自行创建的临时目录；执行前核验路径。候选启动器固定.cache/editing-production-userdata，禁止默认回落到个人userData。
+- 默认不带preview的启动保留v4入口/界面；preview允许v5。preview是本批隔离验收开关，不是第二套长期产品架构；发布启用另有门禁。v5库用旧入口打开须返回DATABASE_VERSION而不是降版本。
+- 一套Workspace.db、一套标识版本/事务/历史权威；新对象不反向双写旧annotations。旧author=user校验保持不变，不用伪造user去绘制AI对象。
+- 未旋转PDF原生坐标，保留裁剪偏移、负坐标和斜向四顶点；可信锚点来自源PDF而不是renderer/模型自报字段。
+- 人工/AI来源、retained、visible、工作区保存、导出相互独立；旧转换对象retained=true，新对象默认false，两者均不因暂停/切页/关面板清除。
+- 提交前失效全不写，持久COMMIT后保留已提交事实。稳定请求ID/回执恢复、具体差异确认、墓碑递增和定向历史沿用现有库，不改成renderer逆操作栈。
+- 不重做Cruise/Surfing、前端布局或正文编辑，不做OCR/高级混合高亮。新快照实际PDF导出另批；不能借旧导出返回过期/遗漏结果。
+- 所有RED/GREEN记录准确命令/输入/字面输出/退出码。每项独立提交与Review；仅串行跑Electron、打包和性能测试，不重复启动实施者或竞争构建。
+
+## Review Focus
+
+1. 备份完成后另一连接写入、迁移中断/恢复：Task1在写锁内复查data_version/user_version，失败不升级，不把备份覆盖到打开的连接。
+2. 文字重复、双栏/斜向/裁剪和无文字层：Task1根据字符与四边形相交定位，不用整页字符串包含或矩形x排序冒充可信锚点；核验失败保持旧对象。
+3. 部分旧行已转换、转换后删除/重开：Task1以映射与墓碑防止重导入，Task2不重叠显示，不让冻结旧行从导出复活。
+4. 选区准备/便签提交时切文档、取消或丢回执：Task2校验宿主会话与请求归属，重试复用ID，迟到成功不污染新文档，失败不丢草稿。
+5. 性能测试绕过新入口、20ms语义混淆：Task2压力数据走真实新命令；原20ms是scripts/performance-gate.mjs的readingSave.p95Ms，锚点准备/编辑提交另报，不以旧写口测新链路。
+
+## 文件与职责
+
+- Modify src/main/workspace.ts：仅允许显式preview打开v5；默认v4行为不变，preview旧写口守卫。
+- Create src/main/editing-workspace.ts：v5备份/升级、正式存储适配、查询/事务/历史；不依赖测试helper。
+- Create src/main/editing-sources.ts：异步源核验、页界/锚点缓存与旧对象转换/审计。
+- Create src/shared/editing-bridge.ts：仅类型合同，renderer可type-only引入；不导入Node运行时代码。
+- Modify python/export_pdf.py、src/main/python.ts；Create tests/pdf-task-cancel.test.ts、tests/python/test_editing_anchors.py：独立编辑源核验操作和真实PDF夹具，不改变Cruise verify_block含义。
+- Create tests/editing-workspace.test.ts、tests/editing-sources.test.ts、tests/editing-bridge.test.ts、tests/editing-view.test.ts；Create tests/helpers/editing-fixtures.ts：临时profile/合成v4/PDF数据，不把Map当事务仓储。
+- Create src/main/editing-ipc.ts、src/renderer/editing-controller.ts、src/renderer/editing-view.ts：宿主会话/窄IPC、人工草稿/保存协调、无副作用显示投影。
+- Modify src/main/index.ts、src/main/preload.ts、src/shared/model.ts、src/renderer/main.tsx、src/renderer/pdf-reader.ts；样式仅为显隐/只读状态最小调整src/renderer/style.css。
+- Create tests/e2e/editing-workflow.spec.ts；Modify tests/e2e/dense-ink.spec.ts、scripts/benchmark.mjs：新增preview路线，保留原断言及默认旧模式。
+- Create docs/acceptance/editing-production-integration.md、编辑接入验收.cmd：能力/迁移/导出边界、隔离启动说明。构建只输出.cache/editing-production-package。
+
+### Task 1: 正式仓储、升级备份与可信源/旧对象兼容
+
+**Owned files:** editing-workspace.ts、editing-sources.ts、editing-bridge.ts、workspace.ts、python/export_pdf.py、tests/python/test_editing_anchors.py、tests/editing-workspace.test.ts、tests/editing-sources.test.ts、tests/helpers/editing-fixtures.ts、src/main/python.ts、tests/pdf-task-cancel.test.ts；Task2只消费这些接口。
+
+**Interfaces / decisions:**
+- `new Workspace(file, options?:{allowEditingSchema?:boolean})`：只有显式true把版本上限提升到5；默认仍4，不在构造器中自动进行v5升级。保留已有v1–v4逻辑。
+- `openEditingWorkspace(file:string):Promise<{workspace:Workspace;edits:WorkspaceEdits;backupPath:string|null}>`：候选连接打开后完成v4→v5，重开v5不重复备份/重置对象。所有异常关闭新建连接。路径授权由Task2启动守卫负责，单测只传临时库。
+- 备份用当前node:sqlite连接的`VACUUM INTO ?`生成唯一`.pre-v5.<timestamp>-<uuid>.bak`，不复制未checkpoint的活WAL文件；无应用写入时检查checkpoint busy。备份以只读连接验证integrity_check=ok、user_version=4、关键行/表保留，记录原连接data_version；BEGIN IMMEDIATE后重查data_version/user_version，若备份期间有其他连接提交，回滚并返回BACKUP_STALE，不升级。测试必须实际制造该窗口。不得在事务内VACUUM。
+- v5表均在同库：`edit_marks(documentId,fingerprint,id,version,payload)`、`edit_versions(documentId,fingerprint,id,version)`、`edit_anchors(documentId,fingerprint,id,pageIndex,parserVersion,payload)`、`edit_operations(operationId,documentId,fingerprint,actorKey,redoOwnerKey,action,state,payload)`、`edit_receipts(requestKey,documentId,fingerprint,actorKey,requestDigest,payload)`、`edit_confirmations(id,documentId,fingerprint,consumed,payload)`、`edit_legacy_imports(documentId,fingerprint,legacyId,inputDigest,state,markId,reason,auditPayload)`。前三表和imports使用文档/指纹/ID复合主键，其余ID主键；documentId外键关联documents。版本为非负安全整数；operations为doc/fingerprint/actor与redoOwner建索引，避免每次编辑扫描全历史。
+- preferences键`editing-user-id`首次创建稳定UUID，宿主actor固定`{kind:'user',id}`。不读取ai_profiles.secret；旧其他表原行不改写。
+- `WorkspaceEdits`实现现有EditHost持久读/事务能力，公开`readSnapshot(context):EditSnapshot`、`readReceipt(key):EditReceipt|null`、`readOperation(context,id):EditOperation|null`、`history(context:CommandContext,actor:EditActor):{undoIds:string[];redoIds:string[]}`、`view(context:CommandContext,actor:EditActor):EditingView`、`legacy(documentId):LegacyMarkView[]`、`transaction<T>(body:(tx:EditTransaction)=>T):T`；业务采用现有runEditingCommand/queryEditingReceipt，不复制执行器。
+- `history`按数据库插入顺序返回最新可用原操作组ID，排除兼容转换审计和undo/redo审计行，redo遵循redoActor。交易内写Deltas、版本/墓碑、历史/redo分支、回执、确认消耗，任何throw回滚，callback成功立即COMMIT；未知结果不自动重试。
+- `LegacyMarkView={legacyId:string;inputDigest:string;annotation:Annotation;status:'readonly';reason:string}`；未知/损坏payload单独给可读诊断，不强制cast为Annotation进入执行器。`EditingView={context:CommandContext;marks:EditMark[];legacy:LegacyMarkView[];diagnostics:{legacyId:string;reason:string}[];history:{undoIds:string[];redoIds:string[]};hasEditingState:boolean}`；新marks只含合法对象，视图包含隐藏对象供列表控制；未知损坏行给diagnostics，不伪造可绘制几何。view的marks/legacy/history在同一只读事务快照中取得；hasEditingState在存在新版本/墓碑/操作或converted映射时为true，不能因删完标识变false而导出旧冻结行。
+- `AnchorCandidate={pageIndex:number;quote:string;quads:number[][]}`；`EditingSourceService(workspace,edits,runPdfTask)`提供`prepareAnchor(context,candidate,signal):Promise<VerifiedAnchor>`、`preparePage(context,pageIndex,signal):Promise<void>`、`resolveEnvironment(context,signal):Promise<{pageBounds:readonly[number,number,number,number][];anchors:VerifiedAnchor[]}>`、`convertLegacyPage(context,pageIndex,signal):Promise<void>`、`reanchorLegacy(context,legacyId,anchorId,expectedInputDigest,signal):Promise<void>`。
+- Python新增`operation:'editing-document'`返回fingerprint、pageCount及所有未旋转原生页界（只取元数据，不提取全书文字），另以`operation:'editing-page'`返回指定页的nativeBounds、字符/行ID、原文字符、凸四边形及parserVersion=1，读取前后验证fingerprint；页面旋转归零并逆page.transformation_matrix映射到PDF坐标，保留四个顶点。只读源文件，不使用OCR或远程服务。
+- 主进程按候选四边形逐个选取中心位于凸多边形内的真实字符，按源line方向投影排序；同一字符去重，跨quad顺序尊重源行连续性，遇到多解/交叉选行返回ANCHOR_NOT_FOUND而不猜测。对比较文本只做NFKC与去除Unicode空白，既存quote原样保留；同页重复句依靠位置而不是全页搜索。输入遵循现有100000字符/10000quads及响应上限，超限明确失败，不截断冒充成功。
+- 源页内存缓存键fingerprint/pageIndex/parserVersion；preparePage惰性解析，resolveEnvironment只组装已验证数据，不为一次颜色修改解析200页或重跑Python。所有页界在文档打开时由本地元信息取得；源状态变化使缓存失效。事务内无await/子进程；保留既有源文件身份核验，不以stat缓存代替强校验。
+- 旧文字/带quote便签只有真实核验成功才转换；自由几何通过页界/新模型校验后转换。保留ID/quote/quads/points/颜色/便签，origin取稳定user、retained=true、visible=true、version=1、placement0。标识/版本/锚点/import映射同事务；已转换或有墓碑不再导入。失败记readonly及原因，旧annotations内容不变。
+- 人工重新定位先给旧/新原文和位置预览；确认后核对expectedInputDigest，原子转换并在auditPayload保存原对象、用户actor、前后锚点和时间。它是独立可追踪的兼容转换审计，不伪装普通undo_edit；之后的新标识编辑才进入普通撤销历史。转换本身不宣称可撤销迁移，原记录仍保留。
+- 新固定错误码：BACKUP_BUSY/BACKUP_STALE/BACKUP_FAILED/DATABASE_VERSION/LEGACY_READ_ONLY/LEGACY_CHANGED/PDF_CANCELED；源身份错误沿用SOURCE_MISSING/SOURCE_CHANGED，命令错误沿用库。
+
+- [ ] **Step1 RED（正式仓储）**：tests/editing-workspace.test.ts建立真实v4临时库，断言升级后schema5、七表存在、备份schema4/integrity_check=ok、其他表行一致；关闭重开不重置版本/回执。分别注入备份失败、DDL中断、busy和备份后另一连接提交，断言旧库仍v4、零新标识/历史。更高版本返回DATABASE_VERSION且哈希不变。
+- [ ] **Step2 观察RED**：`npx vitest run tests/editing-workspace.test.ts`，预期缺失新模块/接口或功能断言失败；保存实际输出与退出码，不把未知模块失败当所有原子性案例已验证。
+- [ ] **Step3 GREEN（仓储）**：实现上述同连接适配，真实两连接测试同版本仅一次提交、确认失败零消耗、commit前/后取消、关库重开同请求不重建、定向撤销/墓碑版本递增；不用旧tests/helpers/editing-sqlite-store.ts代替生产类。
+- [ ] **Step4 RED（源与旧数据）**：tests/editing-sources.test.ts和tests/python/test_editing_anchors.py生成多行/双栏/重复句/斜向字/裁剪偏移/0、90、180、270旋转、扫描页PDF；断言对应位置唯一、输出原生四顶点、源哈希不变。缺文字/quote错/四边形包住另一段均拒绝。缺源、源替换、超限、解析中取消/切上下文保留旧行；转换后删标识重开不复活；改过legacy inputDigest不能套用旧重新定位预览。
+- [ ] **Step5 观察RED**：`npx vitest run tests/editing-sources.test.ts`及`node scripts/python.mjs -m unittest discover -s tests/python -p test_editing_anchors.py -v`分别保存失败；再实现最小源服务/原子兼容转换。runPdfTask可加可选AbortSignal，已有不传signal调用行为不变，取消终止子进程、清理timeout且只settle一次。
+- [ ] **Step6 GREEN与回归**：运行两个新TS测试、Python新测试、`npm test`、`npm run test:python`、`npm run build`。明确保留原416历史基线，不预填最终测试数；独立副本验证迁移前备份可重新打开，关闭所有连接后恢复复制库，原备份哈希不变。
+- [ ] **Step7 提交/Review**：只提交Task1列明文件；提交`feat: persist editing commands in workspace with verified legacy import`。fresh Review通过后Task2，不发布、不在个人profile启动。
+
+
+**关键断言示例（其余案例按上述命名/断言补齐，不抄完整实现）：**
+
+```ts
+it('reopen v5 does not reset receipts or versions', async () => {
+  const first = await openEditingWorkspace(fixture.file);
+  // 通过真实runEditingCommand创建标识，保留返回receipt/request和对象版本。
+  first.workspace.close();
+  const reopened = await openEditingWorkspace(fixture.file);
+  expect(reopened.backupPath).toBeNull();
+  expect(reopened.edits.readReceipt(savedReceipt.requestKey)).toEqual(savedReceipt);
+  expect(reopened.edits.readSnapshot(context).versions[markId]).toBe(savedVersion);
+});
+```
+### Task 2: 窄IPC、真实人工工具、显示/历史恢复与性能验收
+
+**Owned files:** src/main/editing-ipc.ts、src/renderer/editing-controller.ts、src/renderer/editing-view.ts、src/main/index.ts、src/main/preload.ts、src/shared/model.ts、src/renderer/main.tsx、src/renderer/pdf-reader.ts、src/renderer/style.css、tests/editing-bridge.test.ts、tests/editing-view.test.ts、tests/e2e/editing-workflow.spec.ts、tests/e2e/dense-ink.spec.ts、scripts/benchmark.mjs、docs/acceptance/editing-production-integration.md、编辑接入验收.cmd。补充src/shared/editing-bridge.ts为下述窄桥接类型，不改Task1数据含义。
+
+**Interfaces / decisions:**
+- preview启动参数校验先于Workspace打开：缺显式绝对隔离目录、目录落入正式版/个人数据、与当前候选无关均拒绝启动preview；不创建/改写个人库。index在preview分支await openEditingWorkspace，默认分支沿用new Workspace。`--editing-preview`传到测试/性能每一个Electron和portable启动点，而不是仅首次启动。
+- `EditingSession={sessionId:string;context:CommandContext}`。一个window持有一个活跃编辑文档，会话ID与revision由主进程颁发；切文档/关闭/主动接管失效旧会话并abort其在途源准备/提交。普通滚动不重建整个编辑会话。
+- `EditingBridge`为以下固定方法合同；既有Bridge通过type-only扩展它。新增`getEditingCapabilities():Promise<Reply<{enabled:boolean}>>`，默认与preview均可查询，其他执行通道只在preview注册。renderer先查enabled，不根据是否有一个JS函数判断可执行能力。
+- Bridge固定方法：`activateEditingDocument(documentId:string|null):Promise<Reply<EditingSession|null>>`；`getEditingView(sessionId:string):Promise<Reply<EditingView>>`；`prepareEditingPage(input:{sessionId:string;requestId:string;pageIndex:number}):Promise<Reply<EditingView>>`；`prepareEditingAnchor(input:{sessionId:string;requestId:string;candidate:AnchorCandidate}):Promise<Reply<VerifiedAnchor>>`；`executeUserEdit(input:{sessionId:string;request:EditRequest}):Promise<Reply<EditResult>>`；`cancelUserEdit(input:{sessionId:string;requestId:string}):Promise<Reply<void>>`；`getUserEditReceipt(request:EditRequest):Promise<Reply<EditResult|null>>`；`reanchorLegacy(input:{sessionId:string;requestId:string;legacyId:string;anchorId:string;expectedInputDigest:string}):Promise<Reply<EditingView>>`。
+- 能力查询channel为editing:capabilities，其他channel名称依次为editing:activate/view/page/anchor/execute/cancel/receipt/legacy-reanchor，仅preview注册。所有输入拒绝额外字段/非有限值/越界/身份夹带，保留现有sender/mainFrame/origin检查。执行输入context必须匹配宿主当前session；receipt恢复单独允许旧context，只读且同一可信user。
+- executeUserEdit用稳定宿主actor和来源服务构建EditHost，复用runEditingCommand；旧请求回执先于重新分配ID。取消按请求abort；主动切文档/接管才提高session revision。确认凭据不从命令payload接收，本轮不开放AI工具或AI执行IPC。
+- prepareEditingPage负责源页准备与convertLegacyPage后返回同一权威的新视图；renderer按页就绪事件为当前页及邻页按需调度，不阻塞全书。转换变化后getEditingView从数据库重读，失败旧对象仍在legacy列表。getEditingView调用edits.view(context,actor)取得一致只读快照，不偷偷导入旧对象或清理数据。
+- preview下annotation:change返回LEGACY_READ_ONLY，不再允许双写；默认旧分支保持现有接口。真实preview七类工具统一生成EditMutation；跨页拆分为一个apply_edit_batch，批量1–64上限超出明确提示，不拆成未经用户认可的多次提交。
+- `MarkView={id:string;type:EditMark['type'];version:number|null;anchorId:string|null;pageIndex:number;quote:string;quads:number[][];points?:number[];color:string;note:string;origin:EditActor;retained:boolean;visible:boolean;editable:boolean;reason?:string;placement:{dx:number;dy:number}}`；`projectEditingView(view:EditingView):MarkView[]`无IO，保留来源/四顶点/隐藏对象信息。PdfReader新增显示入口只绘制visible=true，旧setMarks默认模式继续可用。临时focus走独立层，不塞编辑表。
+- 人工工具/颜色/内容/删除/整笔擦除/几何/便签偏移/重新锚定/显隐/固定均按库真实支持生成命令；文字几何编辑拒绝，便签placement与源锚点分开。不提供未实现的任意文字拖移/局部切笔功能。
+- `EditingController(bridge:EditingBridge,onView:(view:EditingView)=>void)`公开只读`currentSession:EditingSession|null`、`activate(documentId:string|null):Promise<void>`、`submit(command:EditCommand):Promise<EditResult>`、`retry():Promise<EditResult|null>`、`cancel():Promise<void>`，只协调session、固定requestId、待提交草稿和回执；提交committed后重读getEditingView并更新受影响页/ID。read/prepared/unsupported不显示已保存；pending/conflict/canceled保留草稿，可明确放弃。未知结果只query receipt，不自动创建新ID重发。
+- 当前history Map仅默认旧模式使用；preview按钮从view.history选择明确operationId执行undo_edit/redo_edit，成功后更新列表；固定/显隐变更一样可撤销。重新定位展示旧/新原文与位置，确认才发legacy-reanchor，UI说明这是保留原记录的兼容转换审计，不冒充普通可撤销编辑。
+- 重启重新激活并读取marks/history/receipt；关闭前等在途编辑结果并刷新阅读位置。强杀后以COMMIT/回执事实恢复，不以最后一次renderer状态判定保存。迟到回执按文档/指纹/session归属过滤视觉效果。
+- document:export在preview先判断hasEditingState；为true返回EDITING_EXPORT_UNAVAILABLE并显示“新标识导出尚未接入”，不使用冻结旧行导出过期内容。false保留旧未转换文档导出且原PDF不变；export_marked_pdf仍UNSUPPORTED。新导出支持未通过，不发布替换包。
+
+- [ ] **Step1 RED（桥接/投影）**：tests/editing-bridge.test.ts断言无preview仅提供enabled=false能力查询且不注册执行接口、非授权目录在开库前拒绝、renderer伪造actor/revision/session/path/额外键失败；源准备/提交途中切文档失效，已提交旧回执仍可恢复但不改新视图。tests/editing-view.test.ts断言不同来源、不固定/隐藏/斜向四顶点/便签偏移/legacy只读保留，转换后同ID只有一个显示对象，不把AI改为user。
+- [ ] **Step2 观察RED**：`npx vitest run tests/editing-bridge.test.ts tests/editing-view.test.ts`保存失败，然后实现薄适配和控制器，不重构现有阅读/渲染算法。
+- [ ] **Step3 RED（真实Electron）**：tests/e2e/editing-workflow.spec.ts使用临时profile、合成v4、中文/空格PDF与--editing-preview；七类创建/颜色/便签内容/箭头端点/整笔擦除、显隐/固定、跨页批量、重锚点、用户确认转换、只读失败案例；保存失败重试同requestId不重复，撤销后新编辑清redo，正常关闭重开及kill后恢复。每个案例同时读实际SQL与可见页面，原PDF哈希不变。
+- [ ] **Step4 观察RED→GREEN**：`npx playwright test tests/e2e/editing-workflow.spec.ts --workers=1`在新UI接入前运行记录失败；再将现有人工工具接到controller/projector，保留默认模式回归。加入新导出被诚实阻止/旧未转换导出可用、PDF自带批注仍只读可见的真实测试。
+- [ ] **Step5 性能与数据准备**：现有benchmark新增--editing-preview分支，1000压力标识通过真实新命令写入（每批≤64），文本使用源内真实quote/位置并通过prepareEditingAnchor，扫描页使用合法自由几何；不通过旧annotation:change、直接SQL或伪造锚点省事。dense-ink.spec.ts新增preview参数化路线，同样走真实执行器；30/300/1000笔×256点与原滚动/擦除/保存/Undo断言保留。
+- [ ] **Step6 构建与完整回归**：依次`npm test`、`npm run test:python`、`npm run build`；使用`npm run build:worker`后`npx electron-builder --win dir --config.directories.output=.cache/editing-production-package`。设置ENLUMOR_TEST_APP为该目录win-unpacked/Enlumor.exe、ENLUMOR_EVIDENCE_DIR为本批独立目录，`npx playwright test --workers=1`。现有默认案例验证旧模式，新workflow/dense preview案例带开关验证新分支，不把旧全套通过冒充新分支全覆盖。
+- [ ] **Step7 原性能门禁**：同一候选EXE串行运行`node scripts/benchmark.mjs editing-text .cache/editing-production-package/win-unpacked/Enlumor.exe --editing-preview --thumbnails`与`node scripts/benchmark.mjs editing-scan .cache/editing-production-package/win-unpacked/Enlumor.exe --editing-preview --scanned --thumbnails`；用现有assertPerformance分别检查输出JSON。3次portable启动中位数≤1500ms、frameP95≤34ms、readingSave.p95≤20ms、canvas≤30、thumbnail≤8；密集画笔原限制（包括mutation≤50ms）不变。另报首次锚点/兼容转换/实际编辑提交p50/p95与取消响应，不藏进缓存预热，也不擅自把原readingSave预算改成别的统计量。
+- [ ] **Step8 提交/Review/回退**：原hash、RED/GREEN、SQL/截图、备份、候选路径与精确测试数写入acceptance和状态。Task2提交`feat: connect workspace edits to real PDF tools and durable history`；独立Review后两项整体Review。用另一临时副本关闭连接后恢复迁移前备份，验证旧入口/阅读位置/旧批注可用；原备份/PDF不变，活候选保留。启动器只指向本候选和隔离profile。没有用户实际操作前不声明真实DeepSeek/Cruise语义验收。
+
+
+```ts
+it('late receipt preserves commit without replacing another document view', async () => {
+  // 两个合成文档；故意在真实COMMIT后延迟第一个IPC回执，再激活第二个文档。
+  expect(receipt.status).toBe('committed');
+  expect(receipt.documentId).toBe(firstDocument.id);
+  expect(controller.currentSession!.context.documentId).toBe(secondDocument.id);
+  expect(controller.currentSession!.context.fingerprint).toBe(secondDocument.fingerprint); // 当前画面只比较第二文档的view/mark IDs
+});
+```
+## 自审与交接
+
+覆盖：spec1/6→Task2人工真实闭环；spec3→Task1升级/唯一权威；spec4→Task1源/旧转换与Task2显式预览；spec5→Task1事务与Task2宿主IPC；spec7→Task2导出诚实守卫；spec8→两项独立验收/整体Review。五条Review Focus均有归属测试，跨任务类型同名同义。
+
+明确两处语义：旧原记录不双写，手工兼容转换保留审计而非假造可撤销迁移；原20ms门禁针对readingSave，锚点准备/新编辑另测。候选preview开关保护个人v4库，新能力真实接入同一生产类但尚不发布。
+
+本轮仅形成计划，没有开始迁移/编码、未运行新增功能测试。请审阅这份实施计划是否符合预期；确认后沿用已选子代理方式连续执行两项，不在每个小步骤重新询问。

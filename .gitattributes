@@ -37,3 +37,5 @@ evidence/editing-command-library/originals/** -text -diff
 evidence/editing-command-library/*.txt -text -diff
 evidence/production-integration-design/originals/** -text -diff
 evidence/production-integration-design/*.txt -text -diff
+evidence/production-integration-plan/originals/** -text -diff
+evidence/production-integration-plan/*.txt -text -diff
