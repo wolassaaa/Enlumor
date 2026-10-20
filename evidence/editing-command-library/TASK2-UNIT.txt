@@ -1,0 +1,30 @@
+
+> enlumor@0.1.15 test
+> vitest run
+
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:26504) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:28076) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:30540) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:53696) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9456) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:56164) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:29888) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  25 passed (25)
+      Tests  416 passed (416)
+   Start at  11:26:05
+   Duration  1.63s (tests 78%, import 13%, transform 6%, worker 3%)
+
+
+COMMAND=npm test
+EXIT_STATUS=0

@@ -1,0 +1,63 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:56256) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/editing-executor.test.ts (31 tests | 2 failed) 713ms
+   ❯ targeted durable history (7)
+     × clears only the executing actor redo branch on new edits, including durable reopen 37ms
+     × rejects cross-document target histories without altering either document 20ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-executor.test.ts > targeted durable history > clears only the executing actor redo branch on new edits, including durable reopen
+AssertionError: expected 'prepared' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "prepared"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:179:61
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/editing-executor.test.ts > targeted durable history > rejects cross-document target histories without altering either document
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { error: { code: 'MARK_NOT_FOUND' } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "MARK_NOT_FOUND",
++     "code": "EDIT_INVALID",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:185:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 29 passed (31)
+   Start at  11:18:06
+   Duration  882ms (tests 93%, transform 4%, import 2%)
+
+
+EXIT_STATUS=1
+COMMAND=npx vitest run tests/editing-executor.test.ts

@@ -5,7 +5,7 @@
 **Goal:** 构建七类标识的编辑命令合同、变更生成和事务执行库，证明实际本地提交与历史正确；不将纯变更计划或测试仓储冒充应用上线。
 **Architecture:** 共享标识模型与纯规划器生成有版本的before/after；执行器通过宿主事务端口原子校验、写入历史/回执。沿用现有CommandContext的文档/指纹/revision及AbortSignal，不建通用Agent平台。生产工作区、浮动UI与真实PDF导出接入是后续批次。
 **Tech Stack:** 当前TypeScript、node:sqlite、Vitest；锁定依赖不变，不接模型API。
-**Spec:** docs/superpowers/specs/2026-10-19-editing-command-library-design.md（含v2语义）。当前计划与v2一起待书面确认；不把用户的“继续”记成已逐条审阅v2。
+**Spec:** docs/superpowers/specs/2026-10-19-editing-command-library-design.md（含v2语义）。用户于2026-10-20明确回复“执行计划”，已批准本计划与v2；按两项顺序执行和独立Review。
 
 ## Global Constraints
 - 固定工作目录D:/codex project/Enlumor/.worktrees/v04-wave-ab；基础653acb4/2d45f0e已完成，不重跑或重写基础两项。
@@ -62,11 +62,11 @@
 - prepare_mark_export：selection:{origins:('user'|'ai')[];ids:string[]|null;includeHidden:boolean}，来源至少一类、ID去重≤1000，null表示该来源全体；retained不作为过滤器，返回深拷贝版本快照及摘要。
 - export_marked_pdf：snapshotId；只生成明确export_request，Task2在无真实宿主导出端口时UNSUPPORTED，不注册可调用的PDF导出工具。
 
-- [ ] 写RED：七类创建、默认属性、来源伪造、文字源锚点、页界/裁剪偏移、空洞/NaN/退化点、箭头端点/placement/换锚点、每类编辑、批量冲突/零变更、隐藏与未固定导出选择、输入/结果不串引用。
-- [ ] `npx vitest run tests/editing-planner.test.ts`保存实际RED及退出码；再实现最小类型/校验/规划逻辑，不写数据库。
-- [ ] 只读查询无变更；任何prepared结果明确“尚未提交”；AI对本会话自身未固定对象可直接准备，其余保护目标标requiresConfirmation，不能在解析时信confirmed=true。
-- [ ] 几何在可信pageBounds内；验证文字锚点身份与真实几何；逆内容保留origin/anchor/retention/visibility，但实际版本由执行时递增。
-- [ ] 专项测试、`npm test`、`npm run build`通过，原261基线保留；记录真实结果后明确路径提交`feat: add editing command contracts and pure mark planning`，fresh任务Review通过再Task2。
+- [x] 写RED：七类创建、默认属性、来源伪造、文字源锚点、页界/裁剪偏移、空洞/NaN/退化点、箭头端点/placement/换锚点、每类编辑、批量冲突/零变更、隐藏与未固定导出选择、输入/结果不串引用。
+- [x] `npx vitest run tests/editing-planner.test.ts`保存实际RED及退出码；再实现最小类型/校验/规划逻辑，不写数据库。
+- [x] 只读查询无变更；任何prepared结果明确“尚未提交”；AI对本会话自身未固定对象可直接准备，其余保护目标标requiresConfirmation，不能在解析时信confirmed=true。
+- [x] 几何在可信pageBounds内；验证文字锚点身份与真实几何；逆内容保留origin/anchor/retention/visibility，但实际版本由执行时递增。
+- [x] 专项测试、`npm test`、`npm run build`通过，原261基线保留；记录真实结果后明确路径提交`feat: add editing command contracts and pure mark planning`，fresh任务Review通过再Task2。
 
 ### Task 2: 原子执行、确认、回执与定向历史
 
@@ -83,13 +83,13 @@
 - list/get/prepare_export是只读结果，不写编辑历史、不声称committed；有写入副作用的操作才需要持久提交回执。导出快照状态是prepared，缺少真实导出端口的export_marked_pdf为unsupported，不能返回假的文件路径。
 - runtime错误code在Task1集合外增加EDIT_CANCELED、CONFIRMATION_REQUIRED、CONFIRMATION_INVALID、REQUEST_ID_REUSED、COMMIT_UNCERTAIN、STORE_BUSY、EDIT_FAILED、UNSUPPORTED；明确定义只读结果不是“已保存”。提供只读receipt查询方法恢复已提交操作，不让当前页面的revision变化把持久成功事实改成取消。
 
-- [ ] 写RED：真实临时SQLite两连接竞争同版本仅一个提交，锁/busy、任一写入失败、重复提交、同请求改参数、关库重开后重试不重复、commit后丢回执、提交前取消与提交后取消的不同结果。
-- [ ] 测试仓储只位于tests/helpers，表为临时marks/tombstones/operations/receipts/confirmations，BEGIN IMMEDIATE内原子写；这是测试宿主，不是第二个生产存储系统。对方连接锁冲突/错误需回滚，之后可重试同原请求且不误消耗确认。
-- [ ] 写RED：AI保护对象确认、过期差异/跨actor凭据、定向undo/redo、新分支、跨来源冲突、版本不倒退；实际SQL读取行数/版本/历史/回执验证，不仅检查port调用次数。
-- [ ] `npx vitest run tests/editing-executor.test.ts`记录实际失败，再实现运行时；所有事务相关测试使用真实node:sqlite，不用Map替代并发与耐久性。
-- [ ] 用临时源PDF哈希、独立SQLitefixture证明只影响选定测试仓储；生产个人DB、原PDF、现有标注和基础读页库不变。新API不挂window/preload，不接模型。
-- [ ] `npx vitest run tests/editing-planner.test.ts tests/editing-executor.test.ts`、`npm test`、`npm run build`全部通过，明确路径提交`feat: execute mark edits with atomic receipts and targeted history`。
-- [ ] fresh Task2Review后两项整轮Review；保留RED/GREEN/原hash/修改快照/diff/验证记录与隔离副本回退。文档逐项声明16命令的解析、准备、执行、真实应用接入状态，不能用16个名字代替16个真实能力。
+- [x] 写RED：真实临时SQLite两连接竞争同版本仅一个提交，锁/busy、任一写入失败、重复提交、同请求改参数、关库重开后重试不重复、commit后丢回执、提交前取消与提交后取消的不同结果。
+- [x] 测试仓储只位于tests/helpers，表为临时marks/tombstones/operations/receipts/confirmations，BEGIN IMMEDIATE内原子写；这是测试宿主，不是第二个生产存储系统。对方连接锁冲突/错误需回滚，之后可重试同原请求且不误消耗确认。
+- [x] 写RED：AI保护对象确认、过期差异/跨actor凭据、定向undo/redo、新分支、跨来源冲突、版本不倒退；实际SQL读取行数/版本/历史/回执验证，不仅检查port调用次数。
+- [x] `npx vitest run tests/editing-executor.test.ts`记录实际失败，再实现运行时；所有事务相关测试使用真实node:sqlite，不用Map替代并发与耐久性。
+- [x] 用临时源PDF哈希、独立SQLitefixture证明只影响选定测试仓储；生产个人DB、原PDF、现有标注和基础读页库不变。新API不挂window/preload，不接模型。
+- [x] `npx vitest run tests/editing-planner.test.ts tests/editing-executor.test.ts`、`npm test`、`npm run build`全部通过，明确路径提交`feat: execute mark edits with atomic receipts and targeted history`。
+- [x] fresh Task2Review后两项整轮Review；保留RED/GREEN/原hash/修改快照/diff/验证记录与隔离副本回退。文档逐项声明16命令的解析、准备、执行、真实应用接入状态，不能用16个名字代替16个真实能力。
 
 ## 覆盖与下一批边界（自查结论）
 
@@ -99,4 +99,4 @@ Task1覆盖七类内容/几何、来源、锚点、显隐/保留、批量及导�
 
 ## 审阅交接
 
-计划与v2规格需一起确认后实施；用户已选择的子代理方式保留，不重复询问执行方式。当前未写编辑运行时代码，当前自动任务不因生成计划而自行开启产品实施。
+用户于2026-10-20明确批准执行本计划及v2规格；沿用单一实施者和独立Review。状态以docs/WAVE_A_STATE.json与本计划SDD ledger为准，其他自动任务只接续已有工作。

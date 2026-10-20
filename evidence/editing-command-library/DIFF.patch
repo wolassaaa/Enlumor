@@ -1,0 +1,1411 @@
+diff --git a/docs/acceptance/editing-command-library.md b/docs/acceptance/editing-command-library.md
+new file mode 100644
+index 0000000..0bfd23d
+--- /dev/null
++++ b/docs/acceptance/editing-command-library.md
+@@ -0,0 +1,74 @@
++# Editing command library — isolated acceptance
++
++## Delivered boundary
++
++This batch implements a Node-side library, not production reader integration. `runEditingCommand(input, host, signal)` uses the shared planner/mark contract; `queryEditingReceipt(input, host)` recovers durable success without changing any state. No window/preload API, production IPC, Workspace/Annotation migration, user database, model call, UI effect, dependency or PDF-writing port is added.
++
++`tests/helpers/editing-sqlite-store.ts` is exclusively a test host. Every test opens a new `node:sqlite` file beneath `mkdtempSync(tmpdir())`. The five temporary tables are marks, tombstones, operations, receipts and confirmations. They are not a second production storage authority. Two independent `DatabaseSync` connections exercise real `BEGIN IMMEDIATE` locking and rollback.
++
++## Per-command capability matrix
++
++“Execute” below means library execution against the real temporary SQLite host, **not** a command registered in the production application. All 16 commands strictly parse and prepare in the shared planner; history preparation in that planner is a typed request resolved by this executor.
++
++| Command | Parsing / preparation | Executor / isolated SQL behavior | Production application |
++| --- | --- | --- | --- |
++| list_marks | Strict command; sorted cloned marks | `read`; no edit/history/receipt writes | Not connected |
++| get_mark | Strict ID; existence check | `read`; no edit/history/receipt writes | Not connected |
++| create_mark | Seven validated types; trusted anchors/actor/IDs | All seven types commit mark/version/history/receipt atomically | Not connected |
++| update_mark | Color/note whitelist; expected version | Version-checked atomic content/style deltas | Not connected |
++| set_mark_geometry | Free note/line/arrow/ink; native crop/path checks | Atomic geometry update; anchored text geometry remains rejected | Not connected |
++| set_mark_placement | Note-only bounded display offset | Atomic placement; source quote/quads remain unchanged | Not connected; no floating UI claim |
++| replace_mark_anchor | Trusted verified quote/page/quads | Atomic source replacement, including convex skew quads | Not connected |
++| delete_marks | Explicit versioned target set | Atomic deletion plus incremented tombstones; undo restores content at a new version | Not connected |
++| set_marks_visibility | Explicit boolean independent of retention | Atomic state change; hidden marks stay persisted | Not connected |
++| set_marks_retention | Explicit boolean independent of visibility/origin | Atomic state change; retained protected content needs AI confirmation | Not connected |
++| erase_ink | Visible whole-stroke intersection, not partial-path cutting | Atomic selected stroke deletion; hidden ink remains | Not connected |
++| apply_edit_batch | 1–64 mutations; all validate, no duplicate target | One transaction/history/receipt; any invalid target yields zero writes | Not connected |
++| undo_edit | Explicit operationId | Resolves durable edit group; checks all current versions/authorization; writes fresh monotonic versions and audit row | Not connected |
++| redo_edit | Explicit operationId | Checks group state, redo eligibility/owner, versions and confirmation; restores forward content at fresh versions | Not connected |
++| prepare_mark_export | Explicit origin/ID/hidden selection and captured versions | `prepared` snapshot only; hidden/unretained marks may be selected; no history/receipt or file | Not connected |
++| export_marked_pdf | Strict snapshotId request | `unsupported` / `UNSUPPORTED`; no actual exporter, fake path or file | Not connected; real PDF export deferred |
++
++## Result and replay contract
++
++Only side-effecting successfully persisted operations return `committed`, with documentId, fingerprint, operationId, receiptId and changed-object versions **at that commit**. Querying or replaying a receipt returns that original durable fact, not a claim that the current page/object is still at those versions. Reads return `read`; export snapshots and no-op edits return `prepared`, never “saved”. The other statuses are confirmation_required, conflict, canceled, unsupported and error.
++
++Runtime error codes supplement the planner codes: EDIT_CANCELED, CONFIRMATION_REQUIRED, CONFIRMATION_INVALID, REQUEST_ID_REUSED, COMMIT_UNCERTAIN, STORE_BUSY, EDIT_FAILED and UNSUPPORTED. COMMIT_UNCERTAIN is not success or cancellation; the caller may query the receipt, and the executor never automatically re-applies that uncertain operation.
++
++The idempotency key is SHA256(documentId, fingerprint, trusted actor identity including AI session, requestId). A separate stable SHA256 of the canonical command (including all expected object versions) is stored with the receipt. Identifier sets are sorted; batch and geometry order are preserved. Reading-context revision deliberately does not enter that replay digest. An existing matching receipt is checked before context/signal validation, anchor resolution, ID allocation or planning, so revision/page changes and retries after restart do not erase a successful fact. Reusing that key with a different command/expected version returns REQUEST_ID_REUSED.
++
++`queryEditingReceipt` is read-only and returns null if no receipt exists. Old-document receipts preserve original attribution. This library performs no current-view effects; a future UI adapter must compare returned documentId/fingerprint with its live view before applying any visual effects.
++
++## Host, confirmation and atomicity obligations
++
++The host supplies trusted context, actor, bounds, verified anchors, snapshots, operations and confirmation credentials. All source/actor changes invalidate context.revision. Reads, including recovery, have no side effects. A snapshot must be internally consistent. Source geometry and crop offsets remain native PDF values; no source quote/quads come from model input.
++
++`allocateIds(requestKey,count)` returns `deriveEditingIds(requestKey,count)`: ordinal i becomes `mark-` + standard node:crypto SHA256(`${requestKey}:${i}`). Existing marks and positive tombstones reject ID reuse. Receipt retries allocate nothing. Preview and confirmed retries derive identical creation IDs; operation/receipt IDs also derive deterministically from requestKey.
++
++Confirmation is obtained only from host.getConfirmation(binding). The binding includes request key, trusted actor, full context and planner before/after digest/deltas. Unlike replay identity, this prepared digest includes revision, snapshot dependencies and concrete changes. The token refers to a durable unconsumed host credential; the transaction verifies the complete binding. Protected user/other-session/retained marks require confirmation for AI. User-targeted undo of AI groups is allowed; AI undo/redo involving other actors, including a user-owned redo branch, requires confirmation of the actual inverse/forward differences. Model confirmation/ownership fields are rejected.
++
++`host.transaction` is a single synchronous callback boundary: BEGIN IMMEDIATE (or equivalent isolation), re-read receipt/snapshot/history/confirmation, replan and compare the prepared digest to reject object changes and collection phantoms, write deltas/versions/tombstones/history/receipt, consume credential, final cancel/context/actor check, then immediately COMMIT. Any throw rolls everything back, including credential consumption and redo eligibility. There is no await or external callback between returning from the body and the host's actual COMMIT. Host adapters must classify unknown commit outcomes as COMMIT_UNCERTAIN and must not replay writes internally.
++
++The successful durable COMMIT is the linearization point. Before it, cancellation/context changes roll back all writes. After it, late abort/page/document changes preserve committed success, even if the transaction reply is lost. On a thrown transaction outcome, the executor consults the persisted receipt once; a matching success is returned without running the operation again.
++
++## Targeted history and branch ownership
++
++An edit group's original operationId, actor, forward deltas and inverse content remain stored. Each undo/redo adds its own audit row identifying the executing actor, action and targetOperationId, and changes the target group's applied/undone state and expected current versions. All restores increment versions; delete/restore uses tombstones, so neither undo nor ID recreation silently reintroduces an old version (ABA).
++
++The actor who **executes undo** owns that resulting redo branch (`redoActor`); original group provenance does not change. A new edit clears only undone redo eligibility belonging to its current trusted actor/session. Thus a user undoing an AI group followed by a new user edit clears that user's redo; an unrelated AI edit does not. Another source modifying a target causes undo/redo version conflict rather than overwriting its content. History write failures leave target state and branch eligibility unchanged.
++
++## Verification and remaining gates
++
++Executor tests assert actual SQL row counts, mark/tombstone versions, history state, receipts and consumed flags, rather than only mocked port calls. Coverage includes all command families, seven creation types, two competing executors/connections, real lock contention, each write-stage failure, durable close/reopen, lost reply after COMMIT, request reuse, source/actor/confirmation binding, before/after-commit cancellation, collection phantoms, source PDF/control-database hash isolation and targeted cross-origin redo branches.
++
++Run from `D:/codex project/Enlumor/.worktrees/v04-wave-ab`:
++
++```powershell
++npx vitest run tests/editing-planner.test.ts tests/editing-executor.test.ts
++npm test
++npm run build
++```
++
++Actual RED/GREEN/unit/build output and exit statuses live in `evidence/editing-command-library/TASK2-*.txt`; the Task 2 report records exact counts. The isolated source PDF test hashes a generated one-page PDF before and after and also verifies an independent control SQLite file remains byte-identical. That proves file isolation, not production PDF rendering/export.
++
++Production Workspace migration, personal-data backups/recovery, importing legacy annotations, real reader display, floating layout, shared human/AI entrypoints and selected-snapshot PDF export remain later integration gates. This batch does not repeat or reclassify historical reader/EXE acceptance as new tests, and does not claim the complete editing product is launched.
+diff --git a/src/main/editing-executor.ts b/src/main/editing-executor.ts
+new file mode 100644
+index 0000000..dfd7238
+--- /dev/null
++++ b/src/main/editing-executor.ts
+@@ -0,0 +1,214 @@
++import { createHash } from 'node:crypto';
++import type { CommandContext } from '../shared/document-commands';
++import type { EditActor, EditDelta, EditEnvironment, EditErrorCode, EditExportSnapshot, EditMark, EditRequest, EditSnapshot, PreparedEdit, PreparedEditBase, VerifiedAnchor } from '../shared/editing-commands';
++import { copyEditData, EditValidationError, identifier, invalid, object, validateActor, validateContext, validateMark } from '../shared/editing-marks';
++import { canonicalDigest, prepareEdit } from '../shared/editing-planner';
++
++export type RuntimeEditError = EditErrorCode | 'EDIT_CANCELED' | 'CONFIRMATION_REQUIRED' | 'CONFIRMATION_INVALID' | 'REQUEST_ID_REUSED' | 'COMMIT_UNCERTAIN' | 'STORE_BUSY' | 'EDIT_FAILED' | 'UNSUPPORTED';
++type Failure = { status: 'conflict' | 'canceled' | 'unsupported' | 'error'; error: { code: RuntimeEditError; message: string } };
++export type CommittedEdit = {
++  status: 'committed'; documentId: string; fingerprint: string; operationId: string; receiptId: string; versions: Record<string, number>;
++};
++export type ConfirmationBinding = { requestKey: string; context: CommandContext; actor: EditActor; digest: string; deltas: EditDelta[] };
++export type EditConfirmation = ConfirmationBinding & { id: string; consumed: boolean };
++export type EditResult = Failure | CommittedEdit
++  | { status: 'read'; read: EditMark | EditMark[] }
++  | { status: 'prepared'; deltas: EditDelta[] }
++  | { status: 'prepared'; exportSnapshot: EditExportSnapshot }
++  | { status: 'confirmation_required'; confirmation: ConfirmationBinding; error: { code: 'CONFIRMATION_REQUIRED'; message: string } };
++export type EditReceipt = { requestKey: string; requestDigest: string; result: CommittedEdit };
++export type EditOperation = {
++  operationId: string; context: CommandContext; actor: EditActor; action: 'edit' | 'undo' | 'redo'; targetOperationId: string | null;
++  deltas: EditDelta[]; inverse: EditDelta[]; state: 'applied' | 'undone'; redoEligible: boolean; redoActor: EditActor | null; currentVersions: Record<string, number>;
++};
++export type HistoryWrite = { operation: EditOperation; target?: EditOperation; clearRedoFor?: EditActor };
++export type EditTransaction = {
++  readSnapshot(context: CommandContext): EditSnapshot;
++  readReceipt(requestKey: string): EditReceipt | null;
++  readOperation(context: CommandContext, operationId: string): EditOperation | null;
++  readConfirmation(id: string): EditConfirmation | null;
++  writeDeltas(context: CommandContext, deltas: EditDelta[]): void;
++  writeHistory(write: HistoryWrite): void;
++  writeReceipt(receipt: EditReceipt): void;
++  consumeConfirmation(id: string): void;
++};
++/**
++ * Only a host that actually commits all tx writes durably may implement transaction.
++ * The callback is synchronous: isolate reads+writes, rollback on any thrown error,
++ * and COMMIT immediately on return, without awaiting or calling external code first.
++ * Report an indeterminate transaction outcome as code COMMIT_UNCERTAIN; never retry it
++ * inside the host. Read ports are side-effect-free, including receipt recovery.
++ * Source/actor changes must invalidate getContext().revision. No UI effects live here.
++ */
++export type EditHost = {
++  getContext(): CommandContext | null;
++  getActor(): EditActor;
++  getPageBounds(): EditEnvironment['pageBounds'];
++  resolveAnchors(context: CommandContext): readonly VerifiedAnchor[] | Promise<readonly VerifiedAnchor[]>;
++  allocateIds(requestKey: string, count: number): readonly string[];
++  readSnapshot(context: CommandContext): EditSnapshot;
++  readReceipt(requestKey: string): EditReceipt | null;
++  readOperation(context: CommandContext, operationId: string): EditOperation | null;
++  getConfirmation(binding: ConfirmationBinding): string | null | Promise<string | null>;
++  transaction<T>(body: (tx: EditTransaction) => T): T;
++};
++class ExecutionError extends Error { constructor(readonly code: RuntimeEditError) { super(code); } }
++function fail(code: RuntimeEditError): never { throw new ExecutionError(code); }
++const same = (a: unknown, b: unknown) => canonicalDigest(a) === canonicalDigest(b);
++const sha = (value: string) => createHash('sha256').update(value).digest('hex');
++/** Same requestKey and ordinal always produce the same ID, including preview retries. */
++export function deriveEditingIds(requestKey: string, count: number): string[] {
++  return Array.from({ length: count }, (_, i) => 'mark-' + sha(`${requestKey}:${i}`));
++}
++function failure(error: unknown): Failure {
++  let code: RuntimeEditError = 'EDIT_FAILED';
++  if (error instanceof ExecutionError || error instanceof EditValidationError) code = error.code;
++  else if (error && typeof error === 'object') {
++    const e = error as { code?: string; errcode?: number };
++    if (e.code === 'COMMIT_UNCERTAIN') code = 'COMMIT_UNCERTAIN';
++    else if (e.code === 'SQLITE_BUSY' || e.code === 'SQLITE_LOCKED' || e.errcode === 5 || e.errcode === 6) code = 'STORE_BUSY';
++  }
++  const status = code === 'EDIT_CANCELED' ? 'canceled' : code === 'UNSUPPORTED' ? 'unsupported'
++    : ['EDIT_STALE','VERSION_CONFLICT','REQUEST_ID_REUSED','CONFIRMATION_INVALID','BATCH_CONFLICT'].includes(code) ? 'conflict' : 'error';
++  return { status, error: { code, message: code } };
++}
++/** Stable replay normalization excludes reading revision and never inspects untrusted getters. */
++function identity(input: unknown, actorInput: EditActor) {
++  const request = copyEditData(input); object(request, ['requestId','context','command']); identifier(request.requestId); validateContext(request.context);
++  const actor = copyEditData(actorInput); validateActor(actor);
++  const command = copyEditData(request.command);
++  function normalize(c: unknown) {
++    object(c,['type'],['id','expectedVersion','patch','geometry','placement','anchorId','markType','pageIndex','color','note','targets','visible','retained','from','to','radius','operations','operationId','selection','snapshotId']);
++    if (Array.isArray(c.targets) && c.targets.every(t=>typeof t?.id === 'string')) c.targets.sort((a,b) => a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
++    if (c.type === 'apply_edit_batch' && Array.isArray(c.operations)) c.operations.forEach(normalize);
++    if (c.type === 'prepare_mark_export' && c.selection && typeof c.selection === 'object') {
++      if (Array.isArray(c.selection.origins) && c.selection.origins.every((v: unknown)=>typeof v === 'string')) c.selection.origins.sort();
++      if (Array.isArray(c.selection.ids) && c.selection.ids.every((v: unknown)=>typeof v === 'string')) c.selection.ids.sort();
++    }
++  }
++  normalize(command);
++  const requestKey = canonicalDigest({documentId:request.context.documentId,fingerprint:request.context.fingerprint,actor,requestId:request.requestId});
++  return { request: request as EditRequest, actor, requestKey, requestDigest: canonicalDigest({command}) };
++}
++function replay(receipt: EditReceipt | null, digest: string): CommittedEdit | null {
++  if (!receipt) return null;
++  if (receipt.requestDigest !== digest) fail('REQUEST_ID_REUSED');
++  return copyEditData(receipt.result);
++}
++/** No context/page revision or signal check may erase the fact of an existing durable commit. */
++export async function queryEditingReceipt(input: unknown, host: EditHost): Promise<EditResult | null> {
++  try { const i = identity(input,host.getActor()); return replay(host.readReceipt(i.requestKey),i.requestDigest); }
++  catch (e) { return failure(e); }
++}
++function checkCurrent(host: EditHost, context: CommandContext, actor: EditActor, signal: AbortSignal) {
++  if (signal.aborted) fail('EDIT_CANCELED');
++  if (!same(host.getContext(),context) || !same(host.getActor(),actor)) fail('EDIT_STALE');
++}
++function creationCount(command: EditRequest['command']): number {
++  if (command.type === 'create_mark') return 1;
++  if (command.type === 'apply_edit_batch' && Array.isArray(command.operations)) return Math.min(64,command.operations.filter(op=>op.type === 'create_mark').length);
++  return 0;
++}
++type MutationPlan = PreparedEditBase & { kind: 'prepared'; deltas: EditDelta[]; inverse: EditDelta[]; target?: EditOperation };
++function inverse(deltas: EditDelta[]): EditDelta[] {
++  return [...deltas].reverse().map(d=>({id:d.id,expectedVersion:d.expectedVersion+1,before:copyEditData(d.after),after:copyEditData(d.before)}));
++}
++function prepareHistory(p: Extract<PreparedEdit,{ok:true}>, snapshot: EditSnapshot, env: EditEnvironment, read: (context: CommandContext,id: string)=>EditOperation|null): MutationPlan {
++  if (p.kind !== 'history') throw Error('not history');
++  const original = copyEditData(read(p.context,p.history.operationId));
++  if (!original || !same(original.context.documentId,p.context.documentId) || original.context.fingerprint !== p.context.fingerprint) fail('MARK_NOT_FOUND');
++  const undo = p.history.type === 'undo_edit';
++  if (original.action !== 'edit' || (undo ? original.state !== 'applied' : original.state !== 'undone' || !original.redoEligible)) fail('VERSION_CONFLICT');
++  const marks = new Map(snapshot.marks.map(m=>[m.id,m]));
++  const dependencies: Record<string,number> = {};
++  const deltas = (undo ? [...original.deltas].reverse() : original.deltas).map(d=>{
++    const v = snapshot.versions[d.id] ?? 0;
++    if (v !== original.currentVersions[d.id] || v >= Number.MAX_SAFE_INTEGER) fail('VERSION_CONFLICT');
++    dependencies[d.id]=v;
++    const content = undo ? d.before : d.after;
++    const after = content ? {...copyEditData(content),version:v+1} : null;
++    if (after) validateMark(after,p.context,env.pageBounds);
++    return {id:d.id,expectedVersion:v,before:copyEditData(marks.get(d.id) ?? null),after};
++  });
++  const protectedActor = env.actor.kind === 'ai' && (!same(original.actor,env.actor) || !undo && !same(original.redoActor,env.actor));
++  const protectedContent = env.actor.kind === 'ai' && deltas.some(d=>[d.before,d.after].some(m=>m && (m.retained || !same(m.origin,env.actor))));
++  const requiresConfirmation = protectedActor || protectedContent;
++  return {...p,kind:'prepared',dependencies,requiresConfirmation,deltas,inverse:inverse(deltas),target:original,
++    digest:canonicalDigest({context:p.context,actor:p.actor,command:p.command,dependencies,deltas,target:original,requiresConfirmation})};
++}
++function prepare(input: EditRequest, snapshot: EditSnapshot, env: EditEnvironment, read: EditHost['readOperation']): Exclude<PreparedEdit, { kind: 'prepared' }> | MutationPlan {
++  const p = prepareEdit(input,snapshot,env);
++  return p.ok && p.kind === 'history' ? prepareHistory(p,snapshot,env,read) : p;
++}
++function binding(plan: MutationPlan, requestKey: string): ConfirmationBinding {
++  return copyEditData({requestKey,context:plan.context,actor:plan.actor,digest:plan.digest,deltas:plan.deltas});
++}
++function verifyConfirmation(tx: EditTransaction, token: string | null, expected: ConfirmationBinding) {
++  if (token === null) fail('CONFIRMATION_INVALID'); identifier(token);
++  const c = copyEditData(tx.readConfirmation(token));
++  if (!c || c.consumed || c.id !== token || !same({requestKey:c.requestKey,context:c.context,actor:c.actor,digest:c.digest,deltas:c.deltas},expected)) fail('CONFIRMATION_INVALID');
++}
++
++/** Library execution only: no production Workspace, IPC, PDF writer or UI integration. */
++export async function runEditingCommand(input: unknown, host: EditHost, signal: AbortSignal): Promise<EditResult> {
++  let key: string | null = null, digest: string | null = null;
++  try {
++    const i = identity(input,host.getActor()); key=i.requestKey; digest=i.requestDigest;
++    const existing = replay(host.readReceipt(key),digest); if (existing) return existing;
++    checkCurrent(host,i.request.context,i.actor,signal);
++    const context=copyEditData(i.request.context), actor=i.actor;
++    const anchors = copyEditData(await host.resolveAnchors(copyEditData(context)));
++    checkCurrent(host,context,actor,signal);
++    const count=creationCount(i.request.command);
++    const ids=count ? copyEditData(host.allocateIds(key,count)) : [];
++    if (!same(ids,deriveEditingIds(key,count))) invalid();
++    const env: EditEnvironment = {actor:copyEditData(actor),pageBounds:copyEditData(host.getPageBounds()),anchors,newIds:ids};
++    const preview=prepare(i.request,host.readSnapshot(context),env,(c,id)=>host.readOperation(c,id));
++    if (!preview.ok) return failure(new ExecutionError(preview.error.code));
++    checkCurrent(host,context,actor,signal);
++    if (preview.kind === 'read') return {status:'read',read:copyEditData(preview.read)};
++    if (preview.kind === 'export_snapshot') return {status:'prepared',exportSnapshot:copyEditData(preview.exportSnapshot)};
++    if (preview.kind === 'export_request') return failure(new ExecutionError('UNSUPPORTED'));
++    if (preview.kind !== 'prepared') throw Error('unresolved history');
++    if (!preview.deltas.length) return {status:'prepared',deltas:[]};
++    const candidate=binding(preview,key);
++    const token=preview.requiresConfirmation ? await host.getConfirmation(copyEditData(candidate)) : null;
++    checkCurrent(host,context,actor,signal);
++    if (preview.requiresConfirmation && token === null) return {status:'confirmation_required',confirmation:candidate,error:{code:'CONFIRMATION_REQUIRED',message:'Explicit confirmation of these differences is required.'}};
++    return host.transaction(tx=>{
++      // A winner may have committed while this caller was resolving anchors/approval.
++      const prior=replay(tx.readReceipt(i.requestKey),i.requestDigest); if (prior) return prior;
++      checkCurrent(host,context,actor,signal);
++      const current=prepare(i.request,tx.readSnapshot(context),env,(c,id)=>tx.readOperation(c,id));
++      if (!current.ok) fail(current.error.code);
++      if (current.kind !== 'prepared' || current.digest !== preview.digest) fail('VERSION_CONFLICT');
++      if (!same(host.getPageBounds(),env.pageBounds)) fail('EDIT_STALE');
++      if (current.requiresConfirmation) verifyConfirmation(tx,token,binding(current,i.requestKey));
++      checkCurrent(host,context,actor,signal);
++      const versions=Object.fromEntries(current.deltas.map(d=>[d.id,d.expectedVersion+1]));
++      const operationId='op-'+sha(i.requestKey), receiptId='receipt-'+sha(i.requestKey);
++      const target=current.target ? {...copyEditData(current.target),state:current.command.type === 'undo_edit' ? 'undone' as const : 'applied' as const,currentVersions:copyEditData(versions),redoActor:current.command.type === 'undo_edit' ? copyEditData(actor) : null} : undefined;
++      const action=current.command.type === 'undo_edit' ? 'undo' : current.command.type === 'redo_edit' ? 'redo' : 'edit';
++      const operation: EditOperation = {operationId,context:copyEditData(context),actor:copyEditData(actor),action,targetOperationId:target?.operationId ?? null,
++        deltas:copyEditData(current.deltas),inverse:copyEditData(current.inverse),state:'applied',redoEligible:action === 'edit',redoActor:null,currentVersions:copyEditData(versions)};
++      const result: CommittedEdit={status:'committed',documentId:context.documentId,fingerprint:context.fingerprint,operationId,receiptId,versions};
++      tx.writeDeltas(context,copyEditData(current.deltas));
++      tx.writeHistory({operation,...(target ? {target} : {}),...(action === 'edit' ? {clearRedoFor:copyEditData(actor)} : {})});
++      tx.writeReceipt({requestKey:i.requestKey,requestDigest:i.requestDigest,result:copyEditData(result)});
++      if (current.requiresConfirmation) tx.consumeConfirmation(token!);
++      // Last pre-COMMIT gate: a late abort/actor/document change throws through rollback.
++      checkCurrent(host,context,actor,signal);
++      return result;
++    });
++  } catch (error) {
++    // Never redo an indeterminate commit. Consult durable truth once, even after abort/switch.
++    if (key !== null && digest !== null) {
++      try { const receipt=replay(host.readReceipt(key),digest); if (receipt) return receipt; }
++      catch (recoveryError) {
++        if (recoveryError instanceof ExecutionError && recoveryError.code === 'REQUEST_ID_REUSED') return failure(recoveryError);
++        return failure(new ExecutionError('COMMIT_UNCERTAIN'));
++      }
++    }
++    return failure(error);
++  }
++}
+diff --git a/src/shared/editing-commands.ts b/src/shared/editing-commands.ts
+new file mode 100644
+index 0000000..6a7501c
+--- /dev/null
++++ b/src/shared/editing-commands.ts
+@@ -0,0 +1,46 @@
++import type { CommandContext } from './document-commands';
++import type { Annotation } from './model';
++
++export type EditActor = { kind: 'user'; id: string } | { kind: 'ai'; id: string; sessionId: string };
++export type EditMark = Omit<Annotation, 'author'> & {
++  origin: EditActor; retained: boolean; visible: boolean; version: number;
++  anchorId: string | null; placement: { dx: number; dy: number };
++};
++export type VerifiedAnchor = { id: string; documentId: string; fingerprint: string; pageIndex: number; quote: string; quads: number[][] };
++export type EditSnapshot = { context: CommandContext; marks: EditMark[]; versions: Record<string, number> };
++export type EditEnvironment = { actor: EditActor; pageBounds: readonly [number, number, number, number][]; anchors: readonly VerifiedAnchor[]; newIds: readonly string[] };
++export type EditGeometry = { quads: number[][]; points?: number[] };
++export type EditTarget = { id: string; expectedVersion: number };
++export type EditMutation =
++  | { type: 'create_mark'; markType: EditMark['type']; pageIndex: number; color: string; note: string; anchorId?: string; geometry?: EditGeometry }
++  | ({ type: 'update_mark'; patch: { color?: string; note?: string } } & EditTarget)
++  | ({ type: 'set_mark_geometry'; geometry: EditGeometry } & EditTarget)
++  | ({ type: 'set_mark_placement'; placement: { dx: number; dy: number } } & EditTarget)
++  | ({ type: 'replace_mark_anchor'; anchorId: string } & EditTarget)
++  | { type: 'delete_marks'; targets: EditTarget[] }
++  | { type: 'set_marks_visibility'; targets: EditTarget[]; visible: boolean }
++  | { type: 'set_marks_retention'; targets: EditTarget[]; retained: boolean }
++  | { type: 'erase_ink'; pageIndex: number; from: [number, number]; to: [number, number]; radius: number };
++export type ExportSelection = { origins: ('user' | 'ai')[]; ids: string[] | null; includeHidden: boolean };
++export type EditCommand = EditMutation
++  | { type: 'list_marks' } | { type: 'get_mark'; id: string }
++  | { type: 'apply_edit_batch'; operations: EditMutation[] }
++  | { type: 'undo_edit' | 'redo_edit'; operationId: string }
++  | { type: 'prepare_mark_export'; selection: ExportSelection }
++  | { type: 'export_marked_pdf'; snapshotId: string };
++export type EditRequest = { requestId: string; context: CommandContext; command: EditCommand };
++export type EditDelta = { id: string; expectedVersion: number; before: EditMark | null; after: EditMark | null };
++export type EditErrorCode = 'EDIT_INVALID' | 'EDIT_STALE' | 'MARK_NOT_FOUND' | 'VERSION_CONFLICT' | 'ANCHOR_NOT_FOUND' | 'UNSUPPORTED_PLACEMENT' | 'BATCH_CONFLICT' | 'EDIT_TOO_LARGE';
++export type EditExportSnapshot = { context: CommandContext; marks: EditMark[]; versions: Record<string, number>; digest: string };
++export type PreparedEditBase = {
++  ok: true; requestId: string; context: CommandContext; actor: EditActor;
++  command: EditCommand; digest: string; dependencies: Record<string, number>; requiresConfirmation: boolean;
++};
++/** Prepared content is not a commit. The executor increments versions when applying inverse content. */
++export type PreparedEdit = { ok: false; error: { code: EditErrorCode; message: string } } | (PreparedEditBase & (
++  | { kind: 'read'; read: EditMark | EditMark[] }
++  | { kind: 'prepared'; deltas: EditDelta[]; inverse: EditDelta[] }
++  | { kind: 'history'; history: { type: 'undo_edit' | 'redo_edit'; operationId: string } }
++  | { kind: 'export_snapshot'; exportSnapshot: EditExportSnapshot }
++  | { kind: 'export_request'; exportRequest: { snapshotId: string } }
++));
+diff --git a/src/shared/editing-marks.ts b/src/shared/editing-marks.ts
+new file mode 100644
+index 0000000..41774b8
+--- /dev/null
++++ b/src/shared/editing-marks.ts
+@@ -0,0 +1,143 @@
++import type { CommandContext } from './document-commands';
++import type { EditActor, EditEnvironment, EditErrorCode, EditGeometry, EditMark, EditSnapshot, VerifiedAnchor } from './editing-commands';
++
++const messages: Record<EditErrorCode, string> = {
++  EDIT_INVALID: 'Invalid editing data.', EDIT_STALE: 'The document context has changed.',
++  MARK_NOT_FOUND: 'The mark was not found.', VERSION_CONFLICT: 'The object version has changed.',
++  ANCHOR_NOT_FOUND: 'The verified source anchor was not found.', UNSUPPORTED_PLACEMENT: 'Placement is supported only for notes.',
++  BATCH_CONFLICT: 'The batch targets the same mark more than once.', EDIT_TOO_LARGE: 'The editing request exceeds its size limit.'
++};
++export class EditValidationError extends Error {
++  constructor(readonly code: EditErrorCode) { super(messages[code]); }
++}
++export function invalid(code: EditErrorCode = 'EDIT_INVALID'): never { throw new EditValidationError(code); }
++
++/** Only own data properties are inspected. No external getter is evaluated, even on arrays. */
++export function copyEditData<T>(input: T): T {
++  const seen = new Set<object>();
++  function visit(value: unknown, depth: number): unknown {
++    if (depth > 32) invalid('EDIT_TOO_LARGE');
++    if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
++    if (typeof value === 'number') { if (!Number.isFinite(value)) invalid(); return Object.is(value, -0) ? 0 : value; }
++    if (typeof value !== 'object' || seen.has(value)) invalid();
++    seen.add(value);
++    const array = Array.isArray(value), proto = Object.getPrototypeOf(value);
++    if (array ? proto !== Array.prototype : proto !== Object.prototype && proto !== null) invalid();
++    const descriptors = Object.getOwnPropertyDescriptors(value);
++    const keys = Reflect.ownKeys(descriptors);
++    if (keys.some(key => typeof key !== 'string' || !('value' in descriptors[key]))) invalid();
++    if (array) {
++      const length = descriptors.length.value as number;
++      if (length > 100000) invalid('EDIT_TOO_LARGE');
++      if (keys.length !== length + 1) invalid();
++      const result: unknown[] = [];
++      for (let i = 0; i < length; i++) {
++        if (!Object.hasOwn(descriptors, String(i))) invalid();
++        result.push(visit(descriptors[i].value, depth + 1));
++      }
++      return result;
++    }
++    const result: Record<string, unknown> = {};
++    for (const key of keys as string[]) Object.defineProperty(result, key, { value: visit(descriptors[key].value, depth + 1), enumerable: true, writable: true, configurable: true });
++    return result;
++  }
++  return visit(input, 0) as T;
++}
++export function object(value: unknown, required: readonly string[], optional: readonly string[] = []): asserts value is Record<string, any> {
++  if (!value || typeof value !== 'object' || Array.isArray(value)) invalid();
++  const keys = Object.keys(value);
++  if (keys.some(key => !required.includes(key) && !optional.includes(key)) || required.some(key => !Object.hasOwn(value, key))) invalid();
++}
++export function identifier(value: unknown, limit = 100): asserts value is string {
++  if (typeof value !== 'string' || !value.trim() || value.length > limit) invalid();
++}
++export function version(value: unknown): asserts value is number { if (!Number.isSafeInteger(value) || (value as number) < 0) invalid(); }
++export function finite(value: unknown): asserts value is number { if (typeof value !== 'number' || !Number.isFinite(value) || Math.abs(value) > 1e7) invalid(); }
++export function text(value: unknown): asserts value is string { if (typeof value !== 'string' || value.length > 100000) invalid(); }
++export function color(value: unknown): asserts value is string { if (typeof value !== 'string' || !/^#[0-9a-f]{6}$/i.test(value)) invalid(); }
++export function boolean(value: unknown): asserts value is boolean { if (typeof value !== 'boolean') invalid(); }
++export const markTypes = ['highlight', 'underline', 'strikeout', 'line', 'arrow', 'ink', 'note'] as const;
++export const textTypes: readonly string[] = ['highlight', 'underline', 'strikeout'];
++export function page(value: unknown, bounds: EditEnvironment['pageBounds']): asserts value is number { version(value); if (value >= bounds.length) invalid(); }
++export function validateContext(value: unknown): asserts value is CommandContext {
++  object(value, ['documentId', 'fingerprint', 'revision']); identifier(value.documentId); version(value.revision);
++  if (typeof value.fingerprint !== 'string' || !/^[0-9a-f]{64}$/i.test(value.fingerprint)) invalid();
++}
++export function validateActor(value: unknown): asserts value is EditActor {
++  if (!value || typeof value !== 'object') invalid();
++  const a = value as EditActor;
++  if (a.kind === 'user') object(a, ['kind', 'id']); else if (a.kind === 'ai') { object(a, ['kind', 'id', 'sessionId']); identifier(a.sessionId); } else invalid();
++  identifier(a.id);
++}
++export function inBounds(x: number, y: number, bounds: readonly number[]): boolean { return x >= bounds[0] && x <= bounds[2] && y >= bounds[1] && y <= bounds[3]; }
++export function validateGeometry(value: unknown, type: EditMark['type'], bounds: readonly number[]): asserts value is EditGeometry {
++  object(value, ['quads'], ['points']);
++  if (!Array.isArray(value.quads) || !value.quads.length) invalid();
++  if (value.quads.length > 10000) invalid('EDIT_TOO_LARGE');
++  const isPath = type === 'line' || type === 'arrow' || type === 'ink';
++  for (const q of value.quads) {
++    if (!Array.isArray(q) || q.length !== 8) invalid();
++    q.forEach(finite);
++    if (isPath) {
++      // Path endpoint containment below uses an axis-aligned bounding rectangle.
++      if (q[0] !== q[4] || q[2] !== q[6] || q[1] !== q[3] || q[5] !== q[7] || q[2] <= q[0] || q[1] <= q[5]) invalid();
++    } else {
++      // PDF quads store top-left/top-right/bottom-left/bottom-right, not perimeter order.
++      // Preserve source vertices, accepting strict convex quads in either orientation.
++      const perimeter = [0, 2, 6, 4];
++      let orientation = 0;
++      for (let i = 0; i < 4; i++) {
++        const a = perimeter[i], b = perimeter[(i + 1) % 4], c = perimeter[(i + 2) % 4];
++        const cross = (q[b] - q[a]) * (q[c + 1] - q[b + 1]) - (q[b + 1] - q[a + 1]) * (q[c] - q[b]);
++        const sign = Math.sign(cross);
++        if (!sign || orientation && sign !== orientation) invalid();
++        orientation = sign;
++      }
++    }
++    for (let i = 0; i < 8; i += 2) if (!inBounds(q[i], q[i + 1], bounds)) invalid();
++  }
++  if (!isPath) { if (Object.hasOwn(value, 'points')) invalid(); return; }
++  const p = value.points, q = value.quads[0];
++  if (!Array.isArray(p) || p.length < 4 || p.length % 2 || p.length > 8192 || value.quads.length !== 1 || (type !== 'ink' && p.length !== 4)) invalid();
++  p.forEach(finite);
++  if (!p.some((n, i) => i >= 2 && Math.abs(n - p[i % 2]) >= 1e-6)) invalid();
++  for (let i = 0; i < p.length; i += 2) if (p[i] < q[0] || p[i] > q[2] || p[i + 1] < q[5] || p[i + 1] > q[1]) invalid();
++  if (type !== 'ink' && Math.hypot(p[2] - p[0], p[3] - p[1]) < 1e-6) invalid();
++}
++export function validatePlacement(value: unknown, mark: Pick<EditMark, 'quads'>, bounds: readonly number[]): asserts value is EditMark['placement'] {
++  object(value, ['dx', 'dy']); finite(value.dx); finite(value.dy);
++  for (const q of mark.quads) for (let i = 0; i < 8; i += 2) if (!inBounds(q[i] + value.dx, q[i + 1] + value.dy, bounds)) invalid();
++}
++function sameSource(value: { documentId: string; fingerprint: string }, context: CommandContext) { if (value.documentId !== context.documentId || value.fingerprint !== context.fingerprint) invalid(); }
++export function validateMark(value: unknown, context: CommandContext, bounds: EditEnvironment['pageBounds']): asserts value is EditMark {
++  object(value, ['id', 'documentId', 'fingerprint', 'type', 'pageIndex', 'quote', 'quads', 'color', 'note', 'origin', 'retained', 'visible', 'version', 'anchorId', 'placement'], ['points']);
++  identifier(value.id); sameSource(value as EditMark, context); page(value.pageIndex, bounds);
++  if (!markTypes.includes(value.type)) invalid();
++  text(value.quote); text(value.note); color(value.color); validateActor(value.origin); boolean(value.retained); boolean(value.visible); version(value.version);
++  if (value.anchorId !== null) identifier(value.anchorId, 200);
++  if (textTypes.includes(value.type) && value.anchorId === null) invalid();
++  if (['line', 'arrow', 'ink'].includes(value.type) && (value.anchorId !== null || value.quote !== '')) invalid();
++  if (value.type === 'note' && value.anchorId === null && value.quote !== '') invalid();
++  validateGeometry({ quads: value.quads, ...(Object.hasOwn(value, 'points') ? { points: value.points } : {}) }, value.type, bounds[value.pageIndex]);
++  validatePlacement(value.placement, value as EditMark, bounds[value.pageIndex]);
++  if (value.type !== 'note' && (value.placement.dx !== 0 || value.placement.dy !== 0)) invalid();
++}
++export function validateEnvironment(env: unknown, context: CommandContext): asserts env is EditEnvironment {
++  object(env, ['actor', 'pageBounds', 'anchors', 'newIds']); validateActor(env.actor);
++  if (!Array.isArray(env.pageBounds) || !env.pageBounds.length) invalid();
++  for (const b of env.pageBounds) { if (!Array.isArray(b) || b.length !== 4) invalid(); b.forEach(finite); if (b[0] >= b[2] || b[1] >= b[3]) invalid(); }
++  if (!Array.isArray(env.anchors) || !Array.isArray(env.newIds)) invalid();
++  const anchors = new Set<string>(), ids = new Set<string>();
++  for (const a of env.anchors) {
++    object(a, ['id', 'documentId', 'fingerprint', 'pageIndex', 'quote', 'quads']); identifier(a.id, 200); sameSource(a as VerifiedAnchor, context); page(a.pageIndex, env.pageBounds); text(a.quote);
++    validateGeometry({ quads: a.quads }, 'highlight', env.pageBounds[a.pageIndex]); if (anchors.has(a.id)) invalid(); anchors.add(a.id);
++  }
++  for (const id of env.newIds) { identifier(id); if (ids.has(id)) invalid(); ids.add(id); }
++}
++export function validateSnapshot(snapshot: unknown, env: EditEnvironment): asserts snapshot is EditSnapshot {
++  object(snapshot, ['context', 'marks', 'versions']); validateContext(snapshot.context);
++  if (!Array.isArray(snapshot.marks)) invalid(); object(snapshot.versions, [], Object.keys(snapshot.versions ?? {}));
++  for (const [id, v] of Object.entries(snapshot.versions)) { identifier(id); version(v); }
++  const ids = new Set<string>();
++  for (const m of snapshot.marks) { validateMark(m, snapshot.context, env.pageBounds); if (ids.has(m.id) || snapshot.versions[m.id] !== m.version) invalid(); ids.add(m.id); }
++}
+diff --git a/src/shared/editing-planner.ts b/src/shared/editing-planner.ts
+new file mode 100644
+index 0000000..3690f0f
+--- /dev/null
++++ b/src/shared/editing-planner.ts
+@@ -0,0 +1,167 @@
++import { createHash } from 'node:crypto';
++import { strokeIntersectsEraser } from './geometry';
++import type { EditCommand, EditDelta, EditEnvironment, EditMark, EditMutation, EditRequest, EditSnapshot, PreparedEdit, PreparedEditBase } from './editing-commands';
++import { boolean, color, copyEditData, EditValidationError, finite, identifier, inBounds, invalid, markTypes, object, page, text, textTypes, validateContext, validateEnvironment, validateGeometry, validateMark, validatePlacement, validateSnapshot, version } from './editing-marks';
++
++const compare = (a: string, b: string) => a < b ? -1 : a > b ? 1 : 0;
++const markOrder = (a: EditMark, b: EditMark) => a.pageIndex - b.pageIndex || compare(a.id, b.id);
++/** Synchronous Node-side digest. No DOM/Electron dependency or cryptographic reimplementation. */
++export function canonicalDigest(value: unknown): string {
++  function encode(v: any): string {
++    if (v === null || typeof v !== 'object') return JSON.stringify(v);
++    if (Array.isArray(v)) return `[${v.map(encode).join(',')}]`;
++    return `{${Object.keys(v).sort(compare).map(key => `${JSON.stringify(key)}:${encode(v[key])}`).join(',')}}`;
++  }
++  return createHash('sha256').update(encode(value)).digest('hex');
++}
++function target(value: unknown) { object(value, ['id', 'expectedVersion']); identifier(value.id); version(value.expectedVersion); }
++function targets(value: unknown) {
++  if (!Array.isArray(value) || !value.length) invalid();
++  if (value.length > 1000) invalid('EDIT_TOO_LARGE');
++  const ids = new Set<string>();
++  for (const t of value) { target(t); if (ids.has(t.id)) invalid(); ids.add(t.id); }
++  value.sort((a, b) => compare(a.id, b.id));
++}
++function parseCommand(value: unknown, env: EditEnvironment, mutationOnly = false): EditCommand {
++  object(value, ['type'], ['id', 'expectedVersion', 'patch', 'geometry', 'placement', 'anchorId', 'markType', 'pageIndex', 'color', 'note', 'targets', 'visible', 'retained', 'from', 'to', 'radius', 'operations', 'operationId', 'selection', 'snapshotId']);
++  const c = value;
++  switch (c.type) {
++    case 'create_mark': {
++      object(c, ['type', 'markType', 'pageIndex', 'color', 'note'], ['anchorId', 'geometry']);
++      if (!markTypes.includes(c.markType)) invalid(); page(c.pageIndex, env.pageBounds); color(c.color); text(c.note);
++      if (Object.hasOwn(c, 'anchorId')) identifier(c.anchorId, 200);
++      if (textTypes.includes(c.markType) || c.markType === 'note' && Object.hasOwn(c, 'anchorId')) {
++        if (!Object.hasOwn(c, 'anchorId') || Object.hasOwn(c, 'geometry')) invalid();
++      } else { if (Object.hasOwn(c, 'anchorId') || !Object.hasOwn(c, 'geometry')) invalid(); validateGeometry(c.geometry, c.markType, env.pageBounds[c.pageIndex]); }
++      break;
++    }
++    case 'update_mark':
++      object(c, ['type', 'id', 'expectedVersion', 'patch']); target({ id: c.id, expectedVersion: c.expectedVersion }); object(c.patch, [], ['color', 'note']);
++      if (!Object.keys(c.patch).length) invalid(); if (Object.hasOwn(c.patch, 'color')) color(c.patch.color); if (Object.hasOwn(c.patch, 'note')) text(c.patch.note); break;
++    case 'set_mark_geometry': case 'set_mark_placement': case 'replace_mark_anchor': {
++      const field = c.type === 'set_mark_geometry' ? 'geometry' : c.type === 'set_mark_placement' ? 'placement' : 'anchorId';
++      object(c, ['type', 'id', 'expectedVersion', field]); target({ id: c.id, expectedVersion: c.expectedVersion });
++      if (field === 'anchorId') identifier(c.anchorId, 200);
++      else if (field === 'geometry') object(c.geometry, ['quads'], ['points']);
++      else { object(c.placement, ['dx', 'dy']); finite(c.placement.dx); finite(c.placement.dy); }
++      break;
++    }
++    case 'delete_marks': object(c, ['type', 'targets']); targets(c.targets); break;
++    case 'set_marks_visibility': object(c, ['type', 'targets', 'visible']); targets(c.targets); boolean(c.visible); break;
++    case 'set_marks_retention': object(c, ['type', 'targets', 'retained']); targets(c.targets); boolean(c.retained); break;
++    case 'erase_ink':
++      object(c, ['type', 'pageIndex', 'from', 'to', 'radius']); page(c.pageIndex, env.pageBounds); finite(c.radius); if (c.radius <= 0) invalid();
++      for (const point of [c.from, c.to]) { if (!Array.isArray(point) || point.length !== 2) invalid(); point.forEach(finite); if (!inBounds(point[0], point[1], env.pageBounds[c.pageIndex])) invalid(); }
++      break;
++    default:
++      if (mutationOnly) invalid();
++      switch (c.type) {
++        case 'list_marks': object(c, ['type']); break;
++        case 'get_mark': object(c, ['type', 'id']); identifier(c.id); break;
++        case 'undo_edit': case 'redo_edit': object(c, ['type', 'operationId']); identifier(c.operationId); break;
++        case 'export_marked_pdf': object(c, ['type', 'snapshotId']); identifier(c.snapshotId); break;
++        case 'apply_edit_batch':
++          object(c, ['type', 'operations']); if (!Array.isArray(c.operations) || !c.operations.length) invalid(); if (c.operations.length > 64) invalid('EDIT_TOO_LARGE');
++          c.operations = c.operations.map((op: unknown) => parseCommand(op, env, true)); break;
++        case 'prepare_mark_export': {
++          object(c, ['type', 'selection']); const s = c.selection; object(s, ['origins', 'ids', 'includeHidden']); boolean(s.includeHidden);
++          if (!Array.isArray(s.origins) || !s.origins.length || s.origins.some((kind: unknown) => kind !== 'user' && kind !== 'ai') || new Set(s.origins).size !== s.origins.length) invalid(); s.origins.sort(compare);
++          if (s.ids !== null) { if (!Array.isArray(s.ids)) invalid(); if (s.ids.length > 1000) invalid('EDIT_TOO_LARGE'); const ids = new Set<string>(); for (const id of s.ids) { identifier(id); if (ids.has(id)) invalid(); ids.add(id); } s.ids.sort(compare); }
++          break;
++        }
++        default: invalid();
++      }
++  }
++  return c as EditCommand;
++}
++
++/** Pure planning: neither this function nor any success branch writes marks/history/receipts. */
++export function prepareEdit(input: unknown, snapshot: EditSnapshot, env: EditEnvironment): PreparedEdit {
++  try {
++    const r = copyEditData(input), s = copyEditData(snapshot), e = copyEditData(env);
++    object(r, ['requestId', 'context', 'command']); identifier(r.requestId); validateContext(r.context);
++    object(s, ['context', 'marks', 'versions']); validateContext(s.context);
++    if (r.context.documentId !== s.context.documentId || r.context.fingerprint !== s.context.fingerprint || r.context.revision !== s.context.revision) invalid('EDIT_STALE');
++    validateEnvironment(e, s.context); validateSnapshot(s, e);
++    const command = parseCommand(r.command, e), request = r as EditRequest;
++    const marks = new Map(s.marks.map(m => [m.id, m])), anchors = new Map(e.anchors.map(a => [a.id, a]));
++    const dependencies = new Map<string, number>(), touched = new Set<string>(), deltas: EditDelta[] = [];
++    let nextId = 0, requiresConfirmation = false;
++    function depend(id: string) { dependencies.set(id, Object.hasOwn(s.versions, id) ? s.versions[id] : 0); }
++    function get(id: string, expectedVersion?: number): EditMark {
++      if (touched.has(id)) invalid('BATCH_CONFLICT');
++      const m = marks.get(id); if (!m) invalid('MARK_NOT_FOUND'); depend(id);
++      if (expectedVersion !== undefined && m.version !== expectedVersion) invalid('VERSION_CONFLICT'); return m;
++    }
++    function touch(id: string) { if (touched.has(id)) invalid('BATCH_CONFLICT'); touched.add(id); }
++    function anchor(id: string) { const a = anchors.get(id); if (!a) invalid('ANCHOR_NOT_FOUND'); return a; }
++    function add(before: EditMark | null, after: EditMark | null, id: string) {
++      touch(id); depend(id);
++      if (canonicalDigest(before) === canonicalDigest(after)) return;
++      if (before && e.actor.kind === 'ai' && (before.retained || before.origin.kind !== 'ai' || before.origin.id !== e.actor.id || before.origin.sessionId !== e.actor.sessionId)) requiresConfirmation = true;
++      const expectedVersion = before?.version ?? (Object.hasOwn(s.versions, id) ? s.versions[id] : 0);
++      if (expectedVersion >= Number.MAX_SAFE_INTEGER) invalid('VERSION_CONFLICT');
++      if (after) { after = copyEditData(after); after.version = expectedVersion + 1; validateMark(after, s.context, e.pageBounds); }
++      deltas.push({ id, expectedVersion, before: before ? copyEditData(before) : null, after });
++    }
++    function mutate(c: EditMutation) {
++      switch (c.type) {
++        case 'create_mark': {
++          const id = e.newIds[nextId++]; if (id === undefined) invalid(); if (marks.has(id) || Object.hasOwn(s.versions, id) && s.versions[id] !== 0) invalid('VERSION_CONFLICT');
++          let pageIndex = c.pageIndex, quote = '', anchorId: string | null = null, geometry = c.geometry;
++          if (c.anchorId !== undefined) { const a = anchor(c.anchorId); if (a.pageIndex !== c.pageIndex) invalid(); pageIndex = a.pageIndex; quote = a.quote; anchorId = a.id; geometry = { quads: copyEditData(a.quads) }; }
++          add(null, { id, documentId: s.context.documentId, fingerprint: s.context.fingerprint, type: c.markType, pageIndex, quote, ...copyEditData(geometry!), color: c.color, note: c.note, origin: copyEditData(e.actor), retained: false, visible: true, version: 1, anchorId, placement: { dx: 0, dy: 0 } }, id); break;
++        }
++        case 'update_mark': { const m = get(c.id, c.expectedVersion); add(m, { ...copyEditData(m), ...c.patch }, m.id); break; }
++        case 'set_mark_geometry': {
++          const m = get(c.id, c.expectedVersion); if (textTypes.includes(m.type) || m.type === 'note' && m.anchorId !== null) invalid();
++          validateGeometry(c.geometry, m.type, e.pageBounds[m.pageIndex]); const after = copyEditData(m); delete after.points; Object.assign(after, c.geometry); add(m, after, m.id); break;
++        }
++        case 'set_mark_placement': {
++          const m = get(c.id, c.expectedVersion); if (m.type !== 'note') invalid('UNSUPPORTED_PLACEMENT'); validatePlacement(c.placement, m, e.pageBounds[m.pageIndex]); add(m, { ...copyEditData(m), placement: copyEditData(c.placement) }, m.id); break;
++        }
++        case 'replace_mark_anchor': {
++          const m = get(c.id, c.expectedVersion); if (!textTypes.includes(m.type) && m.type !== 'note') invalid(); const a = anchor(c.anchorId);
++          add(m, { ...copyEditData(m), anchorId: a.id, pageIndex: a.pageIndex, quote: a.quote, quads: copyEditData(a.quads) }, m.id); break;
++        }
++        case 'delete_marks': case 'set_marks_visibility': case 'set_marks_retention':
++          for (const t of c.targets) { const m = get(t.id, t.expectedVersion); add(m, c.type === 'delete_marks' ? null : { ...copyEditData(m), ...(c.type === 'set_marks_visibility' ? { visible: c.visible } : { retained: c.retained }) }, m.id); } break;
++        case 'erase_ink':
++          for (const m of [...marks.values()].sort(markOrder)) if (m.type === 'ink' && m.pageIndex === c.pageIndex) {
++            depend(m.id);
++            if (m.visible && strokeIntersectsEraser(m.points!, [1, 0, 0, 1, 0, 0], c.from, c.to, c.radius)) add(m, null, m.id);
++          } break;
++      }
++    }
++    let payload: any;
++    switch (command.type) {
++      case 'list_marks': {
++        const read = [...marks.values()].sort(markOrder); read.forEach(m => depend(m.id)); payload = { kind: 'read', read }; break;
++      }
++      case 'get_mark': payload = { kind: 'read', read: get(command.id) }; break;
++      case 'undo_edit': case 'redo_edit': payload = { kind: 'history', history: { type: command.type, operationId: command.operationId } }; break;
++      case 'export_marked_pdf': payload = { kind: 'export_request', exportRequest: { snapshotId: command.snapshotId } }; break;
++      case 'prepare_mark_export': {
++        const selection = command.selection;
++        if (selection.ids) selection.ids.forEach(id => { get(id); });
++        const selected = [...marks.values()].filter(m => selection.origins.includes(m.origin.kind) && (selection.includeHidden || m.visible) && (selection.ids === null || selection.ids.includes(m.id))).sort(markOrder);
++        // Include all candidate versions: hidden/origin filtering is itself a dependency.
++        for (const m of marks.values()) if (selection.ids === null || selection.ids.includes(m.id)) depend(m.id);
++        const versions = Object.fromEntries(selected.map(m => [m.id, m.version]));
++        const content = { context: s.context, marks: selected, versions };
++        payload = { kind: 'export_snapshot', exportSnapshot: { ...content, digest: canonicalDigest(content) } }; break;
++      }
++      default:
++        if (command.type === 'apply_edit_batch') command.operations.forEach(mutate); else mutate(command);
++        payload = { kind: 'prepared', deltas, inverse: [...deltas].reverse().map(d => ({ id: d.id, expectedVersion: d.expectedVersion + 1, before: d.after, after: d.before })) };
++    }
++    const dependencyRecord = Object.fromEntries([...dependencies].sort(([a], [b]) => compare(a, b)));
++    const base: PreparedEditBase = { ok: true, requestId: request.requestId, context: copyEditData(s.context), actor: copyEditData(e.actor), command: copyEditData(command), dependencies: dependencyRecord, requiresConfirmation, digest: canonicalDigest({ context: s.context, actor: e.actor, command, dependencies: dependencyRecord, payload }) };
++    // Clone each branch separately: inverse/before/after must not alias each other either.
++    if (payload.kind === 'prepared') return { ...base, kind: 'prepared', deltas: deltas.map(d => ({ ...d, before: d.before ? copyEditData(d.before) : null, after: d.after ? copyEditData(d.after) : null })), inverse: payload.inverse.map((d: EditDelta) => ({ ...d, before: d.before ? copyEditData(d.before) : null, after: d.after ? copyEditData(d.after) : null })) };
++    return { ...base, ...copyEditData(payload) } as PreparedEdit;
++  } catch (error) {
++    const failure = error instanceof EditValidationError ? error : new EditValidationError('EDIT_INVALID');
++    return { ok: false, error: { code: failure.code, message: failure.message } };
++  }
++}
+diff --git a/tests/editing-executor.test.ts b/tests/editing-executor.test.ts
+new file mode 100644
+index 0000000..3a984bd
+--- /dev/null
++++ b/tests/editing-executor.test.ts
+@@ -0,0 +1,352 @@
++import { afterEach, describe, expect, it } from 'vitest';
++import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { join } from 'node:path';
++import { createHash } from 'node:crypto';
++import { runEditingCommand, queryEditingReceipt } from '../src/main/editing-executor';
++import type { EditResult } from '../src/main/editing-executor';
++import type { EditMark } from '../src/shared/editing-commands';
++import { EditingSqliteStore } from './helpers/editing-sqlite-store';
++
++/** A real one-page PDF structure; the editing host never receives an output file port. */
++function sourcePdf() {
++  const stream='BT /F1 12 Tf 10 40 Td (source text) Tj ET\n';
++  const objects=[
++    '<< /Type /Catalog /Pages 2 0 R >>',
++    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
++    '<< /Type /Page /Parent 2 0 R /MediaBox [-10 -20 100 120] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>',
++    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
++    `<< /Length ${Buffer.byteLength(stream)} >>\nstream\n${stream}endstream`
++  ];
++  let pdf='%PDF-1.7\n'; const offsets=[0];
++  objects.forEach((value,i)=>{offsets.push(Buffer.byteLength(pdf)); pdf+=`${i+1} 0 obj\n${value}\nendobj\n`;});
++  const xref=Buffer.byteLength(pdf); pdf+=`xref\n0 ${objects.length+1}\n0000000000 65535 f \n`;
++  pdf+=offsets.slice(1).map(n=>`${String(n).padStart(10,'0')} 00000 n \n`).join('');
++  return pdf+`trailer\n<< /Size ${objects.length+1} /Root 1 0 R >>\nstartxref\n${xref}\n%%EOF\n`;
++}
++const directories: string[] = [], stores: EditingSqliteStore[] = [];
++function fixture() { const dir = mkdtempSync(join(tmpdir(),'enlumor-edit-')); directories.push(dir); const host = open(join(dir,'isolated.sqlite')); return { dir, host }; }
++function open(path: string) { const h = new EditingSqliteStore(path); stores.push(h); return h; }
++afterEach(() => { for (const h of stores.splice(0)) { try { h.close(); } catch {} } for (const d of directories.splice(0)) rmSync(d,{ recursive: true, force: true }); });
++const signal = () => new AbortController().signal;
++function request(h: EditingSqliteStore, command: unknown, requestId = 'request') { return { requestId, context: h.getContext(), command }; }
++const create = { type: 'create_mark', markType: 'highlight', pageIndex: 0, color: '#123456', note: '', anchorId: 'source' };
++function mark(id = 'mark', origin: EditMark['origin'] = { kind: 'ai', id: 'assistant', sessionId: 'session' }): EditMark {
++  return { id, documentId: 'doc', fingerprint: 'a'.repeat(64), type: 'highlight', pageIndex: 0, quote: 'source text', quads: [[0,20,30,25,0,2,30,7]], color: '#123456', note: '', origin, retained: false, visible: true, version: 1, anchorId: 'source', placement: { dx: 0, dy: 0 } };
++}
++const update = (id='mark', expectedVersion=1, note='changed') => ({ type:'update_mark',id,expectedVersion,patch:{ note } });
++function committed(r: EditResult) { expect(r.status).toBe('committed'); if (r.status !== 'committed') throw Error(JSON.stringify(r)); return r; }
++function code(r: EditResult, expected: string) { expect(r).toMatchObject({ error: { code: expected } }); }
++async function edit(h: EditingSqliteStore, command: unknown, id='request') { return runEditingCommand(request(h,command,id),h,signal()); }
++
++// Removing the executor's durable checks must fail these SQL-state assertions, not just port counters.
++describe('atomic editing executor against real temporary SQLite', () => {
++  it('commits a trusted source mark with atomic versions/history/receipt and leaves source PDF unchanged', async () => {
++    const {dir,host:h} = fixture(); const pdf = join(dir,'source.pdf'); writeFileSync(pdf,sourcePdf());
++    const hash = () => createHash('sha256').update(readFileSync(pdf)).digest('hex'); const before = hash();
++    const control=fixture().host; control.seed(mark('untouched')); const controlHash=createHash('sha256').update(readFileSync(control.filename)).digest('hex');
++    const r = committed(await edit(h,create));
++    expect(r).toMatchObject({documentId:'doc',fingerprint:h.context.fingerprint,versions:{[Object.keys(r.versions)[0]]:1}});
++    expect(h.readSnapshot(h.context).marks[0]).toMatchObject({origin:h.actor,retained:false,visible:true,quads:h.anchors[0].quads});
++    expect([h.count('marks'),h.count('tombstones'),h.count('operations'),h.count('receipts')]).toEqual([1,1,1,1]);
++    expect(hash()).toBe(before);
++    expect(createHash('sha256').update(readFileSync(control.filename)).digest('hex')).toBe(controlHash);
++    console.info('ISOLATION',JSON.stringify({sourcePdf:pdf,beforeHash:before,afterHash:hash(),selectedDatabase:h.filename,untouchedDatabase:control.filename,untouchedDatabaseHash:controlHash}));
++  });
++  it('replays durable receipt before allocation despite page revision change, abort, and close/reopen', async () => {
++    const {host:h} = fixture(); const input = request(h,create); const first = committed(await runEditingCommand(input,h,signal()));
++    const path=h.filename; h.close(); stores.splice(stores.indexOf(h),1); const next=open(path); next.context.revision++;
++    const abort=new AbortController(); abort.abort();
++    expect(await runEditingCommand({...input,context:next.context},next,abort.signal)).toEqual(first);
++    expect(next.allocations).toBe(0); expect(next.count('marks')).toBe(1); expect(next.count('operations')).toBe(1);
++    expect(await queryEditingReceipt({...input,context:next.context},next)).toEqual(first);
++  });
++  it('rejects same id changed canonical command or expected version', async () => {
++    const {host:h}=fixture(); h.seed(mark()); committed(await edit(h,update()));
++    code(await edit(h,update('mark',1,'other')),'REQUEST_ID_REUSED');
++    code(await edit(h,update('mark',2)),'REQUEST_ID_REUSED'); expect(h.count('operations')).toBe(1);
++  });
++  it('two actual connections racing the same object version commit only one operation', async () => {
++    const {host:a}=fixture(); a.seed(mark()); const b=open(a.filename);
++    a.beforeTransaction=() => { b.transaction(tx => { const m=b.readSnapshot(b.context).marks[0]; tx.writeDeltas(b.context,[{id:m.id,expectedVersion:1,before:m,after:{...m,note:'other connection',version:2}}]); }); };
++    code(await edit(a,update()),'VERSION_CONFLICT');
++    expect(a.readSnapshot(a.context).marks[0]).toMatchObject({version:2,note:'other connection'}); expect(a.count('operations')).toBe(0);
++    committed(await edit(a,update('mark',2),'new')); expect(b.count('operations')).toBe(1); expect(b.readSnapshot(b.context).marks[0].version).toBe(3);
++  });
++  it('reports real SQLITE_BUSY and retries the original request after the other connection releases lock', async () => {
++    const {host:a}=fixture(); const b=open(a.filename); b.db.exec('BEGIN IMMEDIATE');
++    code(await edit(a,create),'STORE_BUSY'); expect(a.count('marks')).toBe(0);
++    b.db.exec('ROLLBACK'); committed(await edit(a,create)); expect(b.count('receipts')).toBe(1);
++  });
++  it.each(['deltas','history','receipt','confirmation'] as const)('rolls back every table and approval when %s write fails', async stage => {
++    const {host:h}=fixture(); h.seed(mark('mark',{kind:'user',id:'reader'}));
++    expect((await edit(h,update())).status).toBe('confirmation_required'); h.approve(); h.failAt=stage;
++    code(await edit(h,update()),'EDIT_FAILED');
++    expect(h.readSnapshot(h.context).marks[0]).toMatchObject({version:1,note:''});
++    expect([h.count('operations'),h.count('receipts'),h.count('tombstones')]).toEqual([0,0,0]);
++    expect(h.db.prepare('SELECT consumed FROM confirmations').get()!.consumed).toBe(0);
++    h.failAt=null; committed(await edit(h,update())); expect(h.db.prepare('SELECT consumed FROM confirmations').get()!.consumed).toBe(1);
++  });
++  it('recovers a commit whose reply is lost without applying deltas again', async () => {
++    const {host:h}=fixture(); h.loseReply=true;
++    const first=committed(await edit(h,create)); expect(await edit(h,create)).toEqual(first);
++    expect([h.count('marks'),h.count('operations'),h.count('receipts')]).toEqual([1,1,1]);
++  });
++  it('returns COMMIT_UNCERTAIN if a host cannot establish durable commit status, without automatic redo', async () => {
++    const {host:h}=fixture(); let transactions=0;
++    h.transaction=() => { transactions++; throw Object.assign(Error('unknown'),{code:'COMMIT_UNCERTAIN'}); };
++    code(await edit(h,create),'COMMIT_UNCERTAIN'); expect(transactions).toBe(1); expect(h.count('marks')).toBe(0);
++  });
++  it('cancels before preparation and at the last write, rolling back all tables', async () => {
++    const {host:h}=fixture(); const c=new AbortController(); c.abort();
++    code(await runEditingCommand(request(h,create),h,c.signal),'EDIT_CANCELED'); expect(h.allocations).toBe(0);
++    const d=new AbortController(); h.beforeReceipt=()=>d.abort();
++    code(await runEditingCommand(request(h,create),h,d.signal),'EDIT_CANCELED');
++    expect([h.count('marks'),h.count('operations'),h.count('receipts'),h.count('tombstones')]).toEqual([0,0,0,0]);
++  });
++  it('preserves committed attribution when cancellation and document switch happen after COMMIT', async () => {
++    const {host:h}=fixture(); const c=new AbortController(); const original=request(h,create);
++    h.afterCommit=()=>{ c.abort(); h.context={documentId:'other',fingerprint:'b'.repeat(64),revision:4}; };
++    const r=committed(await runEditingCommand(original,h,c.signal)); expect(r.documentId).toBe('doc');
++    expect(await queryEditingReceipt(original,h)).toEqual(r); expect(h.readSnapshot(h.context).marks).toEqual([]);
++  });
++  it.each(['abort','context','actor'] as const)('checks %s after asynchronous anchor resolution', async mode => {
++    const {host:h}=fixture(); const c=new AbortController(); h.resolveAnchors=async()=>{
++      if(mode==='abort') c.abort(); if(mode==='context') h.context.revision++; if(mode==='actor') h.actor={kind:'ai',id:'assistant',sessionId:'other'}; return h.anchors;
++    };
++    code(await runEditingCommand(request(h,create),h,c.signal),mode==='abort'?'EDIT_CANCELED':'EDIT_STALE'); expect(h.count('marks')).toBe(0);
++  });
++  it('requires specific differences for user, retained, and other-session AI marks', async () => {
++    for (const m of [mark('mark',{kind:'user',id:'reader'}),{...mark(),retained:true},mark('mark',{kind:'ai',id:'assistant',sessionId:'other'})]) {
++      const {host:h}=fixture(); h.seed(m); const preview=await edit(h,update()); expect(preview.status).toBe('confirmation_required');
++      const binding=structuredClone(h.candidate!); h.approve(); committed(await edit(h,update())); expect(h.candidate).toEqual(binding);
++    }
++  });
++  it('rejects stale differences and credentials bound to another actor/document', async () => {
++    const {host:h}=fixture(); h.seed(mark('mark',{kind:'user',id:'reader'})); await edit(h,update()); h.approve();
++    code(await edit(h,update('mark',1,'different')),'CONFIRMATION_INVALID');
++    h.actor={kind:'ai',id:'assistant',sessionId:'other'}; code(await edit(h,update()),'CONFIRMATION_INVALID');
++    expect(h.db.prepare('SELECT consumed FROM confirmations').get()!.consumed).toBe(0); expect(h.count('operations')).toBe(0);
++  });
++  it('does not consume approval when a concurrent protected edit changes the preview base', async () => {
++    const {host:a}=fixture(); a.seed(mark('mark',{kind:'user',id:'reader'})); await edit(a,update()); a.approve(); const b=open(a.filename);
++    a.beforeTransaction=()=>b.transaction(tx=>{ const m=b.readSnapshot(b.context).marks[0]; tx.writeDeltas(b.context,[{id:m.id,before:m,after:{...m,note:'raced',version:2},expectedVersion:1}]); });
++    code(await edit(a,update()),'VERSION_CONFLICT'); expect(a.db.prepare('SELECT consumed FROM confirmations').get()!.consumed).toBe(0); expect(a.count('receipts')).toBe(0);
++  });
++  it('normalizes identifier sets for receipt replay without sorting operation order', async () => {
++    const {host:h}=fixture(); h.seed(mark('a')); h.seed(mark('b'));
++    const cmd={type:'set_marks_visibility',targets:[{id:'b',expectedVersion:1},{id:'a',expectedVersion:1}],visible:false}; const first=committed(await edit(h,cmd));
++    expect(await edit(h,{...cmd,targets:[...cmd.targets].reverse()})).toEqual(first); expect(h.count('operations')).toBe(1);
++  });
++  it('rejects batch with one invalid target without any write', async () => {
++    const {host:h}=fixture(); h.seed(mark()); code(await edit(h,{type:'apply_edit_batch',operations:[update(),update('missing')]}),'MARK_NOT_FOUND');
++    expect(h.readSnapshot(h.context).marks[0].version).toBe(1); expect(h.count('operations')).toBe(0);
++  });
++  it('rejects model identity/confirmation fields and accessor input without invoking it', async () => {
++    const {host:h}=fixture(); let getter=0; const input={requestId:'r',context:h.context,get command(){getter++; return create;}};
++    code(await runEditingCommand(input,h,signal()),'EDIT_INVALID'); expect(getter).toBe(0);
++    code(await edit(h,{...create,confirmed:true}),'EDIT_INVALID'); code(await edit(h,{...create,origin:{kind:'user',id:'x'}}),'EDIT_INVALID'); expect(h.count('marks')).toBe(0);
++  });
++  it('keeps reads and explicit hidden-unretained export snapshots out of durable history', async () => {
++    const {host:h}=fixture(); h.seed({...mark(),visible:false,retained:false});
++    expect((await edit(h,{type:'list_marks'})).status).toBe('read'); expect((await edit(h,{type:'get_mark',id:'mark'})).status).toBe('read');
++    const r=await edit(h,{type:'prepare_mark_export',selection:{origins:['ai'],ids:['mark'],includeHidden:true}});
++    expect(r).toMatchObject({status:'prepared',exportSnapshot:{marks:[{id:'mark',visible:false,retained:false}]}});
++    code(await edit(h,{type:'export_marked_pdf',snapshotId:'snapshot'}),'UNSUPPORTED'); expect(h.count('operations')).toBe(0); expect(h.count('receipts')).toBe(0);
++  });
++  it('treats a no-op as prepared, not a saved operation', async () => {
++    const {host:h}=fixture(); h.seed(mark()); expect((await edit(h,update('mark',1,''))).status).toBe('prepared'); expect(h.count('receipts')).toBe(0);
++  });
++});
++
++describe('targeted durable history', () => {
++  it('undoes and redoes a named group with strictly increasing versions and retained audit records', async () => {
++    const {host:h}=fixture(); h.seed(mark()); const first=committed(await edit(h,update()));
++    const undone=committed(await edit(h,{type:'undo_edit',operationId:first.operationId},'undo'));
++    expect(h.readSnapshot(h.context).marks[0]).toMatchObject({note:'',version:3}); expect(h.readOperation(h.context,first.operationId)).toMatchObject({state:'undone',currentVersions:{mark:3}});
++    expect(h.readOperation(h.context,undone.operationId)).toMatchObject({action:'undo',targetOperationId:first.operationId,actor:h.actor});
++    committed(await edit(h,{type:'redo_edit',operationId:first.operationId},'redo'));
++    expect(h.readSnapshot(h.context).marks[0]).toMatchObject({note:'changed',version:4}); expect(h.count('operations')).toBe(3);
++  });
++  it('restores deleted content with a newer tombstone version and prevents ABA creation reuse', async () => {
++    const {host:h}=fixture(); const created=committed(await edit(h,create)); const id=Object.keys(created.versions)[0];
++    const deleted=committed(await edit(h,{type:'delete_marks',targets:[{id,expectedVersion:1}]},'delete'));
++    expect(h.readSnapshot(h.context).versions[id]).toBe(2); expect(h.count('marks')).toBe(0);
++    committed(await edit(h,{type:'undo_edit',operationId:deleted.operationId},'undo-delete')); expect(h.readSnapshot(h.context).marks[0].version).toBe(3);
++    code(await edit(h,{type:'undo_edit',operationId:created.operationId},'undo-create'),'VERSION_CONFLICT');
++    expect(h.readOperation(h.context,created.operationId)?.state).toBe('applied');
++  });
++  it('does not overwrite another source edit or move history on a conflict', async () => {
++    const {host:h}=fixture(); h.seed(mark()); const ai=committed(await edit(h,update())); h.actor={kind:'user',id:'reader'};
++    committed(await edit(h,update('mark',2,'user change'),'user-edit'));
++    h.actor={kind:'ai',id:'assistant',sessionId:'session'};
++    code(await edit(h,{type:'undo_edit',operationId:ai.operationId},'undo'),'VERSION_CONFLICT');
++    expect(h.readSnapshot(h.context).marks[0]).toMatchObject({version:3,note:'user change'}); expect(h.readOperation(h.context,ai.operationId)?.state).toBe('applied'); expect(h.count('operations')).toBe(2);
++  });
++  it('allows explicit user undo of AI groups; AI undo of user groups requires bound confirmation', async () => {
++    const {host:h}=fixture(); h.seed(mark()); const ai=committed(await edit(h,update())); h.actor={kind:'user',id:'reader'};
++    committed(await edit(h,{type:'undo_edit',operationId:ai.operationId},'user-undo'));
++    const user=committed(await edit(h,update('mark',3,'by user'),'user-edit')); h.actor={kind:'ai',id:'assistant',sessionId:'session'};
++    expect((await edit(h,{type:'undo_edit',operationId:user.operationId},'ai-undo')).status).toBe('confirmation_required'); h.approve();
++    committed(await edit(h,{type:'undo_edit',operationId:user.operationId},'ai-undo')); expect(h.readSnapshot(h.context).marks[0].version).toBe(5);
++  });
++  it('clears only the executing actor redo branch on new edits, including durable reopen', async () => {
++    const {host:h}=fixture(); h.seed(mark('a')); h.seed(mark('b')); const ai=committed(await edit(h,update('a'),'ai-edit'));
++    committed(await edit(h,{type:'undo_edit',operationId:ai.operationId},'undo'));
++    h.actor={kind:'user',id:'reader'}; committed(await edit(h,update('b'),'user-edit'));
++    expect(h.readOperation(h.context,ai.operationId)?.redoEligible).toBe(true);
++    h.actor={kind:'ai',id:'assistant',sessionId:'session'}; committed(await edit(h,update('b',2,'new branch'),'ai-new'));
++    expect(h.readOperation(h.context,ai.operationId)?.redoEligible).toBe(false);
++    code(await edit(h,{type:'redo_edit',operationId:ai.operationId},'redo'),'VERSION_CONFLICT'); expect(h.readSnapshot(h.context).marks.find(m=>m.id==='a')?.version).toBe(3);
++  });
++  it('rejects cross-document target histories without altering either document', async () => {
++    const {host:h}=fixture(); const first=committed(await edit(h,create)); h.context={...h.context,documentId:'other'}; h.anchors=[];
++    code(await edit(h,{type:'undo_edit',operationId:first.operationId},'undo'),'MARK_NOT_FOUND'); expect(h.count('marks')).toBe(1); expect(h.count('operations')).toBe(1);
++  });
++  it('rolls back targeted history state when the history write fails', async () => {
++    const {host:h}=fixture(); h.seed(mark()); const first=committed(await edit(h,update())); h.failAt='history';
++    code(await edit(h,{type:'undo_edit',operationId:first.operationId},'undo'),'EDIT_FAILED');
++    expect(h.readOperation(h.context,first.operationId)?.state).toBe('applied'); expect(h.readSnapshot(h.context).marks[0].version).toBe(2); expect(h.count('receipts')).toBe(1);
++  });
++});
++
++
++describe('executor race and authorization edges', () => {
++  it('two executor connections competing for one expected version persist exactly one receipt/history', async () => {
++    const {host:a}=fixture(); a.seed(mark('mark',{kind:'user',id:'reader'})); const b=open(a.filename);
++    const first=await edit(a,update(),'a'); const second=await edit(b,update('mark',1,'competitor'),'b');
++    expect([first.status,second.status]).toEqual(['confirmation_required','confirmation_required']); a.approve(); b.approve(undefined,'approval-b');
++    const results=await Promise.all([edit(a,update(),'a'),edit(b,update('mark',1,'competitor'),'b')]);
++    expect(results.filter(r=>r.status==='committed')).toHaveLength(1); code(results.find(r=>r.status!=='committed')!,'VERSION_CONFLICT');
++    expect([a.count('marks'),a.count('operations'),a.count('receipts')]).toEqual([1,1,1]); expect(b.readSnapshot(b.context).marks[0].version).toBe(2);
++    expect(a.db.prepare('SELECT sum(consumed) AS n FROM confirmations').get()!.n).toBe(1);
++  });
++  it('leaves approval reusable through real writer lock contention', async () => {
++    const {host:a}=fixture(); a.seed(mark('mark',{kind:'user',id:'reader'})); await edit(a,update()); a.approve(); const b=open(a.filename); b.db.exec('BEGIN IMMEDIATE');
++    code(await edit(a,update()),'STORE_BUSY'); expect(a.db.prepare('SELECT consumed FROM confirmations').get()!.consumed).toBe(0);
++    b.db.exec('ROLLBACK'); committed(await edit(a,update())); expect(a.db.prepare('SELECT consumed FROM confirmations').get()!.consumed).toBe(1);
++  });
++  it('binds deterministic create IDs throughout a protected batch preview and confirmation retry', async () => {
++    const {host:h}=fixture(); h.seed(mark('mark',{kind:'user',id:'reader'})); const batch={type:'apply_edit_batch',operations:[create,update()]};
++    await edit(h,batch); const candidate=structuredClone(h.candidate!); h.approve(); committed(await edit(h,batch));
++    expect(h.candidate).toEqual(candidate); expect(h.count('marks')).toBe(2); expect(h.allocations).toBe(2);
++    expect((await edit(h,batch)).status).toBe('committed'); expect(h.allocations).toBe(2);
++  });
++  it('detects collection phantoms by replanning under BEGIN IMMEDIATE', async () => {
++    const {host:a}=fixture(); const b=open(a.filename);
++    const ink: EditMark={...mark('ink-a'),type:'ink',quote:'',anchorId:null,quads:[[0,20,30,20,0,0,30,0]],points:[1,1,20,15]}; a.seed(ink);
++    a.beforeTransaction=()=>b.seed({...ink,id:'ink-b'});
++    code(await edit(a,{type:'erase_ink',pageIndex:0,from:[1,1],to:[20,15],radius:2}),'VERSION_CONFLICT');
++    expect([a.count('marks'),a.count('operations'),a.count('receipts')]).toEqual([2,0,0]);
++  });
++  it('rejects deterministic creation IDs occupied by a live mark or tombstone, never overwriting', async () => {
++    for (const tombstone of [false,true]) {
++      const {host:h}=fixture(); const allocate=h.allocateIds.bind(h);
++      h.allocateIds=(key,count)=>{const ids=allocate(key,count); if(tombstone) h.db.prepare('INSERT INTO tombstones VALUES(?,?,?,?)').run(h.context.documentId,h.context.fingerprint,ids[0],7); else h.seed(mark(ids[0])); return ids;};
++      code(await edit(h,create),'VERSION_CONFLICT'); expect(h.count('operations')).toBe(0); expect(h.count('receipts')).toBe(0); expect(h.readSnapshot(h.context).versions[Object.keys(h.readSnapshot(h.context).versions)[0]]).toBe(tombstone?7:1);
++    }
++  });
++  it('separates same request ID across actor sessions without returning another actor receipt', async () => {
++    const {host:h}=fixture(); const first=committed(await edit(h,create)); h.actor={kind:'ai',id:'assistant',sessionId:'next'};
++    expect(await queryEditingReceipt(request(h,create),h)).toBeNull(); const second=committed(await edit(h,create)); expect(second.operationId).not.toBe(first.operationId); expect(h.count('marks')).toBe(2);
++  });
++  it('rejects a forged cross-document confirmation even when host returns its ID', async () => {
++    const {host:h}=fixture(); h.seed(mark('mark',{kind:'user',id:'reader'})); await edit(h,update()); const c=structuredClone(h.candidate!); c.context.documentId='other'; h.approve(c);
++    code(await edit(h,update()),'CONFIRMATION_INVALID'); expect(h.count('receipts')).toBe(0); expect(h.db.prepare('SELECT consumed FROM confirmations').get()!.consumed).toBe(0);
++  });
++  it('rolls back a document switch at the last transactional write', async () => {
++    const {host:h}=fixture(); h.beforeReceipt=()=>h.context.revision++;
++    code(await edit(h,create),'EDIT_STALE'); expect([h.count('marks'),h.count('operations'),h.count('receipts')]).toEqual([0,0,0]);
++  });
++  it('does not reuse an already consumed confirmation for another request', async () => {
++    const {host:h}=fixture(); h.seed(mark('mark',{kind:'user',id:'reader'})); await edit(h,update()); h.approve(); committed(await edit(h,update()));
++    code(await edit(h,update('mark',2,'new'),'different-request'),'CONFIRMATION_INVALID'); expect(h.count('operations')).toBe(1);
++  });
++  it('recovers undo/redo audit receipts and branch eligibility after closing and reopening SQLite', async () => {
++    const {host:h}=fixture(); h.seed(mark()); const first=committed(await edit(h,update()));
++    const cmd={type:'undo_edit',operationId:first.operationId}; const undone=committed(await edit(h,cmd,'undo')); const path=h.filename;
++    h.close(); stores.splice(stores.indexOf(h),1); const next=open(path); next.context.revision++;
++    expect(await edit(next,cmd,'undo')).toEqual(undone); expect(next.readOperation(next.context,first.operationId)).toMatchObject({state:'undone',redoEligible:true,currentVersions:{mark:3}});
++    committed(await edit(next,{type:'redo_edit',operationId:first.operationId},'redo')); expect(next.readSnapshot(next.context).marks[0]).toMatchObject({note:'changed',version:4});
++  });
++});
++
++
++describe('confirmation await gates', () => {
++  it.each(['abort','actor','context'] as const)('checks %s after host awaits confirmation', async mode => {
++    const {host:h}=fixture(); h.seed(mark('mark',{kind:'user',id:'reader'})); await edit(h,update()); h.approve(); const c=new AbortController();
++    const original=h.getConfirmation.bind(h); h.getConfirmation=async binding=>{const token=original(binding); if(mode==='abort')c.abort(); if(mode==='actor')h.actor={kind:'user',id:'reader'}; if(mode==='context')h.context.revision++; return token;};
++    code(await runEditingCommand(request(h,update()),h,c.signal),mode==='abort'?'EDIT_CANCELED':'EDIT_STALE');
++    expect([h.count('operations'),h.count('receipts')]).toEqual([0,0]); expect(h.db.prepare('SELECT consumed FROM confirmations').get()!.consumed).toBe(0);
++  });
++  it('invalidates confirmation when a new reading revision changes the concrete prepared digest', async () => {
++    const {host:h}=fixture(); h.seed(mark('mark',{kind:'user',id:'reader'})); await edit(h,update()); h.approve(); h.context.revision++;
++    code(await edit(h,update()),'CONFIRMATION_INVALID'); expect(h.count('receipts')).toBe(0);
++  });
++});
++
++
++describe('redo branch belongs to the undo executor, not group provenance', () => {
++  it.each(['user','ai'] as const)('a new %s edit clears only that executor redo branch after user undoes an AI group', async next => {
++    const {host:h}=fixture(); h.seed(mark('a')); h.seed(mark('b')); const aiActor=h.getActor();
++    const group=committed(await edit(h,update('a'),'ai-group'));
++    h.actor={kind:'user',id:'reader'}; const userActor=h.getActor(); committed(await edit(h,{type:'undo_edit',operationId:group.operationId},'user-undo'));
++    h.actor=next === 'user' ? userActor : aiActor;
++    committed(await edit(h,update('b',1,'branch edit'),'branch'));
++    const target=h.readOperation(h.context,group.operationId);
++    expect(target).toMatchObject({actor:aiActor,redoActor:userActor,redoEligible:next === 'ai',state:'undone'});
++    h.actor=userActor;
++    if(next === 'ai') committed(await edit(h,{type:'redo_edit',operationId:group.operationId},'user-redo'));
++    else code(await edit(h,{type:'redo_edit',operationId:group.operationId},'user-redo'),'VERSION_CONFLICT');
++    expect(h.readSnapshot(h.context).marks.find(m=>m.id==='a')?.version).toBe(next === 'ai'?4:3);
++  });
++});
++
++describe('redo authorization preserves user undo intent', () => {
++  it('requires confirmation when AI redoes its original group after a user executed its undo', async () => {
++    const {host:h}=fixture(); h.seed(mark()); const ai=h.getActor(); const group=committed(await edit(h,update()));
++    h.actor={kind:'user',id:'reader'}; committed(await edit(h,{type:'undo_edit',operationId:group.operationId},'user-undo'));
++    h.actor=ai; expect((await edit(h,{type:'redo_edit',operationId:group.operationId},'ai-redo')).status).toBe('confirmation_required');
++    h.approve(); committed(await edit(h,{type:'redo_edit',operationId:group.operationId},'ai-redo')); expect(h.readSnapshot(h.context).marks[0].version).toBe(4);
++  });
++});
++
++describe('command-by-command SQLite execution acceptance', () => {
++  it.each(['highlight','underline','strikeout','note','line','arrow','ink'] as const)('durably creates %s with trusted defaults', async markType => {
++    const {host:h}=fixture(); const free=['line','arrow','ink'].includes(markType);
++    const command={...create,markType,...(free?{geometry:{quads:[[0,20,30,20,0,0,30,0]],points:[1,1,20,15]}}:{})}; if(free) delete (command as {anchorId?:string}).anchorId;
++    committed(await edit(h,command)); expect(h.readSnapshot(h.context).marks[0]).toMatchObject({type:markType,origin:h.actor,visible:true,retained:false,version:1}); expect(h.count('receipts')).toBe(1);
++  });
++  it('commits free geometry separately from anchored-note placement and source-anchor replacement', async () => {
++    const {host:h}=fixture(); const arrow: EditMark={...mark('arrow'),type:'arrow',anchorId:null,quote:'',quads:[[0,20,30,20,0,0,30,0]],points:[1,1,20,15]}; h.seed(arrow);
++    committed(await edit(h,{type:'set_mark_geometry',id:'arrow',expectedVersion:1,geometry:{quads:[[0,30,40,30,0,0,40,0]],points:[2,2,35,25]}},'geometry'));
++    expect(h.readSnapshot(h.context).marks[0]).toMatchObject({version:2,points:[2,2,35,25]});
++    h.seed({...mark('note'),type:'note'}); committed(await edit(h,{type:'set_mark_placement',id:'note',expectedVersion:1,placement:{dx:2,dy:-3}},'placement'));
++    expect(h.readSnapshot(h.context).marks.find(m=>m.id==='note')).toMatchObject({version:2,anchorId:'source',quote:'source text',quads:h.anchors[0].quads,placement:{dx:2,dy:-3}});
++    h.anchors.push({...h.anchors[0],id:'next',quote:'next source text',quads:[[10,30,40,35,10,12,40,17]]});
++    committed(await edit(h,{type:'replace_mark_anchor',id:'note',expectedVersion:2,anchorId:'next'},'anchor'));
++    expect(h.readSnapshot(h.context).marks.find(m=>m.id==='note')).toMatchObject({version:3,anchorId:'next',quote:'next source text',quads:h.anchors[1].quads,placement:{dx:2,dy:-3}});
++    expect(h.count('operations')).toBe(3);
++  });
++  it('commits visibility and retention independently and restores the hidden unfixed state after reopening', async () => {
++    const {host:h}=fixture(); h.seed(mark()); committed(await edit(h,{type:'set_marks_visibility',targets:[{id:'mark',expectedVersion:1}],visible:false},'hide'));
++    committed(await edit(h,{type:'set_marks_retention',targets:[{id:'mark',expectedVersion:2}],retained:true},'retain'));
++    h.actor={kind:'user',id:'reader'}; committed(await edit(h,{type:'set_marks_retention',targets:[{id:'mark',expectedVersion:3}],retained:false},'unretain'));
++    const next=open(h.filename); expect(next.readSnapshot(next.context).marks[0]).toMatchObject({version:4,visible:false,retained:false,origin:{kind:'ai',id:'assistant',sessionId:'session'}}); expect(next.count('operations')).toBe(3);
++  });
++  it('erases a whole visible ink stroke but not hidden ink and retains tombstone versions', async () => {
++    const {host:h}=fixture(); const ink: EditMark={...mark('ink'),type:'ink',anchorId:null,quote:'',quads:[[0,20,30,20,0,0,30,0]],points:[1,1,20,15]}; h.seed(ink); h.seed({...ink,id:'hidden',visible:false});
++    committed(await edit(h,{type:'erase_ink',pageIndex:0,from:[1,1],to:[20,15],radius:2}));
++    expect(h.readSnapshot(h.context)).toMatchObject({marks:[{id:'hidden',visible:false}],versions:{hidden:1,ink:2}}); expect(h.count('operations')).toBe(1);
++  });
++});
++
++describe('failed new branches preserve redo eligibility', () => {
++  it('rolls back redo-branch cleanup when a new edit fails after history writes', async () => {
++    const {host:h}=fixture(); h.seed(mark('a')); h.seed(mark('b')); const group=committed(await edit(h,update('a'),'group'));
++    committed(await edit(h,{type:'undo_edit',operationId:group.operationId},'undo')); h.failAt='receipt';
++    code(await edit(h,update('b'),'new-branch'),'EDIT_FAILED');
++    expect(h.readOperation(h.context,group.operationId)).toMatchObject({state:'undone',redoEligible:true,redoActor:h.actor}); expect(h.readSnapshot(h.context).marks.find(m=>m.id==='b')?.version).toBe(1);
++    h.failAt=null; committed(await edit(h,{type:'redo_edit',operationId:group.operationId},'redo')); expect(h.count('operations')).toBe(3);
++  });
++});
+diff --git a/tests/editing-planner.test.ts b/tests/editing-planner.test.ts
+new file mode 100644
+index 0000000..ac557a8
+--- /dev/null
++++ b/tests/editing-planner.test.ts
+@@ -0,0 +1,252 @@
++import { createHash } from 'node:crypto';
++import { describe, expect, it } from 'vitest';
++import { prepareEdit, canonicalDigest } from '../src/shared/editing-planner';
++import type { EditEnvironment, EditMark, EditSnapshot, PreparedEdit } from '../src/shared/editing-commands';
++
++const context = { documentId: 'doc', fingerprint: 'a'.repeat(64), revision: 3 };
++const quad = [-8, 20, 30, 20, -8, 2, 30, 2];
++const geometry = () => ({ quads: [[...quad]], points: [-5, 5, 20, 15] });
++function env(): EditEnvironment {
++  return { actor: { kind: 'ai', id: 'assistant', sessionId: 'session' }, pageBounds: [[-10, -20, 100, 120], [-10, -20, 100, 120]], anchors: [
++    { id: 'source', documentId: 'doc', fingerprint: context.fingerprint, pageIndex: 0, quote: '真实原文', quads: [[...quad]] },
++    { id: 'next', documentId: 'doc', fingerprint: context.fingerprint, pageIndex: 1, quote: '第二页', quads: [[...quad]] }
++  ], newIds: ['new-1', 'new-2'] };
++}
++function mark(type: EditMark['type'] = 'highlight', id = 'mark'): EditMark {
++  const free = ['line', 'arrow', 'ink'].includes(type);
++  return { id, documentId: 'doc', fingerprint: context.fingerprint, type, pageIndex: 0, quote: free ? '' : '真实原文', quads: [[...quad]], ...(free ? { points: [-5, 5, 20, 15] } : {}), color: '#aabbcc', note: '', origin: { kind: 'ai', id: 'assistant', sessionId: 'session' }, retained: false, visible: true, version: 4, anchorId: free ? null : 'source', placement: { dx: 0, dy: 0 } };
++}
++function snapshot(marks: EditMark[] = []): EditSnapshot { return { context: { ...context }, marks, versions: Object.fromEntries(marks.map(m => [m.id, m.version])) }; }
++function request(command: unknown) { return { requestId: 'request', context: { ...context }, command }; }
++function run(command: unknown, marks: EditMark[] = [], environment = env()) { return prepareEdit(request(command), snapshot(marks), environment); }
++function prepared(result: PreparedEdit) { expect(result.ok).toBe(true); if (!result.ok || result.kind !== 'prepared') throw Error(JSON.stringify(result)); return result; }
++function error(command: unknown, code = 'EDIT_INVALID', marks: EditMark[] = [], environment = env()) { expect(run(command, marks, environment)).toEqual({ ok: false, error: { code, message: expect.any(String) } }); }
++const update = { type: 'update_mark', id: 'mark', expectedVersion: 4, patch: { note: 'changed' } };
++
++describe('pure editing contract', () => {
++  it.each(['highlight', 'underline', 'strikeout', 'note', 'line', 'arrow', 'ink'] as const)('creates %s with trusted source/defaults and inverse', type => {
++    const free = ['line', 'arrow', 'ink'].includes(type);
++    const result = prepared(run({ type: 'create_mark', markType: type, pageIndex: 0, color: '#ABCDEF', note: '内容', ...(free ? { geometry: geometry() } : { anchorId: 'source' }) }));
++    expect(result.deltas).toHaveLength(1);
++    expect(result.deltas[0]).toMatchObject({ id: 'new-1', expectedVersion: 0, before: null, after: { id: 'new-1', type, origin: env().actor, retained: false, visible: true, version: 1, placement: { dx: 0, dy: 0 }, quote: free ? '' : '真实原文', anchorId: free ? null : 'source' } });
++    expect(result.inverse[0]).toMatchObject({ id: 'new-1', before: result.deltas[0].after, after: null });
++    expect(result.requiresConfirmation).toBe(false);
++  });
++  it('creates a free note without inventing a source quote', () => {
++    expect(prepared(run({ type: 'create_mark', markType: 'note', pageIndex: 0, color: '#123456', note: '', geometry: { quads: [[...quad]] } })).deltas[0].after).toMatchObject({ quote: '', anchorId: null });
++  });
++  it.each(['origin', 'version', 'id', 'retained', 'quote', 'confirmed'])('rejects model-forged creation %s', key => {
++    error({ type: 'create_mark', markType: 'highlight', pageIndex: 0, color: '#123456', note: '', anchorId: 'source', [key]: true });
++  });
++  it('requires real same-document source anchors and matching page', () => {
++    const command = { type: 'create_mark', markType: 'highlight', pageIndex: 0, color: '#123456', note: '', anchorId: 'missing' };
++    error(command, 'ANCHOR_NOT_FOUND'); error({ ...command, anchorId: 'next' });
++    const e = env(); e.anchors[0].documentId = 'other'; error({ ...command, anchorId: 'source' }, 'EDIT_INVALID', [], e);
++    error({ ...command, anchorId: undefined });
++  });
++  it.each(['highlight', 'underline', 'strikeout', 'note', 'line', 'arrow', 'ink'] as const)('updates content/style of %s without touching ownership', type => {
++    const before = mark(type); const result = prepared(run(update, [before]));
++    expect(result.deltas[0]).toEqual({ id: 'mark', expectedVersion: 4, before, after: { ...before, note: 'changed', version: 5 } });
++    expect(result.inverse[0].after).toEqual(before);
++  });
++  it.each([{}, { origin: { kind: 'user', id: 'x' } }, { quote: 'fake' }, { retained: true }, { color: '#fff' }, { note: 'n'.repeat(100001) }])('rejects invalid content patch %j', patch => error({ ...update, patch }, 'EDIT_INVALID', [mark()]));
++  it('checks object versions, tombstones, and context before planning', () => {
++    error(update, 'MARK_NOT_FOUND'); error({ ...update, expectedVersion: 3 }, 'VERSION_CONFLICT', [mark()]);
++    const s = snapshot(); s.versions['new-1'] = 8;
++    expect(prepareEdit(request({ type: 'create_mark', markType: 'note', pageIndex: 0, color: '#123456', note: '', geometry: { quads: [[...quad]] } }), s, env())).toMatchObject({ ok: false, error: { code: 'VERSION_CONFLICT' } });
++    expect(prepareEdit({ ...request(update), context: { ...context, revision: 2 } }, snapshot([mark()]), env())).toMatchObject({ ok: false, error: { code: 'EDIT_STALE' } });
++  });
++  it.each(['line', 'arrow', 'ink'] as const)('edits %s endpoints/path using page-native geometry', type => {
++    const g = { quads: [[...quad]], points: [-6, 4, 25, 18] };
++    expect(prepared(run({ type: 'set_mark_geometry', id: 'mark', expectedVersion: 4, geometry: g }, [mark(type)])).deltas[0].after).toMatchObject(g);
++  });
++  it('edits free-note geometry but rejects moving source-anchored geometry', () => {
++    const m = mark('note'); m.anchorId = null; m.quote = '';
++    expect(prepared(run({ type: 'set_mark_geometry', id: 'mark', expectedVersion: 4, geometry: { quads: [[-7, 20, 30, 20, -7, 2, 30, 2]] } }, [m])).deltas).toHaveLength(1);
++    for (const type of ['highlight', 'underline', 'strikeout', 'note'] as const) error({ type: 'set_mark_geometry', id: 'mark', expectedVersion: 4, geometry: geometry() }, 'EDIT_INVALID', [mark(type)]);
++  });
++  it('moves note placement while preserving original anchor and quote', () => {
++    const before = mark('note');
++    expect(prepared(run({ type: 'set_mark_placement', id: 'mark', expectedVersion: 4, placement: { dx: 2, dy: -3 } }, [before])).deltas[0].after).toEqual({ ...before, placement: { dx: 2, dy: -3 }, version: 5 });
++    error({ type: 'set_mark_placement', id: 'mark', expectedVersion: 4, placement: { dx: 2, dy: -3 } }, 'UNSUPPORTED_PLACEMENT', [mark()]);
++    error({ type: 'set_mark_placement', id: 'mark', expectedVersion: 4, placement: { dx: 101, dy: 0 } }, 'EDIT_INVALID', [before]);
++  });
++  it.each(['highlight', 'underline', 'strikeout', 'note'] as const)('replaces %s anchor with real page and quote', type => {
++    expect(prepared(run({ type: 'replace_mark_anchor', id: 'mark', expectedVersion: 4, anchorId: 'next' }, [mark(type)])).deltas[0].after).toMatchObject({ anchorId: 'next', pageIndex: 1, quote: '第二页', quads: [quad], version: 5 });
++  });
++  it.each(['line', 'arrow', 'ink'] as const)('rejects anchoring free %s as quoted text', type => error({ type: 'replace_mark_anchor', id: 'mark', expectedVersion: 4, anchorId: 'next' }, 'EDIT_INVALID', [mark(type)]));
++  it.each([
++    { quads: [[-11, 20, 30, 20, -11, 2, 30, 2]], points: [-5, 5, 20, 15] },
++    { quads: [[...quad]], points: [-5, 5, -5, 5] }, { quads: [[...quad]], points: [-5, 5, 50, 15] },
++    { quads: [[...quad]], points: [NaN, 5, 20, 15] }, { quads: [[...quad]], points: [0, 1, 2] },
++    { quads: [[0, 0, 0, 0, 0, 0, 0, 0]], points: [0, 0, 1, 1] },
++    { quads: [[-8, 20, 30, 21, -8, 2, 30, 2]], points: [-5, 5, 20, 15] },
++    { quads: [new Array(8)], points: [-5, 5, 20, 15] }, { quads: [[...quad]], points: new Array(4) }
++  ])('rejects invalid/degenerate/out-of-crop geometry %j', g => error({ type: 'set_mark_geometry', id: 'mark', expectedVersion: 4, geometry: g }, 'EDIT_INVALID', [mark('arrow')]));
++  it('keeps invisible and retained states independent and preserves inverse contents', () => {
++    const before = mark(); before.retained = true;
++    const result = prepared(run({ type: 'set_marks_visibility', targets: [{ id: 'mark', expectedVersion: 4 }], visible: false }, [before]));
++    expect(result.deltas[0].after).toMatchObject({ visible: false, retained: true, origin: before.origin });
++    expect(result.inverse[0].after).toEqual(before);
++    expect(prepared(run({ type: 'set_marks_retention', targets: [{ id: 'mark', expectedVersion: 4 }], retained: false }, [before])).deltas[0].after).toMatchObject({ retained: false, visible: true });
++    expect(prepared(run({ type: 'delete_marks', targets: [{ id: 'mark', expectedVersion: 4 }] }, [before])).deltas[0].after).toBeNull();
++  });
++  it.each(['user', 'other-session', 'retained'] as const)('requires confirmation for AI editing protected %s marks', protection => {
++    const m = mark(); if (protection === 'user') m.origin = { kind: 'user', id: 'owner' }; else if (protection === 'other-session') m.origin = { kind: 'ai', id: 'assistant', sessionId: 'old' }; else m.retained = true;
++    expect(prepared(run(update, [m])).requiresConfirmation).toBe(true);
++    const e = env(); e.actor = { kind: 'user', id: 'owner' }; expect(prepared(run(update, [m], e)).requiresConfirmation).toBe(false);
++  });
++  it('erases whole intersecting visible strokes only and checks protected hits', () => {
++    const visible = mark('ink', 'visible'), hidden = mark('ink', 'hidden'), otherPage = mark('ink', 'page'); hidden.visible = false; otherPage.pageIndex = 1; visible.retained = true;
++    const result = prepared(run({ type: 'erase_ink', pageIndex: 0, from: [0, 0], to: [0, 20], radius: 1 }, [visible, hidden, otherPage]));
++    expect(result.deltas.map(d => d.id)).toEqual(['visible']); expect(result.deltas[0].after).toBeNull(); expect(result.requiresConfirmation).toBe(true);
++    expect(prepared(run({ type: 'erase_ink', pageIndex: 0, from: [90, 90], to: [90, 100], radius: 1 }, [visible])).deltas).toEqual([]);
++  });
++  it('plans atomic batches with creation-order IDs and refuses duplicate targets', () => {
++    const create = { type: 'create_mark', markType: 'note', pageIndex: 0, color: '#123456', note: '', geometry: { quads: [[...quad]] } };
++    const result = prepared(run({ type: 'apply_edit_batch', operations: [create, structuredClone(create), update] }, [mark()]));
++    expect(result.deltas.map(d => d.id)).toEqual(['new-1', 'new-2', 'mark']);
++    error({ type: 'apply_edit_batch', operations: [update, structuredClone(update)] }, 'BATCH_CONFLICT', [mark()]);
++    error({ type: 'apply_edit_batch', operations: [update, { type: 'delete_marks', targets: [{ id: 'missing', expectedVersion: 0 }] }] }, 'MARK_NOT_FOUND', [mark()]);
++    error({ type: 'apply_edit_batch', operations: [{ type: 'list_marks' }] });
++    error({ type: 'apply_edit_batch', operations: [] });
++    error({ type: 'apply_edit_batch', operations: Array.from({ length: 65 }, () => structuredClone(create)) }, 'EDIT_TOO_LARGE');
++  });
++  it('rejects duplicate targets even when a first target is a no-op', () => {
++    const noOp = { ...update, patch: { note: '' } };
++    expect(prepared(run(noOp, [mark()])).deltas).toEqual([]);
++    error({ type: 'apply_edit_batch', operations: [noOp, update] }, 'BATCH_CONFLICT', [mark()]);
++    error({ type: 'delete_marks', targets: [{ id: 'mark', expectedVersion: 4 }, { id: 'mark', expectedVersion: 4 }] }, 'EDIT_INVALID', [mark()]);
++  });
++  it('identifies batch repeated targets before a second lookup/version check', () => {
++    error({ type: 'apply_edit_batch', operations: [update, { ...structuredClone(update), expectedVersion: 99 }] }, 'BATCH_CONFLICT', [mark()]);
++    const create = { type: 'create_mark', markType: 'note', pageIndex: 0, color: '#123456', note: '', geometry: { quads: [[...quad]] } };
++    error({ type: 'apply_edit_batch', operations: [create, { ...update, id: 'new-1', expectedVersion: 1 }] }, 'BATCH_CONFLICT');
++  });
++  it('binds eraser dependencies to hidden and non-hit page strokes', () => {
++    const hidden = mark('ink'); hidden.visible = false;
++    const result = prepared(run({ type: 'erase_ink', pageIndex: 0, from: [90, 90], to: [90, 100], radius: 1 }, [hidden]));
++    expect(result.dependencies).toEqual({ mark: 4 }); expect(result.deltas).toEqual([]);
++  });
++  it.each([
++    { type: 'delete_marks', targets: [] },
++    { type: 'set_marks_visibility', targets: [{ id: 'mark', expectedVersion: 4 }], visible: 1 },
++    { type: 'set_marks_retention', targets: [{ id: 'mark', expectedVersion: 4 }], retained: 'yes' },
++    { type: 'erase_ink', pageIndex: 0, from: [0, 0], to: [1, 1], radius: 0 },
++    { type: 'erase_ink', pageIndex: 0, from: [-11, 0], to: [1, 1], radius: 1 },
++    { type: 'set_mark_geometry', id: 'mark', expectedVersion: 4, geometry: { quads: [quad], points: Array(8194).fill(1) } },
++    { type: 'get_mark', id: '' }, { type: 'export_marked_pdf', snapshotId: 'x', path: '/fake' },
++    { type: 'apply_edit_batch', operations: [{ type: 'apply_edit_batch', operations: [update] }] },
++    { type: 'apply_edit_batch', operations: [{ type: 'undo_edit', operationId: 'op' }] },
++    { type: 'apply_edit_batch', operations: [{ type: 'prepare_mark_export', selection: { origins: ['user'], ids: null, includeHidden: true } }] }
++  ])('rejects invalid parameters and unsupported nested operations: %j', command => error(command, 'EDIT_INVALID', [mark('ink')]));
++  it('rejects targets and export selections above their explicit limit', () => {
++    const targets = Array.from({ length: 1001 }, (_, i) => ({ id: `m-${i}`, expectedVersion: 0 }));
++    error({ type: 'delete_marks', targets }, 'EDIT_TOO_LARGE');
++    error({ type: 'prepare_mark_export', selection: { origins: ['user'], ids: targets.map(t => t.id), includeHidden: true } }, 'EDIT_TOO_LARGE');
++  });
++  it('rejects hostile trusted mark/page-bound/anchor accessors without evaluating them', () => {
++    let calls = 0;
++    const s = snapshot([mark()]); Object.defineProperty(s.marks[0], 'quote', { get() { calls++; return 'fake'; } });
++    expect(prepareEdit(request({ type: 'list_marks' }), s, env())).toMatchObject({ ok: false, error: { code: 'EDIT_INVALID' } });
++    const e = env(); Object.defineProperty(e.pageBounds[0], 0, { get() { calls++; return 0; } }); error({ type: 'list_marks' }, 'EDIT_INVALID', [], e);
++    const a = env(); Object.defineProperty(a.anchors[0], 'quote', { get() { calls++; return 'fake'; } }); error({ type: 'list_marks' }, 'EDIT_INVALID', [], a);
++    expect(calls).toBe(0);
++  });
++  it('queries without writing deltas and generates only owned history/export requests', () => {
++    expect(run({ type: 'list_marks' }, [mark()])).toMatchObject({ ok: true, kind: 'read', read: [mark()] });
++    expect(run({ type: 'get_mark', id: 'mark' }, [mark()])).toMatchObject({ ok: true, kind: 'read', read: mark() });
++    for (const type of ['undo_edit', 'redo_edit']) expect(run({ type, operationId: 'op' })).toMatchObject({ ok: true, kind: 'history', context, actor: env().actor, history: { type, operationId: 'op' } });
++    expect(run({ type: 'export_marked_pdf', snapshotId: 'snapshot' })).toMatchObject({ ok: true, kind: 'export_request', exportRequest: { snapshotId: 'snapshot' } });
++    expect(run({ type: 'list_marks' })).not.toHaveProperty('deltas');
++  });
++  it('exports explicit hidden/unretained selections in page/id order without changing them', () => {
++    const a = mark('note', 'a'), z = mark('note', 'z'), user = mark('note', 'user'); a.visible = false; z.pageIndex = 1; z.anchorId = 'next'; z.quote = '第二页'; user.origin = { kind: 'user', id: 'owner' };
++    const marks = [z, user, a]; const before = structuredClone(marks);
++    const r = run({ type: 'prepare_mark_export', selection: { origins: ['ai'], ids: ['z', 'a'], includeHidden: true } }, marks);
++    expect(r).toMatchObject({ ok: true, kind: 'export_snapshot', exportSnapshot: { marks: [a, z], versions: { a: 4, z: 4 } } });
++    expect(run({ type: 'prepare_mark_export', selection: { origins: ['ai'], ids: null, includeHidden: false } }, marks)).toMatchObject({ ok: true, exportSnapshot: { marks: [z] } });
++    expect(marks).toEqual(before);
++    error({ type: 'prepare_mark_export', selection: { origins: [], ids: null, includeHidden: true } });
++    error({ type: 'prepare_mark_export', selection: { origins: ['ai'], ids: ['a', 'a'], includeHidden: true } }, 'EDIT_INVALID', marks);
++  });
++  it('canonical digest is SHA256, key-order insensitive, and version-sensitive', () => {
++    expect(canonicalDigest({ b: 2, a: '你好😀' })).toBe(createHash('sha256').update('{"a":"你好😀","b":2}').digest('hex'));
++    const a = prepared(run(update, [mark()]));
++    const b = prepared(run({ patch: { note: 'changed' }, expectedVersion: 4, id: 'mark', type: 'update_mark' }, [mark()]));
++    expect(a.digest).toBe(b.digest); expect(a.digest).toMatch(/^[0-9a-f]{64}$/);
++    const m = mark(); m.version = 5; expect(prepared(run({ ...update, expectedVersion: 5 }, [m])).digest).not.toBe(a.digest);
++    const c = { type: 'set_marks_visibility', targets: [{ id: 'b', expectedVersion: 4 }, { id: 'a', expectedVersion: 4 }], visible: false };
++    expect(prepared(run(c, [mark('note', 'a'), mark('note', 'b')])).digest).toBe(prepared(run({ ...c, targets: [...c.targets].reverse() }, [mark('note', 'b'), mark('note', 'a')])).digest);
++  });
++  it('includes dependencies for zero-change operations and list/export snapshots', () => {
++    const m = mark(); const a = prepared(run({ ...update, patch: { note: '' } }, [m])); m.version = 5;
++    const b = prepared(run({ ...update, expectedVersion: 5, patch: { note: '' } }, [m])); expect(a.digest).not.toBe(b.digest);
++    expect(a.dependencies).toEqual({ mark: 4 });
++  });
++  it('returns no input references and keeps result branches isolated', () => {
++    const m = mark('note'); const e = env(); const input = request({ type: 'replace_mark_anchor', id: 'mark', expectedVersion: 4, anchorId: 'next' });
++    const result = prepared(prepareEdit(input, snapshot([m]), e)); const copy = structuredClone(result);
++    m.quads[0][0] = 90; e.anchors[1].quads[0][0] = 90; input.context.revision = 9;
++    expect(result).toEqual(copy);
++    result.deltas[0].after!.quads[0][0] = 80; expect(result.inverse[0].before!.quads[0][0]).toBe(-8); expect(result.deltas[0].before!.quads[0][0]).toBe(-8);
++    expect(result).not.toHaveProperty('read'); expect(result).not.toHaveProperty('history');
++  });
++  it('rejects accessors without invoking them, inherited properties, aliases and symbols', () => {
++    let calls = 0;
++    const input = request({ type: 'list_marks' }); Object.defineProperty(input, 'context', { get() { calls++; throw Error('getter'); } });
++    expect(prepareEdit(input, snapshot(), env())).toMatchObject({ ok: false, error: { code: 'EDIT_INVALID' } }); expect(calls).toBe(0);
++    error(Object.assign(Object.create({ confirmed: true }), { type: 'list_marks' }));
++    error({ type: 'list_marks', [Symbol('extra')]: 1 });
++    const q = [...quad]; error({ type: 'create_mark', markType: 'note', pageIndex: 0, color: '#123456', note: '', geometry: { quads: [q, q] } });
++    const e = env(); Object.defineProperty(e.actor, 'id', { get() { calls++; return 'x'; } }); error({ type: 'list_marks' }, 'EDIT_INVALID', [], e); expect(calls).toBe(0);
++  });
++  it('validates trusted snapshots, anchors, versions, IDs, bounds and finite values', () => {
++    const m = mark(); m.version = Number.MAX_SAFE_INTEGER + 1; error(update, 'EDIT_INVALID', [m]);
++    const s = snapshot([mark()]); s.versions.mark = 3; expect(prepareEdit(request(update), s, env())).toMatchObject({ ok: false, error: { code: 'EDIT_INVALID' } });
++    for (const change of [(e: EditEnvironment) => { e.pageBounds = [[0, 0, 0, 0]]; }, (e: EditEnvironment) => { e.newIds = ['x', 'x']; }, (e: EditEnvironment) => { e.anchors[0].quads[0][0] = Infinity; }]) { const e = env(); change(e); error({ type: 'list_marks' }, 'EDIT_INVALID', [], e); }
++    expect(prepareEdit({ ...request({ type: 'list_marks' }), extra: true }, snapshot(), env())).toMatchObject({ ok: false, error: { code: 'EDIT_INVALID' } });
++    expect(prepareEdit({ ...request({ type: 'list_marks' }), requestId: 'x'.repeat(101) }, snapshot(), env())).toMatchObject({ ok: false, error: { code: 'EDIT_INVALID' } });
++  });
++  it('reads the highest safe version but rejects an increment that would overflow', () => {
++    const m = mark(); m.version = Number.MAX_SAFE_INTEGER;
++    expect(run({ type: 'get_mark', id: 'mark' }, [m])).toMatchObject({ ok: true, kind: 'read', read: { version: Number.MAX_SAFE_INTEGER } });
++    error({ ...update, expectedVersion: Number.MAX_SAFE_INTEGER }, 'VERSION_CONFLICT', [m]);
++  });
++  it('accepts explicit zero for an ID that has never existed, not a positive tombstone', () => {
++    const s = snapshot(); s.versions['new-1'] = 0;
++    const r = prepared(prepareEdit(request({ type: 'create_mark', markType: 'note', pageIndex: 0, color: '#123456', note: '', geometry: { quads: [[...quad]] } }), s, env()));
++    expect(r.deltas[0]).toMatchObject({ expectedVersion: 0, after: { version: 1 } });
++  });
++  it.each(['highlight', 'underline', 'strikeout', 'note'] as const)('preserves trusted skewed source vertices when creating %s', markType => {
++    const e = env(); e.anchors[0].quads = [[0, 20, 30, 25, 0, 2, 30, 7]];
++    const result = prepared(run({ type: 'create_mark', markType, pageIndex: 0, color: '#123456', note: '', anchorId: 'source' }, [], e));
++    expect(result.deltas[0].after).toMatchObject({ quads: [[0, 20, 30, 25, 0, 2, 30, 7]], quote: '真实原文', anchorId: 'source' });
++    e.anchors[0].quads[0][0] = 4;
++    expect(result.deltas[0].after!.quads[0][0]).toBe(0);
++  });
++  it.each(['list_marks', 'get_mark'] as const)('reads existing skewed source marks using %s', type => {
++    const m = mark(); m.quads = [[0, 20, 30, 25, 0, 2, 30, 7]];
++    const result = run(type === 'get_mark' ? { type, id: 'mark' } : { type }, [m]);
++    expect(result).toMatchObject({ ok: true, kind: 'read', read: type === 'get_mark' ? m : [m] });
++  });
++  it.each(['highlight', 'underline', 'strikeout', 'note'] as const)('replaces %s anchor without rectifying its real source vertices', type => {
++    const e = env(); e.anchors[1].quads = [[0, 20, 30, 25, 0, 2, 30, 7]];
++    const result = prepared(run({ type: 'replace_mark_anchor', id: 'mark', expectedVersion: 4, anchorId: 'next' }, [mark(type)], e));
++    expect(result.deltas[0].after).toMatchObject({ quads: [[0, 20, 30, 25, 0, 2, 30, 7]], pageIndex: 1, quote: '第二页', anchorId: 'next' });
++    error({ type: 'set_mark_geometry', id: 'mark', expectedVersion: 4, geometry: { quads: [[0, 20, 30, 25, 0, 2, 30, 7]] } }, 'EDIT_INVALID', [mark(type)], e);
++  });
++  it('does not reject unrelated requests because an unused verified anchor is skewed', () => {
++    const e = env(); e.anchors[1].quads = [[0, 20, 30, 25, 0, 2, 30, 7]];
++    expect(run({ type: 'list_marks' }, [], e)).toMatchObject({ ok: true, kind: 'read', read: [] });
++  });
++  it.each([
++    [0, 20, 10, 15, 20, 10, 30, 5], // collinear
++    [0, 20, 30, 25, 30, 7, 0, 2], // self-crossing in PDF quad perimeter order
++    [0, 20, 30, 25, 0, 2, 5, 18], // concave
++    [-11, 20, 30, 25, 0, 2, 30, 7], // outside trusted crop
++  ])('rejects degenerate/nonconvex/out-of-page source vertices: %j', (...q) => {
++    const e = env(); e.anchors[0].quads = [q];
++    error({ type: 'create_mark', markType: 'highlight', pageIndex: 0, color: '#123456', note: '', anchorId: 'source' }, 'EDIT_INVALID', [], e);
++  });
++});
+diff --git a/tests/helpers/editing-sqlite-store.ts b/tests/helpers/editing-sqlite-store.ts
+new file mode 100644
+index 0000000..1f0d840
+--- /dev/null
++++ b/tests/helpers/editing-sqlite-store.ts
+@@ -0,0 +1,115 @@
++import { DatabaseSync } from 'node:sqlite';
++import { createHash } from 'node:crypto';
++import { canonicalDigest } from '../../src/shared/editing-planner';
++import type { CommandContext } from '../../src/shared/document-commands';
++import type { EditActor, EditDelta, EditMark, EditSnapshot, VerifiedAnchor } from '../../src/shared/editing-commands';
++import type { ConfirmationBinding, EditConfirmation, EditHost, EditOperation, EditReceipt, EditTransaction, HistoryWrite } from '../../src/main/editing-executor';
++
++/** Test-only host: never imported by production and never opens a personal database. */
++export class EditingSqliteStore implements EditHost {
++  readonly db: DatabaseSync;
++  context: CommandContext = { documentId: 'doc', fingerprint: 'a'.repeat(64), revision: 3 };
++  actor: EditActor = { kind: 'ai', id: 'assistant', sessionId: 'session' };
++  anchors: VerifiedAnchor[] = [{ id: 'source', documentId: 'doc', fingerprint: 'a'.repeat(64), pageIndex: 0, quote: 'source text', quads: [[0,20,30,25,0,2,30,7]] }];
++  allocations = 0;
++  confirmation: string | null = null;
++  candidate: ConfirmationBinding | null = null;
++  failAt: 'deltas' | 'history' | 'receipt' | 'confirmation' | null = null;
++  beforeTransaction: (() => void) | null = null;
++  beforeReceipt: (() => void) | null = null;
++  afterCommit: (() => void) | null = null;
++  loseReply = false;
++  constructor(readonly filename: string) {
++    this.db = new DatabaseSync(filename);
++    this.db.exec(`PRAGMA busy_timeout=0;
++      CREATE TABLE IF NOT EXISTS marks(documentId TEXT, fingerprint TEXT, id TEXT, version INTEGER, value TEXT, PRIMARY KEY(documentId,fingerprint,id));
++      CREATE TABLE IF NOT EXISTS tombstones(documentId TEXT, fingerprint TEXT, id TEXT, version INTEGER, PRIMARY KEY(documentId,fingerprint,id));
++      CREATE TABLE IF NOT EXISTS operations(operationId TEXT PRIMARY KEY, documentId TEXT, fingerprint TEXT, value TEXT);
++      CREATE TABLE IF NOT EXISTS receipts(requestKey TEXT PRIMARY KEY, value TEXT);
++      CREATE TABLE IF NOT EXISTS confirmations(id TEXT PRIMARY KEY, value TEXT, consumed INTEGER NOT NULL DEFAULT 0);`);
++  }
++  getContext() { return structuredClone(this.context); }
++  getActor() { return structuredClone(this.actor); }
++  getPageBounds(): [number, number, number, number][] { return [[-10,-20,100,120]]; }
++  async resolveAnchors() { return structuredClone(this.anchors); }
++  allocateIds(requestKey: string, count: number) {
++    this.allocations++;
++    return Array.from({ length: count }, (_, i) => 'mark-' + createHash('sha256').update(`${requestKey}:${i}`).digest('hex'));
++  }
++  readSnapshot(context: CommandContext): EditSnapshot {
++    const rows = this.db.prepare('SELECT value FROM marks WHERE documentId=? AND fingerprint=? ORDER BY id').all(context.documentId, context.fingerprint);
++    const marks = rows.map(r => JSON.parse(r.value as string) as EditMark);
++    const versions = Object.fromEntries(this.db.prepare('SELECT id,version FROM tombstones WHERE documentId=? AND fingerprint=?').all(context.documentId, context.fingerprint).map(r => [r.id, Number(r.version)]));
++    for (const m of marks) versions[m.id] = m.version;
++    return { context: structuredClone(context), marks, versions };
++  }
++  readReceipt(key: string): EditReceipt | null { const row = this.db.prepare('SELECT value FROM receipts WHERE requestKey=?').get(key); return row ? JSON.parse(row.value as string) : null; }
++  readOperation(context: CommandContext, id: string): EditOperation | null {
++    const row = this.db.prepare('SELECT value FROM operations WHERE operationId=? AND documentId=? AND fingerprint=?').get(id, context.documentId, context.fingerprint);
++    return row ? JSON.parse(row.value as string) : null;
++  }
++  getConfirmation(binding: ConfirmationBinding): string | null | Promise<string | null> { this.candidate = structuredClone(binding); return this.confirmation; }
++  approve(binding = this.candidate!, id = 'approval') {
++    const value: EditConfirmation = { id, ...structuredClone(binding), consumed: false };
++    this.db.prepare('INSERT OR REPLACE INTO confirmations(id,value,consumed) VALUES(?,?,0)').run(id, JSON.stringify(value));
++    this.confirmation = id;
++    return value;
++  }
++  private fail(stage: typeof this.failAt) { if (this.failAt === stage) throw Error('injected ' + stage); }
++  transaction<T>(body: (tx: EditTransaction) => T): T {
++    const hook = this.beforeTransaction; this.beforeTransaction = null; hook?.();
++    this.db.exec('BEGIN IMMEDIATE');
++    let committed = false;
++    try {
++      const tx: EditTransaction = {
++        readSnapshot: c => this.readSnapshot(c), readReceipt: k => this.readReceipt(k), readOperation: (c,id) => this.readOperation(c,id),
++        readConfirmation: id => {
++          const r = this.db.prepare('SELECT value,consumed FROM confirmations WHERE id=?').get(id);
++          return r ? { ...JSON.parse(r.value as string), consumed: !!r.consumed } : null;
++        },
++        writeDeltas: (c,d) => this.writeDeltas(c,d),
++        writeHistory: w => this.writeHistory(w),
++        writeReceipt: r => {
++          this.beforeReceipt?.(); this.fail('receipt');
++          this.db.prepare('INSERT INTO receipts(requestKey,value) VALUES(?,?)').run(r.requestKey, JSON.stringify(r));
++        },
++        consumeConfirmation: id => {
++          this.fail('confirmation');
++          if (this.db.prepare('UPDATE confirmations SET consumed=1 WHERE id=? AND consumed=0').run(id).changes !== 1) throw Error('confirmation unavailable');
++        }
++      };
++      const result = body(tx);
++      this.db.exec('COMMIT'); committed = true;
++      this.afterCommit?.();
++      if (this.loseReply) throw Object.assign(Error('reply lost after COMMIT'), { code: 'COMMIT_UNCERTAIN' });
++      return result;
++    } catch (e) { if (!committed) this.db.exec('ROLLBACK'); throw e; }
++  }
++  private writeDeltas(c: CommandContext, deltas: EditDelta[]) {
++    for (const d of deltas) {
++      this.db.prepare('DELETE FROM marks WHERE documentId=? AND fingerprint=? AND id=?').run(c.documentId,c.fingerprint,d.id);
++      if (d.after) this.db.prepare('INSERT INTO marks VALUES(?,?,?,?,?)').run(c.documentId,c.fingerprint,d.id,d.after.version,JSON.stringify(d.after));
++      this.db.prepare('INSERT OR REPLACE INTO tombstones VALUES(?,?,?,?)').run(c.documentId,c.fingerprint,d.id,d.expectedVersion+1);
++      this.fail('deltas');
++    }
++  }
++  private writeHistory(w: HistoryWrite) {
++    if (w.clearRedoFor) {
++      const rows = this.db.prepare('SELECT operationId,value FROM operations WHERE documentId=? AND fingerprint=?').all(w.operation.context.documentId,w.operation.context.fingerprint);
++      for (const r of rows) {
++        const op = JSON.parse(r.value as string) as EditOperation;
++        if (op.action === 'edit' && op.state === 'undone' && canonicalDigest(op.redoActor) === canonicalDigest(w.clearRedoFor)) {
++          op.redoEligible = false;
++          this.db.prepare('UPDATE operations SET value=? WHERE operationId=?').run(JSON.stringify(op),op.operationId);
++        }
++      }
++    }
++    if (w.target) this.db.prepare('UPDATE operations SET value=? WHERE operationId=?').run(JSON.stringify(w.target),w.target.operationId);
++    const o = w.operation;
++    this.db.prepare('INSERT INTO operations VALUES(?,?,?,?)').run(o.operationId,o.context.documentId,o.context.fingerprint,JSON.stringify(o));
++    this.fail('history');
++  }
++  seed(mark: EditMark) { this.db.prepare('INSERT INTO marks VALUES(?,?,?,?,?)').run(mark.documentId,mark.fingerprint,mark.id,mark.version,JSON.stringify(mark)); }
++  count(table: 'marks'|'tombstones'|'operations'|'receipts'|'confirmations') { return Number(this.db.prepare(`SELECT count(*) AS n FROM ${table}`).get()!.n); }
++  close() { this.db.close(); }
++}

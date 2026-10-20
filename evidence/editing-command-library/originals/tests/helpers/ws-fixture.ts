@@ -1,0 +1,10 @@
+/** Minimal bounded local RFC6455 fixture; not used by product/runtime. */
+import{createServer}from'node:http';import{createHash}from'node:crypto';import type{Socket}from'node:net';
+export async function wsFixture(handler:(input:any,send:(value:any)=>void,close:()=>void)=>void){
+ const sockets=new Set<Socket>(),urls:string[]=[];const server=createServer();
+ server.on('upgrade',(req,socket,head)=>{const s=socket as Socket;sockets.add(s);s.on('error',()=>{});s.on('close',()=>sockets.delete(s));urls.push(req.url||'');const accept=createHash('sha1').update(String(req.headers['sec-websocket-key'])+'258EAFA5-E914-47DA-95CA-C5AB0DC85B11').digest('base64');s.write('HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: '+accept+'\r\n\r\n');
+  const send=(value:any)=>{const bytes=Buffer.from(JSON.stringify(value)),header=Buffer.alloc(bytes.length<126?2:4);header[0]=0x81;if(bytes.length<126)header[1]=bytes.length;else{header[1]=126;header.writeUInt16BE(bytes.length,2);}s.write(Buffer.concat([header,bytes]));};let pending=Buffer.from(head);
+  const parse=()=>{while(pending.length>=2){const opcode=pending[0]&15;if(opcode===8){s.end(Buffer.from([0x88,0]));return;}let length=pending[1]&127,offset=2;if(length===126){if(pending.length<4)return;length=pending.readUInt16BE(2);offset=4;}else if(length===127){if(pending.length<10)return;length=Number(pending.readBigUInt64BE(2));offset=10;}if(length>200000){s.destroy();return;}const masked=!!(pending[1]&128),end=offset+(masked?4:0)+length;if(pending.length<end)return;const mask=pending.subarray(offset,offset+4),body=Buffer.from(pending.subarray(offset+(masked?4:0),end));if(masked)for(let i=0;i<body.length;i++)body[i]^=mask[i%4];pending=pending.subarray(end);if(opcode===1)handler(JSON.parse(body.toString('utf8')),send,()=>s.destroy());}};
+  s.on('data',data=>{pending=Buffer.concat([pending,data]);parse();});parse();
+ });await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));return{url:'ws://127.0.0.1:'+(server.address() as any).port,urls,close:async()=>{for(const s of sockets)s.destroy();await new Promise<void>(r=>server.close(()=>r()));}};
+}

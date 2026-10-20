@@ -1,0 +1,36 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:58876) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/editing-executor.test.ts (48 tests | 1 failed | 47 skipped) 41ms
+   ❯ redo authorization preserves user undo intent (1)
+     × requires confirmation when AI redoes its original group after a user executed its undo 40ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-executor.test.ts > redo authorization preserves user undo intent > requires confirmation when AI redoes its original group after a user executed its undo
+AssertionError: expected 'committed' to be 'confirmation_required' // Object.is equality
+
+Expected: "confirmation_required"
+Received: "committed"
+
+ ❯ tests/editing-executor.test.ts:309:107
+    307|     const {host:h}=fixture(); h.seed(mark()); const ai=h.getActor(); c…
+    308|     h.actor={kind:'user',id:'reader'}; committed(await edit(h,{type:'u…
+    309|     h.actor=ai; expect((await edit(h,{type:'redo_edit',operationId:gro…
+       |                                                                                                           ^
+    310|     h.approve(); committed(await edit(h,{type:'redo_edit',operationId:…
+    311|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 47 skipped (48)
+   Start at  11:22:08
+   Duration  218ms (transform 38%, tests 38%, import 20%, worker 3%)
+
+
+EXIT_STATUS=1
+COMMAND=npx vitest run tests/editing-executor.test.ts -t 'redo authorization'

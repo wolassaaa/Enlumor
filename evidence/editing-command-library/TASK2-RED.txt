@@ -1,0 +1,28 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/editing-executor.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-executor.test.ts [ tests/editing-executor.test.ts ]
+Error: Cannot find module '../src/main/editing-executor' imported from D:/codex project/Enlumor/.worktrees/v04-wave-ab/tests/editing-executor.test.ts
+ ❯ tests/editing-executor.test.ts:6:1
+      4| import { join } from 'node:path';
+      5| import { createHash } from 'node:crypto';
+      6| import { runEditingCommand, queryEditingReceipt } from '../src/main/ed…
+       | ^
+      7| import type { EditResult } from '../src/main/editing-executor';
+      8| import type { EditMark } from '../src/shared/editing-commands';
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  11:16:35
+   Duration  152ms (worker 96%, environment 4%)
+
+
+EXIT_STATUS=1
+COMMAND=npx vitest run tests/editing-executor.test.ts

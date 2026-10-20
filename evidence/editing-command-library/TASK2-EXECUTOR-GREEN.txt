@@ -1,0 +1,76 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:852) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > commits a trusted source mark with atomic versions/history/receipt and leaves source PDF unchanged
+ISOLATION {"sourcePdf":"C:\\Users\\woola\\AppData\\Local\\Temp\\enlumor-edit-XqXQWX\\source.pdf","beforeHash":"a1ef8335cade47d55f16958cbb5d118b2a6255f52bdde980af943939822f08f7","afterHash":"a1ef8335cade47d55f16958cbb5d118b2a6255f52bdde980af943939822f08f7","selectedDatabase":"C:\\Users\\woola\\AppData\\Local\\Temp\\enlumor-edit-XqXQWX\\isolated.sqlite","untouchedDatabase":"C:\\Users\\woola\\AppData\\Local\\Temp\\enlumor-edit-3DpKRv\\isolated.sqlite","untouchedDatabaseHash":"c663f6d1af7d7a412ccee25b88d8c483f92195d8ce9a947a723154c4ca22fc4b"}
+
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > commits a trusted source mark with atomic versions/history/receipt and leaves source PDF unchanged 33ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > replays durable receipt before allocation despite page revision change, abort, and close/reopen 15ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rejects same id changed canonical command or expected version 16ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > two actual connections racing the same object version commit only one operation 19ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > reports real SQLITE_BUSY and retries the original request after the other connection releases lock 14ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rolls back every table and approval when deltas write fails 23ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rolls back every table and approval when history write fails 21ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rolls back every table and approval when receipt write fails 23ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rolls back every table and approval when confirmation write fails 22ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > recovers a commit whose reply is lost without applying deltas again 15ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > returns COMMIT_UNCERTAIN if a host cannot establish durable commit status, without automatic redo 12ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > cancels before preparation and at the last write, rolling back all tables 13ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > preserves committed attribution when cancellation and document switch happen after COMMIT 16ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > checks abort after asynchronous anchor resolution 11ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > checks context after asynchronous anchor resolution 10ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > checks actor after asynchronous anchor resolution 10ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > requires specific differences for user, retained, and other-session AI marks 56ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rejects stale differences and credentials bound to another actor/document 21ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > does not consume approval when a concurrent protected edit changes the preview base 20ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > normalizes identifier sets for receipt replay without sorting operation order 19ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rejects batch with one invalid target without any write 15ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rejects model identity/confirmation fields and accessor input without invoking it 11ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > keeps reads and explicit hidden-unretained export snapshots out of durable history 15ms
+ ✓ tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > treats a no-op as prepared, not a saved operation 13ms
+ ✓ tests/editing-executor.test.ts > targeted durable history > undoes and redoes a named group with strictly increasing versions and retained audit records 25ms
+ ✓ tests/editing-executor.test.ts > targeted durable history > restores deleted content with a newer tombstone version and prevents ABA creation reuse 24ms
+ ✓ tests/editing-executor.test.ts > targeted durable history > does not overwrite another source edit or move history on a conflict 21ms
+ ✓ tests/editing-executor.test.ts > targeted durable history > allows explicit user undo of AI groups; AI undo of user groups requires bound confirmation 31ms
+ ✓ tests/editing-executor.test.ts > targeted durable history > clears only the executing actor redo branch on new edits, including durable reopen 32ms
+ ✓ tests/editing-executor.test.ts > targeted durable history > rejects cross-document target histories without altering either document 17ms
+ ✓ tests/editing-executor.test.ts > targeted durable history > rolls back targeted history state when the history write fails 21ms
+ ✓ tests/editing-executor.test.ts > executor race and authorization edges > two executor connections competing for one expected version persist exactly one receipt/history 26ms
+ ✓ tests/editing-executor.test.ts > executor race and authorization edges > leaves approval reusable through real writer lock contention 20ms
+ ✓ tests/editing-executor.test.ts > executor race and authorization edges > binds deterministic create IDs throughout a protected batch preview and confirmation retry 20ms
+ ✓ tests/editing-executor.test.ts > executor race and authorization edges > detects collection phantoms by replanning under BEGIN IMMEDIATE 17ms
+ ✓ tests/editing-executor.test.ts > executor race and authorization edges > rejects deterministic creation IDs occupied by a live mark or tombstone, never overwriting 27ms
+ ✓ tests/editing-executor.test.ts > executor race and authorization edges > separates same request ID across actor sessions without returning another actor receipt 17ms
+ ✓ tests/editing-executor.test.ts > executor race and authorization edges > rejects a forged cross-document confirmation even when host returns its ID 15ms
+ ✓ tests/editing-executor.test.ts > executor race and authorization edges > rolls back a document switch at the last transactional write 13ms
+ ✓ tests/editing-executor.test.ts > executor race and authorization edges > does not reuse an already consumed confirmation for another request 21ms
+ ✓ tests/editing-executor.test.ts > executor race and authorization edges > recovers undo/redo audit receipts and branch eligibility after closing and reopening SQLite 24ms
+ ✓ tests/editing-executor.test.ts > confirmation await gates > checks abort after host awaits confirmation 15ms
+ ✓ tests/editing-executor.test.ts > confirmation await gates > checks actor after host awaits confirmation 14ms
+ ✓ tests/editing-executor.test.ts > confirmation await gates > checks context after host awaits confirmation 16ms
+ ✓ tests/editing-executor.test.ts > confirmation await gates > invalidates confirmation when a new reading revision changes the concrete prepared digest 16ms
+ ✓ tests/editing-executor.test.ts > redo branch belongs to the undo executor, not group provenance > a new user edit clears only that executor redo branch after user undoes an AI group 30ms
+ ✓ tests/editing-executor.test.ts > redo branch belongs to the undo executor, not group provenance > a new ai edit clears only that executor redo branch after user undoes an AI group 25ms
+ ✓ tests/editing-executor.test.ts > redo authorization preserves user undo intent > requires confirmation when AI redoes its original group after a user executed its undo 25ms
+ ✓ tests/editing-executor.test.ts > command-by-command SQLite execution acceptance > durably creates highlight with trusted defaults 13ms
+ ✓ tests/editing-executor.test.ts > command-by-command SQLite execution acceptance > durably creates underline with trusted defaults 13ms
+ ✓ tests/editing-executor.test.ts > command-by-command SQLite execution acceptance > durably creates strikeout with trusted defaults 13ms
+ ✓ tests/editing-executor.test.ts > command-by-command SQLite execution acceptance > durably creates note with trusted defaults 13ms
+ ✓ tests/editing-executor.test.ts > command-by-command SQLite execution acceptance > durably creates line with trusted defaults 13ms
+ ✓ tests/editing-executor.test.ts > command-by-command SQLite execution acceptance > durably creates arrow with trusted defaults 13ms
+ ✓ tests/editing-executor.test.ts > command-by-command SQLite execution acceptance > durably creates ink with trusted defaults 13ms
+ ✓ tests/editing-executor.test.ts > command-by-command SQLite execution acceptance > commits free geometry separately from anchored-note placement and source-anchor replacement 25ms
+ ✓ tests/editing-executor.test.ts > command-by-command SQLite execution acceptance > commits visibility and retention independently and restores the hidden unfixed state after reopening 23ms
+ ✓ tests/editing-executor.test.ts > command-by-command SQLite execution acceptance > erases a whole visible ink stroke but not hidden ink and retains tombstone versions 17ms
+ ✓ tests/editing-executor.test.ts > failed new branches preserve redo eligibility > rolls back redo-branch cleanup when a new edit fails after history writes 27ms
+
+ Test Files  1 passed (1)
+      Tests  59 passed (59)
+   Start at  11:26:40
+   Duration  1.27s (tests 97%, import 2%, transform 1%)
+
+
+COMMAND=npx vitest run tests/editing-executor.test.ts --reporter verbose --silent=false
+EXIT_STATUS=0

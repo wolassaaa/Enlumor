@@ -1,0 +1,39 @@
+COMMAND: npx vitest run tests/editing-planner.test.ts
+INPUT: independent mutable patches; duplicate target precedes mismatched version
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/editing-planner.test.ts (79 tests | 1 failed) 57ms
+   ❯ pure editing contract (79)
+     × identifies batch repeated targets before a second lookup/version check 6ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > identifies batch repeated targets before a second lookup/version check
+AssertionError: expected { ok: false, error: { …(2) } } to deeply equal { ok: false, error: { …(2) } }
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "BATCH_CONFLICT",
++     "code": "VERSION_CONFLICT",
+      "message": "The object version has changed.",
+    },
+    "ok": false,
+  }
+
+ ❯ error tests/editing-planner.test.ts:23:145
+
+ ❯ tests/editing-planner.test.ts:122:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 78 passed (79)
+   Start at  10:59:17
+   Duration  221ms (tests 52%, transform 29%, import 15%, worker 3%)
+
+EXIT_STATUS: 1

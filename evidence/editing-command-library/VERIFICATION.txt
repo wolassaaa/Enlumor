@@ -1,0 +1,52 @@
+Enlumor editing-command library — verified 2026-10-20
+Worktree/branch: D:/codex project/Enlumor/.worktrees/v04-wave-ab / feat/v04-wave-ab
+Baseline: 261e483139562ec1b41c54cb3d7b24947c7e2c0d
+Implementation commits: 7ce6598adc545911a8d14e658f98554b40287329; 5b0fd287006ce335b3a6e4c0d82c423046278c88; 4567301740b42db5976f54225183b928f9db55b4
+Changed branch/field: new EditResult.status read/prepared/confirmation_required/committed/conflict/canceled/unsupported/error; PreparedEdit.kind never claims committed. State editingCommands.status=LIBRARY_IMPLEMENTED_ISOLATED_SQLITE_REVIEW_PASS; productionIntegrated=false.
+Four reopened artifacts:
+MODIFIED_FILE=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/editing-command-library/MODIFIED_FILE.ts
+DIFF_FILE=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/editing-command-library/DIFF.patch
+VERIFICATION=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/editing-command-library/VERIFICATION.txt
+ROLLBACK=D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/editing-command-library/ROLLBACK.sh
+
+BASELINE
+Exact command: npm test
+Input: baseline261e483, original23 unit files, no editing library. Evidence BASELINE.txt.
+Literal output: Test Files  23 passed (23); Tests  261 passed (261)
+Exit status: 0
+
+MODIFIED
+Exact command: npm test
+Input: current implementation4567301, original261 plus155 new tests in editing-planner.test.ts and editing-executor.test.ts. Evidence MODIFIED_TEST.txt.
+Literal output: Test Files  25 passed (25); Tests  416 passed (416)
+Exit status: 0
+Exact command: npm run build
+Input: current implementation, TypeScript noEmit then existing build. Evidence FINAL_BUILD.txt.
+Literal output: ✓ built in 295ms
+Exit status: 0
+Existing Node SQLite ExperimentalWarning and >500kB build-chunk warning remain disclosed; no thresholds or warnings suppressed.
+
+ROLLBACK
+Exact command: bash evidence/editing-command-library/ROLLBACK.sh
+Invoker: C:/Program Files/Git/bin/bash.exe -lc 'bash evidence/editing-command-library/ROLLBACK.sh'
+Input: separate .cache/editing-command-library-rollback/run-* copy; original baseline tree plus77 exact working-byte snapshots from originals/, validated against ORIGINALS.json. Live checkout never restored/deleted.
+Literal output: Test Files  23 passed (23); Tests  261 passed (261)
+Literal output: ROLLBACK: ORIGINAL_HASHES=PASS; BASELINE_261_TESTS=PASS; EDITING_LIBRARY_ABSENT_IN_COPY=YES; LIVE_MODIFIED_FILES_UNCHANGED=YES
+Exit status: 0
+Restored behavior/status: baseline reading executor and original261 tests restored; new editing sources absent in copy. Live MODIFIED_FILE/source implementation remains changed and intact. Source PDF unchanged.
+First harness attempt failed before tests: Git Bash tar interpreted drive colon as remote. Raw failure preserved ROLLBACK_ATTEMPT1_TAR_PATH.txt, exit1. Harness now explicitly chooses Windows System32/bsdtar; actual rerun ROLLBACK_TEST.txt exit0. No product code adjusted for this harness issue.
+
+TDD / REVIEW
+Task1: actual RED38 assertions, duplicate/version/zero REDs, then skew-source fix RED11; final96 focused. Task2: actual RED31 assertions plus redo-owner/auth REDs; final59 actual SQLite tests. Combined155, not a production UI acceptance count.
+Task1 review P2 source-quads restriction fixed5b0fd28 and independent re-review PASS. Task2 independent review PASS. Aggregate review PASS, no new actionable findings. Reports TASK1_REPORT/REVIEW/REREVIEW.md, TASK2_REPORT/REVIEW.md, AGGREGATE_REVIEW.md; full RED/GREEN logs retained.
+All77 original live sources/tests/python/package hashes and snapshot hashes unchanged at final audit. Existing screenshots left unstaged, untouched by this batch. No original PDF/user database modification, credential reads, model API, dependencies, EXE release, push or merge.
+Paper hash: d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537 (SOURCE_PDF.json).
+
+RULINGS I MADE
+1. Standard node:crypto synchronous SHA256 instead of bespoke crypto; Node-only library stage. Cost if wrong: future browser adapter requires a separate integration change.
+2. Redo branch belongs to trusted undo executor, not original operation author; persist redoActor separately, preserve original provenance. New edits clear only matching actor/session redo branches. Cost if wrong: future redo UX/storage semantics need deliberate change.
+
+SCOPE
+Completed: seven mark families, sixteen parsed command types with explicit supported/prepared/unsupported outcomes; pure planning plus atomic real temporary SQLite host tests, protected-source confirmation, replay, monotonic versions/tombstones and targeted history.
+NOT a production storage migration or UI/model/real PDF export integration. export_marked_pdf returns UNSUPPORTED, no fake filepath. Production integration and final EXE/performance acceptance are a separate batch; historical261/EXE141 evidence is not recounted as new application acceptance.
+Metadata audit: original working-byte snapshots and raw command logs use -text -diff attributes to preserve CRLF and literal Vite output whitespace; source code remains normal reviewed text. Initial metadata whitespace check flagged those preserved bytes; authored-file check now passes without altering original/log contents.

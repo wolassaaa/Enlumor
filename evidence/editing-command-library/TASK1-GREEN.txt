@@ -1,0 +1,12 @@
+COMMAND: npx vitest run tests/editing-planner.test.ts
+INPUT: final focused suite
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+
+ Test Files  1 passed (1)
+      Tests  81 passed (81)
+   Start at  11:00:50
+   Duration  214ms (tests 48%, transform 30%, import 18%, worker 3%)
+
+EXIT_STATUS: 0

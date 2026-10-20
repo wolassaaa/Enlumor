@@ -1,0 +1,33 @@
+COMMAND: npx vitest run tests/editing-planner.test.ts
+INPUT: explicit never-created zero version before allocator correction
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/editing-planner.test.ts (81 tests | 1 failed) 55ms
+   ❯ pure editing contract (81)
+     × accepts explicit zero for an ID that has never existed, not a positive tombstone 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > accepts explicit zero for an ID that has never existed, not a positive tombstone
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:218:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 80 passed (81)
+   Start at  11:00:38
+   Duration  229ms (tests 47%, transform 32%, import 18%, worker 3%)
+
+EXIT_STATUS: 1

@@ -1,0 +1,28 @@
+COMMAND: npx vitest run tests/editing-planner.test.ts
+INPUT: Task1 tests before any implementation
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/editing-planner.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-planner.test.ts [ tests/editing-planner.test.ts ]
+Error: Cannot find module '../src/shared/editing-planner' imported from D:/codex project/Enlumor/.worktrees/v04-wave-ab/tests/editing-planner.test.ts
+ ❯ tests/editing-planner.test.ts:3:1
+      1| import { createHash } from 'node:crypto';
+      2| import { describe, expect, it } from 'vitest';
+      3| import { prepareEdit, canonicalDigest } from '../src/shared/editing-pl…
+       | ^
+      4| import type { EditCommand, EditEnvironment, EditMark, EditSnapshot, Pr…
+      5|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  10:55:36
+   Duration  176ms (worker 96%, environment 4%)
+
+EXIT_STATUS: 1

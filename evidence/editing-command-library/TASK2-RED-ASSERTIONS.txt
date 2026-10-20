@@ -1,0 +1,590 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:58360) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/editing-executor.test.ts (31 tests | 31 failed) 424ms
+   ❯ atomic editing executor against real temporary SQLite (24)
+     × commits a trusted source mark with atomic versions/history/receipt and leaves source PDF unchanged 19ms
+     × replays durable receipt before allocation despite page revision change, abort, and close/reopen 11ms
+     × rejects same id changed canonical command or expected version 14ms
+     × two actual connections racing the same object version commit only one operation 15ms
+     × reports real SQLITE_BUSY and retries the original request after the other connection releases lock 12ms
+     × rolls back every table and approval when deltas write fails 12ms
+     × rolls back every table and approval when history write fails 12ms
+     × rolls back every table and approval when receipt write fails 14ms
+     × rolls back every table and approval when confirmation write fails 13ms
+     × recovers a commit whose reply is lost without applying deltas again 12ms
+     × returns COMMIT_UNCERTAIN if a host cannot establish durable commit status, without automatic redo 12ms
+     × cancels before preparation and at the last write, rolling back all tables 13ms
+     × preserves committed attribution when cancellation and document switch happen after COMMIT 11ms
+     × checks abort after asynchronous anchor resolution 12ms
+     × checks context after asynchronous anchor resolution 11ms
+     × checks actor after asynchronous anchor resolution 12ms
+     × requires specific differences for user, retained, and other-session AI marks 13ms
+     × rejects stale differences and credentials bound to another actor/document 17ms
+     × does not consume approval when a concurrent protected edit changes the preview base 18ms
+     × normalizes identifier sets for receipt replay without sorting operation order 15ms
+     × rejects batch with one invalid target without any write 15ms
+     × rejects model identity/confirmation fields and accessor input without invoking it 11ms
+     × keeps reads and explicit hidden-unretained export snapshots out of durable history 13ms
+     × treats a no-op as prepared, not a saved operation 13ms
+   ❯ targeted durable history (7)
+     × undoes and redoes a named group with strictly increasing versions and retained audit records 17ms
+     × restores deleted content with a newer tombstone version and prevents ABA creation reuse 13ms
+     × does not overwrite another source edit or move history on a conflict 14ms
+     × allows explicit user undo of AI groups; AI undo of user groups requires bound confirmation 15ms
+     × clears only the executing actor redo branch on new edits, including durable reopen 17ms
+     × rejects cross-document target histories without altering either document 12ms
+     × rolls back targeted history state when the history write fails 14ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 31 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > commits a trusted source mark with atomic versions/history/receipt and leaves source PDF unchanged
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:31:15
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > replays durable receipt before allocation despite page revision change, abort, and close/reopen
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:38:80
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rejects same id changed canonical command or expected version
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:46:47
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > two actual connections racing the same object version commit only one operation
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { error: { code: 'VERSION_CONFLICT' } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "VERSION_CONFLICT",
++     "code": "EDIT_FAILED",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:53:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > reports real SQLITE_BUSY and retries the original request after the other connection releases lock
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { error: { code: 'STORE_BUSY' } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "STORE_BUSY",
++     "code": "EDIT_FAILED",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:59:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rolls back every table and approval when deltas write fails
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rolls back every table and approval when history write fails
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rolls back every table and approval when receipt write fails
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rolls back every table and approval when confirmation write fails
+AssertionError: expected 'error' to be 'confirmation_required' // Object.is equality
+
+Expected: "confirmation_required"
+Received: "error"
+
+ ❯ tests/editing-executor.test.ts:64:45
+     62|   it.each(['deltas','history','receipt','confirmation'] as const)('rol…
+     63|     const {host:h}=fixture(); h.seed(mark('mark',{kind:'user',id:'read…
+     64|     expect((await edit(h,update())).status).toBe('confirmation_require…
+       |                                             ^
+     65|     code(await edit(h,update()),'EDIT_FAILED');
+     66|     expect(h.readSnapshot(h.context).marks[0]).toMatchObject({version:…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > recovers a commit whose reply is lost without applying deltas again
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:73:17
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > returns COMMIT_UNCERTAIN if a host cannot establish durable commit status, without automatic redo
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { error: { code: 'COMMIT_UNCERTAIN' } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "COMMIT_UNCERTAIN",
++     "code": "EDIT_FAILED",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:79:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > cancels before preparation and at the last write, rolling back all tables
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { error: { code: 'EDIT_CANCELED' } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "EDIT_CANCELED",
++     "code": "EDIT_FAILED",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:83:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > preserves committed attribution when cancellation and document switch happen after COMMIT
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:91:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > checks abort after asynchronous anchor resolution
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { error: { code: 'EDIT_CANCELED' } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "EDIT_CANCELED",
++     "code": "EDIT_FAILED",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:98:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > checks context after asynchronous anchor resolution
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > checks actor after asynchronous anchor resolution
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { error: { code: 'EDIT_STALE' } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "EDIT_STALE",
++     "code": "EDIT_FAILED",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:98:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > requires specific differences for user, retained, and other-session AI marks
+AssertionError: expected 'error' to be 'confirmation_required' // Object.is equality
+
+Expected: "confirmation_required"
+Received: "error"
+
+ ❯ tests/editing-executor.test.ts:102:105
+    100|   it('requires specific differences for user, retained, and other-sess…
+    101|     for (const m of [mark('mark',{kind:'user',id:'reader'}),{...mark()…
+    102|       const {host:h}=fixture(); h.seed(m); const preview=await edit(h,…
+       |                                                                                                         ^
+    103|       const binding=structuredClone(h.candidate!); h.approve(); commit…
+    104|     }
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rejects stale differences and credentials bound to another actor/document
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { Object (error) }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "CONFIRMATION_INVALID",
++     "code": "EDIT_FAILED",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:108:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > does not consume approval when a concurrent protected edit changes the preview base
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { error: { code: 'VERSION_CONFLICT' } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "VERSION_CONFLICT",
++     "code": "EDIT_FAILED",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:115:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > normalizes identifier sets for receipt replay without sorting operation order
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:119:136
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rejects batch with one invalid target without any write
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { error: { code: 'MARK_NOT_FOUND' } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "MARK_NOT_FOUND",
++     "code": "EDIT_FAILED",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:123:47
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > rejects model identity/confirmation fields and accessor input without invoking it
+AssertionError: expected { status: 'error', error: { …(2) } } to match object { error: { code: 'EDIT_INVALID' } }
+(2 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "EDIT_INVALID",
++     "code": "EDIT_FAILED",
+    },
+  }
+
+ ❯ code tests/editing-executor.test.ts:23:60
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+       |                                                            ^
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+     25|
+ ❯ tests/editing-executor.test.ts:128:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > keeps reads and explicit hidden-unretained export snapshots out of durable history
+AssertionError: expected 'error' to be 'read' // Object.is equality
+
+Expected: "read"
+Received: "error"
+
+ ❯ tests/editing-executor.test.ts:133:56
+    131|   it('keeps reads and explicit hidden-unretained export snapshots out …
+    132|     const {host:h}=fixture(); h.seed({...mark(),visible:false,retained…
+    133|     expect((await edit(h,{type:'list_marks'})).status).toBe('read'); e…
+       |                                                        ^
+    134|     const r=await edit(h,{type:'prepare_mark_export',selection:{origin…
+    135|     expect(r).toMatchObject({status:'prepared',exportSnapshot:{marks:[…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > treats a no-op as prepared, not a saved operation
+AssertionError: expected 'error' to be 'prepared' // Object.is equality
+
+Expected: "prepared"
+Received: "error"
+
+ ❯ tests/editing-executor.test.ts:139:98
+    137|   });
+    138|   it('treats a no-op as prepared, not a saved operation', async () => {
+    139|     const {host:h}=fixture(); h.seed(mark()); expect((await edit(h,upd…
+       |                                                                                                  ^
+    140|   });
+    141| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[20/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > targeted durable history > undoes and redoes a named group with strictly increasing versions and retained audit records
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:145:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[21/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > targeted durable history > restores deleted content with a newer tombstone version and prevents ABA creation reuse
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:153:45
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[22/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > targeted durable history > does not overwrite another source edit or move history on a conflict
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:161:56
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[23/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > targeted durable history > allows explicit user undo of AI groups; AI undo of user groups requires bound confirmation
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:168:56
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[24/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > targeted durable history > clears only the executing actor redo branch on new edits, including durable reopen
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:175:78
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[25/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > targeted durable history > rejects cross-document target histories without altering either document
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:184:43
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[26/31]⎯
+
+ FAIL  tests/editing-executor.test.ts > targeted durable history > rolls back targeted history state when the history write fails
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-executor.test.ts:22:54
+     20| }
+     21| const update = (id='mark', expectedVersion=1, note='changed') => ({ ty…
+     22| function committed(r: EditResult) { expect(r.status).toBe('committed')…
+       |                                                      ^
+     23| function code(r: EditResult, expected: string) { expect(r).toMatchObje…
+     24| async function edit(h: EditingSqliteStore, command: unknown, id='reque…
+ ❯ tests/editing-executor.test.ts:188:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[27/31]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  31 failed (31)
+   Start at  11:16:46
+   Duration  577ms (tests 91%, transform 5%, import 3%, worker 1%)
+
+
+EXIT_STATUS=1
+COMMAND=npx vitest run tests/editing-executor.test.ts

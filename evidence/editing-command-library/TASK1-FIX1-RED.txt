@@ -1,0 +1,206 @@
+COMMAND: npx vitest run tests/editing-planner.test.ts
+INPUT: Task1 P2 skew source create/read/replacement regressions before fix; BASE=7ce6598
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/editing-planner.test.ts (96 tests | 11 failed) 59ms
+   ❯ pure editing contract (96)
+     × preserves trusted skewed source vertices when creating highlight 5ms
+     × preserves trusted skewed source vertices when creating underline 1ms
+     × preserves trusted skewed source vertices when creating strikeout 0ms
+     × preserves trusted skewed source vertices when creating note 0ms
+     × reads existing skewed source marks using list_marks 2ms
+     × reads existing skewed source marks using get_mark 1ms
+     × replaces highlight anchor without rectifying its real source vertices 0ms
+     × replaces underline anchor without rectifying its real source vertices 0ms
+     × replaces strikeout anchor without rectifying its real source vertices 0ms
+     × replaces note anchor without rectifying its real source vertices 0ms
+     × does not reject unrelated requests because an unused verified anchor is skewed 0ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 11 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > preserves trusted skewed source vertices when creating highlight
+ FAIL  tests/editing-planner.test.ts > pure editing contract > preserves trusted skewed source vertices when creating underline
+ FAIL  tests/editing-planner.test.ts > pure editing contract > preserves trusted skewed source vertices when creating strikeout
+ FAIL  tests/editing-planner.test.ts > pure editing contract > preserves trusted skewed source vertices when creating note
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:223:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/11]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > reads existing skewed source marks using list_marks
+AssertionError: expected { ok: false, error: { …(2) } } to match object { ok: true, kind: 'read', …(1) }
+(3 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "kind": "read",
+-   "ok": true,
+-   "read": [
+-     {
+-       "anchorId": "source",
+-       "color": "#aabbcc",
+-       "documentId": "doc",
+-       "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+-       "id": "mark",
+-       "note": "",
+-       "origin": {
+-         "id": "assistant",
+-         "kind": "ai",
+-         "sessionId": "session",
+-       },
+-       "pageIndex": 0,
+-       "placement": {
+-         "dx": 0,
+-         "dy": 0,
+-       },
+-       "quads": [
+-         [
+-           0,
+-           20,
+-           30,
+-           25,
+-           0,
+-           2,
+-           30,
+-           7,
+-         ],
+-       ],
+-       "quote": "真实原文",
+-       "retained": false,
+-       "type": "highlight",
+-       "version": 4,
+-       "visible": true,
+-     },
+-   ],
++   "ok": false,
+  }
+
+ ❯ tests/editing-planner.test.ts:231:20
+    229|     const m = mark(); m.quads = [[0, 20, 30, 25, 0, 2, 30, 7]];
+    230|     const result = run(type === 'get_mark' ? { type, id: 'mark' } : { …
+    231|     expect(result).toMatchObject({ ok: true, kind: 'read', read: type …
+       |                    ^
+    232|   });
+    233|   it.each(['highlight', 'underline', 'strikeout', 'note'] as const)('r…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/11]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > reads existing skewed source marks using get_mark
+AssertionError: expected { ok: false, error: { …(2) } } to match object { ok: true, kind: 'read', …(1) }
+(3 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "kind": "read",
+-   "ok": true,
+-   "read": {
+-     "anchorId": "source",
+-     "color": "#aabbcc",
+-     "documentId": "doc",
+-     "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+-     "id": "mark",
+-     "note": "",
+-     "origin": {
+-       "id": "assistant",
+-       "kind": "ai",
+-       "sessionId": "session",
+-     },
+-     "pageIndex": 0,
+-     "placement": {
+-       "dx": 0,
+-       "dy": 0,
+-     },
+-     "quads": [
+-       [
+-         0,
+-         20,
+-         30,
+-         25,
+-         0,
+-         2,
+-         30,
+-         7,
+-       ],
+-     ],
+-     "quote": "真实原文",
+-     "retained": false,
+-     "type": "highlight",
+-     "version": 4,
+-     "visible": true,
+-   },
++   "ok": false,
+  }
+
+ ❯ tests/editing-planner.test.ts:231:20
+    229|     const m = mark(); m.quads = [[0, 20, 30, 25, 0, 2, 30, 7]];
+    230|     const result = run(type === 'get_mark' ? { type, id: 'mark' } : { …
+    231|     expect(result).toMatchObject({ ok: true, kind: 'read', read: type …
+       |                    ^
+    232|   });
+    233|   it.each(['highlight', 'underline', 'strikeout', 'note'] as const)('r…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/11]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > replaces highlight anchor without rectifying its real source vertices
+ FAIL  tests/editing-planner.test.ts > pure editing contract > replaces underline anchor without rectifying its real source vertices
+ FAIL  tests/editing-planner.test.ts > pure editing contract > replaces strikeout anchor without rectifying its real source vertices
+ FAIL  tests/editing-planner.test.ts > pure editing contract > replaces note anchor without rectifying its real source vertices
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:235:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/11]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > does not reject unrelated requests because an unused verified anchor is skewed
+AssertionError: expected { ok: false, error: { …(2) } } to match object { ok: true, kind: 'read', read: [] }
+(3 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "kind": "read",
+-   "ok": true,
+-   "read": [],
++   "ok": false,
+  }
+
+ ❯ tests/editing-planner.test.ts:241:48
+    239|   it('does not reject unrelated requests because an unused verified an…
+    240|     const e = env(); e.anchors[1].quads = [[0, 20, 30, 25, 0, 2, 30, 7…
+    241|     expect(run({ type: 'list_marks' }, [], e)).toMatchObject({ ok: tru…
+       |                                                ^
+    242|   });
+    243|   it.each([
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/11]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  11 failed | 85 passed (96)
+   Start at  11:07:13
+   Duration  272ms (tests 48%, transform 33%, import 15%, worker 3%)
+
+EXIT_STATUS: 1

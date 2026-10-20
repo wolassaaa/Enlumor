@@ -1,0 +1,85 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:43120) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/editing-executor.test.ts (47 tests | 2 failed | 45 skipped) 70ms
+   ❯ redo branch belongs to the undo executor, not group provenance (2)
+     × a new user edit clears only that executor redo branch after user undoes an AI group 41ms
+     × a new ai edit clears only that executor redo branch after user undoes an AI group 28ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-executor.test.ts > redo branch belongs to the undo executor, not group provenance > a new user edit clears only that executor redo branch after user undoes an AI group
+AssertionError: expected { …(10) } to match object { actor: { kind: 'ai', …(2) }, …(3) }
+(11 matching properties omitted from actual)
+
+- Expected
++ Received
+
+@@ -2,12 +2,8 @@
+    "actor": {
+      "id": "assistant",
+      "kind": "ai",
+      "sessionId": "session",
+    },
+-   "redoActor": {
+-     "id": "reader",
+-     "kind": "user",
+-   },
+-   "redoEligible": false,
++   "redoEligible": true,
+    "state": "undone",
+  }
+
+ ❯ tests/editing-executor.test.ts:297:20
+    295|     committed(await edit(h,update('b',1,'branch edit'),'branch'));
+    296|     const target=h.readOperation(h.context,group.operationId);
+    297|     expect(target).toMatchObject({actor:aiActor,redoActor:userActor,re…
+       |                    ^
+    298|     h.actor=userActor;
+    299|     if(next === 'ai') committed(await edit(h,{type:'redo_edit',operati…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/editing-executor.test.ts > redo branch belongs to the undo executor, not group provenance > a new ai edit clears only that executor redo branch after user undoes an AI group
+AssertionError: expected { …(10) } to match object { actor: { kind: 'ai', …(2) }, …(3) }
+(11 matching properties omitted from actual)
+
+- Expected
++ Received
+
+@@ -2,12 +2,8 @@
+    "actor": {
+      "id": "assistant",
+      "kind": "ai",
+      "sessionId": "session",
+    },
+-   "redoActor": {
+-     "id": "reader",
+-     "kind": "user",
+-   },
+-   "redoEligible": true,
++   "redoEligible": false,
+    "state": "undone",
+  }
+
+ ❯ tests/editing-executor.test.ts:297:20
+    295|     committed(await edit(h,update('b',1,'branch edit'),'branch'));
+    296|     const target=h.readOperation(h.context,group.operationId);
+    297|     expect(target).toMatchObject({actor:aiActor,redoActor:userActor,re…
+       |                    ^
+    298|     h.actor=userActor;
+    299|     if(next === 'ai') committed(await edit(h,{type:'redo_edit',operati…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 45 skipped (47)
+   Start at  11:21:53
+   Duration  249ms (tests 52%, transform 30%, import 15%, worker 3%)
+
+
+EXIT_STATUS=1
+COMMAND=npx vitest run tests/editing-executor.test.ts -t 'redo branch belongs'

@@ -1,0 +1,500 @@
+COMMAND: npx vitest run tests/editing-planner.test.ts
+INPUT: compiled contracts plus nonfunctional planner stub; before planner implementation
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/editing-planner.test.ts (64 tests | 38 failed) 22ms
+   ❯ pure editing contract (64)
+     × creates highlight with trusted source/defaults and inverse 6ms
+     × creates underline with trusted source/defaults and inverse 1ms
+     × creates strikeout with trusted source/defaults and inverse 0ms
+     × creates note with trusted source/defaults and inverse 0ms
+     × creates line with trusted source/defaults and inverse 0ms
+     × creates arrow with trusted source/defaults and inverse 0ms
+     × creates ink with trusted source/defaults and inverse 0ms
+     × creates a free note without inventing a source quote 0ms
+     × requires real same-document source anchors and matching page 1ms
+     × updates content/style of highlight without touching ownership 0ms
+     × updates content/style of underline without touching ownership 0ms
+     × updates content/style of strikeout without touching ownership 0ms
+     × updates content/style of note without touching ownership 0ms
+     × updates content/style of line without touching ownership 0ms
+     × updates content/style of arrow without touching ownership 0ms
+     × updates content/style of ink without touching ownership 1ms
+     × checks object versions, tombstones, and context before planning 0ms
+     × edits line endpoints/path using page-native geometry 0ms
+     × edits arrow endpoints/path using page-native geometry 0ms
+     × edits ink endpoints/path using page-native geometry 0ms
+     × edits free-note geometry but rejects moving source-anchored geometry 0ms
+     × moves note placement while preserving original anchor and quote 0ms
+     × replaces highlight anchor with real page and quote 0ms
+     × replaces underline anchor with real page and quote 0ms
+     × replaces strikeout anchor with real page and quote 0ms
+     × replaces note anchor with real page and quote 0ms
+     × keeps invisible and retained states independent and preserves inverse contents 0ms
+     × requires confirmation for AI editing protected user marks 0ms
+     × requires confirmation for AI editing protected other-session marks 0ms
+     × requires confirmation for AI editing protected retained marks 0ms
+     × erases whole intersecting visible strokes only and checks protected hits 0ms
+     × plans atomic batches with creation-order IDs and refuses duplicate targets 0ms
+     × rejects duplicate targets even when a first target is a no-op 0ms
+     × queries without writing deltas and generates only owned history/export requests 1ms
+     × exports explicit hidden/unretained selections in page/id order without changing them 1ms
+     × canonical digest is SHA256, key-order insensitive, and version-sensitive 1ms
+     × includes dependencies for zero-change operations and list/export snapshots 0ms
+     × returns no input references and keeps result branches isolated 0ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 38 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > creates highlight with trusted source/defaults and inverse
+ FAIL  tests/editing-planner.test.ts > pure editing contract > creates underline with trusted source/defaults and inverse
+ FAIL  tests/editing-planner.test.ts > pure editing contract > creates strikeout with trusted source/defaults and inverse
+ FAIL  tests/editing-planner.test.ts > pure editing contract > creates note with trusted source/defaults and inverse
+ FAIL  tests/editing-planner.test.ts > pure editing contract > creates line with trusted source/defaults and inverse
+ FAIL  tests/editing-planner.test.ts > pure editing contract > creates arrow with trusted source/defaults and inverse
+ FAIL  tests/editing-planner.test.ts > pure editing contract > creates ink with trusted source/defaults and inverse
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:29:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > creates a free note without inventing a source quote
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:36:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > requires real same-document source anchors and matching page
+AssertionError: expected { ok: false, error: { …(2) } } to deeply equal { ok: false, error: { …(2) } }
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "ANCHOR_NOT_FOUND",
++     "code": "EDIT_INVALID",
+      "message": "Invalid editing data.",
+    },
+    "ok": false,
+  }
+
+ ❯ error tests/editing-planner.test.ts:23:145
+
+ ❯ tests/editing-planner.test.ts:43:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > updates content/style of highlight without touching ownership
+ FAIL  tests/editing-planner.test.ts > pure editing contract > updates content/style of underline without touching ownership
+ FAIL  tests/editing-planner.test.ts > pure editing contract > updates content/style of strikeout without touching ownership
+ FAIL  tests/editing-planner.test.ts > pure editing contract > updates content/style of note without touching ownership
+ FAIL  tests/editing-planner.test.ts > pure editing contract > updates content/style of line without touching ownership
+ FAIL  tests/editing-planner.test.ts > pure editing contract > updates content/style of arrow without touching ownership
+ FAIL  tests/editing-planner.test.ts > pure editing contract > updates content/style of ink without touching ownership
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:48:47
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > checks object versions, tombstones, and context before planning
+AssertionError: expected { ok: false, error: { …(2) } } to deeply equal { ok: false, error: { …(2) } }
+
+- Expected
++ Received
+
+  {
+    "error": {
+-     "code": "MARK_NOT_FOUND",
++     "code": "EDIT_INVALID",
+      "message": "Invalid editing data.",
+    },
+    "ok": false,
+  }
+
+ ❯ error tests/editing-planner.test.ts:23:145
+
+ ❯ tests/editing-planner.test.ts:54:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > edits line endpoints/path using page-native geometry
+ FAIL  tests/editing-planner.test.ts > pure editing contract > edits arrow endpoints/path using page-native geometry
+ FAIL  tests/editing-planner.test.ts > pure editing contract > edits ink endpoints/path using page-native geometry
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:61:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > edits free-note geometry but rejects moving source-anchored geometry
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:65:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > moves note placement while preserving original anchor and quote
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:70:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > replaces highlight anchor with real page and quote
+ FAIL  tests/editing-planner.test.ts > pure editing contract > replaces underline anchor with real page and quote
+ FAIL  tests/editing-planner.test.ts > pure editing contract > replaces strikeout anchor with real page and quote
+ FAIL  tests/editing-planner.test.ts > pure editing contract > replaces note anchor with real page and quote
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:75:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > keeps invisible and retained states independent and preserves inverse contents
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:88:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > requires confirmation for AI editing protected user marks
+ FAIL  tests/editing-planner.test.ts > pure editing contract > requires confirmation for AI editing protected other-session marks
+ FAIL  tests/editing-planner.test.ts > pure editing contract > requires confirmation for AI editing protected retained marks
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:96:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > erases whole intersecting visible strokes only and checks protected hits
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:101:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > plans atomic batches with creation-order IDs and refuses duplicate targets
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:107:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > rejects duplicate targets even when a first target is a no-op
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:117:12
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[14/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > queries without writing deltas and generates only owned history/export requests
+AssertionError: expected { ok: false, error: { …(2) } } to match object { ok: true, kind: 'read', …(1) }
+(3 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "kind": "read",
+-   "ok": true,
+-   "read": [
+-     {
+-       "anchorId": "source",
+-       "color": "#aabbcc",
+-       "documentId": "doc",
+-       "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+-       "id": "mark",
+-       "note": "",
+-       "origin": {
+-         "id": "assistant",
+-         "kind": "ai",
+-         "sessionId": "session",
+-       },
+-       "pageIndex": 0,
+-       "placement": {
+-         "dx": 0,
+-         "dy": 0,
+-       },
+-       "quads": [
+-         [
+-           -8,
+-           20,
+-           30,
+-           20,
+-           -8,
+-           2,
+-           30,
+-           2,
+-         ],
+-       ],
+-       "quote": "真实原文",
+-       "retained": false,
+-       "type": "highlight",
+-       "version": 4,
+-       "visible": true,
+-     },
+-   ],
++   "ok": false,
+  }
+
+ ❯ tests/editing-planner.test.ts:122:51
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[15/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > exports explicit hidden/unretained selections in page/id order without changing them
+AssertionError: expected { ok: false, error: { …(2) } } to match object { ok: true, …(2) }
+(3 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "exportSnapshot": {
+-     "marks": [
+-       {
+-         "anchorId": "source",
+-         "color": "#aabbcc",
+-         "documentId": "doc",
+-         "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+-         "id": "a",
+-         "note": "",
+-         "origin": {
+-           "id": "assistant",
+-           "kind": "ai",
+-           "sessionId": "session",
+-         },
+-         "pageIndex": 0,
+-         "placement": {
+-           "dx": 0,
+-           "dy": 0,
+-         },
+-         "quads": [
+-           [
+-             -8,
+-             20,
+-             30,
+-             20,
+-             -8,
+-             2,
+-             30,
+-             2,
+-           ],
+-         ],
+-         "quote": "真实原文",
+-         "retained": false,
+-         "type": "note",
+-         "version": 4,
+-         "visible": false,
+-       },
+-       {
+-         "anchorId": "next",
+-         "color": "#aabbcc",
+-         "documentId": "doc",
+-         "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+-         "id": "z",
+-         "note": "",
+-         "origin": {
+-           "id": "assistant",
+-           "kind": "ai",
+-           "sessionId": "session",
+-         },
+-         "pageIndex": 1,
+-         "placement": {
+-           "dx": 0,
+-           "dy": 0,
+-         },
+-         "quads": [
+-           [
+-             -8,
+-             20,
+-             30,
+-             20,
+-             -8,
+-             2,
+-             30,
+-             2,
+-           ],
+-         ],
+-         "quote": "第二页",
+-         "retained": false,
+-         "type": "note",
+-         "version": 4,
+-         "visible": true,
+-       },
+-     ],
+-     "versions": {
+-       "a": 4,
+-       "z": 4,
+-     },
+-   },
+-   "kind": "export_snapshot",
+-   "ok": true,
++   "ok": false,
+  }
+
+ ❯ tests/editing-planner.test.ts:132:15
+    130|     const marks = [z, user, a]; const before = structuredClone(marks);
+    131|     const r = run({ type: 'prepare_mark_export', selection: { origins:…
+    132|     expect(r).toMatchObject({ ok: true, kind: 'export_snapshot', expor…
+       |               ^
+    133|     expect(run({ type: 'prepare_mark_export', selection: { origins: ['…
+    134|     expect(marks).toEqual(before);
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[16/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > canonical digest is SHA256, key-order insensitive, and version-sensitive
+AssertionError: expected '' to be '4916da191a85294a050d982b01b1c0d6b3f08…' // Object.is equality
+
+- Expected
++ Received
+
+- 4916da191a85294a050d982b01b1c0d6b3f08b383ebc97ee4534f5eb2bbfe429
+
+ ❯ tests/editing-planner.test.ts:139:50
+    137|   });
+    138|   it('canonical digest is SHA256, key-order insensitive, and version-s…
+    139|     expect(canonicalDigest({ b: 2, a: '你好😀' })).toBe(createHash('sha2…
+       |                                                  ^
+    140|     const a = prepared(run(update, [mark()]));
+    141|     const b = prepared(run({ patch: { note: 'changed' }, expectedVersi…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[17/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > includes dependencies for zero-change operations and list/export snapshots
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:148:33
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[18/38]⎯
+
+ FAIL  tests/editing-planner.test.ts > pure editing contract > returns no input references and keeps result branches isolated
+AssertionError: expected false to be true // Object.is equality
+
+- Expected
++ Received
+
+- true
++ false
+
+ ❯ prepared tests/editing-planner.test.ts:22:61
+
+ ❯ tests/editing-planner.test.ts:154:20
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[19/38]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  38 failed | 26 passed (64)
+   Start at  10:56:00
+   Duration  275ms (tests 38%, transform 30%, import 26%, worker 6%)
+
+EXIT_STATUS: 1

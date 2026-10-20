@@ -2,7 +2,7 @@
   "version": 1,
   "baseline": "v0.5.1",
   "wave": "A",
-  "status": "EDITING_COMMAND_IMPLEMENTATION_PLAN_REVIEW",
+  "status": "EDITING_COMMAND_LIBRARY_BATCH_COMPLETE",
   "task1": "OFFLINE_REVIEW_PASS_LIVE_PENDING",
   "task2": "OFFLINE_AGGREGATE_EXE_PERFORMANCE_ROLLBACK_PASS",
   "liveAcceptance": "NOT_EXECUTED",
@@ -13,14 +13,14 @@
   "checklist": "docs/WAVE_A_TASKS.md",
   "automationId": "enlumor",
   "schedule": "every 30 minutes; pause on completion or required user action",
-  "notes": "Continue request resumed verified foundation, no repeated tests/reviews. Editing16-command two-task implementation plan drafted against user-approved scope and v2 clarification; written spec/plan review still pending, runtimefalse. Existing foundation metadata/evidence preserved, no source changes. No second implementation agent.",
+  "notes": "Approved editing-library two-task plan complete. Task1 and Task2 independent reviews plus aggregate PASS; final416 unit/155 focused/build; rollback261 and77 hashes PASS. No production UI/Workspace/API/PDF export integration, no publish/push/merge. Next integration needs its own design and acceptance.",
   "automationStatus": "PAUSED",
   "automationTargetThread": "01a13b64-f084-72e0-9e85-1ec042414811",
   "lastVerifiedBaseline": {
     "unit": 139,
     "build": "PASS"
   },
-  "updatedAt": "2026-10-20T02:36:54.2055530+00:00",
+  "updatedAt": "2026-10-20T11:39:00.3037562+08:00",
   "task1Commit": "dc9f231",
   "lastVerified": {
     "unit": 155,
@@ -60,24 +60,34 @@
     "verification": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0408/VERIFICATION.txt"
   },
   "editingCommands": {
-    "status": "SPEC_AND_IMPLEMENTATION_PLAN_AWAITING_USER_REVIEW",
+    "status": "LIBRARY_IMPLEMENTED_ISOLATED_SQLITE_REVIEW_PASS",
     "spec": "docs/superpowers/specs/2026-10-19-editing-command-library-design.md",
-    "runtimeImplemented": false,
+    "runtimeImplemented": true,
     "audit": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0408/EDIT_COMMAND_GAP_AUDIT.md",
     "auditedUnregisteredCommands": 16,
     "specRevision": "v2-2026-10-20",
     "specCommit": "300c7670581f8585ab7d84af086dd2630935d286",
-    "userReviewed": false,
+    "userReviewed": true,
     "selfReview": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0428/SPEC_REVIEW.md",
     "draftArtifact": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0428/MODIFIED_FILE.md",
-    "plan": "docs/superpowers/plans/2026-10-20-editing-command-library.md"
+    "plan": "docs/superpowers/plans/2026-10-20-editing-command-library.md",
+    "task1Commit": "5b0fd287006ce335b3a6e4c0d82c423046278c88",
+    "unit": 416,
+    "runtimeScope": "LIBRARY_WITH_ISOLATED_SQLITE_HOST_NO_PRODUCTION_INTEGRATION",
+    "task2Commit": "4567301740b42db5976f54225183b928f9db55b4",
+    "rollback": "PASS_ORIGINAL77_BASELINE261_LIVE_UNCHANGED",
+    "aggregateReview": "PASS",
+    "verification": "evidence/editing-command-library/VERIFICATION.txt",
+    "productionIntegrated": false,
+    "focused": 155,
+    "build": "PASS"
   },
   "heartbeatExecution": {
     "automationId": "20min-enlumor-2",
     "cadenceMinutes": 20,
     "lastTrigger": "2026-10-19T20:28:13.992Z",
-    "result": "EDITING_SPEC_V2_PREPARED_AND_DOCUMENT_CHECKED",
-    "nextTask": "USER_SPEC_REVIEW_THEN_IMPLEMENTATION_PLAN",
+    "result": "EDITING_LIBRARY_TWO_TASKS_REVIEW_AND_ROLLBACK_PASS",
+    "nextTask": "BATCH_COMPLETE_NEXT_PRODUCTION_INTEGRATION_REQUIRES_SEPARATE_PLAN",
     "completedSinceResearch": 1,
     "lastResearchReport": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0428/SPEC_REVIEW.md"
   }

@@ -1,0 +1,23 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab/.cache/editing-command-library-rollback/run-758bSR
+
+
+ Test Files  23 passed (23)
+      Tests  261 passed (261)
+   Start at  11:31:09
+   Duration  943ms (transform 42%, tests 41%, import 14%, worker 3%)
+
+(node:15512) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:55280) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:48712) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:12580) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:2464) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:45344) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ROLLBACK: ORIGINAL_HASHES=PASS; BASELINE_261_TESTS=PASS; EDITING_LIBRARY_ABSENT_IN_COPY=YES; LIVE_MODIFIED_FILES_UNCHANGED=YES
+EXIT_STATUS=0
