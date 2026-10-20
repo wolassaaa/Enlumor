@@ -1,0 +1,29 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/reading-commands.test.ts (15 tests | 1 failed) 17ms
+   × show_evidence uses reader locate once; clear and pause are local and retain permanent annotations 10ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/reading-commands.test.ts > show_evidence uses reader locate once; clear and pause are local and retain permanent annotations
+AssertionError: expected +0 to be 1 // Object.is equality
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ tests/reading-commands.test.ts:18:289
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 3 passed (4)
+      Tests  1 failed | 125 passed (126)
+   Start at  00:11:55
+   Duration  234ms (tests 39%, transform 31%, import 24%, worker 5%)
+
+EXIT=1

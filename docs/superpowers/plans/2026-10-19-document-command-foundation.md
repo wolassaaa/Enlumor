@@ -58,14 +58,14 @@
 
 **Interfaces:** 消费Task1的runDocumentCommand及其完整接口。PdfReader适配仍复用readPageBlocks、locateCruiseBlock/临时focus、go、clearCruiseFocus。宿主在文档更换、用户接管与取消时增加revision；旧回调读取ref中的最新值，不捕获初始文档。不把完整命令执行器挂到window或preload。
 
-- [ ] 写RED：生成至少三页且包含重复句的PDF，已有人工翻页/读取本页块/块定位入口经过新执行器；能从第1页到第3页并定位指定原文，而不是只测试mock port调用次数。
-- [ ] 写RED：读页或定位帧尚未提交时切文档/暂停/手动接管，旧任务不改变新页或新证据；clear_focus后正式批注仍在、原PDF SHA256不变。用实际延迟与状态断言，不用任意sleep制造通过。
-- [ ] 运行`npx playwright test tests/e2e/document-commands.spec.ts`记录实际RED；先用`npm run build`确认测试确实运行当前构建。
-- [ ] 用最少薄适配接入已有人工入口；缺少真实调用点时补测试覆盖既有入口，不建只供测试调用的生产后门。不改旧Cruise含义，不在本轮接DeepSeek。
-- [ ] 允许给focus/locateCruiseBlock补可选有效性回调，默认保持原行为；帧回调与异步定位执行前再次检查，失效时不滚动、不paint旧强调。不得为此重写PDF Core。
-- [ ] `npm test`、`npm run build`及`npx playwright test tests/e2e/document-commands.spec.ts tests/e2e/cruise-anchors.spec.ts tests/e2e/page-navigation.spec.ts tests/e2e/reading-tools.spec.ts`通过；清楚区分离线确定性测试与真实API验收。
-- [ ] 文档列出五个已支持指令及暂未接入的搜索/视图设置/全文上下文/标识创建编辑/导出等能力。未实现项不可显示成功，也不在可执行注册表挂空实现。
-- [ ] 明确路径提交`feat: connect document commands to the PDF reader`；Task2新鲜Review后，两项整轮Review。保留原hash和隔离回退证据，候选打包/完整回归及原性能门禁通过后才称本批次可运行。
+- [x] 写RED：生成至少三页且包含重复句的PDF，已有人工翻页/读取本页块/块定位入口经过新执行器；能从第1页到第3页并定位指定原文，而不是只测试mock port调用次数。
+- [x] 写RED：读页或定位帧尚未提交时切文档/暂停/手动接管，旧任务不改变新页或新证据；clear_focus后正式批注仍在、原PDF SHA256不变。用实际延迟与状态断言，不用任意sleep制造通过。
+- [x] 运行`npx playwright test tests/e2e/document-commands.spec.ts`记录实际RED；先用`npm run build`确认测试确实运行当前构建。
+- [x] 用最少薄适配接入已有人工入口；缺少真实调用点时补测试覆盖既有入口，不建只供测试调用的生产后门。不改旧Cruise含义，不在本轮接DeepSeek。
+- [x] 允许给focus/locateCruiseBlock补可选有效性回调，默认保持原行为；帧回调与异步定位执行前再次检查，失效时不滚动、不paint旧强调。不得为此重写PDF Core。
+- [x] `npm test`、`npm run build`及`npx playwright test tests/e2e/document-commands.spec.ts tests/e2e/cruise-anchors.spec.ts tests/e2e/page-navigation.spec.ts tests/e2e/reading-tools.spec.ts`通过；清楚区分离线确定性测试与真实API验收。
+- [x] 文档列出五个已支持指令及暂未接入的搜索/视图设置/全文上下文/标识创建编辑/导出等能力。未实现项不可显示成功，也不在可执行注册表挂空实现。
+- [x] 明确路径提交`feat: connect document commands to the PDF reader`；Task2新鲜Review后，两项整轮Review。保留原hash和隔离回退证据，候选打包/完整回归及原性能门禁通过后才称本批次可运行。
 
 ## 当前批次之后
 
@@ -76,3 +76,6 @@
 用户已批准先实施Task1；执行器已在653acb4完成并通过独立Review、250单测/build/隔离回退。当前交付只包含Task1，Task2真实阅读器接入仍未开始。执行方式沿用单一子代理实施＋独立Review，自动任务保持暂停，不自动扩大范围。
 
 自查：五类Review Focus均有归属测试；Task2只消费Task1定义的接口；未安排任何高级高亮、标识模型迁移或真实请求。指令库之外的规格属于明确后续批次，不借本轮宣称整套重建已完成。预计结果不是测试报告，实际执行需另写证据。
+
+## 2026-10-20 心跳验收收口
+两项基础指令已完成。Task1 653acb4、Task2 2d45f0e，整轮独立审查 PASS；本轮复验基线250、修改后261单测、16专项EXE、141完整EXE、8Python、build、200页文本/扫描门禁、密集画笔和隔离副本回退全部通过。原过程及旧交接段保留为历史，不再代表当前在途状态。新Cruise、全文上下文、真实API、编辑库均未实现/未验收，不据此发布。

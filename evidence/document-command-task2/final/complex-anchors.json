@@ -1,0 +1,150 @@
+[
+  {
+    "pageIndex": 0,
+    "quote": "Repeated evidence",
+    "quads": [
+      [
+        344.74220275878906,
+        734.2109336853026,
+        465.3927307128906,
+        734.2109336853026,
+        344.74220275878906,
+        714.2109413146972,
+        465.3927307128906,
+        714.2109413146972
+      ]
+    ],
+    "id": "b9c6b621-9006-4e8b-9d6b-d48883035b75",
+    "documentId": "c0ac5281-aeff-46f3-aad3-bd3ab8d5f810",
+    "fingerprint": "d4e594391ca3e27c609b4ffca71cbdba59a99e840abe1bd904d03c9873733df5",
+    "type": "highlight",
+    "note": "",
+    "color": "#f4cf58",
+    "author": "user"
+  },
+  {
+    "pageIndex": 1,
+    "quote": "Repeated evidence",
+    "quads": [
+      [
+        344.74221420288086,
+        733.7109680175781,
+        465.39269638061523,
+        733.7109680175781,
+        344.74221420288086,
+        713.7109985351562,
+        465.39269638061523,
+        713.7109985351562
+      ]
+    ],
+    "id": "47f1e590-3e7e-49b7-9fb3-e503ba5c6638",
+    "documentId": "c0ac5281-aeff-46f3-aad3-bd3ab8d5f810",
+    "fingerprint": "d4e594391ca3e27c609b4ffca71cbdba59a99e840abe1bd904d03c9873733df5",
+    "type": "highlight",
+    "note": "",
+    "color": "#f4cf58",
+    "author": "user"
+  },
+  {
+    "pageIndex": 2,
+    "quote": "Repeated evidence",
+    "quads": [
+      [
+        345.2421569824219,
+        733.7109336853027,
+        465.89266204833984,
+        733.7109336853027,
+        345.2421569824219,
+        713.7109642028809,
+        465.89266204833984,
+        713.7109642028809
+      ]
+    ],
+    "id": "efcc8262-4278-4636-94af-c4fcece2a1ee",
+    "documentId": "c0ac5281-aeff-46f3-aad3-bd3ab8d5f810",
+    "fingerprint": "d4e594391ca3e27c609b4ffca71cbdba59a99e840abe1bd904d03c9873733df5",
+    "type": "highlight",
+    "note": "",
+    "color": "#f4cf58",
+    "author": "user"
+  },
+  {
+    "pageIndex": 3,
+    "quote": "Repeated evidence",
+    "quads": [
+      [
+        345.24219131469727,
+        734.2109222412108,
+        465.89267349243164,
+        734.2109222412108,
+        345.24219131469727,
+        714.2109298706054,
+        465.89267349243164,
+        714.2109298706054
+      ]
+    ],
+    "id": "b1816482-47c0-4bcf-a468-20cc5804cbdb",
+    "documentId": "c0ac5281-aeff-46f3-aad3-bd3ab8d5f810",
+    "fingerprint": "d4e594391ca3e27c609b4ffca71cbdba59a99e840abe1bd904d03c9873733df5",
+    "type": "highlight",
+    "note": "",
+    "color": "#f4cf58",
+    "author": "user"
+  },
+  {
+    "pageIndex": 0,
+    "quote": "中文阅读测试",
+    "quads": [
+      [
+        344.74220275878906,
+        667.2656288146972,
+        428.7571716308594,
+        667.2656288146972,
+        344.74220275878906,
+        653.2656135559081,
+        428.7571716308594,
+        653.2656135559081
+      ]
+    ],
+    "id": "b18d54f5-a755-4725-864b-582e2258a62f",
+    "documentId": "c0ac5281-aeff-46f3-aad3-bd3ab8d5f810",
+    "fingerprint": "d4e594391ca3e27c609b4ffca71cbdba59a99e840abe1bd904d03c9873733df5",
+    "type": "highlight",
+    "note": "",
+    "color": "#f4cf58",
+    "author": "user"
+  },
+  {
+    "pageIndex": 0,
+    "quote": "Repeated evidence Second line of evidence",
+    "quads": [
+      [
+        344.74220275878906,
+        734.2109222412108,
+        465.3927307128906,
+        734.2109222412108,
+        344.74220275878906,
+        714.2109298706054,
+        465.3927307128906,
+        714.2109298706054
+      ],
+      [
+        344.74220275878906,
+        702.5859298706054,
+        472.1482238769531,
+        702.5859298706054,
+        344.74220275878906,
+        685.0859222412108,
+        472.1482238769531,
+        685.0859222412108
+      ]
+    ],
+    "id": "a586bba0-bcc2-425b-ac2a-873db424e9fb",
+    "documentId": "c0ac5281-aeff-46f3-aad3-bd3ab8d5f810",
+    "fingerprint": "d4e594391ca3e27c609b4ffca71cbdba59a99e840abe1bd904d03c9873733df5",
+    "type": "highlight",
+    "note": "",
+    "color": "#f4cf58",
+    "author": "user"
+  }
+]

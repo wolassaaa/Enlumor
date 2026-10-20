@@ -2,7 +2,7 @@
   "version": 1,
   "baseline": "v0.5.1",
   "wave": "A",
-  "status": "EDITING_COMMAND_LIBRARY_SPEC_REVIEW",
+  "status": "EDITING_COMMAND_IMPLEMENTATION_PLAN_REVIEW",
   "task1": "OFFLINE_REVIEW_PASS_LIVE_PENDING",
   "task2": "OFFLINE_AGGREGATE_EXE_PERFORMANCE_ROLLBACK_PASS",
   "liveAcceptance": "NOT_EXECUTED",
@@ -13,14 +13,14 @@
   "checklist": "docs/WAVE_A_TASKS.md",
   "automationId": "enlumor",
   "schedule": "every 30 minutes; pause on completion or required user action",
-  "notes": "Basic executor653acb4 complete. User next requests full document editing command library; draft covers7marktypes/create/update/geometry/delete/erase/history/visibility/retention/batch/export. No runtime edits yet; reader integration remains NOT STARTED. No advanced hybrid highlight/API/publish.",
+  "notes": "Continue request resumed verified foundation, no repeated tests/reviews. Editing16-command two-task implementation plan drafted against user-approved scope and v2 clarification; written spec/plan review still pending, runtimefalse. Existing foundation metadata/evidence preserved, no source changes. No second implementation agent.",
   "automationStatus": "PAUSED",
   "automationTargetThread": "01a13b64-f084-72e0-9e85-1ec042414811",
   "lastVerifiedBaseline": {
     "unit": 139,
     "build": "PASS"
   },
-  "updatedAt": "2026-10-19T16:01:23.8875515+00:00",
+  "updatedAt": "2026-10-20T02:36:54.2055530+00:00",
   "task1Commit": "dc9f231",
   "lastVerified": {
     "unit": 155,
@@ -45,17 +45,40 @@
   "documentCommands": {
     "executor": "IMPLEMENTED_REVIEW_PASS",
     "executorCommit": "653acb4",
-    "readerIntegration": "NOT_STARTED",
+    "readerIntegration": "IMPLEMENTED_REVIEW_PASS",
     "realModel": "NOT_CALLED",
-    "unit": 250,
+    "unit": 261,
     "focused": 110,
     "build": "PASS",
     "rollback": "PASS",
-    "reviewReport": "evidence/document-command-task1/TASK1_REVIEW.md"
+    "reviewReport": "evidence/document-command-task1/TASK1_REVIEW.md",
+    "readerCommit": "2d45f0e",
+    "aggregateReview": "PASS",
+    "packagedElectron": 141,
+    "relatedElectron": 16,
+    "performance": "TEXT_SCAN_DENSE_PASS_ORIGINAL_THRESHOLDS",
+    "verification": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0408/VERIFICATION.txt"
   },
   "editingCommands": {
-    "status": "SPEC_DRAFT",
+    "status": "SPEC_AND_IMPLEMENTATION_PLAN_AWAITING_USER_REVIEW",
     "spec": "docs/superpowers/specs/2026-10-19-editing-command-library-design.md",
-    "runtimeImplemented": false
+    "runtimeImplemented": false,
+    "audit": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0408/EDIT_COMMAND_GAP_AUDIT.md",
+    "auditedUnregisteredCommands": 16,
+    "specRevision": "v2-2026-10-20",
+    "specCommit": "300c7670581f8585ab7d84af086dd2630935d286",
+    "userReviewed": false,
+    "selfReview": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0428/SPEC_REVIEW.md",
+    "draftArtifact": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0428/MODIFIED_FILE.md",
+    "plan": "docs/superpowers/plans/2026-10-20-editing-command-library.md"
+  },
+  "heartbeatExecution": {
+    "automationId": "20min-enlumor-2",
+    "cadenceMinutes": 20,
+    "lastTrigger": "2026-10-19T20:28:13.992Z",
+    "result": "EDITING_SPEC_V2_PREPARED_AND_DOCUMENT_CHECKED",
+    "nextTask": "USER_SPEC_REVIEW_THEN_IMPLEMENTATION_PLAN",
+    "completedSinceResearch": 1,
+    "lastResearchReport": "D:\\Codex\\2026-10-20\\new-chat-2\\outputs\\enlumor-20261020-0428/SPEC_REVIEW.md"
   }
 }

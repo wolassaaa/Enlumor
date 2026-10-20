@@ -1,0 +1,82 @@
+
+> enlumor@0.1.15 build:worker
+> node scripts/build-worker.mjs
+
+277 INFO: PyInstaller: 6.22.3, contrib hooks: 2026.8
+277 INFO: Python: 3.14.3
+314 INFO: Platform: Windows-11-10.0.26200-SP0
+314 INFO: Python environment: D:\codex project\Enlumor\.worktrees\v04-wave-ab\.venv
+315 INFO: wrote .cache\enlumor-pdf-worker.spec
+319 INFO: Removing temporary files and cleaning cache in C:\Users\woola\AppData\Local\pyinstaller
+1074 INFO: Module search paths (PYTHONPATH):
+['D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab',
+ 'C:\\Python314\\python314.zip',
+ 'C:\\Python314\\DLLs',
+ 'C:\\Python314\\Lib',
+ 'C:\\Python314',
+ 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv',
+ 'D:\\codex '
+ 'project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages',
+ 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\python']
+1359 INFO: Appending 'binaries' from .spec
+1359 INFO: Appending 'datas' from .spec
+1365 INFO: checking Analysis
+1366 INFO: Building Analysis because Analysis-00.toc is non existent
+1366 INFO: Looking for Python shared library...
+1366 INFO: Using Python shared library: C:\Python314\python314.dll
+1366 INFO: Running Analysis Analysis-00.toc
+1366 INFO: Target bytecode optimization level: 0
+1366 INFO: Initializing module dependency graph...
+1367 INFO: Initializing module graph hook caches...
+1398 INFO: Analyzing modules for base_library.zip ...
+2769 INFO: Processing standard module hook 'hook-encodings.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3182 INFO: Processing standard module hook 'hook-pickle.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3410 INFO: Processing standard module hook 'hook-math.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3530 INFO: Processing standard module hook 'hook-difflib.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+3546 INFO: Processing standard module hook 'hook-heapq.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+5862 INFO: Caching module dependency graph...
+5885 INFO: Analyzing D:\codex project\Enlumor\.worktrees\v04-wave-ab\python\export_pdf.py
+8573 INFO: Processing standard module hook 'hook-multiprocessing.util.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+8773 INFO: Processing standard module hook 'hook-xml.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9092 INFO: Processing standard module hook 'hook-sysconfig.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9101 INFO: Processing standard module hook 'hook-_ctypes.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9159 INFO: Processing standard module hook 'hook-platform.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks'
+9532 INFO: Analyzing hidden import 'pymupdf.__main__'
+9574 INFO: Processing module hooks (post-graph stage)...
+9636 INFO: Performing binary vs. data reclassification (117 entries)
+9681 INFO: Looking for ctypes DLLs
+9705 INFO: Analyzing run-time hooks ...
+9707 INFO: Including run-time hook 'pyi_rth_inspect.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9711 INFO: Including run-time hook 'pyi_rth_multiprocessing.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9716 INFO: Including run-time hook 'pyi_rth_pkgutil.py' from 'D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\.venv\\Lib\\site-packages\\PyInstaller\\hooks\\rthooks'
+9731 INFO: Creating base_library.zip...
+9765 INFO: Looking for dynamic libraries
+10014 INFO: Extra DLL search directories (AddDllDirectory): []
+10014 INFO: Extra DLL search directories (PATH): []
+10421 INFO: Warnings written to D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pyinstaller-build\enlumor-pdf-worker\warn-enlumor-pdf-worker.txt
+10433 INFO: Graph cross-reference written to D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pyinstaller-build\enlumor-pdf-worker\xref-enlumor-pdf-worker.html
+10455 INFO: checking PYZ
+10455 INFO: Building PYZ because PYZ-00.toc is non existent
+10455 INFO: Building PYZ (ZlibArchive) D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pyinstaller-build\enlumor-pdf-worker\PYZ-00.pyz
+10713 INFO: Building PYZ (ZlibArchive) D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pyinstaller-build\enlumor-pdf-worker\PYZ-00.pyz completed successfully.
+10722 INFO: checking PKG
+10722 INFO: Building PKG because PKG-00.toc is non existent
+10722 INFO: Building PKG (CArchive) enlumor-pdf-worker.pkg
+10732 INFO: Building PKG (CArchive) enlumor-pdf-worker.pkg completed successfully.
+10733 INFO: Bootloader D:\codex project\Enlumor\.worktrees\v04-wave-ab\.venv\Lib\site-packages\PyInstaller\bootloader\Windows-64bit-intel\run.exe
+10733 INFO: checking EXE
+10733 INFO: Building EXE because EXE-00.toc is non existent
+10733 INFO: Building EXE from EXE-00.toc
+10733 INFO: Copying bootloader EXE to D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pyinstaller-build\enlumor-pdf-worker\enlumor-pdf-worker.exe
+10736 INFO: Copying icon to EXE
+10739 INFO: Copying 0 resources to EXE
+10739 INFO: Embedding manifest in EXE
+10740 INFO: Appending PKG archive to EXE
+10742 INFO: Fixing EXE headers
+10789 INFO: Building EXE from EXE-00.toc completed successfully.
+10791 INFO: checking COLLECT
+10791 INFO: Building COLLECT because COLLECT-00.toc is non existent
+10791 INFO: Removing dir D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pdf-worker\enlumor-pdf-worker
+10818 INFO: Building COLLECT COLLECT-00.toc
+10966 INFO: Building COLLECT COLLECT-00.toc completed successfully.
+10969 INFO: Build complete! The results are available in: D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pdf-worker

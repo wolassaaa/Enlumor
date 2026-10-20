@@ -1,0 +1,63 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/document-commands.test.ts (105 tests | 2 failed) 31ms
+   × clear_focus cancels a pending real focus result and frame while reporting its own completion 6ms
+   × a detached reader cannot report successful navigation with a still-mounted document ref 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/document-commands.test.ts > clear_focus cancels a pending real focus result and frame while reporting its own completion
+AssertionError: expected { requestId: 'reader-2', …(2) } to match object { ok: false, …(1) }
+(5 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "error": {
+-     "code": "COMMAND_CANCELED",
+-   },
+-   "ok": false,
++   "ok": true,
+  }
+
+ ❯ tests/document-commands.test.ts:269:24
+    267|  expect(await host.run({ type: 'clear_focus' })).toMatchObject({ ok: t…
+    268|  h.flush();
+    269|  expect(await pending).toMatchObject({ ok: false, error: { code: 'COMM…
+       |                        ^
+    270|  expect(h.reader.flash).toBeUndefined(); expect(h.reader.container.scr…
+    271| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/document-commands.test.ts > a detached reader cannot report successful navigation with a still-mounted document ref
+AssertionError: expected { requestId: 'reader-1', …(2) } to match object { ok: false }
+(4 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "ok": false,
++   "ok": true,
+  }
+
+ ❯ tests/document-commands.test.ts:275:63
+    273|  const h = readerFixture();
+    274|  const host = createReaderCommandHost(() => null, () => h.reader.activ…
+    275|  expect(await host.run({ type: 'go_to_page', pageIndex: 2 })).toMatchO…
+       |                                                               ^
+    276|  expect(h.reader.viewer.currentPageNumber).toBe(1);
+    277| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 103 passed (105)
+   Start at  00:11:39
+   Duration  235ms (transform 52%, tests 26%, import 20%, worker 3%)
+
+EXIT=1

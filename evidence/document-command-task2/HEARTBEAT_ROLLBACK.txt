@@ -1,0 +1,28 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab/.cache/document-command-task2-rollback/run-D0SUBs
+
+
+ Test Files  2 passed (2)
+      Tests  110 passed (110)
+   Start at  04:10:03
+   Duration  236ms (transform 67%, import 18%, tests 12%, worker 3%)
+
+vite v8.3.4 building client environment for production...
+transforming...
+✓ 36 modules transformed.
+rendering chunks...
+computing gzip size...
+.cache/document-command-task2-rollback/run-D0SUBs/dist/renderer/index.html                                          0.60 kB │ gzip:   0.38 kB
+.cache/document-command-task2-rollback/run-D0SUBs/dist/renderer/assets/cursor-editorTextHighlight-kG3uUOwL.svg      5.40 kB │ gzip:   2.20 kB
+.cache/document-command-task2-rollback/run-D0SUBs/dist/renderer/assets/pdf.worker.min-CjEcRF4W.mjs              1,264.34 kB
+.cache/document-command-task2-rollback/run-D0SUBs/dist/renderer/assets/index-BQMvEsv9.css                         249.91 kB │ gzip:  46.69 kB
+.cache/document-command-task2-rollback/run-D0SUBs/dist/renderer/assets/index-D6BRzgtB.js                          901.63 kB │ gzip: 275.42 kB
+
+✓ built in 277ms
+[plugin builtin:vite-reporter] 
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rolldownOptions.output.codeSplitting to improve chunking: https://rolldown.rs/reference/OutputOptions.codeSplitting
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+ROLLBACK: ALL_ORIGINAL_HASHES=PASS; TASK1_EXECUTOR_TESTS=PASS; BASELINE_PDF_PAGE3=PASS; BASELINE_READ_BLOCKS=PASS; PDF_UNCHANGED=YES; LIVE_MODIFIED_SOURCES_UNCHANGED=YES
+EXIT: 0

@@ -1,0 +1,114 @@
+
+Running 4 tests using 1 worker
+
+(node:53464) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\document-commands.spec.ts:72:1 › manual 1 to 3 navigation resolves the right repeated passage; clear retains note undo export and source hash (5.3s)
+  x  2 tests\e2e\document-commands.spec.ts:108:53 › wheel cancels the actual pending focus frame without late scroll or flash (1.5s)
+(node:44972) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  3 tests\e2e\document-commands.spec.ts:108:53 › pause cancels the actual pending focus frame without late scroll or flash (1.5s)
+(node:7300) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  4 tests\e2e\document-commands.spec.ts:126:1 › switching documents rejects an old actual focus frame and reads only the latest source (1.9s)
+
+
+  1) tests\e2e\document-commands.spec.ts:108:53 › wheel cancels the actual pending focus frame without late scroll or flash 
+
+    Error: expect(received).toBeCloseTo(expected, precision)
+
+    Expected: 2749
+    Received: 3380
+
+    Expected precision:    0
+    Expected difference: < 0.5
+    Received difference:   631
+
+      117 |   }, takeover);
+      118 |   await releaseFocusFrame(page);
+    > 119 |   expect(await page.locator('#viewerContainer').evaluate(container => container.scrollTop)).toBeCloseTo(position, 0);
+          |                                                                                             ^
+      120 |   await expect(page.locator('.flash')).toHaveCount(0);
+      121 |   await expect(page.getByLabel('跳转页码', { exact: true })).toHaveValue('3');
+      122 |   await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\document-commands.spec.ts:119:93
+
+    Error Context: test-results\document-commands-wheel-ca-b9765-ithout-late-scroll-or-flash\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\document-commands-wheel-ca-b9765-ithout-late-scroll-or-flash\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\document-commands-wheel-ca-b9765-ithout-late-scroll-or-flash\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\document-commands.spec.ts:108:53 › pause cancels the actual pending focus frame without late scroll or flash 
+
+    Error: expect(received).toBeCloseTo(expected, precision)
+
+    Expected: 2749
+    Received: 3380
+
+    Expected precision:    0
+    Expected difference: < 0.5
+    Received difference:   631
+
+      117 |   }, takeover);
+      118 |   await releaseFocusFrame(page);
+    > 119 |   expect(await page.locator('#viewerContainer').evaluate(container => container.scrollTop)).toBeCloseTo(position, 0);
+          |                                                                                             ^
+      120 |   await expect(page.locator('.flash')).toHaveCount(0);
+      121 |   await expect(page.getByLabel('跳转页码', { exact: true })).toHaveValue('3');
+      122 |   await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\document-commands.spec.ts:119:93
+
+    Error Context: test-results\document-commands-pause-ca-4ca24-ithout-late-scroll-or-flash\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\document-commands-pause-ca-4ca24-ithout-late-scroll-or-flash\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\document-commands-pause-ca-4ca24-ithout-late-scroll-or-flash\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3) tests\e2e\document-commands.spec.ts:126:1 › switching documents rejects an old actual focus frame and reads only the latest source 
+
+    Error: expect(received).toBeCloseTo(expected, precision)
+
+    Expected: 25
+    Received: 3313
+
+    Expected precision:    0
+    Expected difference: < 0.5
+    Received difference:   3288
+
+      134 |   const position = await page.locator('#viewerContainer').evaluate(container => container.scrollTop);
+      135 |   await releaseFocusFrame(page);
+    > 136 |   expect(await page.locator('#viewerContainer').evaluate(container => container.scrollTop)).toBeCloseTo(position, 0);
+          |                                                                                             ^
+      137 |   await expect(page.getByLabel('跳转页码', { exact: true })).toHaveValue('1');
+      138 |   await page.getByRole('button', { name: '读取本页阅读块', exact: true }).click();
+      139 |   await expect(page.locator('.cruise-block-list')).toContainText('Other page 1');
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\document-commands.spec.ts:136:93
+
+    Error Context: test-results\document-commands-switchin-745af-eads-only-the-latest-source\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\document-commands-switchin-745af-eads-only-the-latest-source\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\document-commands-switchin-745af-eads-only-the-latest-source\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  3 failed
+    tests\e2e\document-commands.spec.ts:108:53 › wheel cancels the actual pending focus frame without late scroll or flash 
+    tests\e2e\document-commands.spec.ts:108:53 › pause cancels the actual pending focus frame without late scroll or flash 
+    tests\e2e\document-commands.spec.ts:126:1 › switching documents rejects an old actual focus frame and reads only the latest source 
+  1 passed (12.7s)
+EXIT=1

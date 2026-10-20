@@ -1,0 +1,25 @@
+
+Running 13 tests using 1 worker
+
+(node:46180) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\cruise-anchors.spec.ts:10:35 › page blocks retain right-column occurrence through crop source rotation zoom at display scale 1.5 without permanent annotations (2.2s)
+  ok  2 tests\e2e\cruise-anchors.spec.ts:10:35 › page blocks retain right-column occurrence through crop source rotation zoom at display scale 2 without permanent annotations (2.0s)
+
+  ok  3 tests\e2e\document-commands.spec.ts:72:1 › manual 1 to 3 navigation resolves the right repeated passage; clear retains note undo export and source hash (2.4s)
+  ok  4 tests\e2e\document-commands.spec.ts:110:53 › wheel cancels the actual pending focus frame without late scroll or flash (1.6s)
+  ok  5 tests\e2e\document-commands.spec.ts:110:53 › pause cancels the actual pending focus frame without late scroll or flash (1.6s)
+  ok  6 tests\e2e\document-commands.spec.ts:128:1 › switching documents rejects an old actual focus frame and reads only the latest source (1.9s)
+
+  ok  7 tests\e2e\page-navigation.spec.ts:9:43 › continuous: boundary buttons and actual page ignore unsubmitted draft (890ms)
+  ok  8 tests\e2e\page-navigation.spec.ts:9:43 › single: boundary buttons and actual page ignore unsubmitted draft (921ms)
+  ok  9 tests\e2e\page-navigation.spec.ts:13:1 › same-page viewport updates retain invalid feedback and unsubmitted draft (887ms)
+  ok 10 tests\e2e\page-navigation.spec.ts:19:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps (1.7s)
+
+  ok 11 tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages (2.0s)
+  ok 12 tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source (3.2s)
+  ok 13 tests\e2e\reading-tools.spec.ts:47:1 › single-page cached overlays reflect offscreen deletion and undo when pages remount (1.8s)
+
+  13 passed (25.7s)
+EXIT=0

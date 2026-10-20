@@ -1,0 +1,100 @@
+Enlumor heartbeat 20min-enlumor-2 — 2026-10-20 04:08 trigger (Asia/Taipei)
+RESULT: existing foundation Tasks1+2 closed with fresh local gates; next editing-capability audit executed. No product code implemented again this heartbeat.
+Branch: feat/v04-wave-ab. Task1 implementation653acb4; Task2 implementation2d45f0e. Baseline for reader delta1e456c2.
+Changed fields/branches (existing implementation under verification): host revision/AbortController/request sequence and latest-ref ports in document-command-reader.ts; main.tsx manual navigation/read/focus route through runDocumentCommand; PdfReader generation/focusEpoch/isCurrent rAF guards prevent old effects. Five command types unchanged.
+This heartbeat updated checklist/current state/acceptance and Task2 checkboxes, completed aggregate review and next audit; src/tests working tree remains unchanged.
+
+FOUR ARTIFACTS (all reopened)
+MODIFIED_FILE: D:\Codex\2026-10-20\new-chat-2\outputs\enlumor-20261020-0408\MODIFIED_FILE.tsx
+DIFF_FILE: D:\Codex\2026-10-20\new-chat-2\outputs\enlumor-20261020-0408\DIFF.patch
+VERIFICATION: D:\Codex\2026-10-20\new-chat-2\outputs\enlumor-20261020-0408\VERIFICATION.txt
+ROLLBACK: D:\Codex\2026-10-20\new-chat-2\outputs\enlumor-20261020-0408\ROLLBACK.sh
+Original raw main.tsx SHA256: d629d0ef629929a11bd6ca336a21eef34504dd0b1238a4c93685600c846a91ff
+Modified main.tsx SHA256: 2b8a469368e2db6d2a578705c7a76f2273b51fa2ba2f314f04ce5b9f07cf35dd
+31 raw source originals preserved and independently hash-checked; normalized output manifest ORIGINALS.json points to output snapshots. Documentation before-images and hashes: ORIGINAL_DOCS.json/original-docs.
+
+BASELINE
+CWD: D:\codex project\Enlumor\.worktrees\v04-wave-ab
+Exact command: node node_modules/vitest/vitest.mjs run --root .cache/document-command-task2-rollback/run-D0SUBs
+Input: isolated source restored to1e456c2,41 frozen baseline test snapshots, two script dependencies restored from git1e456c2; same locked test runtime.
+Literal output: Test Files  23 passed (23)
+Literal output: Tests  250 passed (250)
+Exit status:0. Log: HEARTBEAT_BASELINE_FINAL.txt.
+
+MODIFIED
+CWD: D:\codex project\Enlumor\.worktrees\v04-wave-ab
+Exact command: npm test
+Input: current2d45f0e source and deterministic unit fixtures; no model/API.
+Literal output: Test Files  23 passed (23)
+Literal output: Tests  261 passed (261)
+Exit status:0. Log: HEARTBEAT_UNIT.txt.
+Exact command: npm run build
+Input: same current source and locked local dependencies.
+Literal result: tsc --noEmit && node scripts/build.mjs; EXIT: 0.
+Exit status:0. Log: HEARTBEAT_BUILD.txt.
+
+PACKAGED VALIDATION
+CWD: D:\codex project\Enlumor\.worktrees\v04-wave-ab
+Environment: ENLUMOR_TEST_APP=D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\document-command-foundation-package\win-unpacked\Enlumor.exe
+Environment: ENLUMOR_EVIDENCE_DIR=evidence/document-command-task2/heartbeat/serial
+Exact command: npx playwright test
+Input: distinct existing candidate built from current source, real generated PDFs/local deterministic HTTP providers, isolated OS-temporary profiles. This final run had no other Electron validation launched concurrently.
+Literal output: 141 passed (5.0m)
+Exit status:0. Log: HEARTBEAT_FULL_EXE_SERIAL.txt.
+Exact command: npx playwright test tests/e2e/cruise.spec.ts -g 'current-block follow-up timeout' --repeat-each=3
+Literal output: 3 passed (10.0s)
+Exit status:0. Log: HEARTBEAT_TIMEOUT_SERIAL.txt.
+Exact command: npx playwright test tests/e2e/document-commands.spec.ts tests/e2e/cruise-anchors.spec.ts tests/e2e/page-navigation.spec.ts tests/e2e/reading-tools.spec.ts tests/e2e/dense-ink.spec.ts
+Literal output: 16 passed (35.4s)
+Exit status:0. Log: HEARTBEAT_E2E.txt.
+Exact command: npm run test:python
+Literal output: Ran 8 tests in 0.628s; OK
+Exit status:0. Log: HEARTBEAT_PYTHON.txt.
+Exact command: node scripts/check-package.mjs
+Input: same candidate; runtime check removes external Python from PATH and uses packaged PDF worker; fixture creation is separate developer setup.
+Literal output: PACKAGED_READER: PASS
+Literal output: {"packaged":true,"electron":"44.7.2","node":"24.21.0","sqlite":"3.53.4"}
+Exit status:0. Log: HEARTBEAT_PACKAGE_RUNTIME.txt. Screenshot appearance is not a claim of this runtime check.
+
+PERFORMANCE (no relaxed thresholds)
+Exact command: node scripts/benchmark.mjs foundation-text .cache/document-command-foundation-package/win-unpacked/Enlumor.exe --thumbnails
+Exact command: node scripts/benchmark.mjs foundation-scanned .cache/document-command-foundation-package/win-unpacked/Enlumor.exe --scanned --thumbnails
+Input: each200pages/approximately32MiB/1000annotations, temporary profiles; benchmarks ran before full EXE suite.
+Literal text measurement: portableStartupMs=[439.4317000000001,430.84699999999975,442.07680000000073]; frameP95Ms=10.099999997764826; bodyCanvases=8; thumbnailCanvases=4; saveP95Ms=3.899999998509884.
+Literal scan measurement: portableStartupMs=[425.29179999999997,436.21360000000004,425.3042999999998]; frameP95Ms=11.399999998509884; bodyCanvases=8; thumbnailCanvases=4; saveP95Ms=4.699999999254942.
+Exit statuses:0/0. Exact JSON files: foundation-text.json/foundation-scanned.json.
+Gate command: node --input-type=module -e "import{assertPerformance}from './scripts/performance-gate.mjs';import{readFileSync}from 'node:fs';for(const label of ['foundation-text','foundation-scanned']){assertPerformance(JSON.parse(readFileSync('evidence/document-command-task2/heartbeat/'+label+'.json','utf8')));console.log(label+': ORIGINAL_PERFORMANCE_BUDGET=PASS')}"
+Literal output: foundation-text: ORIGINAL_PERFORMANCE_BUDGET=PASS
+Literal output: foundation-scanned: ORIGINAL_PERFORMANCE_BUDGET=PASS
+Exit status:0. Limits: startup median<=1500ms/framep95<=34ms/bodycanvas<=30/thumbcanvas<=8/savep95<=20ms.
+Dense30/300/1000x256point cases passed original pointerp95<=8ms/framep95<=34ms/scrollp95<=34ms/save<=20ms/eraseUndo<=1000ms/mutationlongtask<=50ms gates. Dense1000 literal: scrollP95Ms=8.299999997019768; pointerP95Ms=2; frameP95Ms=6.699999999254942; saveMs=1.1000000014901161; eraseUndoMs=307; mutationWorstLongTaskMs=0. JSONs retained.
+
+ROLLBACK (tested final output artifact on another source copy)
+CWD: D:\Codex\2026-10-20\new-chat-2
+Exact command: & 'C:/Program Files/Git/bin/bash.exe' 'D:/Codex/2026-10-20/new-chat-2/outputs/enlumor-20261020-0408/ROLLBACK.sh'
+Input: script creates a new bounded .cache/document-command-task2-rollback/run-* copy; restores31original source hashes/frozen baseline tests, removes Task2-added source only there, compiles and exercises actual three-page PDF.
+Literal test output: Test Files  2 passed (2); Tests  110 passed (110).
+Literal result: ROLLBACK: ALL_ORIGINAL_HASHES=PASS; TASK1_EXECUTOR_TESTS=PASS; BASELINE_PDF_PAGE3=PASS; BASELINE_READ_BLOCKS=PASS; PDF_UNCHANGED=YES; LIVE_MODIFIED_SOURCES_UNCHANGED=YES
+Exit status:0. Log: ROLLBACK_RUN.txt. Executable checked with Git Bash chmod +x/test -x, exit0.
+Restored behavior/status: isolated baseline still navigates to PDF page3 and reads original blocks, Task1 executor and legacy interface pass110tests. Source PDF hash unchanged. Live modified source and MODIFIED_FILE remain at modified hash, different from original. This script never restores the live checkout or a personal profile.
+
+FAILED RUNS RETAINED / DIAGNOSIS
+1. Initial expanded baseline-copy full suite:247tests passed,2suite import failures,exit1. Cause: copy-only fixture lacked scripts/benchmark-launch.mjs and scripts/performance-gate.mjs. Restored those exact1e456c2 files to that copy; subsequent full baseline250PASS. Product source untouched. HEARTBEAT_BASELINE.txt retained.
+2. Initial full packaged suite:140passed/1failed,exit1. Failure at cruise.spec.ts:125 expected等待继续,received已暂停 before submitting follow-up. Trace start2026-10-19T20:13:26.120Z overlapped the separately launched Electron rollback check. Existing main blur handler cancels/publishes background and CruisePanel deliberately pauses on background. Temporal evidence is consistent with cross-validation focus interference, not proof that the timeout feature is defective. Preserved FULL_EXE_FAILURE_TRACE and HEARTBEAT_FULL_EXE.txt. No app logic, test assertion, timeout or performance budget changed. Timeout3repeats and entire141suite then passed with UI validation serialized.
+3. Documentation finalizer first attempt used .NET relative file IO after PowerShell Set-Location; it failed before modifying docs. Corrected helper to join absolute root; rerun succeeded. This was evidence tooling only.
+Known build notices: Node SQLite experimental; Vite chunk>500kB. Retained, not treated as clean warnings-free output.
+
+INDEPENDENT REVIEW
+Fresh combined read-only review1c01790..2d45f0e:PASS/noP0-P3findings. COMBINED_REVIEW.md records its declined judgments and parent rulings. No deferred minor findings. Old individualTask2review retained in repository. This heartbeat does not merge,push,publish,call realmodel,replaceCruise,or migrate annotation schemas.
+
+SEQUENCE / NEXT TASK EXECUTED
+1. Read actual project checklist/state/plan and history; Task1 already complete, Task2 implementation and historical141gate existed; do not claim duplicate implementation.
+2. Freshly close Task2 and combined foundation review/local gates; update checklist/state, clear stale in-flight review/session metadata.
+3. Study official Zotero/Acrobat operation logic; SOFTWARE_LOGIC_RESEARCH.md contains direct links, facts and separately labelled Enlumor inferences. Research is document-based, not claimed hands-on application use.
+4. Execute next task: actual runDocumentCommand read-only capability audit. Exact command: node D:/Codex/2026-10-20/new-chat-2/work/audit-edit-commands.mjs
+Input:16minimal type-only editing names, valid current context, every business port instrumented to count calls.
+Literal output: EDIT_COMMAND_AUDIT: 16/16 unregistered names returned COMMAND_INVALID; PORT_CALLS=0; PRODUCT_SOURCE_UNCHANGED=YES
+Exit status:0. EDIT_COMMAND_AUDIT.json records every input/result; EDIT_COMMAND_GAP_AUDIT.md maps all16to existing code and remaining work and contains a reusable continuation prompt. AUDIT_EDIT_COMMANDS.mjs is the reusable audit source.
+Editing runtime remainsfalse and written specificationDRAFT. Next stage is written-spec review, then exact two-task implementation plan. No empty successful tool registrations or assertions that the editing library is live.
+
+Final restored status: isolated baseline restored/PDFpage3&blocksPASS; current modified foundation preserved; actual checklist/state updated; next-task audit complete. Four artifacts plus all claimed reports/logs reopened and checked. Outputs are inspectable under D:\Codex\2026-10-20\new-chat-2\outputs\enlumor-20261020-0408.

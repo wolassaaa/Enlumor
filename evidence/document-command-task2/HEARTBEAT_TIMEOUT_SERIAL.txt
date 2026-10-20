@@ -1,0 +1,20 @@
+(node:53984) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 3 tests using 1 worker
+
+(node:53156) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:53156) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 1 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up timeout retains question and only manual retry succeeds without changing explanation/cache/source (2.6s)
+(node:42492) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42492) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 2 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up timeout retains question and only manual retry succeeds without changing explanation/cache/source (2.5s)
+(node:53640) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:53640) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 3 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up timeout retains question and only manual retry succeeds without changing explanation/cache/source (2.6s)
+
+  3 passed (10.0s)
+EXIT: 0

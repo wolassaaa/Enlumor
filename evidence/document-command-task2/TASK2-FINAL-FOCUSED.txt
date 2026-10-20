@@ -1,0 +1,10 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+
+ Test Files  4 passed (4)
+      Tests  127 passed (127)
+   Start at  00:13:01
+   Duration  228ms (transform 40%, tests 35%, import 21%, worker 4%)
+
+EXIT=0

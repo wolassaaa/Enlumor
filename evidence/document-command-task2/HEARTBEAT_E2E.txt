@@ -1,0 +1,31 @@
+
+Running 16 tests using 1 worker
+
+(node:31152) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\cruise-anchors.spec.ts:10:35 › page blocks retain right-column occurrence through crop source rotation zoom at display scale 1.5 without permanent annotations (2.8s)
+  ok  2 tests\e2e\cruise-anchors.spec.ts:10:35 › page blocks retain right-column occurrence through crop source rotation zoom at display scale 2 without permanent annotations (1.6s)
+DENSE_INK {"count":30,"pointsPerStroke":256,"scrollP95Ms":6.100000001490116,"pointerP95Ms":0.4000000022351742,"frameP95Ms":6.199999999254942,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.8999999985098839,"eraseUndoMs":54,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  3 tests\e2e\dense-ink.spec.ts:8:34 › dense 30 x 256 points: scroll erase save undo (2.7s)
+DENSE_INK {"count":300,"pointsPerStroke":256,"scrollP95Ms":12,"pointerP95Ms":1.199999999254942,"frameP95Ms":6.200000002980232,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.9000000022351742,"eraseUndoMs":131,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  4 tests\e2e\dense-ink.spec.ts:8:34 › dense 300 x 256 points: scroll erase save undo (2.5s)
+DENSE_INK {"count":1000,"pointsPerStroke":256,"scrollP95Ms":8.299999997019768,"pointerP95Ms":2,"frameP95Ms":6.699999999254942,"longTasks":0,"worstLongTaskMs":0,"saveMs":1.1000000014901161,"eraseUndoMs":307,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  5 tests\e2e\dense-ink.spec.ts:8:34 › dense 1000 x 256 points: scroll erase save undo (3.3s)
+
+  ok  6 tests\e2e\document-commands.spec.ts:72:1 › manual 1 to 3 navigation resolves the right repeated passage; clear retains note undo export and source hash (1.9s)
+  ok  7 tests\e2e\document-commands.spec.ts:110:53 › wheel cancels the actual pending focus frame without late scroll or flash (1.0s)
+  ok  8 tests\e2e\document-commands.spec.ts:110:53 › pause cancels the actual pending focus frame without late scroll or flash (1.6s)
+  ok  9 tests\e2e\document-commands.spec.ts:128:1 › switching documents rejects an old actual focus frame and reads only the latest source (1.9s)
+
+  ok 10 tests\e2e\page-navigation.spec.ts:9:43 › continuous: boundary buttons and actual page ignore unsubmitted draft (993ms)
+  ok 11 tests\e2e\page-navigation.spec.ts:9:43 › single: boundary buttons and actual page ignore unsubmitted draft (1.5s)
+  ok 12 tests\e2e\page-navigation.spec.ts:13:1 › same-page viewport updates retain invalid feedback and unsubmitted draft (1.5s)
+  ok 13 tests\e2e\page-navigation.spec.ts:19:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps (1.4s)
+
+  ok 14 tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages (2.9s)
+  ok 15 tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source (3.5s)
+  ok 16 tests\e2e\reading-tools.spec.ts:47:1 › single-page cached overlays reflect offscreen deletion and undo when pages remount (1.4s)
+
+  16 passed (35.4s)
+EXIT: 0

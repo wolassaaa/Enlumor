@@ -1,0 +1,207 @@
+[
+  {
+    "target": "tests/ai-client.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/ai-client.test.ts",
+    "sha256": "c54679f6d603171aa485d65cbe71c18987acaf09724b49670e9800c5d5ce79f1"
+  },
+  {
+    "target": "tests/ai-profiles.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/ai-profiles.test.ts",
+    "sha256": "ae7f5a38d50ab2f0c2d6d8ccc9f2863ef5bdebe883b97c3a6dad52d467e2db6a"
+  },
+  {
+    "target": "tests/arrows-ink.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/arrows-ink.test.ts",
+    "sha256": "78f8f422dc4eff9ca66683b9d2be18b4ccbcc0b4934de4a64eed0484c4e035a6"
+  },
+  {
+    "target": "tests/benchmark.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/benchmark.test.ts",
+    "sha256": "4b671a4740d1ed85a77486dbff402674ff563d0313ca88c1e821e00c3bf9e3a8"
+  },
+  {
+    "target": "tests/core.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/core.test.ts",
+    "sha256": "9768ecf9e83fc8ebbaef3c5f19f2530ec3bedde0813e320590c886e14cec5c87"
+  },
+  {
+    "target": "tests/cruise-blocks.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/cruise-blocks.test.ts",
+    "sha256": "39683a89dcfa6e84d89469f12624c5187ec1007c74bc5eb778d0ee527ddbc34e"
+  },
+  {
+    "target": "tests/cruise-reader.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/cruise-reader.test.ts",
+    "sha256": "ed9e696f77978766c12045e790b39cb09836587f0caef224341cd7d435a3f1cf"
+  },
+  {
+    "target": "tests/cruise-requests.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/cruise-requests.test.ts",
+    "sha256": "7077e463caf44f690d0ee3f85a60d6afe9abafa3c51cb035f7c654b7166eb08e"
+  },
+  {
+    "target": "tests/cruise-session.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/cruise-session.test.ts",
+    "sha256": "9fe3b6a8b2e637576145156132b7061c20ef4a6738b182e61465aa6e3f7238b7"
+  },
+  {
+    "target": "tests/cruise-takeover.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/cruise-takeover.test.ts",
+    "sha256": "49ff6351eb950a100a61e989288c1fb186b40ce1cdae373a3c95a9fb74e16174"
+  },
+  {
+    "target": "tests/cruise.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/cruise.test.ts",
+    "sha256": "a7b6dc826ddf823cb21ca2c2834485c347ceb2615dfb3ad7e2e579de4d43ce51"
+  },
+  {
+    "target": "tests/dashscope.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/dashscope.test.ts",
+    "sha256": "6810918dd646cd65593b097ed9a632eaa98d9cc168cf70a5fa3624c517c33d47"
+  },
+  {
+    "target": "tests/document-commands.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/document-commands.test.ts",
+    "sha256": "a2fb99f6cae01228cc9f271c7592b24678ad93d852b74e09d353f56ca4637be7"
+  },
+  {
+    "target": "tests/e2e/ai-settings.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/ai-settings.spec.ts",
+    "sha256": "001fb2c0c815d2d9c9238d9311356a5c0ea5e88ca59314b448427504c70ea18a"
+  },
+  {
+    "target": "tests/e2e/arrows-ink.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/arrows-ink.spec.ts",
+    "sha256": "8c721edc5998934ffca46d6e19013245bdf9b4d16c23c46ec43db138b84336f5"
+  },
+  {
+    "target": "tests/e2e/complex-pdf.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/complex-pdf.spec.ts",
+    "sha256": "e8c8f1e0887b26cbdd1197c602064175a5801d10e23d7dd309c13d5c5b00d283"
+  },
+  {
+    "target": "tests/e2e/cruise-anchors.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/cruise-anchors.spec.ts",
+    "sha256": "53516cc0d90c88bfaecefff771d3621ad806c9aa4d0af845d49d3041f832d3ac"
+  },
+  {
+    "target": "tests/e2e/cruise.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/cruise.spec.ts",
+    "sha256": "45d15045e3273f6f2b5ca1c57caf7667d4e3fb97b79ce04dbbe92525bdc22050"
+  },
+  {
+    "target": "tests/e2e/dense-ink.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/dense-ink.spec.ts",
+    "sha256": "4ec3c77b2f69f1166ab6bd60454ec319822c3c4ecfd42875c8680cfc48d8a3e6"
+  },
+  {
+    "target": "tests/e2e/eraser.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/eraser.spec.ts",
+    "sha256": "addfe510450f6ae2a2a2c0d6c384c23b1e23fb79bfc550e0aad3d0dad0087d81"
+  },
+  {
+    "target": "tests/e2e/native-apis.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/native-apis.spec.ts",
+    "sha256": "e5992d2c888dce1a728d52807a6ed4c930a185a3a5a01179266235ca4c73426e"
+  },
+  {
+    "target": "tests/e2e/note-recovery.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/note-recovery.spec.ts",
+    "sha256": "7d1e5cec9704c5e925ff994dd4a7fa7e1c04028fb4745cdd4096bbf9a0d85488"
+  },
+  {
+    "target": "tests/e2e/page-navigation.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/page-navigation.spec.ts",
+    "sha256": "3ede92fe2e0c96941460f9ee8a864e86e55f232cc76b947ed757cbd0adf34b2b"
+  },
+  {
+    "target": "tests/e2e/reader.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/reader.spec.ts",
+    "sha256": "fe98dcc68b0833f8bacbfd5c0642265833c2f72a5fca62e76a2afc36a13ea492"
+  },
+  {
+    "target": "tests/e2e/reading-tools.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/reading-tools.spec.ts",
+    "sha256": "bc7c232ccb61372508b57bc93c4bd8b7550c779952f610cd42825e76882afed6"
+  },
+  {
+    "target": "tests/e2e/settings-simple.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/settings-simple.spec.ts",
+    "sha256": "9155514e5e3f27f3811096f42a487e4013898eecd6946e8cdce9b8cd50b53f46"
+  },
+  {
+    "target": "tests/e2e/strikeout-lines.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/strikeout-lines.spec.ts",
+    "sha256": "62bb9c5f5b3b522a39c503e762ef8c0c5d989869e9f0f07b22075f4a765224f3"
+  },
+  {
+    "target": "tests/e2e/workspace.spec.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/e2e/workspace.spec.ts",
+    "sha256": "9d7a2361f0859735c9d03c4db52b414c799e9d8c9d240b45cd0a9f78340319d5"
+  },
+  {
+    "target": "tests/eraser.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/eraser.test.ts",
+    "sha256": "b34501df8689ab912d3c0fa26a787ed794539fe07e1c9ded15058fd197be8ff4"
+  },
+  {
+    "target": "tests/helpers/ws-fixture.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/helpers/ws-fixture.ts",
+    "sha256": "5a81ceae85a39c08b808fdba70b2725b8d59c28817af2314f5375787a3fcf598"
+  },
+  {
+    "target": "tests/layout-tabs.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/layout-tabs.test.ts",
+    "sha256": "724466be22ee5e6fd54b862e278220aa3aebe83f88b9549ed4cfe9817271fd3d"
+  },
+  {
+    "target": "tests/performance.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/performance.test.ts",
+    "sha256": "92b5f9e7c5432e3c059c697b0aba300dbf103283c37361da1980835e6a886a76"
+  },
+  {
+    "target": "tests/python/test_cruise.py",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/python/test_cruise.py",
+    "sha256": "a4f17d819c4fbb940f7a121cac59fece0122cf94a08fd4860778963953e67533"
+  },
+  {
+    "target": "tests/python/test_export.py",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/python/test_export.py",
+    "sha256": "e23331ce0f1c403fb999e5ba3b7632487aa10ef4cb00c3bb97333af39ffba741"
+  },
+  {
+    "target": "tests/reading-commands.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/reading-commands.test.ts",
+    "sha256": "20ec7d074dfa87e3e41d3922b065427887bc017c0f9aed08e6a5cb093398619b"
+  },
+  {
+    "target": "tests/reading-tools.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/reading-tools.test.ts",
+    "sha256": "9c6f7dc86e64fd12ec7ab5b81e48d9882bdb65aef0c27bd007621eae058b7503"
+  },
+  {
+    "target": "tests/release.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/release.test.ts",
+    "sha256": "a5847b57359c137e17549014e736843c787a464b62ae97c5249375eebfa8a183"
+  },
+  {
+    "target": "tests/runtime.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/runtime.test.ts",
+    "sha256": "2c7f114cf52d9e6f66fe6a56521fa542e87cba8f383a7ca6527c08053aed589c"
+  },
+  {
+    "target": "tests/spark.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/spark.test.ts",
+    "sha256": "76f8753551abbc7660979720b9805b56ee2463c3021bf6e8187c72adf06a3935"
+  },
+  {
+    "target": "tests/strikeout-lines.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/strikeout-lines.test.ts",
+    "sha256": "79e3b5c55287b1c19b9302f1efcd08763a2384a96530265d009444ef76777fd7"
+  },
+  {
+    "target": "tests/thumbnails.test.ts",
+    "snapshot": "evidence/document-command-task2/baseline-tests/tests/thumbnails.test.ts",
+    "sha256": "9cd84a21d319823e97ddb1c500b7279e7fb0d57c03a01e6d654bdfe0eca3f6d1"
+  }
+]

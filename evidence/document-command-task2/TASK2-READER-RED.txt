@@ -1,0 +1,58 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/document-commands.test.ts (99 tests | 4 failed) 28ms
+   × real reader rejects a retained focus frame after clear invalidation 6ms
+   × real reader rejects a retained focus frame after source invalidation 1ms
+   × real reader rejects a retained focus frame after guard invalidation 1ms
+   × real reader keeps the newest focus when an older retained frame arrives 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/document-commands.test.ts > real reader rejects a retained focus frame after clear invalidation
+ FAIL  tests/document-commands.test.ts > real reader rejects a retained focus frame after source invalidation
+ FAIL  tests/document-commands.test.ts > real reader rejects a retained focus frame after guard invalidation
+AssertionError: expected 601 to be 47 // Object.is equality
+
+- Expected
++ Received
+
+- 47
++ 601
+
+ ❯ tests/document-commands.test.ts:225:39
+    223|  if (change === 'guard') current = false;
+    224|  h.reader.container.scrollTop = 47; h.flush(); await pending;
+    225|  expect(h.reader.container.scrollTop).toBe(47);
+       |                                       ^
+    226|  if (change !== 'source') expect(h.reader.flash).toBeUndefined();
+    227| });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/document-commands.test.ts > real reader keeps the newest focus when an older retained frame arrives
+AssertionError: expected 601 to be 690 // Object.is equality
+
+- Expected
++ Received
+
+- 690
++ 601
+
+ ❯ tests/document-commands.test.ts:234:39
+    232|  const newestFrame = h.frames.pop()!; newestFrame(0); await latest;
+    233|  const position = h.reader.container.scrollTop; h.flush(); await old;
+    234|  expect(h.reader.container.scrollTop).toBe(position); expect(h.reader.…
+       |                                       ^
+    235| });
+    236|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 95 passed (99)
+   Start at  00:08:44
+   Duration  227ms (transform 51%, tests 25%, import 21%, worker 4%)
+
+EXIT=1

@@ -1,0 +1,360 @@
+{
+  "sourceCommit": "2d45f0e",
+  "probe": "minimal type-only requests verify declared command names are unregistered, not future argument schemas",
+  "tested": 16,
+  "portCalls": 0,
+  "results": [
+    {
+      "command": "list_marks",
+      "input": {
+        "requestId": "audit-list_marks",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "list_marks"
+        }
+      },
+      "result": {
+        "requestId": "audit-list_marks",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "get_mark",
+      "input": {
+        "requestId": "audit-get_mark",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "get_mark"
+        }
+      },
+      "result": {
+        "requestId": "audit-get_mark",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "create_mark",
+      "input": {
+        "requestId": "audit-create_mark",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "create_mark"
+        }
+      },
+      "result": {
+        "requestId": "audit-create_mark",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "update_mark",
+      "input": {
+        "requestId": "audit-update_mark",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "update_mark"
+        }
+      },
+      "result": {
+        "requestId": "audit-update_mark",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "set_mark_geometry",
+      "input": {
+        "requestId": "audit-set_mark_geometry",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "set_mark_geometry"
+        }
+      },
+      "result": {
+        "requestId": "audit-set_mark_geometry",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "set_mark_placement",
+      "input": {
+        "requestId": "audit-set_mark_placement",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "set_mark_placement"
+        }
+      },
+      "result": {
+        "requestId": "audit-set_mark_placement",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "replace_mark_anchor",
+      "input": {
+        "requestId": "audit-replace_mark_anchor",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "replace_mark_anchor"
+        }
+      },
+      "result": {
+        "requestId": "audit-replace_mark_anchor",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "delete_marks",
+      "input": {
+        "requestId": "audit-delete_marks",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "delete_marks"
+        }
+      },
+      "result": {
+        "requestId": "audit-delete_marks",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "erase_ink",
+      "input": {
+        "requestId": "audit-erase_ink",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "erase_ink"
+        }
+      },
+      "result": {
+        "requestId": "audit-erase_ink",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "undo_edit",
+      "input": {
+        "requestId": "audit-undo_edit",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "undo_edit"
+        }
+      },
+      "result": {
+        "requestId": "audit-undo_edit",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "redo_edit",
+      "input": {
+        "requestId": "audit-redo_edit",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "redo_edit"
+        }
+      },
+      "result": {
+        "requestId": "audit-redo_edit",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "set_marks_visibility",
+      "input": {
+        "requestId": "audit-set_marks_visibility",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "set_marks_visibility"
+        }
+      },
+      "result": {
+        "requestId": "audit-set_marks_visibility",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "set_marks_retention",
+      "input": {
+        "requestId": "audit-set_marks_retention",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "set_marks_retention"
+        }
+      },
+      "result": {
+        "requestId": "audit-set_marks_retention",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "apply_edit_batch",
+      "input": {
+        "requestId": "audit-apply_edit_batch",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "apply_edit_batch"
+        }
+      },
+      "result": {
+        "requestId": "audit-apply_edit_batch",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "prepare_mark_export",
+      "input": {
+        "requestId": "audit-prepare_mark_export",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "prepare_mark_export"
+        }
+      },
+      "result": {
+        "requestId": "audit-prepare_mark_export",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    },
+    {
+      "command": "export_marked_pdf",
+      "input": {
+        "requestId": "audit-export_marked_pdf",
+        "context": {
+          "documentId": "audit",
+          "fingerprint": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "revision": 0
+        },
+        "command": {
+          "type": "export_marked_pdf"
+        }
+      },
+      "result": {
+        "requestId": "audit-export_marked_pdf",
+        "ok": false,
+        "error": {
+          "code": "COMMAND_INVALID",
+          "message": "Invalid document command request."
+        }
+      }
+    }
+  ]
+}

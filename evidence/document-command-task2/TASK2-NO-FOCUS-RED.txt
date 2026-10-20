@@ -1,0 +1,41 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/document-commands.test.ts (106 tests | 1 failed) 36ms
+   × closed-focus takeovers only invalidate refs and do not repaint every page 5ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/document-commands.test.ts > closed-focus takeovers only invalidate refs and do not repaint every page
+AssertionError: expected "vi.fn()" to not be called at all, but actually been called 2 times
+
+Received:
+
+  1st vi.fn() call:
+
+    Array []
+
+  2nd vi.fn() call:
+
+    Array []
+
+
+Number of calls: 2
+
+ ❯ tests/document-commands.test.ts:281:22
+    279|  const h = readerFixture(), host = createReaderCommandHost(() => h.rea…
+    280|  host.invalidate(); host.invalidate();
+    281|  expect(h.paint).not.toHaveBeenCalled();
+       |                      ^
+    282| });
+    283|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 105 passed (106)
+   Start at  00:12:44
+   Duration  248ms (transform 50%, tests 28%, import 18%, worker 3%)
+
+EXIT=1

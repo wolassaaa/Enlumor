@@ -1,0 +1,157 @@
+[
+  {
+    "snapshot": "evidence/document-command-task2/originals/00-ai-client.ts",
+    "sha256": "dd569cc8d002a5446e06c383c29c92fa71a469be173c72d8bcbee48eccab4bb2",
+    "target": "src/main/ai-client.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/01-ai-config.ts",
+    "sha256": "d61ea571329248f96ce6afa2172ce18032865f36e330afab4ec6cb1f440e45b4",
+    "target": "src/main/ai-config.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/02-ai-profiles.ts",
+    "sha256": "e9f45a96989ebd4bb99fd164959b2e472dced6839e91d6ab69d8b2c3704ade6d",
+    "target": "src/main/ai-profiles.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/03-cruise-requests.ts",
+    "sha256": "c38277088a13392214244239f36c9716a823c137f06e523b357c686b1b234a00",
+    "target": "src/main/cruise-requests.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/04-cruise-sessions.ts",
+    "sha256": "a8055f0f2d6d63c65fee1d41c02ae7808848ab0cd330d1a03109e8e801b1f7f3",
+    "target": "src/main/cruise-sessions.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/05-index.ts",
+    "sha256": "b6e14a891d954bb99ab5147c16da4c5cb91db58d3b9118a7af3b8e62a967de37",
+    "target": "src/main/index.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/06-pdf-runtime.ts",
+    "sha256": "1d41b887acaf9f36685eeb3cc3fd332ed1143b6a4a89badf5fad19c7d1cb96d6",
+    "target": "src/main/pdf-runtime.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/07-preload.ts",
+    "sha256": "ef8127315285f821e92b52e850f85b144268257468ecc1eefc483b9822c3dd93",
+    "target": "src/main/preload.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/08-python.ts",
+    "sha256": "64e49a1d5d6ee61a6f870a223290487a16804cb7372b17cf507f059c8cc9e09d",
+    "target": "src/main/python.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/09-spark-client.ts",
+    "sha256": "7768e9f323c29180facfc28886a4bb0b869584e296bc9456c7244460d566a2b0",
+    "target": "src/main/spark-client.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/10-workspace.ts",
+    "sha256": "af0ea3c3ca6d5dd5e5c79056b3cb3a6ab64c147b7d8d2756ec59f07ffea686e5",
+    "target": "src/main/workspace.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/11-CruisePanel.tsx",
+    "sha256": "d69289fc19bbd93009771ee5879873cd05b6cafeb84641007dfcf5a1e2feec87",
+    "target": "src/renderer/CruisePanel.tsx"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/12-cruise-blocks.ts",
+    "sha256": "87b8683190128cf0e5ba3e022d66b1b9a2af6b219e06a24d14c29770a24a9703",
+    "target": "src/renderer/cruise-blocks.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/13-drawing-svg.ts",
+    "sha256": "a2d36d408356fa6486973a6b470faa0a97887ac0de091d0a31b8e18cd1f5e1bd",
+    "target": "src/renderer/drawing-svg.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/14-eraser-tool.ts",
+    "sha256": "d15bdd69a1d66012ebf18bbfbe9bfd649fe5817d3c2796000e914b4976d987bf",
+    "target": "src/renderer/eraser-tool.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/15-layout.ts",
+    "sha256": "021d2feaf0a0924be87ec4de3a3b0cd75683e028b2b474f159e3e59d7c3e3b38",
+    "target": "src/renderer/layout.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/16-line-tool.ts",
+    "sha256": "08bb6b1563f47718b620d7d423bcd273d232a2c5655daac63e38c75c3cadd3cb",
+    "target": "src/renderer/line-tool.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/17-main.tsx",
+    "sha256": "d629d0ef629929a11bd6ca336a21eef34504dd0b1238a4c93685600c846a91ff",
+    "target": "src/renderer/main.tsx"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/18-model-settings.tsx",
+    "sha256": "70473d4bf45cc1a5df30fcb370da46fdff88f640dd87434b3043b0df9928592c",
+    "target": "src/renderer/model-settings.tsx"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/19-note-dialog.tsx",
+    "sha256": "3c4c48bd3533e6e9a71e678b6b8f24f28fb6ec0551b5ba694f3569a76494ee74",
+    "target": "src/renderer/note-dialog.tsx"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/20-panel-divider.tsx",
+    "sha256": "a7752a0720a4cb86bd4906a88074d5f3375964057bbee10ae2a7a0e712db49b5",
+    "target": "src/renderer/panel-divider.tsx"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/21-pdf-reader.ts",
+    "sha256": "c64662a600480f354e37bbf958761b6ccd03b9fa8f3fe6d688756cfb681056dd",
+    "target": "src/renderer/pdf-reader.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/22-reading-commands.ts",
+    "sha256": "6ea5eef4395f163aff37491e1d60e7e9e5bb1056b80fb62f9ecbddf19f7c9968",
+    "target": "src/renderer/reading-commands.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/23-style.css",
+    "sha256": "5727d508ef0635e61db3d3695453c08ffd3c4853c5aa84963cae3f5488092a70",
+    "target": "src/renderer/style.css"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/24-thumbnail-render.ts",
+    "sha256": "477d9a7c47a21ddb8f6e9f2989ef75d4a67168ae8be25b1fd5fae68fc205ef96",
+    "target": "src/renderer/thumbnail-render.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/25-thumbnails.tsx",
+    "sha256": "e1515603cf11eba724585dc56d9613dc7fb83a2fe874251027ef9cc9d19bd35b",
+    "target": "src/renderer/thumbnails.tsx"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/26-ai.ts",
+    "sha256": "9bbc568ed0ad8973f68e547075c9f2ee70912ff06894b4e0bf5baa2a268e00d2",
+    "target": "src/shared/ai.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/27-cruise.ts",
+    "sha256": "2827a40b61569d1dd3c07096fdd676b77a32fa0eedaa15868a495a5dd5a30237",
+    "target": "src/shared/cruise.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/28-document-commands.ts",
+    "sha256": "fd7cee36840bdf5ec85205e056ce6f5df65c6ecf89bb3ea154be1c07ee151db0",
+    "target": "src/shared/document-commands.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/29-geometry.ts",
+    "sha256": "e2c3973d6b2f225ab46575e247c4e1023533ad930ca161af361d7e1164598282",
+    "target": "src/shared/geometry.ts"
+  },
+  {
+    "snapshot": "evidence/document-command-task2/originals/30-model.ts",
+    "sha256": "4a05be639a1107eb174831d8249482e3ff5f01456c40059c6b27c4799164cc33",
+    "target": "src/shared/model.ts"
+  }
+]

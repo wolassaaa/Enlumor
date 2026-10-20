@@ -1,0 +1,26 @@
+{
+  "label": "foundation-text",
+  "fixture": "200 pages / 32MiB unused PDF stream / 1000 annotations",
+  "startupMs": [
+    485.07030000000003,
+    540.2724,
+    497.7634000000003
+  ],
+  "portableStartupMs": [
+    439.4317000000001,
+    430.84699999999975,
+    442.07680000000073
+  ],
+  "scrolling": {
+    "frameP50Ms": 5.800000000745058,
+    "frameP95Ms": 10.099999997764826,
+    "longTasks": 0,
+    "worstLongTaskMs": 0,
+    "retainedCanvases": 8,
+    "thumbnailCanvases": 4
+  },
+  "readingSave": {
+    "p50Ms": 0.8000000007450581,
+    "p95Ms": 3.899999998509884
+  }
+}

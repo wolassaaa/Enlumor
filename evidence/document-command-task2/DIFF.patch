@@ -1,0 +1,505 @@
+diff --git a/docs/acceptance/document-command-foundation.md b/docs/acceptance/document-command-foundation.md
+new file mode 100644
+index 0000000..5f1d1cf
+--- /dev/null
++++ b/docs/acceptance/document-command-foundation.md
+@@ -0,0 +1,40 @@
++# 文档指令基础层：真实 PDF 阅读器接入
++
++本轮交付是本地确定性基础指令的真实阅读器接入，不是全文上下文或新 Cruise 的完成声明。旧 Cruise 仍使用原有逐块共读流程与旧同步接口，本轮没有连接模型或发出真实 API 请求。
++
++## 五个支持的指令
++
++| 指令 | 真实适配与现有人工入口 |
++| --- | --- |
++| `read_page` | 阅读块按钮 → `runDocumentCommand` → `PdfReader.readPageBlocks`，只返回当前源文档、指定零基页的原文与原生几何，不翻页。 |
++| `go_to_page` | 上一页、下一页、有效页码提交 → 执行器 → `PdfReader.go`，执行器零基页转换为阅读器一基页；输入校验和草稿行为保持。 |
++| `show_evidence` | 人工阅读块定位 → 只提交页码与 passage ID → 执行器重新读取源页并按 ID 解析 → `locateCruiseBlock`；不接受调用者提交的几何。 |
++| `clear_focus` | 收起阅读块 → 取消旧任务并清除临时强调；不删除正式批注。 |
++| `pause` | Escape → 停止本地指令并失效旧上下文；不启动解释或自动翻页。旧 Cruise 的暂停按钮语义保持原状。 |
++
++`src/renderer/document-command-reader.ts` 只保存宿主 revision、AbortController 与请求序号，端口通过 getter 读取最新 reader/document ref。执行器没有挂到 window、preload 或通用 IPC。文档替换、关闭、手动接管、取消会失效旧指令。关闭 Cruise 时接管不会增加 React state；没有临时强调时失效不会重绘全页覆盖层。
++
++临时 focus 同步强调前检查源身份与有效性，实际延迟帧滚动前重新检查文档 generation、最新 focus epoch、宿主 guard。清除、更新 focus 或切换文档后，旧帧不会滚动或覆盖新强调；旧计时器不会清掉新的 focus。现有注释定位调用未要求传入 guard，默认行为保留。
++
++## 可复现验收
++
++在仓库根目录执行，Electron 使用测试自行创建的 OS 临时 userData；不会使用用户候选包或其 profile。
++
++```powershell
++npx vitest run tests/document-commands.test.ts tests/cruise-reader.test.ts tests/cruise-takeover.test.ts tests/reading-commands.test.ts
++npm test
++npm run build
++npx playwright test tests/e2e/document-commands.spec.ts tests/e2e/cruise-anchors.spec.ts tests/e2e/page-navigation.spec.ts tests/e2e/reading-tools.spec.ts
++```
++
++- 新 Electron 测试生成两份三页 PDF，每页有两处重复句和可区分的左右上下文；人工从 1 页到 3 页，验证右侧原文与强调在屏幕上的几何对应。
++- 创建真实便签、重新定位、清除临时强调后正式便签仍在，撤销/重做和导出标准 PDF 注释成功；原 PDF SHA256 保持不变。
++- 测试侧拦截并保留浏览器实际 rAF，完成 wheel 接管、Escape 暂停或切文档后才释放；断言原位置和新源阅读块，不使用任意 sleep。测试变量只由测试注入，不存在生产后门。
++- 单测调用实际 PdfReader 方法，延迟 `getTextContent` 边界，验证暂停/接管/文档或源 hash 变化后旧读取结果取消，下一次指令读取最新 ref。另验证旧 focus 帧不覆盖新 focus、clear 后旧结果不假报成功、缺少 reader 时不假报导航成功。
++- 真实故障 RED 是旧延迟 focus 帧在接管后仍滚动，不是将已存在的人工翻页或阅读块按钮描述成缺失。初始正向路径已经通过。原始命令输出、退出码和过程失败记录见 `evidence/document-command-task2/TASK2-*.txt`，最终计数见 Task 2 报告。
++
++## 尚未进入指令库
++
++搜索、缩放/旋转/视图设置、目录/缩略图导航、全文上下文、新 Cruise 调度、标识创建/编辑/保存、导出没有注册为新指令。现有人工功能仍可独立使用，但这不表示模型或新执行器已具备这些能力；它们没有空实现或伪成功项。本轮没有新增依赖、DB schema、模型 API、编辑库或高级高亮。
++
++新鲜独立 Review、全批回归、性能门禁、隔离回退与新路径候选打包由父任务继续验收；本地接入测试通过不替代这些发布条件。
+diff --git a/src/renderer/document-command-reader.ts b/src/renderer/document-command-reader.ts
+new file mode 100644
+index 0000000..7985f4b
+--- /dev/null
++++ b/src/renderer/document-command-reader.ts
+@@ -0,0 +1,43 @@
++import type { OpenedDocument } from '../shared/model';
++import type { DocumentCommand, DocumentCommandPorts } from '../shared/document-commands';
++import type { PdfReader } from './pdf-reader';
++import { runDocumentCommand } from './reading-commands';
++
++/** A thin host for the mounted reader. Getters deliberately read the latest refs,
++ * including callbacks installed once at mount, rather than closing over a PDF. */
++export function createReaderCommandHost(getReader: () => PdfReader | null, getDocument: () => OpenedDocument | null) {
++ let revision = 0, requestId = 0, cancellation = new AbortController();
++ const getContext = () => {
++  const document = getDocument();
++  return document ? { documentId: document.id, fingerprint: document.fingerprint, revision } : null;
++ };
++ function invalidate() {
++  revision++; cancellation.abort(); cancellation = new AbortController();
++  getReader()?.clearCruiseFocus();
++ }
++ const ports: DocumentCommandPorts = {
++  getContext: () => getReader() ? getContext() : null,
++  getPageCount: () => getDocument()?.pageCount || 0,
++  readPage: pageIndex => {
++   const reader = getReader(); if (!reader) throw Error('READER_NOT_READY');
++   return reader.readPageBlocks(pageIndex);
++  },
++  navigate: async (pageIndex, isCurrent) => {
++   if (isCurrent()) getReader()?.go(pageIndex + 1, isCurrent);
++  },
++  focus: async (block, isCurrent) => {
++   if (isCurrent()) await getReader()?.locateCruiseBlock(block, isCurrent);
++  },
++  clearFocus: () => { getReader()?.clearCruiseFocus(); },
++  pause: invalidate
++ };
++ return {
++  invalidate,
++  run: (command: DocumentCommand) => {
++   // Invalidate prior work before snapshotting clear's own context, so clear can
++   // succeed without allowing an older retained focus to report late success.
++   if (command.type === 'clear_focus') invalidate();
++   return runDocumentCommand({ requestId: `reader-${++requestId}`, context: getContext(), command }, ports, cancellation.signal);
++  }
++ };
++}
+diff --git a/src/renderer/main.tsx b/src/renderer/main.tsx
+index 6f4f1bb..2655c19 100644
+--- a/src/renderer/main.tsx
++++ b/src/renderer/main.tsx
+@@ -1,5 +1,7 @@
+ import{CruisePanel}from'./CruisePanel';
+ import type {CruiseBlock} from '../shared/cruise';
++import { createReaderCommandHost } from './document-command-reader';
++import type { DocumentCommand } from '../shared/document-commands';
+ import {ModelSettings} from './model-settings';
+ import { NoteDialog } from './note-dialog';
+ import { PanelDivider } from './panel-divider';
+@@ -27,13 +29,19 @@ function App() {
+   const [cruiseOpen,setCruiseOpen]=useState(false),[cruiseTakeover,setCruiseTakeover]=useState(0);
+   const cruiseOpenRef=useRef(cruiseOpen);cruiseOpenRef.current=cruiseOpen;
+   // PdfReader keeps its initial selection callback; read the current panel state.
+-  function notifyCruiseTakeover(){if(cruiseOpenRef.current)setCruiseTakeover(n=>n+1);}
++  const commandHost=useRef<ReturnType<typeof createReaderCommandHost>|null>(null);
++  function notifyCruiseTakeover(){commandHost.current?.invalidate();if(cruiseOpenRef.current)setCruiseTakeover(n=>n+1);}
++  function documentCommand(command:DocumentCommand){
++    commandHost.current??=createReaderCommandHost(()=>reader.current,()=>activeDocument.current);
++    return commandHost.current.run(command);
++  }
++  function commandError(result:Awaited<ReturnType<typeof documentCommand>>){if(!result.ok&&result.error.code!=='COMMAND_CANCELED'&&result.error.code!=='COMMAND_STALE')fail(new Error(result.error.message));}
+   const [modelSettingsOpen,setModelSettingsOpen]=useState(false);const modelSettingsTrigger=useRef<HTMLElement|null>(null);
+ 
+   const [cruiseBlocks,setCruiseBlocks]=useState<CruiseBlock[]>([]),[blocksOpen,setBlocksOpen]=useState(false),[blocksBusy,setBlocksBusy]=useState(false);
+   const blockEpoch=useRef(0),blockPage=useRef(1);
+   function clearBlocks(){blockEpoch.current++;setCruiseBlocks([]);setBlocksOpen(false);}
+-  async function readBlocks(){const opened=activeDocument.current;if(!opened||!reader.current||blocksBusy)return;const epoch=blockEpoch.current,pageIndex=blockPage.current-1;resetDrawing();setParts([]);setBlocksBusy(true);try{const blocks=await reader.current.readPageBlocks(pageIndex);if(activeId.current===opened.id&&blockEpoch.current===epoch){setCruiseBlocks(blocks);setBlocksOpen(true);}}catch(reason){if(activeId.current===opened.id&&blockEpoch.current===epoch)fail(reason);}finally{setBlocksBusy(false);}}
++  async function readBlocks(){const opened=activeDocument.current;if(!opened||!reader.current||blocksBusy)return;const epoch=blockEpoch.current,pageIndex=blockPage.current-1;resetDrawing();setParts([]);setBlocksBusy(true);try{const result=await documentCommand({type:'read_page',pageIndex});if(activeId.current===opened.id&&blockEpoch.current===epoch){if(result.ok&&result.result.kind==='page'){setCruiseBlocks(result.result.blocks);setBlocksOpen(true);}else commandError(result);}}catch(reason){if(activeId.current===opened.id&&blockEpoch.current===epoch)fail(reason);}finally{setBlocksBusy(false);}}
+   const workspaceElement = useRef<HTMLDivElement>(null);
+   const [layout, setLayout] = useState<LayoutPreferences>(defaultLayout), [layoutOpen, setLayoutOpen] = useState(false), [workspaceWidth, setWorkspaceWidth] = useState(window.innerWidth);
+   const layoutRef = useRef(layout), layoutFlight = useRef<Promise<void> | null>(null), [layoutError, setLayoutError] = useState(false);
+@@ -51,7 +59,7 @@ function App() {
+   const [busy, setBusy] = useState(false), [page, setPage] = useState('1'), [zoom, setZoom] = useState(1), [query, setQuery] = useState('');
+   const [currentPage,setCurrentPage]=useState(1),[pageError,setPageError]=useState('');
+   function syncPage(value:number){if(blockPage.current!==value){blockPage.current=value;clearBlocks();}setCurrentPage(value);setPage(String(value));setPageError('');}
+-  function navigatePage(value:number){if(!doc||busy)return;notifyCruiseTakeover();resetDrawing();setParts([]);setPage(String(value));setPageError('');reader.current?.go(value);}
++  function navigatePage(value:number){if(!doc||busy)return;notifyCruiseTakeover();resetDrawing();setParts([]);setPage(String(value));setPageError('');void documentCommand({type:'go_to_page',pageIndex:value-1}).then(commandError);}
+   function submitPage(){const value=page.trim(),number=Number(value);if(!doc)return;if(!/^\d+$/.test(value)||!Number.isSafeInteger(number)||number<1||number>doc.pageCount){setPageError(`请输入 1–${doc.pageCount} 之间的整数页码`);return;}navigatePage(number);}
+   const [drawMode,setDrawMode]=useState<'line'|'arrow'|'ink'|'erase'|null>(null);
+   function resetDrawing(){reader.current?.setDrawingTool(null);setDrawMode(null);}
+@@ -120,14 +128,14 @@ function App() {
+       }
+       if (event.ctrlKey && event.key.toLowerCase()==='w') { event.preventDefault(); if(activeId.current)void closeTab(activeId.current);return; }
+       if(event.key==='Escape'&&noteOpen.current){event.preventDefault();if(!locked.current&&!pending.current)closeNote();return;}
+-      if (event.key === 'Escape') { resetDrawing(); setParts([]); setNote(null); setLayoutOpen(false); window.getSelection()?.removeAllRanges(); }
++      if (event.key === 'Escape') { void commandHost.current?.run({type:'pause'}).then(commandError); resetDrawing(); setParts([]); setNote(null); setLayoutOpen(false); window.getSelection()?.removeAllRanges(); }
+     };
+     window.addEventListener('keydown', keyboard);
+     const observer = new ResizeObserver(entries => setWorkspaceWidth(entries[0].contentRect.width));
+     observer.observe(workspaceElement.current!);
+     const resized = () => {resetDrawing();setParts([]);};
+     window.addEventListener('resize', resized);
+-    return () => { observer.disconnect(); off(); clearTimeout(timer.current); window.removeEventListener('keydown', keyboard); window.removeEventListener('resize', resized); };
++    return () => { commandHost.current?.invalidate();observer.disconnect(); off(); clearTimeout(timer.current); window.removeEventListener('keydown', keyboard); window.removeEventListener('resize', resized); };
+   }, []);
+   useLayoutEffect(()=>{
+     if(!parts.length||!container.current||!selectionPopover.current)return;
+@@ -152,7 +160,7 @@ function App() {
+       const baseTabs=replacementTabs || tabsRef.current;
+       const nextTabs=baseTabs.some(tab=>tab.id===opened.id) ? baseTabs.map(tab=>tab.id===opened.id?opened:tab) : [...baseTabs,opened];
+       resetDrawing();previous.reading = current.current;
+-      replacing = true; current.current=null;clearBlocks();setCruiseOpen(false);setParts([]);setNotice('');setTextNotice('');
++      commandHost.current?.invalidate();replacing = true; current.current=null;clearBlocks();setCruiseOpen(false);setParts([]);setNotice('');setTextNotice('');
+       await reader.current!.open(opened);
+       unwrap(await window.enlumor.saveTabs({openIds:nextTabs.map(tab=>tab.id),activeId:opened.id}));
+       setQuery('');setHistory(histories.current.get(opened.id) || emptyHistory());
+@@ -225,7 +233,7 @@ function App() {
+     if(await commit(change,kind))closeNote();
+   }
+   function clearCurrent() {
+-    clearTimeout(timer.current);clearBlocks();setCruiseOpen(false);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
++    commandHost.current?.invalidate();clearTimeout(timer.current);clearBlocks();setCruiseOpen(false);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
+   }
+   async function closeTab(id:string) {
+     if(locked.current || pending.current || noteOpen.current)return;
+@@ -295,11 +303,11 @@ function App() {
+           <form className="search" onSubmit={event => { event.preventDefault(); notifyCruiseTakeover(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
+         </div>
+         {cruiseOpen&&doc&&reader.current&&<CruisePanel key={doc.id} document={doc} reader={reader.current} takeover={cruiseTakeover} selection={parts} settingsOpen={modelSettingsOpen} flushRef={cruiseFlush} onSettings={()=>{modelSettingsTrigger.current=window.document.activeElement as HTMLElement;setModelSettingsOpen(true);}} onExit={()=>setCruiseOpen(false)}/>}
+-        {blocksOpen&&<section onClickCapture={()=>notifyCruiseTakeover()} className="cruise-block-list" aria-label="本页阅读块"><div><strong>本页阅读块 · 原文定位</strong><button aria-label="收起阅读块" onClick={()=>setBlocksOpen(false)}>收起</button></div>{cruiseBlocks.length?cruiseBlocks.map((block,index)=><button key={block.id} data-block-id={block.id} aria-label={`定位阅读块 ${index+1}`} onClick={()=>{resetDrawing();reader.current?.locateCruiseBlock(block);}}>{block.quote}</button>):<p>当前页没有可用阅读块；扫描页需要文字层，可略过或继续普通阅读。</p>}</section>}
++        {blocksOpen&&<section onClickCapture={()=>notifyCruiseTakeover()} className="cruise-block-list" aria-label="本页阅读块"><div><strong>本页阅读块 · 原文定位</strong><button aria-label="收起阅读块" onClick={()=>{void documentCommand({type:'clear_focus'}).then(commandError);setBlocksOpen(false);}}>收起</button></div>{cruiseBlocks.length?cruiseBlocks.map((block,index)=><button key={block.id} data-block-id={block.id} aria-label={`定位阅读块 ${index+1}`} onClick={()=>{resetDrawing();void documentCommand({type:'show_evidence',pageIndex:block.pageIndex,passageId:block.id}).then(commandError);}}>{block.quote}</button>):<p>当前页没有可用阅读块；扫描页需要文字层，可略过或继续普通阅读。</p>}</section>}
+         {pageError && <div id="page-error" className="notice" role="alert">{pageError}</div>}
+         {(error||pending.current||layoutError) && <div className="error" role="alert">{error||'存在未保存更改'}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && note===null && <button disabled={busy} onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && note===null && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
+         {(textNotice||notice) && <div className="notice">{[textNotice,notice].filter(Boolean).join(' · ')}</div>}
+-        <div className="reader-stage"><div id="viewerContainer" ref={container} tabIndex={0}><div id="viewer" className="pdfViewer"/></div>
++        <div className="reader-stage"><div id="viewerContainer" ref={container} tabIndex={0} onWheelCapture={()=>commandHost.current?.invalidate()} onPointerDownCapture={()=>commandHost.current?.invalidate()} onKeyDownCapture={event=>{if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key))commandHost.current?.invalidate();}}><div id="viewer" className="pdfViewer"/></div>
+           {!doc && <div className="empty"><div className="paper-emblem" aria-hidden="true"><svg viewBox="0 0 140 100" fill="none"><path d="M70 21C50 9 25 10 12 16v64c20-7 38-6 58 4 20-10 38-11 58-4V16c-13-6-38-7-58 5Zm0 0v63M25 33l30 4M25 45l30 4M25 57l22 3M85 37l29-4M85 49l29-4M85 61l21-3"/></svg></div><span className="empty-index">A QUIETER PLACE TO READ</span><h1>让理解，<br/>留在原文旁。</h1><p>打开一本书、一篇论文，或今天的讲义。<br/>选中，标记，下次从这里继续。</p><button className="primary" disabled={busy} onClick={() => void load()}>打开 PDF <Glyph name="open"/></button><small>无需账户 · 离线可用 · 原文件保持不变</small><div className="empty-footnote"><span>01 — 阅读原文</span><span>02 — 留下思考</span><span>03 — 从这里继续</span></div></div>}
+         </div>
+         <footer className="statusbar"><span role="status">{status}</span><span>{doc ? `${marks.length} 条批注` : 'ENLUMOR / FOUNDATION'}</span></footer>
+diff --git a/src/renderer/pdf-reader.ts b/src/renderer/pdf-reader.ts
+index c5bb087..8c38f6b 100644
+--- a/src/renderer/pdf-reader.ts
++++ b/src/renderer/pdf-reader.ts
+@@ -23,6 +23,7 @@ export class PdfReader {
+   private active?: OpenedDocument;
+   private generation = 0;
+   private flash?: Annotation;
++  private focusEpoch = 0;
+   private flashTimer?: ReturnType<typeof setTimeout>;
+   private ready = false;
+   private lineTool: LineTool;
+@@ -143,11 +144,12 @@ export class PdfReader {
+     this.blockCache.set(pageIndex,blocks);if(this.blockCache.size>6)this.blockCache.delete(this.blockCache.keys().next().value!);
+     return structuredClone(blocks);
+   }
+-  clearCruiseFocus(){clearTimeout(this.flashTimer);this.flash=undefined;this.paint();}
+-  locateCruiseBlock(block:CruiseBlock){
++  clearCruiseFocus(){this.focusEpoch=(this.focusEpoch||0)+1;clearTimeout(this.flashTimer);const hadFlash=!!this.flash;this.flash=undefined;if(hadFlash)this.paint();}
++  locateCruiseBlock(block:CruiseBlock,isCurrent:()=>boolean=()=>true){
++    if(!isCurrent())return Promise.resolve();
+     if(!this.active||!this.ready||!this.viewer.pdfDocument||block.documentId!==this.active.id||block.fingerprint!==this.active.fingerprint)throw new Error('CRUISE_SOURCE_CHANGED');
+     const mark={...block,type:'highlight',author:'user',color:'#f4cf58',note:''};
+-    validateAnnotation(mark,this.active.pageCount);this.focus(mark);
++    validateAnnotation(mark,this.active.pageCount);return this.focus(mark,isCurrent);
+   }
+   setMarks(marks: Annotation[], changedIds?: string[]) { this.marks = marks; this.paint(undefined,changedIds?new Set(changedIds):undefined); }
+   setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
+@@ -163,7 +165,7 @@ export class PdfReader {
+   zoom(value: number) { if (this.ready) this.viewer.currentScale = Math.max(.25, Math.min(4, value)); }
+   fit(mode: 'page-width' | 'page-fit') { if (this.ready) this.viewer.currentScaleValue = mode; }
+   rotate() { if (this.ready) this.viewer.pagesRotation = (this.viewer.pagesRotation + 90) % 360; }
+-  go(page: number) { if (this.ready && Number.isInteger(page) && page >= 1 && page <= (this.active?.pageCount || 0)) this.viewer.currentPageNumber = page; }
++  go(page: number, isCurrent:()=>boolean=()=>true) { if (isCurrent() && this.ready && Number.isInteger(page) && page >= 1 && page <= (this.active?.pageCount || 0)) this.viewer.currentPageNumber = page; }
+   search(query: string, again = false, backwards = false) {
+     if (!this.ready) return;
+     this.bus.dispatch('find', { source: this, type: again ? 'again' : '', query, caseSensitive: false, entireWord: false, highlightAll: true, findPrevious: backwards, matchDiacritics: false });
+@@ -201,15 +203,25 @@ export class PdfReader {
+     }
+     return parts;
+   }
+-  focus(mark: Annotation) {
++  focus(mark: Annotation, isCurrent:()=>boolean=()=>true):Promise<void> {
++    const generation=this.generation,epoch=this.focusEpoch=(this.focusEpoch||0)+1;
++    const current=()=>epoch===this.focusEpoch&&generation===this.generation&&this.ready&&mark.documentId===this.active?.id&&mark.fingerprint===this.active?.fingerprint&&isCurrent();
++    if(!current())return Promise.resolve();
+     this.go(mark.pageIndex + 1); this.flash = mark; this.paint();
+-    clearTimeout(this.flashTimer); this.flashTimer = setTimeout(() => { this.flash = undefined; this.paint(); }, 1800);
+-    requestAnimationFrame(() => {
++    clearTimeout(this.flashTimer); this.flashTimer = setTimeout(() => { if(epoch===this.focusEpoch&&generation===this.generation){this.flash = undefined; this.paint();} }, 1800);
++    return new Promise(resolve=>requestAnimationFrame(() => {
++      if(!current()){
++        // An obsolete frame may clear only its own flash, never a newer focus.
++        if(epoch===this.focusEpoch&&generation===this.generation){this.flash=undefined;this.paint();}
++        resolve();return;
++      }
+       const view = this.viewer.getPageView(mark.pageIndex);
+-      if (!view) return;
++      if (!view) {resolve();return;}
+       const rect = quadToScreen(mark.quads[0], view.viewport.transform);
++      if(!current()){resolve();return;}
+       this.container.scrollTop = Math.max(0, view.div.offsetTop + rect[1] - this.container.clientHeight / 3);
+-    });
++      resolve();
++    }));
+   }
+   private paint(pageIndex?: number, changed?: Set<string>) {
+     if (!this.active) return;
+diff --git a/tests/document-commands.test.ts b/tests/document-commands.test.ts
+index de2cee6..63b1cc0 100644
+--- a/tests/document-commands.test.ts
++++ b/tests/document-commands.test.ts
+@@ -1,4 +1,8 @@
+-import { describe, expect, it } from 'vitest';
++import { afterEach, describe, expect, it, vi } from 'vitest';
++vi.mock('pdfjs-dist', () => ({ getDocument: vi.fn(), GlobalWorkerOptions: {} }));
++vi.mock('pdfjs-dist/web/pdf_viewer.mjs', () => ({ EventBus: class {}, PDFViewer: class {}, PDFLinkService: class {}, PDFFindController: class {}, ScrollMode: {} }));
++import { PdfReader } from '../src/renderer/pdf-reader';
++import { createReaderCommandHost } from '../src/renderer/document-command-reader';
+ import { runDocumentCommand } from '../src/renderer/reading-commands';
+ import type { CommandContext, DocumentCommand, DocumentCommandPorts } from '../src/shared/document-commands';
+ import type { CruiseBlock } from '../src/shared/cruise';
+@@ -195,3 +199,84 @@ describe('validated document command executor', () => {
+     await failure(request({ type: 'read_page', pageIndex: 0 }), 'COMMAND_FAILED', h); expect(h.effects).toEqual([]);
+   });
+ });
++
++// Real PdfReader methods, with only the PDF.js/DOM boundary supplied. No fake
++// focus/navigate port: retained frames exercise the actual viewport mutation.
++function readerFixture() {
++ const frames: FrameRequestCallback[] = [];
++ vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => { frames.push(callback); return frames.length; });
++ const reader: any = Object.create(PdfReader.prototype);
++ const paint = vi.fn();
++ const page = { view: [0, 0, 600, 800], getTextContent: async () => ({ styles: {}, items: [{ str: 'Native source', width: 100, height: 14, transform: [14, 0, 0, 14, 40, 700], fontName: 'f' }] }) };
++ Object.assign(reader, { generation: 1, focusEpoch: 0, ready: true, active: { id: 'doc', fingerprint: context.fingerprint, pageCount: 3 }, blockCache: new Map(),
++  viewer: { currentPageNumber: 1, pdfDocument: { getPage: async () => page }, getPageView: () => ({ viewport: { transform: [1, 0, 0, 1, 0, 0] }, div: { offsetTop: 800 } }) },
++  container: { scrollTop: 23, clientHeight: 600 }, paint });
++ return { reader, frames, paint, page, flush: () => { for (const callback of frames.splice(0)) callback(0); } };
++}
++function sourceMark() { return { ...structuredClone(block), type: 'highlight', author: 'user', color: '#ffff00', note: '' }; }
++afterEach(() => { vi.unstubAllGlobals(); vi.useRealTimers(); });
++it.each(['clear', 'source', 'guard'])('real reader rejects a retained focus frame after %s invalidation', async change => {
++ vi.useFakeTimers(); const h = readerFixture(); let current = true;
++ const pending = h.reader.focus(sourceMark(), () => current);
++ expect(h.reader.flash?.quote).toBe('Original text'); expect(h.frames).toHaveLength(1);
++ if (change === 'clear') h.reader.clearCruiseFocus();
++ if (change === 'source') { h.reader.generation++; h.reader.active = { ...h.reader.active, id: 'new' }; h.reader.flash = undefined; }
++ if (change === 'guard') current = false;
++ h.reader.container.scrollTop = 47; h.flush(); await pending;
++ expect(h.reader.container.scrollTop).toBe(47);
++ if (change !== 'source') expect(h.reader.flash).toBeUndefined();
++});
++it('real reader keeps the newest focus when an older retained frame arrives', async () => {
++ vi.useFakeTimers(); const h = readerFixture();
++ const old = h.reader.focus(sourceMark());
++ const latest = h.reader.focus({ ...sourceMark(), id: 'new-evidence', quads: [[10, 100, 50, 100, 10, 90, 50, 90]] });
++ const newestFrame = h.frames.pop()!; newestFrame(0); await latest;
++ const position = h.reader.container.scrollTop; h.flush(); await old;
++ expect(h.reader.container.scrollTop).toBe(position); expect(h.reader.flash.id).toBe('new-evidence');
++});
++
++it.each(['pause', 'takeover', 'switch', 'source-hash'] as const)('real reader text delayed across %s never returns old evidence; next command uses latest refs', async change => {
++ const h = readerFixture(), text = deferred<any>();
++ const nativeText = h.page.getTextContent;
++ h.page.getTextContent = () => text.promise;
++ let document = h.reader.active;
++ const host = createReaderCommandHost(() => h.reader, () => document);
++ const pending = host.run({ type: 'read_page', pageIndex: 0 });
++ await Promise.resolve(); // The real PdfReader is waiting in getTextContent.
++ if (change === 'pause') expect(await host.run({ type: 'pause' })).toMatchObject({ ok: true, result: { kind: 'paused' } });
++ else host.invalidate();
++ if (change === 'switch' || change === 'source-hash') {
++  document = { ...document, id: change === 'switch' ? 'latest-doc' : document.id, fingerprint: 'b'.repeat(64) };
++  h.reader.active = document; h.reader.generation++; h.reader.blockCache.clear();
++ }
++ text.resolve(await nativeText());
++ expect(await pending).toMatchObject({ ok: false, error: { code: 'COMMAND_CANCELED' } });
++ h.page.getTextContent = nativeText;
++ const latest = await host.run({ type: 'read_page', pageIndex: 2 });
++ expect(latest).toMatchObject({ ok: true, result: { kind: 'page', blocks: [{ documentId: document.id, fingerprint: document.fingerprint, pageIndex: 2, quote: 'Native source' }] } });
++ expect(h.reader.viewer.currentPageNumber).toBe(1); expect(h.reader.flash).toBeUndefined();
++});
++it('clear_focus cancels a pending real focus result and frame while reporting its own completion', async () => {
++ vi.useFakeTimers(); const h = readerFixture();
++ const host = createReaderCommandHost(() => h.reader, () => h.reader.active);
++ const page = await host.run({ type: 'read_page', pageIndex: 0 });
++ if (!page.ok || page.result.kind !== 'page') throw Error('native page fixture failed');
++ const pending = host.run({ type: 'show_evidence', pageIndex: 0, passageId: page.result.blocks[0].id });
++ for (let i = 0; i < 8; i++) await Promise.resolve();
++ expect(h.frames).toHaveLength(1); expect(h.reader.flash).toBeDefined();
++ expect(await host.run({ type: 'clear_focus' })).toMatchObject({ ok: true, result: { kind: 'cleared' } });
++ h.flush();
++ expect(await pending).toMatchObject({ ok: false, error: { code: 'COMMAND_CANCELED' } });
++ expect(h.reader.flash).toBeUndefined(); expect(h.reader.container.scrollTop).toBe(23);
++});
++it('a detached reader cannot report successful navigation with a still-mounted document ref', async () => {
++ const h = readerFixture();
++ const host = createReaderCommandHost(() => null, () => h.reader.active);
++ expect(await host.run({ type: 'go_to_page', pageIndex: 2 })).toMatchObject({ ok: false });
++ expect(h.reader.viewer.currentPageNumber).toBe(1);
++});
++it('closed-focus takeovers only invalidate refs and do not repaint every page', () => {
++ const h = readerFixture(), host = createReaderCommandHost(() => h.reader, () => h.reader.active);
++ host.invalidate(); host.invalidate();
++ expect(h.paint).not.toHaveBeenCalled();
++});
+diff --git a/tests/e2e/document-commands.spec.ts b/tests/e2e/document-commands.spec.ts
+new file mode 100644
+index 0000000..e7389cf
+--- /dev/null
++++ b/tests/e2e/document-commands.spec.ts
+@@ -0,0 +1,145 @@
++import { test, expect, _electron as electron, type Page } from '@playwright/test';
++import { mkdtempSync, mkdirSync, readFileSync } from 'node:fs';
++import { tmpdir } from 'node:os';
++import { execFileSync } from 'node:child_process';
++import { createHash } from 'node:crypto';
++import path from 'node:path';
++
++const root = path.resolve('.'), folder = mkdtempSync(path.join(tmpdir(), 'enlumor-document-commands-'));
++const python = path.join(root, '.venv/Scripts/python.exe');
++const source = path.join(folder, 'command source.pdf'), other = path.join(folder, 'other source.pdf'), output = path.join(folder, 'command export.pdf');
++const evidence = process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/document-command-task2';
++mkdirSync(evidence, { recursive: true });
++execFileSync(python, ['-c', `import pymupdf as f
++for filename,label in ((${JSON.stringify(source)},'Command'),(${JSON.stringify(other)},'Other')):
++ d=f.open()
++ for i in range(3):
++  p=d.new_page(width=640,height=1000)
++  p.insert_text((50,70),label+' page '+str(i+1),fontsize=15)
++  for x,word in ((50,'left'),(350,'right')):
++   p.insert_text((x,600),'Repeated evidence',fontsize=13)
++   p.insert_text((x,620),word+' context page '+str(i+1),fontsize=13)
++ d.save(filename)`]);
++const hash = () => createHash('sha256').update(readFileSync(source)).digest('hex');
++async function launch(name: string) {
++ const app = await electron.launch({ executablePath: process.env.ENLUMOR_TEST_APP, args: [...(process.env.ENLUMOR_TEST_APP ? [] : [root]), '--user-data-dir=' + path.join(folder, name)], env: { ...process.env, ENLUMOR_PYTHON: python } });
++ await app.evaluate(({ dialog }, files) => {
++  dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [files.source] });
++  dialog.showSaveDialog = async () => ({ canceled: false, filePath: files.output });
++ }, { source, output });
++ const page = await app.firstWindow();
++ await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
++ await expect(page.locator('.page[data-page-number="1"] .textLayer span').first()).toBeVisible();
++ return { app, page };
++}
++async function pageThree(page: Page) {
++ const input = page.getByLabel('跳转页码', { exact: true });
++ await expect(input).toHaveValue('1');
++ await input.fill('3'); await input.press('Enter');
++ await expect(input).toHaveValue('3');
++ await expect(page.locator('.page[data-page-number="3"] .textLayer span').first()).toBeVisible();
++ await page.getByRole('button', { name: '读取本页阅读块', exact: true }).click();
++ await expect(page.locator('.cruise-block-list [data-block-id]')).toHaveCount(3);
++ await expect(page.getByRole('button', { name: '定位阅读块 3', exact: true })).toContainText('right context page 3');
++}
++// Gate browser frames from the test, not a production executor/debug hook. Restore
++// scheduling immediately after the click, then release the retained callbacks only
++// after the real cancellation/document change has completed.
++async function holdFocusFrame(page: Page) {
++ await page.evaluate(() => {
++  const w = window as any;
++  w.__commandTestFrames = [];
++  w.__commandTestRaf = window.requestAnimationFrame;
++  window.requestAnimationFrame = cb => { w.__commandTestFrames.push(cb); return -w.__commandTestFrames.length; };
++ });
++ await page.getByRole('button', { name: '定位阅读块 3', exact: true }).evaluate((button: HTMLButtonElement) => button.click());
++ await page.evaluate(async () => {
++  // show_evidence awaits native cached page extraction before PdfReader.focus.
++  for (let i = 0; i < 12; i++) await Promise.resolve();
++  const w = window as any; window.requestAnimationFrame = w.__commandTestRaf;
++ });
++ expect(await page.evaluate(() => (window as any).__commandTestFrames.length)).toBeGreaterThan(0);
++}
++async function releaseFocusFrame(page: Page) {
++ await page.evaluate(async () => {
++  const w = window as any, frames: FrameRequestCallback[] = w.__commandTestFrames;
++  delete w.__commandTestFrames; delete w.__commandTestRaf;
++  for (const callback of frames) callback(performance.now());
++  await new Promise<void>(resolve => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
++ });
++}
++
++test('manual 1 to 3 navigation resolves the right repeated passage; clear retains note undo export and source hash', async () => {
++ const { app, page } = await launch('evidence'); const before = hash();
++ try {
++  await pageThree(page);
++  await page.getByRole('button', { name: '定位阅读块 3', exact: true }).click();
++  await expect(page.locator('.flash')).toHaveCount(2);
++  const aligned = await page.locator('.page[data-page-number="3"] .textLayer span').filter({ hasText: 'Repeated evidence' }).nth(1).evaluate(el => {
++   const r = el.getBoundingClientRect(), x = (r.left + r.right) / 2, y = (r.top + r.bottom) / 2;
++   return [...document.querySelectorAll('.flash')].some(mark => { const b = mark.getBoundingClientRect(); return x >= b.left - 2 && x <= b.right + 2 && y >= b.top - 2 && y <= b.bottom + 2; });
++  });
++  expect(aligned).toBe(true);
++  await page.locator('.page[data-page-number="3"] .textLayer span').filter({ hasText: 'right context page 3' }).evaluate(item => {
++   const range = document.createRange(); range.selectNodeContents(item);
++   const selection = getSelection()!; selection.removeAllRanges(); selection.addRange(range);
++   document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup', { bubbles: true }));
++  });
++  await page.getByRole('button', { name: '添加便签', exact: true }).click();
++  await page.getByLabel('便签内容').fill('Source-bound command note');
++  await page.getByRole('button', { name: '保存便签', exact: true }).click();
++  await expect(page.locator('.note-content')).toHaveText('Source-bound command note');
++  await page.getByRole('button', { name: '定位阅读块 3', exact: true }).click();
++  await expect(page.locator('.flash')).toHaveCount(2);
++  await page.getByRole('button', { name: '收起阅读块', exact: true }).click();
++  await expect(page.locator('.flash')).toHaveCount(0);
++  await expect(page.locator('.enlumor-marks .note')).toHaveCount(1);
++  await page.getByRole('button', { name: '撤销', exact: true }).click();
++  await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++  await page.getByRole('button', { name: '重做', exact: true }).click();
++  await expect(page.locator('.note-content')).toHaveText('Source-bound command note');
++  await page.getByRole('button', { name: '导出批注 PDF', exact: true }).click();
++  await expect(page.getByRole('status')).toContainText('导出完成');
++  const notes = execFileSync(python, ['-c', `import pymupdf as f,json;d=f.open(${JSON.stringify(output)});print(json.dumps([(i,a.type[0],a.info['content']) for i,p in enumerate(d) for a in (p.annots() or [])]))`], { encoding: 'utf8' }).trim();
++  expect(JSON.parse(notes)).toEqual([[2, 0, 'Source-bound command note']]);
++  expect(hash()).toBe(before);
++  await page.screenshot({ path: path.join(evidence, 'TASK2-evidence-note-export.png') });
++ } finally { await app.evaluate(({ app }) => app.exit(0)).catch(() => {}); }
++});
++
++for (const takeover of ['wheel', 'pause'] as const) test(`${takeover} cancels the actual pending focus frame without late scroll or flash`, async () => {
++ const { app, page } = await launch('frame-' + takeover);
++ try {
++  await pageThree(page); await holdFocusFrame(page);
++  const position = await page.locator('#viewerContainer').evaluate((container, takeover) => {
++   container.scrollTop = (container.querySelector('.page[data-page-number="3"]') as HTMLElement).offsetTop + 10;
++   if (takeover === 'wheel') container.dispatchEvent(new WheelEvent('wheel', { deltaY: 1, bubbles: true }));
++   else window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', bubbles: true }));
++   return container.scrollTop;
++  }, takeover);
++  await releaseFocusFrame(page);
++  expect(await page.locator('#viewerContainer').evaluate(container => container.scrollTop)).toBeCloseTo(position, 0);
++  await expect(page.locator('.flash')).toHaveCount(0);
++  await expect(page.getByLabel('跳转页码', { exact: true })).toHaveValue('3');
++  await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(0);
++ } finally { await app.evaluate(({ app }) => app.exit(0)).catch(() => {}); }
++});
++
++test('switching documents rejects an old actual focus frame and reads only the latest source', async () => {
++ const { app, page } = await launch('switch-frame');
++ try {
++  await pageThree(page); await holdFocusFrame(page);
++  await app.evaluate(({ dialog }, other) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [other] }); }, other);
++  await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
++  await expect(page.locator('.document-name')).toContainText('other source.pdf');
++  await expect(page.locator('.page[data-page-number="1"] .textLayer span').first()).toHaveText('Other page 1');
++  const position = await page.locator('#viewerContainer').evaluate(container => container.scrollTop);
++  await releaseFocusFrame(page);
++  expect(await page.locator('#viewerContainer').evaluate(container => container.scrollTop)).toBeCloseTo(position, 0);
++  await expect(page.getByLabel('跳转页码', { exact: true })).toHaveValue('1');
++  await page.getByRole('button', { name: '读取本页阅读块', exact: true }).click();
++  await expect(page.locator('.cruise-block-list')).toContainText('Other page 1');
++  await expect(page.locator('.cruise-block-list')).not.toContainText('Command page');
++  await expect(page.locator('.flash')).toHaveCount(0);
++ } finally { await app.evaluate(({ app }) => app.exit(0)).catch(() => {}); }
++});
