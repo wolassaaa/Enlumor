@@ -16,11 +16,12 @@ export class Workspace {
       return `${stat.dev}:${stat.ino}:${stat.size}:${stat.mtimeNs}:${stat.ctimeNs}`;
     } catch { throw new Error('SOURCE_MISSING: 原文件已移动，请重新关联'); }
   }
-  constructor(file: string) {
+  constructor(file: string, options?: { allowEditingSchema?: boolean }) {
     this.db = new DatabaseSync(file);
-    this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000');
+    try {
     const version = Number(this.db.prepare('PRAGMA user_version').get()!.user_version);
-    if (version > 4) { this.db.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
+    if (version > (options?.allowEditingSchema === true ? 5 : 4)) { this.close(); throw new Error('DATABASE_VERSION: 数据来自更新版本的 Enlumor'); }
+    this.db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL; PRAGMA busy_timeout=5000');
     if (version === 0) {
       const tables = this.db.prepare("SELECT name FROM sqlite_master WHERE type='table'").all();
       if (tables.length) { this.db.exec('PRAGMA wal_checkpoint(TRUNCATE)'); copyFileSync(file, `${file}.pre-v1.bak`); }
@@ -58,6 +59,7 @@ export class Workspace {
         this.db.exec('BEGIN IMMEDIATE; CREATE TABLE cruise_sessions(documentId TEXT PRIMARY KEY REFERENCES documents(id),payload TEXT NOT NULL); PRAGMA user_version=4; COMMIT;');
       }catch(error){this.db.close();this.closed=true;throw error;}
     }
+    } catch (error) { this.close(); throw error; }
   }
 
   layout(): LayoutPreferences {
@@ -124,6 +126,7 @@ export class Workspace {
     this.db.prepare('INSERT INTO reading VALUES (?,?) ON CONFLICT(documentId) DO UPDATE SET payload=excluded.payload').run(state.documentId, JSON.stringify(state));
   }
   apply(change: AnnotationChange): CommitResult {
+    if (Number(this.db.prepare('PRAGMA user_version').get()!.user_version) >= 5) throw new Error('LEGACY_READ_ONLY');
     if (!change || !Array.isArray(change.upserts) || !Array.isArray(change.deletes) || change.upserts.length + change.deletes.length > 10000) throw new Error('INVALID_CHANGE');
     const doc = this.verified(change.documentId);
     const seen = new Set<string>();

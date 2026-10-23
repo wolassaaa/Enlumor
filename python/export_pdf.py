@@ -8,6 +8,55 @@ import sys
 import tempfile
 import pymupdf as fitz
 
+def editing_source(source, fingerprint):
+    try:
+        actual = digest(source)
+    except FileNotFoundError as error:
+        raise ValueError('SOURCE_MISSING') from error
+    if actual != fingerprint: raise ValueError('SOURCE_CHANGED')
+
+def native_bounds(page):
+    # Derotation is in memory only. Inverse native matrix retains crop/media offsets.
+    page.set_rotation(0)
+    inverse = ~page.transformation_matrix
+    points = [p * inverse for p in (page.rect.tl,page.rect.tr,page.rect.bl,page.rect.br)]
+    return [min(p.x for p in points),min(p.y for p in points),max(p.x for p in points),max(p.y for p in points)]
+
+def editing_document(source, fingerprint):
+    editing_source(source,fingerprint)
+    with fitz.open(source) as doc:
+        if doc.needs_pass: raise ValueError('PASSWORD_REQUIRED')
+        if not doc.is_pdf or not len(doc): raise ValueError('INVALID_PDF')
+        result={'fingerprint':fingerprint,'pageCount':len(doc),'pageBounds':[native_bounds(page) for page in doc]}
+    editing_source(source,fingerprint)
+    return result
+
+def editing_page(source, fingerprint, page_index):
+    editing_source(source,fingerprint)
+    with fitz.open(source) as doc:
+        if doc.needs_pass: raise ValueError('PASSWORD_REQUIRED')
+        if type(page_index) is not int or not 0 <= page_index < len(doc): raise ValueError('ANCHOR_NOT_FOUND')
+        page=doc[page_index];bounds=native_bounds(page);inverse=~page.transformation_matrix
+        lines=[];count=0
+        for bi,block in enumerate(page.get_text('rawdict')['blocks']):
+            if block.get('type') != 0: continue
+            for li,line in enumerate(block['lines']):
+                line_id=f'b{bi}-l{li}';chars=[]
+                zero=fitz.Point(0,0)*inverse;end=fitz.Point(*line['dir'])*inverse
+                direction=[end.x-zero.x,end.y-zero.y]
+                for span in line['spans']:
+                    for char in span['chars']:
+                        q=fitz.recover_char_quad(line['dir'],span,char)
+                        points=[point*inverse for point in (q.ul,q.ur,q.ll,q.lr)]
+                        chars.append({'id':f'{line_id}-c{len(chars)}','text':char['c'],'quad':[n for point in points for n in (point.x,point.y)]})
+                        count+=len(char['c'])
+                        if count>100000: raise ValueError('EDIT_TOO_LARGE')
+                if chars: lines.append({'id':line_id,'order':len(lines),'direction':direction,'chars':chars})
+        result={'fingerprint':fingerprint,'pageIndex':page_index,'nativeBounds':bounds,'parserVersion':1,'lines':lines}
+    editing_source(source,fingerprint)
+    if len(json.dumps(result,ensure_ascii=True).encode('utf-8'))>1024*1024-64: raise ValueError('PDF_RESPONSE_TOO_LARGE')
+    return result
+
 def digest(path):
     with open(path, 'rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
@@ -131,6 +180,8 @@ if __name__ == '__main__':
     try:
         request = json.loads(sys.stdin.buffer.read())
         if request['operation'] == 'inspect': result = inspect_pdf(request['source'])
+        elif request['operation'] == 'editing-document': result = editing_document(request['source'],request['fingerprint'])
+        elif request['operation'] == 'editing-page': result = editing_page(request['source'],request['fingerprint'],request['pageIndex'])
         elif request['operation'] == 'verify-block': result = verify_block(request['source'], request['fingerprint'], request['block'])
         elif request['operation'] == 'export': result = export_pdf(request['source'], request['target'], request['fingerprint'], request['annotations'])
         else: raise ValueError('INVALID_OPERATION')
