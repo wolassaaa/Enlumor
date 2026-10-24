@@ -1,3 +1,5 @@
+import type {SurfingBridge} from './surfing-bridge';
+import type {EditingBridge} from './editing-bridge';
 import type{CruiseSession}from'./cruise';
 import type{ExplanationInput}from'../main/cruise-requests';
 import type{AiTextEvent}from'./ai';
@@ -16,7 +18,7 @@ export type ExportResult = { cancelled: boolean; path?: string; annotationCount?
 export type Reply<T> = { ok: true; value: T } | { ok: false; error: { code: string; message: string } };
 export type LayoutPreferences = { left: number; right: number; spacing: 12 | 16 | 24 };
 export type TabSession = { openIds: string[]; activeId: string | null };
-export type Bridge = {
+export type Bridge = EditingBridge & SurfingBridge & {
   onAppBackground(handler:()=>void):()=>void;
   getCruiseSession(documentId:string):Promise<Reply<CruiseSession|null>>;
   saveCruiseSession(session:CruiseSession):Promise<Reply<void>>;
@@ -46,3 +48,4 @@ export function unwrap<T>(reply: Reply<T>): T {
   if (!reply.ok) throw new Error(reply.error.message.startsWith(`${reply.error.code}:`) ? reply.error.message : `${reply.error.code}: ${reply.error.message}`);
   return reply.value;
 }
+

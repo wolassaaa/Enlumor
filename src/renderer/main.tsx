@@ -1,3 +1,10 @@
+import {SurfingPanel} from './SurfingPanel';
+import {lineAnchor} from '../shared/geometry';
+import type {VerifiedAnchor} from '../shared/editing-commands';
+import {EditingController} from './editing-controller';
+import {projectEditingView,type MarkView} from './editing-view';
+import type {EditingView} from '../shared/editing-bridge';
+import type {EditCommand,EditMutation} from '../shared/editing-commands';
 import{CruisePanel}from'./CruisePanel';
 import type {CruiseBlock} from '../shared/cruise';
 import { createReaderCommandHost } from './document-command-reader';
@@ -12,8 +19,10 @@ import { ThumbnailRail } from './thumbnails';
 import { createRoot } from 'react-dom/client';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { PdfReader, type SelectionPart, type OutlineEntry } from './pdf-reader';
-import { unwrap, type Annotation, type AnnotationChange, type Bridge, type DocumentInfo, type OpenedDocument, type ReadingState } from '../shared/model';
+import { unwrap, type Annotation as LegacyAnnotation, type AnnotationChange, type Bridge, type DocumentInfo, type OpenedDocument, type ReadingState } from '../shared/model';
 import './style.css';
+type Annotation=Omit<LegacyAnnotation,'author'> & {author?:'user'} & Partial<MarkView>;
+type UiChange={documentId:string;upserts:Annotation[];deletes:string[]};
 declare global { interface Window { enlumor: Bridge } }
 
 function Glyph({ name }: { name: 'library' | 'notes' | 'open' | 'export' | 'mark' | 'close' }) {
@@ -25,12 +34,61 @@ function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id
 }
 
 function App() {
+  const editingEnabled=useRef(false),editingController=useRef<EditingController|null>(null),editingSnapshot=useRef<EditingView|null>(null);
+  const [editingView,setEditingView]=useState<EditingView|null>(null);
+  const [anchorPreview,setAnchorPreview]=useState<{mark:Annotation;anchor:VerifiedAnchor}|null>(null);
+  async function previewAnchor(mark:Annotation){const s=editingController.current?.currentSession;if(!s||parts.length!==1)return;try{const anchor=unwrap(await window.enlumor.prepareEditingAnchor({sessionId:s.sessionId,requestId:crypto.randomUUID(),candidate:parts[0]}));if(editingController.current?.currentSession?.sessionId===s.sessionId)setAnchorPreview({mark,anchor});}catch(e){fail(e);}}
+  const [geometryEdit,setGeometryEdit]=useState<{mark:Annotation;points:string;dx:string;dy:string}|null>(null);
+  const [legacyPreview,setLegacyPreview]=useState<{legacy:EditingView['legacy'][number];anchor:VerifiedAnchor}|null>(null);
+  async function applyGeometry(){if(!geometryEdit)return;const {mark,points,dx,dy}=geometryEdit;if(mark.version==null)return;
+    const command:EditCommand=mark.type==='note'?{type:'set_mark_placement',id:mark.id,expectedVersion:mark.version,placement:{dx:Number(dx),dy:Number(dy)}}:{type:'set_mark_geometry',id:mark.id,expectedVersion:mark.version,geometry:{points:points.split(',').map(Number),quads:[lineAnchor(points.split(',').map(Number))]}};
+    if(await submitEdit(command))setGeometryEdit(null);
+  }
+  async function previewReanchor(mark:Annotation){const s=editingController.current?.currentSession,legacy=editingSnapshot.current?.legacy.find(l=>l.legacyId===mark.id);if(!s||!legacy||parts.length!==1){fail(Error('请选择一页新原文再重新定位'));return;}
+    try{const anchor=unwrap(await window.enlumor.prepareEditingAnchor({sessionId:s.sessionId,requestId:crypto.randomUUID(),candidate:parts[0]}));if(editingController.current?.currentSession?.sessionId===s.sessionId)setLegacyPreview({legacy,anchor});}catch(e){fail(e);}
+  }
+  async function confirmLegacy(){const s=editingController.current?.currentSession,p=legacyPreview;if(!s||!p)return;setBusy(true);try{const view=unwrap(await window.enlumor.reanchorLegacy({sessionId:s.sessionId,requestId:crypto.randomUUID(),legacyId:p.legacy.legacyId,anchorId:p.anchor.id,expectedInputDigest:p.legacy.inputDigest}));if(editingController.current?.currentSession?.sessionId===s.sessionId){acceptEditingView(view);setLegacyPreview(null);setParts([]);setStatus('已保存 · 兼容转换审计（保留原记录，不进入普通撤销）');}}catch(e){fail(e);}finally{setBusy(false);}}
+
+  const preparePages=useRef(new Set<string>());
+  function acceptEditingView(view:EditingView){
+    const opened=activeDocument.current;if(!opened||opened.id!==view.context.documentId||opened.fingerprint!==view.context.fingerprint)return;
+    const previous=editingSnapshot.current;editingSnapshot.current=view;setEditingView(view);
+    const old=new Map(activeMarks.current.map(m=>[m.id,m]));
+    const projected=projectEditingView(view).map(m=>{const prior=old.get(m.id);return prior&&m.version!==null&&m.version===prior.version?prior as MarkView & {documentId:string;fingerprint:string}:{...m,documentId:opened.id,fingerprint:opened.fingerprint};});
+    const order=new Map(activeMarks.current.map((m,i)=>[m.id,i]));projected.sort((a,b)=>(order.get(a.id)??Infinity)-(order.get(b.id)??Infinity));const changed=projected.filter(m=>m!==old.get(m.id)).map(m=>m.id);
+    const ids=new Set(projected.map(m=>m.id));for(const m of activeMarks.current)if(!ids.has(m.id))changed.push(m.id);
+    if(!previous||changed.length){activeMarks.current=projected;setMarks(projected);reader.current?.setEditingMarks(projected,previous?changed:undefined);}
+  }
+  async function prepareNearby(index:number){const session=editingController.current?.currentSession;if(!session)return;
+    for(const pageIndex of [index,index+1,index-1]){if(pageIndex<0||pageIndex>=(activeDocument.current?.pageCount||0))continue;const key=session.sessionId+'/'+pageIndex;if(preparePages.current.has(key))continue;preparePages.current.add(key);
+      try{const view=unwrap(await window.enlumor.prepareEditingPage({sessionId:session.sessionId,requestId:crypto.randomUUID(),pageIndex}));if(editingController.current?.currentSession?.sessionId===session.sessionId)acceptEditingView(view);}catch(e){preparePages.current.delete(key);if(editingController.current?.currentSession?.sessionId===session.sessionId)fail(e);}
+    }
+  }
+  async function submitEdit(command:EditCommand,retry=false){if(locked.current)return false;resetDrawing();locked.current=true;setBusy(true);setError('');setStatus('正在保存…');
+    const job=(async()=>{const result=retry?await editingController.current!.retry():await editingController.current!.submit(command);if(result?.status!=='committed')throw Error(result&&'error'in result?result.error.message:'保存状态待确认 · 草稿保留');setStatus('已保存 · 本地 SQLite');setParts([]);return true;})();flight.current=job;
+    try{return await job;}catch(e){fail(e);return false;}finally{flight.current=null;locked.current=false;setBusy(false);}
+  }
+  async function commitPreview(change:UiChange){
+    if(change.upserts.length+Number(!!change.deletes.length)>64){fail(Error('EDIT_TOO_LARGE: 一次批量最多 64 项'));return false;}
+    try{const session=editingController.current?.currentSession;if(!session)throw Error('EDIT_STALE');const operations:EditMutation[]=[];
+      for(const mark of change.upserts){const old=activeMarks.current.find(m=>m.id===mark.id);if(old){if(!old.editable||old.version==null)throw Error('LEGACY_READ_ONLY');operations.push({type:'update_mark',id:old.id,expectedVersion:old.version,patch:{color:mark.color,note:mark.note}});}
+        else if(['highlight','underline','strikeout'].includes(mark.type)||mark.type==='note'&&!!mark.quote){const a=unwrap(await window.enlumor.prepareEditingAnchor({sessionId:session.sessionId,requestId:crypto.randomUUID(),candidate:{pageIndex:mark.pageIndex,quote:mark.quote,quads:mark.quads}}));if(editingController.current?.currentSession?.sessionId!==session.sessionId)throw Error('EDIT_STALE');operations.push({type:'create_mark',markType:mark.type,pageIndex:mark.pageIndex,color:mark.color,note:mark.note,anchorId:a.id});}
+        else operations.push({type:'create_mark',markType:mark.type,pageIndex:mark.pageIndex,color:mark.color,note:mark.note,geometry:{quads:mark.quads,...(mark.points?{points:mark.points}:{})}});
+      }
+      if(change.deletes.length){const targets=change.deletes.map(id=>{const m=activeMarks.current.find(x=>x.id===id);if(!m?.editable||m.version==null)throw Error('LEGACY_READ_ONLY');return{id,expectedVersion:m.version};});operations.push({type:'delete_marks',targets});}
+      return await submitEdit(operations.length===1?operations[0]:{type:'apply_edit_batch',operations});
+    }catch(e){fail(e);return false;}
+  }
   const cruiseFlush=useRef<(()=>Promise<void>)|null>(null);
   const [cruiseOpen,setCruiseOpen]=useState(false),[cruiseTakeover,setCruiseTakeover]=useState(0);
   const cruiseOpenRef=useRef(cruiseOpen);cruiseOpenRef.current=cruiseOpen;
+  const [surfingOpen,setSurfingOpen]=useState(false),[surfingTakeover,setSurfingTakeover]=useState(0);
+  const surfingCancel=useRef<(()=>void)|null>(null);
+  const surfingFlush=useRef<(()=>Promise<void>)|null>(null);
+  const surfingOpenRef=useRef(surfingOpen);surfingOpenRef.current=surfingOpen;
   // PdfReader keeps its initial selection callback; read the current panel state.
   const commandHost=useRef<ReturnType<typeof createReaderCommandHost>|null>(null);
-  function notifyCruiseTakeover(){commandHost.current?.invalidate();if(cruiseOpenRef.current)setCruiseTakeover(n=>n+1);}
+  function notifyCruiseTakeover(){commandHost.current?.invalidate();if(surfingOpenRef.current){if(surfingCancel.current)surfingCancel.current();else setSurfingTakeover(n=>n+1);}if(cruiseOpenRef.current)setCruiseTakeover(n=>n+1);}
   function documentCommand(command:DocumentCommand){
     commandHost.current??=createReaderCommandHost(()=>reader.current,()=>activeDocument.current);
     return commandHost.current.run(command);
@@ -67,7 +125,7 @@ function App() {
   const [color, setColor] = useState('#f4cf58'), [note, setNote] = useState<string | null>(null), [editing, setEditing] = useState<Annotation | null>(null);
   const colorRef=useRef(color);colorRef.current=color;
   const noteTrigger=useRef<HTMLElement|null>(null);
-  const noteAnchor=useRef<{documentId:string;fingerprint:string;parts:SelectionPart[]}|null>(null);
+  const noteAnchor=useRef<{documentId:string;fingerprint:string;parts:SelectionPart[];free:boolean}|null>(null);
   const noteOpen = useRef(false); noteOpen.current = note !== null;
   const activeDocument = useRef<OpenedDocument | null>(null), activeMarks = useRef<Annotation[]>([]);
   const [tabs, setTabs] = useState<DocumentInfo[]>([]);
@@ -80,13 +138,15 @@ function App() {
   const selectionPopover=useRef<HTMLDivElement>(null);
   const [selectionPosition, setSelectionPosition] = useState({ left: 0, top: 0 });
   const current = useRef<ReadingState | null>(null), timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const pending = useRef<{ change: AnnotationChange; kind: 'new' | 'undo' | 'redo' } | null>(null), flight = useRef<Promise<unknown> | null>(null), locked = useRef(false);
+  const pending = useRef<{ change: UiChange; kind: 'new' | 'undo' | 'redo' } | null>(null), flight = useRef<Promise<unknown> | null>(null), locked = useRef(false);
   const refresh = async () => setRecent(unwrap(await window.enlumor.listDocuments()));
   const fail = (reason: unknown) => { setError(reason instanceof Error ? reason.message : String(reason)); setStatus('尚未保存 / 操作未完成'); };
   async function flush() {
     clearTimeout(timer.current);
     if(noteOpen.current) throw new Error('UNSAVED_NOTE: 请先保存或取消便签');
     await flight.current;
+    await editingController.current?.flush();
+    await surfingFlush.current?.();
     await cruiseFlush.current?.();
     await layoutFlight.current;
     if (pending.current) throw new Error('UNSAVED_CHANGE');
@@ -95,7 +155,7 @@ function App() {
   useEffect(() => {
     reader.current = new PdfReader(container.current!, state => {
       const pageChanged=current.current?.documentId!==state.documentId||current.current?.pageIndex!==state.pageIndex;
-      current.current = state; setReadingLayout(state.layout||'continuous'); if(pageChanged)syncPage(state.pageIndex + 1); setZoom(state.zoom);
+      current.current = state; setReadingLayout(state.layout||'continuous'); if(pageChanged){syncPage(state.pageIndex + 1);if(editingEnabled.current)void prepareNearby(state.pageIndex);} setZoom(state.zoom);
       clearTimeout(timer.current); if(!noteOpen.current)timer.current = setTimeout(() => { void flush().catch(fail); }, 500);
     }, selected => {
       if(selected.length)notifyCruiseTakeover();
@@ -103,13 +163,13 @@ function App() {
     }, setNotice, setOutline, line=>{
       setDrawMode(null);const opened=activeDocument.current;if(!opened)return;
       void commit({documentId:opened.id,upserts:[{...line,id:crypto.randomUUID(),documentId:opened.id,fingerprint:opened.fingerprint,type:line.type,author:'user',color:colorRef.current,quote:'',note:''}],deletes:[]});
-    }, ()=>!locked.current&&!pending.current&&!noteOpen.current,()=>colorRef.current,ids=>{
+    }, ()=>!locked.current&&!pending.current&&!noteOpen.current&&!editingController.current?.hasDraft,()=>colorRef.current,ids=>{
       setDrawMode(null);const opened=activeDocument.current;if(!opened)return;
       void commit({documentId:opened.id,upserts:[],deletes:ids});
     },setTextNotice);
-    const off = window.enlumor.onFlush(flush);
+    const off = window.enlumor.onFlush(async()=>{surfingCancel.current?.();await flush();});
     void (async () => {
-      try { const savedLayout = unwrap(await window.enlumor.getLayout()); setLayout(savedLayout); layoutRef.current = savedLayout; const list = unwrap(await window.enlumor.listDocuments()); setRecent(list);
+      try { editingEnabled.current=unwrap(await window.enlumor.getEditingCapabilities()).enabled;if(editingEnabled.current)editingController.current=new EditingController(window.enlumor,acceptEditingView); const savedLayout = unwrap(await window.enlumor.getLayout()); setLayout(savedLayout); layoutRef.current = savedLayout; const list = unwrap(await window.enlumor.listDocuments()); setRecent(list);
         const session = unwrap(await window.enlumor.getTabs());
         if (session) {
           const restored = session.openIds.map(id=>list.find(item=>item.id===id)).filter((item):item is DocumentInfo=>!!item);
@@ -148,7 +208,8 @@ function App() {
     setSelectionPosition(old=>Math.abs(old.left-left)<.1&&Math.abs(old.top-top)<.1?old:{left,top});
   },[parts]);
   async function load(id?: string, rebind = false, replacementTabs?: DocumentInfo[]) {
-    if (locked.current || pending.current || noteOpen.current) return false;
+    if (locked.current || pending.current || noteOpen.current || editingController.current?.hasDraft) return false;
+    surfingCancel.current?.();
     resetDrawing();locked.current = true; setBusy(true); setError('');
     let replacing = false;
     const previous = { document:activeDocument.current, marks:activeMarks.current, reading:current.current, tabs:[...tabsRef.current], activeId:activeId.current };
@@ -156,18 +217,19 @@ function App() {
       await flush();
       const opened = unwrap(await (id ? rebind ? window.enlumor.rebindDocument(id) : window.enlumor.restoreDocument(id) : window.enlumor.openDocument()));
       if (!opened) return false;
-      const annotations = unwrap(await window.enlumor.getAnnotations(opened.id));
+      if(editingEnabled.current)await editingController.current!.activate(null);
+      const annotations:Annotation[] = editingEnabled.current?[]:unwrap(await window.enlumor.getAnnotations(opened.id));
       const baseTabs=replacementTabs || tabsRef.current;
       const nextTabs=baseTabs.some(tab=>tab.id===opened.id) ? baseTabs.map(tab=>tab.id===opened.id?opened:tab) : [...baseTabs,opened];
       resetDrawing();previous.reading = current.current;
-      commandHost.current?.invalidate();replacing = true; current.current=null;clearBlocks();setCruiseOpen(false);setParts([]);setNotice('');setTextNotice('');
+      commandHost.current?.invalidate();replacing = true; current.current=null;clearBlocks();setCruiseOpen(false);setSurfingOpen(false);setParts([]);setNotice('');setTextNotice('');
       await reader.current!.open(opened);
       unwrap(await window.enlumor.saveTabs({openIds:nextTabs.map(tab=>tab.id),activeId:opened.id}));
       setQuery('');setHistory(histories.current.get(opened.id) || emptyHistory());
       tabsRef.current=nextTabs.map(({id,path,name,fingerprint,pageCount,updatedAt})=>({id,path,name,fingerprint,pageCount,updatedAt}));setTabs(tabsRef.current);activeId.current=opened.id;
       activeDocument.current=opened;activeMarks.current=annotations;
       setDoc(opened); setReadingLayout(opened.reading?.layout||'continuous'); syncPage((opened.reading?.pageIndex || 0) + 1); setZoom(opened.reading?.zoom || 1);
-      setMarks(annotations); reader.current!.setMarks(annotations);
+      setMarks(annotations);if(editingEnabled.current){editingSnapshot.current=null;await editingController.current!.activate(opened.id);void prepareNearby(opened.reading?.pageIndex||0);}else reader.current!.setMarks(annotations as LegacyAnnotation[]);
       current.current = opened.reading || { documentId: opened.id, fingerprint: opened.fingerprint, pageIndex: 0, offset: 0, zoom: 1, rotation: 0 };
       replacing=false;setStatus('已恢复 · 原 PDF 只读'); await refresh(); return true;
     })();
@@ -178,7 +240,7 @@ function App() {
         try {
           unwrap(await window.enlumor.saveTabs({openIds:previous.tabs.map(tab=>tab.id),activeId:previous.activeId}));
           if(previous.document) {
-            await reader.current!.open({...previous.document,reading:previous.reading});reader.current!.setMarks(previous.marks);
+            await reader.current!.open({...previous.document,reading:previous.reading});reader.current!.setMarks(previous.marks as LegacyAnnotation[]);
             current.current=previous.reading;activeDocument.current=previous.document;activeMarks.current=previous.marks;activeId.current=previous.activeId;
             setDoc(previous.document);setReadingLayout(previous.reading?.layout||'continuous');setMarks(previous.marks);setHistory(histories.current.get(previous.document.id)||emptyHistory());
             syncPage((previous.reading?.pageIndex||0)+1);setZoom(previous.reading?.zoom||1);
@@ -188,12 +250,13 @@ function App() {
       fail(reason); return false;
     } finally { flight.current = null; locked.current = false; setBusy(false); }
   }
-  async function commit(change: AnnotationChange, kind: 'new' | 'undo' | 'redo' = 'new'):Promise<boolean> {
+  async function commit(change: UiChange, kind: 'new' | 'undo' | 'redo' = 'new'):Promise<boolean> {
+    if(editingEnabled.current)return commitPreview(change);
     if (locked.current || (pending.current && pending.current.change!==change)) return false;
     if(change.documentId!==activeId.current){fail(new Error('DOCUMENT_MISMATCH: 批注不属于当前文档'));return false;}
     resetDrawing();locked.current = true; setBusy(true); setError(''); setStatus('正在保存…'); pending.current = { change, kind };
     const job = (async () => {
-      const result = unwrap(await window.enlumor.applyAnnotationChange(change));
+      const result = unwrap(await window.enlumor.applyAnnotationChange(change as AnnotationChange));
       pending.current = null;activeMarks.current=result.annotations; setMarks(result.annotations); reader.current!.setMarks(result.annotations,[...change.deletes,...change.upserts.map(mark=>mark.id)]); setParts([]);
       setHistory(old => {
         const next=kind==='undo'?{undo:old.undo.slice(0,-1),redo:[...old.redo,result.inverse]}:kind==='redo'?{undo:[...old.undo,result.inverse],redo:old.redo.slice(0,-1)}:{undo:[...old.undo,result.inverse],redo:[]};
@@ -204,16 +267,17 @@ function App() {
     flight.current = job;
     try { await job; return true; } catch (reason) { fail(reason); return false; } finally { flight.current = null; locked.current = false; setBusy(false); }
   }
-  function openNote(mark?:Annotation,trigger?:HTMLElement) {
+  function openNote(mark?:Annotation,trigger?:HTMLElement,free=false) {
     if(locked.current||pending.current)return;
     const opened=activeDocument.current;if(!opened)return;
     noteTrigger.current=trigger||document.activeElement as HTMLElement;resetDrawing();clearTimeout(timer.current);setError('');
-    noteAnchor.current={documentId:opened.id,fingerprint:opened.fingerprint,parts:parts.map(p=>({...p,quads:p.quads.map(q=>[...q])}))};
+    noteAnchor.current={documentId:opened.id,fingerprint:opened.fingerprint,free,parts:(free?[]:parts).map(p=>({...p,quads:p.quads.map(q=>[...q])}))};
     noteOpen.current=true;setEditing(mark||null);setNote(mark?.note||'');
   }
   function closeNote() {
     if(locked.current)return;
     // Explicit cancellation may discard only the uncommitted operation, never persisted marks.
+    if(editingEnabled.current&&editingController.current?.hasDraft){void editingController.current.discard();setError('');setStatus('已放弃未保存便签 · 已保存标识保留');}
     if(pending.current){pending.current=null;setError('');setStatus('已放弃未保存便签 · 已保存批注保留');}
     noteOpen.current=false;noteAnchor.current=null;setNote(null);setEditing(null);
   }
@@ -223,21 +287,24 @@ function App() {
     if(!anchor||!opened||anchor.documentId!==opened.id||anchor.fingerprint!==opened.fingerprint){
       fail(new Error('NOTE_DOCUMENT_MISMATCH: 文档已变化，便签草稿已保留'));return;
     }
-    let change:AnnotationChange,kind:'new'|'undo'|'redo'='new';
+    if(editingEnabled.current&&editingController.current?.hasDraft){if(await submitEdit({type:'list_marks'},true))closeNote();return;}
+    let change:UiChange,kind:'new'|'undo'|'redo'='new';
     if(pending.current){change=pending.current.change;kind=pending.current.kind;}
     else if(editing)change={documentId:anchor.documentId,upserts:[{...editing,note}],deletes:[]};
     else {
-      if(!anchor.parts.length){fail(new Error('NOTE_ANCHOR_MISSING: 原文定位已失效，草稿已保留。请取消后重新选择原文'));return;}
+      if(!anchor.parts.length){if(editingEnabled.current&&anchor.free){const p=reader.current!.freeNoteAnchor();change={documentId:anchor.documentId,deletes:[],upserts:[{...p,id:crypto.randomUUID(),documentId:opened.id,fingerprint:opened.fingerprint,type:'note',note,color}]};if(await commit(change))closeNote();return;}fail(new Error('NOTE_ANCHOR_MISSING: 原文定位已失效，草稿已保留。请取消后重新选择原文'));return;}
       change={documentId:anchor.documentId,upserts:anchor.parts.map(p=>({...p,id:crypto.randomUUID(),documentId:anchor.documentId,fingerprint:anchor.fingerprint,type:'note',note,color,author:'user'})),deletes:[]};
     }
     if(await commit(change,kind))closeNote();
   }
   function clearCurrent() {
-    commandHost.current?.invalidate();clearTimeout(timer.current);clearBlocks();setCruiseOpen(false);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
+    if(editingEnabled.current){void editingController.current?.activate(null);editingSnapshot.current=null;setEditingView(null);}
+    commandHost.current?.invalidate();clearTimeout(timer.current);clearBlocks();setCruiseOpen(false);setSurfingOpen(false);current.current=null;activeId.current=null;activeDocument.current=null;activeMarks.current=[];reader.current?.clear();setDoc(null);setMarks([]);setParts([]);setHistory(emptyHistory());setQuery('');setNotice('');setTextNotice('');resetDrawing();syncPage(1);setZoom(1);setReadingLayout('continuous');
   }
   async function closeTab(id:string) {
     if(locked.current || pending.current || noteOpen.current)return;
     const index=tabsRef.current.findIndex(tab=>tab.id===id);if(index<0)return;
+    surfingCancel.current?.();
     const remaining=tabsRef.current.filter(tab=>tab.id!==id);
     if(id===activeId.current && remaining.length) {
       if(await load(remaining[Math.min(index,remaining.length-1)].id,false,remaining))histories.current.delete(id);
@@ -298,33 +365,39 @@ function App() {
           <button role="tab" aria-label={tab.name} aria-selected={doc?.id===tab.id} tabIndex={doc?.id===tab.id?0:-1} title={tab.path} disabled={busy||!!pending.current} onClick={()=>void load(tab.id)}>{tab.name}</button>
           <button aria-label={`关闭 ${tab.name}`} title="关闭标签（Ctrl+W）" disabled={busy||!!pending.current} onClick={()=>void closeTab(tab.id)} onKeyDown={event=>event.stopPropagation()}>×</button>
         </div>)}</div>}<div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
-        <div className="toolbar" onClickCapture={()=>notifyCruiseTakeover()}><button aria-label="打开 Cruise" disabled={!doc||busy} onClick={()=>{resetDrawing();setCruiseOpen(true);}}>Cruise</button><button aria-label="读取本页阅读块" disabled={!doc||busy||blocksBusy} onClick={()=>void readBlocks()}>{blocksBusy?'读取中…':'阅读块'}</button><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{notifyCruiseTakeover();setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
+        <div className="toolbar" onClickCapture={()=>notifyCruiseTakeover()}><button aria-label="打开 Surfing" disabled={!doc||busy} onClick={()=>{resetDrawing();setCruiseOpen(false);setNotesOpen(false);setSurfingOpen(true);}}>Surfing</button><button aria-label="打开 Cruise" disabled={!doc||busy} onClick={()=>{const open=()=>{resetDrawing();setSurfingOpen(false);setCruiseOpen(true);};if(surfingFlush.current)void surfingFlush.current().then(open).catch(fail);else open();}} title="旧逐块阅读：只理解当前块，不是整篇共读">逐块阅读（旧）</button><button aria-label="读取本页阅读块" disabled={!doc||busy||blocksBusy} onClick={()=>void readBlocks()}>{blocksBusy?'读取中…':'阅读块'}</button><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{notifyCruiseTakeover();setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
           <form className="search" onSubmit={event => { event.preventDefault(); notifyCruiseTakeover(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
         </div>
+
         {cruiseOpen&&doc&&reader.current&&<CruisePanel key={doc.id} document={doc} reader={reader.current} takeover={cruiseTakeover} selection={parts} settingsOpen={modelSettingsOpen} flushRef={cruiseFlush} onSettings={()=>{modelSettingsTrigger.current=window.document.activeElement as HTMLElement;setModelSettingsOpen(true);}} onExit={()=>setCruiseOpen(false)}/>}
         {blocksOpen&&<section onClickCapture={()=>notifyCruiseTakeover()} className="cruise-block-list" aria-label="本页阅读块"><div><strong>本页阅读块 · 原文定位</strong><button aria-label="收起阅读块" onClick={()=>{void documentCommand({type:'clear_focus'}).then(commandError);setBlocksOpen(false);}}>收起</button></div>{cruiseBlocks.length?cruiseBlocks.map((block,index)=><button key={block.id} data-block-id={block.id} aria-label={`定位阅读块 ${index+1}`} onClick={()=>{resetDrawing();void documentCommand({type:'show_evidence',pageIndex:block.pageIndex,passageId:block.id}).then(commandError);}}>{block.quote}</button>):<p>当前页没有可用阅读块；扫描页需要文字层，可略过或继续普通阅读。</p>}</section>}
         {pageError && <div id="page-error" className="notice" role="alert">{pageError}</div>}
-        {(error||pending.current||layoutError) && <div className="error" role="alert">{error||'存在未保存更改'}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && note===null && <button disabled={busy} onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && note===null && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
+        {(error||pending.current||layoutError||editingController.current?.hasDraft) && <div className="error" role="alert">{error||'存在未保存更改'}{editingController.current?.hasDraft&&note===null&&<><button disabled={busy} onClick={()=>void submitEdit({type:'list_marks'},true)}>重试保存</button><button disabled={busy} onClick={()=>{void editingController.current?.discard().then(()=>{setError('');setStatus('已放弃草稿 · 已保存标识保留');});}}>放弃草稿</button></>}{layoutError && <button onClick={()=>persistLayout(layoutRef.current)}>重试布局保存</button>}{pending.current && note===null && <button disabled={busy} onClick={() => void commit(pending.current!.change, pending.current!.kind)}>重试保存</button>}{doc && note===null && <button disabled={busy} onClick={() => { pending.current = null; if(activeId.current)histories.current.delete(activeId.current); clearCurrent(); setError(''); setStatus('已关闭文档 · 已保存批注保留'); }}>关闭文档并放弃未保存更改</button>}<button aria-label="关闭错误提示" onClick={() => setError('')}>×</button></div>}
         {(textNotice||notice) && <div className="notice">{[textNotice,notice].filter(Boolean).join(' · ')}</div>}
-        <div className="reader-stage"><div id="viewerContainer" ref={container} tabIndex={0} onWheelCapture={()=>commandHost.current?.invalidate()} onPointerDownCapture={()=>commandHost.current?.invalidate()} onKeyDownCapture={event=>{if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key))commandHost.current?.invalidate();}}><div id="viewer" className="pdfViewer"/></div>
+        <div className="reader-stage">{surfingOpen&&doc&&reader.current&&<SurfingPanel key={doc.id} document={doc} reader={reader.current} pageIndex={currentPage-1} takeover={surfingTakeover} takeoverRef={surfingCancel} flushRef={surfingFlush} settingsOpen={modelSettingsOpen} onSettings={()=>{modelSettingsTrigger.current=window.document.activeElement as HTMLElement;setModelSettingsOpen(true);}} onExit={()=>setSurfingOpen(false)}/>}<div id="viewerContainer" ref={container} tabIndex={0} onWheelCapture={()=>notifyCruiseTakeover()} onPointerDownCapture={()=>notifyCruiseTakeover()} onKeyDownCapture={event=>{if(['ArrowUp','ArrowDown','PageUp','PageDown','Home','End',' '].includes(event.key))notifyCruiseTakeover();}}><div id="viewer" className="pdfViewer"/></div>
           {!doc && <div className="empty"><div className="paper-emblem" aria-hidden="true"><svg viewBox="0 0 140 100" fill="none"><path d="M70 21C50 9 25 10 12 16v64c20-7 38-6 58 4 20-10 38-11 58-4V16c-13-6-38-7-58 5Zm0 0v63M25 33l30 4M25 45l30 4M25 57l22 3M85 37l29-4M85 49l29-4M85 61l21-3"/></svg></div><span className="empty-index">A QUIETER PLACE TO READ</span><h1>让理解，<br/>留在原文旁。</h1><p>打开一本书、一篇论文，或今天的讲义。<br/>选中，标记，下次从这里继续。</p><button className="primary" disabled={busy} onClick={() => void load()}>打开 PDF <Glyph name="open"/></button><small>无需账户 · 离线可用 · 原文件保持不变</small><div className="empty-footnote"><span>01 — 阅读原文</span><span>02 — 留下思考</span><span>03 — 从这里继续</span></div></div>}
         </div>
         <footer className="statusbar"><span role="status">{status}</span><span>{doc ? `${marks.length} 条批注` : 'ENLUMOR / FOUNDATION'}</span></footer>
       </main>
       {notesOpen && <PanelDivider side="right" size={panels.right} max={Math.min(460,workspaceWidth-400-(libraryOpen?panels.left+12:6))} start={()=>{notifyCruiseTakeover();resetDrawing();setParts([]);}} preview={value=>previewPanel('right',value)} commit={value=>commitPanel('right',value)} reset={()=>persistLayout({...layoutRef.current,right:282})}/>}
       <aside onClickCapture={()=>notifyCruiseTakeover()} className="annotations" hidden={!notesOpen}><div className="section-label">MARGINALIA / 页边思考</div><h2>批注 <span>{marks.length.toString().padStart(2, '0')}</span></h2>
-        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length||busy||!!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('strikeout')}>删除线选区</button><button aria-label="绘制直线" aria-pressed={drawMode==='line'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='line'?null:'line';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>直线</button><button aria-label="绘制箭头" aria-pressed={drawMode==='arrow'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='arrow'?null:'arrow';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>箭头</button><button aria-label="绘制画笔" aria-pressed={drawMode==='ink'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='ink'?null:'ink';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>画笔</button><button aria-label="整笔擦除" title="只擦除画笔整条笔迹；Esc取消" aria-pressed={drawMode==='erase'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='erase'?null:'erase';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>整笔擦除</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={event => openNote(undefined,event.currentTarget)}>添加便签</button></div>
+        <div className="annotation-tools"><label className="color-label">颜色 <input type="color" aria-label="批注颜色" value={color} onChange={event => setColor(event.target.value)}/></label><button className="primary" disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={() => add('highlight')}>高亮选区</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('underline')}>下划线选区</button><button disabled={!parts.length||busy||!!pending.current} onMouseDown={event=>event.preventDefault()} onClick={()=>add('strikeout')}>删除线选区</button><button aria-label="绘制直线" aria-pressed={drawMode==='line'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='line'?null:'line';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>直线</button><button aria-label="绘制箭头" aria-pressed={drawMode==='arrow'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='arrow'?null:'arrow';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>箭头</button><button aria-label="绘制画笔" aria-pressed={drawMode==='ink'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='ink'?null:'ink';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>画笔</button><button aria-label="整笔擦除" title="只擦除画笔整条笔迹；Esc取消" aria-pressed={drawMode==='erase'} disabled={!doc||busy||!!pending.current} onClick={()=>{setParts([]);const mode=drawMode==='erase'?null:'erase';reader.current?.setDrawingTool(mode);setDrawMode(mode);}}>整笔擦除</button><button disabled={!parts.length || busy || !!pending.current} onMouseDown={event => event.preventDefault()} onClick={event => openNote(undefined,event.currentTarget)}>添加便签</button>{editingEnabled.current&&<button disabled={!doc||busy} onClick={event=>openNote(undefined,event.currentTarget,true)}>自由便签</button>}</div>
         {drawMode==='erase'&&<p className="eraser-hint">仅擦除本软件新建的画笔整条笔迹；原 PDF 不变。Esc 取消。</p>}
-        <div className="history"><button disabled={!history.undo.length || busy || !!pending.current} onClick={() => void commit(history.undo.at(-1)!, 'undo')}>撤销</button><button disabled={!history.redo.length || busy || !!pending.current} onClick={() => void commit(history.redo.at(-1)!, 'redo')}>重做</button></div>
+        <div className="history"><button disabled={!(editingEnabled.current?editingView?.history.undoIds.length:history.undo.length) || busy || !!pending.current} onClick={() => editingEnabled.current?void submitEdit({type:'undo_edit',operationId:editingView!.history.undoIds[0]}):void commit(history.undo.at(-1)!, 'undo')}>撤销</button><button disabled={!(editingEnabled.current?editingView?.history.redoIds.length:history.redo.length) || busy || !!pending.current} onClick={() => editingEnabled.current?void submitEdit({type:'redo_edit',operationId:editingView!.history.redoIds[0]}):void commit(history.redo.at(-1)!, 'redo')}>重做</button></div>
         {parts.length > 0 && <div className="selection-preview">已选 {parts.length} 页原文<p>{parts.map(part => part.quote).join(' ').slice(0, 180)}</p></div>}
-        <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':mark.type==='strikeout'?'删除线':mark.type==='ink'?'画笔':mark.type==='arrow'?'箭头':mark.type==='line'?'直线':'高亮'}</span><p>{mark.quote || (mark.type==='ink'?'页面笔迹':mark.type==='arrow'?'页面箭头':mark.type==='line'?'页面直线':'页面便签')}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}<div className="card-actions"><button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current} onClick={event => openNote(mark,event.currentTarget)}>编辑</button>}<button disabled={busy || !!pending.current} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
+        <div className="annotation-list">{marks.map(mark => <article data-testid="annotation-item" className="annotation-card" data-mark-id={mark.id} key={mark.id} style={{ borderLeftColor: mark.color }}><button className="annotation-source" onClick={() => reader.current?.focus(mark)}><span>第 {mark.pageIndex + 1} 页 · {mark.type === 'note' ? '便签' : mark.type==='underline'?'下划线':mark.type==='strikeout'?'删除线':mark.type==='ink'?'画笔':mark.type==='arrow'?'箭头':mark.type==='line'?'直线':'高亮'}</span><p>{mark.quote || (mark.type==='ink'?'页面笔迹':mark.type==='arrow'?'页面箭头':mark.type==='line'?'页面直线':'页面便签')}</p></button>{mark.note && <p className="note-content">{mark.note}</p>}{editingEnabled.current&&<small className="editing-source">{mark.origin?.kind==='ai'?'AI':'人工'} · {mark.editable?'已保存':'只读 · '+mark.reason} · {mark.retained?'已固定':'未固定'}{mark.visible===false?' · 已隐藏':''}</small>}<div className="card-actions">{editingEnabled.current&&mark.editable&&mark.anchorId&&<button disabled={busy||parts.length!==1} onClick={()=>void previewAnchor(mark)}>更换原文</button>}{editingEnabled.current&&mark.editable===false&&<button disabled={busy||parts.length!==1} onClick={()=>void previewReanchor(mark)}>重新定位</button>}{editingEnabled.current&&mark.editable&&['note','line','arrow','ink'].includes(mark.type)&&<button disabled={busy} onClick={()=>setGeometryEdit({mark,points:mark.points?.join(',')||'',dx:String(mark.placement?.dx||0),dy:String(mark.placement?.dy||0)})}>{mark.type==='note'?'位置':'端点'}</button>}{editingEnabled.current&&mark.editable&&mark.version!=null&&<><button disabled={busy} onClick={()=>void submitEdit({type:'set_marks_visibility',targets:[{id:mark.id,expectedVersion:mark.version!}],visible:!mark.visible})}>{mark.visible?'隐藏':'显示'}</button><button disabled={busy} onClick={()=>void submitEdit({type:'set_marks_retention',targets:[{id:mark.id,expectedVersion:mark.version!}],retained:!mark.retained})}>{mark.retained?'取消固定':'固定'}</button></>}<button disabled={busy || !!pending.current || mark.editable===false} onClick={() => void commit({ documentId: mark.documentId, upserts: [{ ...mark, color }], deletes: [] })}>应用颜色</button>{mark.type === 'note' && <button disabled={busy || !!pending.current || mark.editable===false} onClick={event => openNote(mark,event.currentTarget)}>编辑</button>}<button disabled={busy || !!pending.current || mark.editable===false} onClick={() => void commit({ documentId: mark.documentId, upserts: [], deletes: [mark.id] })}>删除</button></div></article>)}</div>
         {!marks.length && <div className="annotation-empty"><span>〰</span><p>选中一段原文<br/>留下你的第一个标记。</p><small>批注自动保存到本地工作区</small></div>}
       </aside>
     </div>
     {parts.length > 0 && doc && <div ref={selectionPopover} onClickCapture={()=>notifyCruiseTakeover()} className="selection-popover" role="toolbar" aria-label="选区工具" style={{...selectionPosition,maxWidth:Math.max(200,(container.current?.clientWidth||400)-24)}} onMouseDown={event => event.preventDefault()}><span>{parts.length > 1 ? `${parts.length} 页选区` : '原文选区'}</span><button disabled={busy || !!pending.current} onClick={() => add('highlight')}><Glyph name="mark"/>高亮</button><button disabled={busy||!!pending.current} onClick={()=>add('underline')}>下划线</button><button disabled={busy||!!pending.current} onClick={()=>add('strikeout')}>删除线</button><button disabled={busy || !!pending.current} onClick={event => openNote(undefined,event.currentTarget)}>写便签</button><button className="popover-close" aria-label="取消选区" onClick={() => { setParts([]); window.getSelection()?.removeAllRanges(); }}><Glyph name="close"/></button></div>}
+    {anchorPreview&&<dialog open className="legacy-reanchor anchor-replace" aria-label="更换原文确认"><h2>更换原文确认</h2><p>旧原文 · 第 {anchorPreview.mark.pageIndex+1} 页：{anchorPreview.mark.quote}</p><p>新原文 · 第 {anchorPreview.anchor.pageIndex+1} 页：{anchorPreview.anchor.quote}</p><p>{JSON.stringify(anchorPreview.mark.quads)} → {JSON.stringify(anchorPreview.anchor.quads)}</p><button disabled={busy} onClick={()=>{void submitEdit({type:'replace_mark_anchor',id:anchorPreview.mark.id,expectedVersion:anchorPreview.mark.version!,anchorId:anchorPreview.anchor.id}).then(ok=>{if(ok)setAnchorPreview(null);});}}>确认更换原文</button><button disabled={busy} onClick={()=>setAnchorPreview(null)}>取消</button></dialog>}
+    {geometryEdit&&<dialog open className="editing-geometry" aria-label="调整标识位置"><h2>调整{geometryEdit.mark.type==='note'?'便签偏移':'路径坐标'}</h2>{geometryEdit.mark.type==='note'?<><label>横向偏移<input aria-label="横向偏移" type="number" value={geometryEdit.dx} onChange={e=>setGeometryEdit({...geometryEdit,dx:e.target.value})}/></label><label>纵向偏移<input aria-label="纵向偏移" type="number" value={geometryEdit.dy} onChange={e=>setGeometryEdit({...geometryEdit,dy:e.target.value})}/></label><p>仅改变便签显示偏移；原文锚点保持不变。</p></>:<label>原生 PDF 坐标<input aria-label="端点坐标" value={geometryEdit.points} onChange={e=>setGeometryEdit({...geometryEdit,points:e.target.value})}/></label>}<button disabled={busy} onClick={()=>void applyGeometry()}>应用位置</button><button disabled={busy} onClick={()=>setGeometryEdit(null)}>取消</button></dialog>}
+    {legacyPreview&&<dialog open className="legacy-reanchor" aria-label="确认重新定位"><h2>兼容转换确认</h2><p>旧原文 · 第 {legacyPreview.legacy.annotation.pageIndex+1} 页：{legacyPreview.legacy.annotation.quote}</p><p>新原文 · 第 {legacyPreview.anchor.pageIndex+1} 页：{legacyPreview.anchor.quote}</p><p>旧位置 {JSON.stringify(legacyPreview.legacy.annotation.quads)} → 新位置 {JSON.stringify(legacyPreview.anchor.quads)}</p><p>保留原记录与兼容转换审计；这不是普通可撤销编辑。</p><button disabled={busy} onClick={()=>void confirmLegacy()}>确认兼容转换</button><button disabled={busy} onClick={()=>setLegacyPreview(null)}>取消</button></dialog>}
     {modelSettingsOpen && <ModelSettings returnFocus={modelSettingsTrigger.current} close={()=>setModelSettingsOpen(false)}/>}
-    {note !== null && <NoteDialog returnFocus={noteTrigger.current} value={note} editing={!!editing} busy={busy} pending={!!pending.current} error={error} change={setNote} submit={()=>void submitNote()} cancel={closeNote} dismiss={()=>setError('')}/>}
+    {note !== null && <NoteDialog returnFocus={noteTrigger.current} value={note} editing={!!editing} busy={busy} pending={!!pending.current||!!editingController.current?.hasDraft} error={error} change={setNote} submit={()=>void submitNote()} cancel={closeNote} dismiss={()=>setError('')}/>}
   </div>;
 }
 createRoot(document.getElementById('root')!).render(<App/>);
+
+

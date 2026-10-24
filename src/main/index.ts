@@ -1,3 +1,9 @@
+import {SurfingSessions} from './surfing-sessions';
+import {SurfingRuntime} from './surfing-runtime';
+import {measureSurfingInputTokens} from './surfing-token-worker-host';
+import {openEditingWorkspace} from './editing-workspace';
+import {EditingSourceService} from './editing-sources';
+import {EditingIpc,registerEditingIpc,validateEditingProfile} from './editing-ipc';
 import{CruiseSessions}from'./cruise-sessions';
 import{ExplanationRequests}from'./cruise-requests';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, safeStorage } from 'electron';
@@ -12,18 +18,23 @@ import type { AnnotationChange, OpenedDocument, ReadingState } from '../shared/m
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'enlumor', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 app.setName('Enlumor');
-const customData = app.commandLine.getSwitchValue('user-data-dir');
+const editingPreview=app.commandLine.hasSwitch('editing-preview');
+const rawData=app.commandLine.getSwitchValue('user-data-dir');
+const customData = editingPreview?validateEditingProfile(rawData,process.cwd(),path.join(app.getPath('appData'),'Enlumor')):rawData;
+let editingService:EditingIpc|null=null;
 if (customData) { mkdirSync(customData, { recursive: true }); app.setPath('userData', customData); }
 let workspace: Workspace;
 let aiProfiles:AiProfiles;
 let aiFlight:AbortController|undefined;
 let cruiseRequests:ExplanationRequests;
+let surfingRuntime:SurfingRuntime|undefined;
 let window: BrowserWindow;
 let closeReady = false, waitingClose = false;
 let closeTimer: ReturnType<typeof setTimeout> | undefined;
 const origin = process.env.ENLUMOR_DEV_URL || 'enlumor://app';
 
 async function opened(id: string): Promise<OpenedDocument> {
+  surfingRuntime?.invalidate();
   const doc = workspace.verified(id);
   return { ...doc, data: new Uint8Array(readFileSync(doc.path)), reading: workspace.reading(id) };
 }
@@ -32,9 +43,10 @@ async function choosePdf(): Promise<string | null> {
   return result.canceled ? null : result.filePaths[0];
 }
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
   mkdirSync(app.getPath('userData'), { recursive: true });
-  workspace = new Workspace(path.join(app.getPath('userData'), 'workspace.sqlite'));
+  if(editingPreview){const opened=await openEditingWorkspace(path.join(app.getPath('userData'),'workspace.sqlite'));workspace=opened.workspace;editingService=new EditingIpc(workspace,opened.edits,new EditingSourceService(workspace,opened.edits,runPdfTask));}
+  else workspace = new Workspace(path.join(app.getPath('userData'), 'workspace.sqlite'));
   aiProfiles=new AiProfiles(workspace.db,{available:()=>safeStorage.isEncryptionAvailable(),encrypt:text=>safeStorage.encryptString(text),decrypt:data=>safeStorage.decryptString(Buffer.from(data))});
   const rendererRoot = path.resolve(__dirname, '../renderer');
   protocol.handle('enlumor', request => {
@@ -45,7 +57,7 @@ app.whenReady().then(() => {
   });
   window = new BrowserWindow({ width: 1360, height: 900, minWidth: 940, minHeight: 640, backgroundColor: '#f3f1ec', title: 'Enlumor',
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true } });
-  window.on('blur',()=>{cruiseRequests?.cancel();if(!window.webContents.isDestroyed())window.webContents.send('cruise:background');});
+  window.on('blur',()=>{surfingRuntime?.cancel();cruiseRequests?.cancel();if(!window.webContents.isDestroyed())window.webContents.send('cruise:background');});
   window.removeMenu();
   window.webContents.setWindowOpenHandler(() => ({ action: 'deny' }));
   window.webContents.on('will-navigate', event => event.preventDefault());
@@ -55,9 +67,20 @@ app.whenReady().then(() => {
     try { return { ok: true, value: await fn(input) }; }
     catch (error) {
       const message = error instanceof Error ? error.message : String(error);
-      return { ok: false, error: { code: /^[A-Z_]+(?=:)/.exec(message)?.[0] || 'OPERATION_FAILED', message } };
+      return { ok: false, error: { code: /^[A-Z_]+(?=:|$)/.exec(message)?.[0] || 'OPERATION_FAILED', message } };
     }
   });
+  registerEditingIpc(handle,editingService);
+  surfingRuntime=new SurfingRuntime({verified:id=>workspace.verified(id),extract:(request,signal)=>runPdfTask(request,signal),profile:id=>aiProfiles.resolve(id),profileView:id=>aiProfiles.list().find(p=>p.id===id)||null,sessions:new SurfingSessions(workspace),measureInputTokens:(profile,prompt,signal)=>measureSurfingInputTokens(profile,prompt,signal,path.join(__dirname,'surfing-token-worker.cjs')),generate:(profile,prompt,options)=>generateText(profile,prompt,{...options,stream:true,fetch:(input,init)=>net.fetch(String(input),init)}),emit:event=>{if(!window.isDestroyed())window.webContents.send('surfing:text',event);}});
+  handle('surfing:progress:get',context=>surfingRuntime!.getSavedProgress(context));
+  handle('surfing:progress:save',input=>surfingRuntime!.saveProgress(input));
+  handle('surfing:prepare',id=>surfingRuntime!.prepare(id));
+  handle('surfing:ask',input=>surfingRuntime!.ask(input));
+  handle('surfing:route',input=>surfingRuntime!.route(input));
+  handle('surfing:explain',input=>surfingRuntime!.explain(input));
+  handle('surfing:cancel',context=>surfingRuntime!.cancel(context));
+  handle('surfing:deactivate',context=>surfingRuntime!.deactivate(context));
+
   cruiseRequests=new ExplanationRequests(async block=>{
     const doc=workspace.verified(block.documentId);
     if(block.fingerprint!==doc.fingerprint||block.pageIndex>=doc.pageCount)throw Error('CRUISE_SOURCE_CHANGED');
@@ -95,6 +118,7 @@ app.whenReady().then(() => {
   handle('reading:save', (state: ReadingState) => workspace.saveReading(state));
   handle('document:export', async id => {
     const doc = workspace.verified(id);
+    if(editingService?.hasEditingState(id))throw Error('EDITING_EXPORT_UNAVAILABLE: 新标识导出尚未接入');
     const target = await dialog.showSaveDialog(window, { title: '导出批注 PDF（原文件保持不变）', defaultPath: path.join(path.dirname(doc.path), `${path.basename(doc.path, '.pdf')}-enlumor.pdf`), filters: [{ name: 'PDF', extensions: ['pdf'] }] });
     if (target.canceled || !target.filePath) return { cancelled: true };
     const result = await runPdfTask<{ path: string; annotationCount: number }>({ operation: 'export', source: doc.path, target: target.filePath, fingerprint: doc.fingerprint, annotations: workspace.annotations(id) });
@@ -126,4 +150,7 @@ app.whenReady().then(() => {
   void window.loadURL(process.env.ENLUMOR_DEV_URL || 'enlumor://app/index.html');
 });
 app.on('window-all-closed', () => app.quit());
-app.on('will-quit', () => {aiFlight?.abort();cruiseRequests?.cancel();workspace?.close();});
+app.on('will-quit', () => {surfingRuntime?.invalidate();aiFlight?.abort();cruiseRequests?.cancel();editingService?.close();workspace?.close();});
+
+
+

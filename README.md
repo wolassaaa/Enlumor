@@ -21,6 +21,12 @@
 
 ---
 
+## Latest development snapshot — 24 October 2026
+
+`main` now includes the latest editing integration and **Surfing whole-document co-reading** source. Surfing can use confirmed full-document text, the current page and recent in-session dialogue; full-document sending requires explicit confirmation. This differs from the legacy current-block Cruise flow described below.
+
+This is **development code**, not a new stable binary release. Windows **0.1.15** remains the last verified release named here. See [current development status](docs/CURRENT_DEVELOPMENT.md) for capabilities, local checks and acceptance still outstanding.
+
 ## Reading first
 
 Research does not happen in a single answer. It happens as you read a passage, mark what matters, ask a question and return to the source.

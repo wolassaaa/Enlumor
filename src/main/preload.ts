@@ -1,6 +1,24 @@
 import { contextBridge, ipcRenderer } from 'electron';
 import type { Bridge } from '../shared/model';
 const bridge: Bridge = {
+  getEditingCapabilities:()=>ipcRenderer.invoke('editing:capabilities'),
+  activateEditingDocument:id=>ipcRenderer.invoke('editing:activate',id),
+  getEditingView:id=>ipcRenderer.invoke('editing:view',id),
+  prepareEditingPage:v=>ipcRenderer.invoke('editing:page',v),
+  prepareEditingAnchor:v=>ipcRenderer.invoke('editing:anchor',v),
+  executeUserEdit:v=>ipcRenderer.invoke('editing:execute',v),
+  cancelUserEdit:v=>ipcRenderer.invoke('editing:cancel',v),
+  getUserEditReceipt:v=>ipcRenderer.invoke('editing:receipt',v),
+  reanchorLegacy:v=>ipcRenderer.invoke('editing:legacy-reanchor',v),
+  getSavedSurfingProgress:context=>ipcRenderer.invoke('surfing:progress:get',context),
+  saveSurfingProgress:input=>ipcRenderer.invoke('surfing:progress:save',input),
+  askSurfing:input=>ipcRenderer.invoke('surfing:ask',input),
+  prepareSurfing:id=>ipcRenderer.invoke('surfing:prepare',id),
+  generateSurfingRoute:input=>ipcRenderer.invoke('surfing:route',input),
+  explainSurfingStop:input=>ipcRenderer.invoke('surfing:explain',input),
+  cancelSurfing:context=>ipcRenderer.invoke('surfing:cancel',context),
+  deactivateSurfing:context=>ipcRenderer.invoke('surfing:deactivate',context),
+  onSurfingText:handler=>{const listener=(_event:unknown,event:import('./surfing-runtime').SurfingRuntimeEvent)=>handler(event);ipcRenderer.on('surfing:text',listener);return()=>ipcRenderer.removeListener('surfing:text',listener);},
   onAppBackground:handler=>{const listener=()=>handler();ipcRenderer.on('cruise:background',listener);return()=>ipcRenderer.removeListener('cruise:background',listener);},
   getCruiseSession:id=>ipcRenderer.invoke('cruise:session:get',id),
   saveCruiseSession:session=>ipcRenderer.invoke('cruise:session:save',session),
@@ -31,3 +49,4 @@ const bridge: Bridge = {
   },
 };
 contextBridge.exposeInMainWorld('enlumor', bridge);
+
