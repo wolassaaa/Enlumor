@@ -1,0 +1,106 @@
+COMMAND: npx vitest run tests/editing-sources.test.ts
+INPUT: self-created PDFs, stub source service
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:32532) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/editing-sources.test.ts (9 tests | 9 failed) 2530ms
+   ❯ trusted source and atomic legacy conversion (9)
+     × locates actual repeated sentence by native position at rotation 0; caches page without reparse 272ms
+     × locates actual repeated sentence by native position at rotation 90; caches page without reparse 249ms
+     × locates actual repeated sentence by native position at rotation 180; caches page without reparse 261ms
+     × locates actual repeated sentence by native position at rotation 270; caches page without reparse 256ms
+     × orders multiline by source lines, deduplicates overlapping quads, rejects crossed columns, quote mismatch and empty text 482ms
+     × rejects malformed/overlimit candidates explicitly without parsing 256ms
+     × converts verified legacy preserving content, keeps failed text and unknown JSON readonly, and never resurrects deleted mark 261ms
+     × reanchor rejects stale preview digest and atomically records independent compatibility audit 258ms
+     × cancel during parsing commits no mark/import; changed/missing source invalidates cached environment and leaves old rows 233ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 9 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > locates actual repeated sentence by native position at rotation 0; caches page without reparse
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > locates actual repeated sentence by native position at rotation 90; caches page without reparse
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > locates actual repeated sentence by native position at rotation 180; caches page without reparse
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > locates actual repeated sentence by native position at rotation 270; caches page without reparse
+Error: ANCHOR_NOT_FOUND
+ ❯ EditingSourceService.prepareAnchor src/main/editing-sources.ts:5:49
+      3| export class EditingSourceService {
+      4|   constructor(workspace:Workspace, edits:WorkspaceEdits, run:unknown) …
+      5|   async prepareAnchor():Promise<unknown> {throw Error('ANCHOR_NOT_FOUN…
+       |                                                 ^
+      6|   async preparePage():Promise<void> {}
+      7|   async resolveEnvironment():Promise<unknown> {return {pageBounds:[],a…
+ ❯ tests/editing-sources.test.ts:33:97
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/9]⎯
+
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > orders multiline by source lines, deduplicates overlapping quads, rejects crossed columns, quote mismatch and empty text
+Error: INVALID_OPERATION
+ ❯ ChildProcess.<anonymous> tests/editing-sources.test.ts:18:205
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/9]⎯
+
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > rejects malformed/overlimit candidates explicitly without parsing
+AssertionError: expected [Function] to throw error including 'EDIT_TOO_LARGE' but got 'ANCHOR_NOT_FOUND'
+
+Expected: "EDIT_TOO_LARGE"
+Received: "ANCHOR_NOT_FOUND"
+
+ ❯ tests/editing-sources.test.ts:50:201
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/9]⎯
+
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > converts verified legacy preserving content, keeps failed text and unknown JSON readonly, and never resurrects deleted mark
+AssertionError: expected [] to have a length of 2 but got +0
+
+- Expected
++ Received
+
+- 2
++ 0
+
+ ❯ tests/editing-sources.test.ts:56:129
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/9]⎯
+
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > reanchor rejects stale preview digest and atomically records independent compatibility audit
+Error: ANCHOR_NOT_FOUND
+ ❯ EditingSourceService.prepareAnchor src/main/editing-sources.ts:5:49
+      3| export class EditingSourceService {
+      4|   constructor(workspace:Workspace, edits:WorkspaceEdits, run:unknown) …
+      5|   async prepareAnchor():Promise<unknown> {throw Error('ANCHOR_NOT_FOUN…
+       |                                                 ^
+      6|   async preparePage():Promise<void> {}
+      7|   async resolveEnvironment():Promise<unknown> {return {pageBounds:[],a…
+ ❯ tests/editing-sources.test.ts:64:93
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/9]⎯
+
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > cancel during parsing commits no mark/import; changed/missing source invalidates cached environment and leaves old rows
+AssertionError: promise resolved "undefined" instead of rejecting
+
+- Expected:
+Error {
+  "message": "rejected promise",
+}
+
++ Received:
+undefined
+
+ ❯ tests/editing-sources.test.ts:71:62
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/9]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  9 failed (9)
+   Start at  11:02:10
+   Duration  2.72s (tests 98%, transform 1%, import 1%)
+
+
+EXIT: 1

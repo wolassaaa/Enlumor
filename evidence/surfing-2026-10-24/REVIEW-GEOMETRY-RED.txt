@@ -1,0 +1,145 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/surfing-context.test.ts (22 tests | 3 failed) 168ms
+   × rejects sparse or degenerate evidence geometry 0 20ms
+   × rejects sparse or degenerate evidence geometry 1 8ms
+   × rejects sparse or degenerate evidence geometry 2 16ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 3 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-context.test.ts > rejects sparse or degenerate evidence geometry 0
+AssertionError: promise resolved "{ context: { …(3) }, …(5) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "characterCount": 4,
++   "context": {
++     "documentId": "doc",
++     "fingerprint": "hash",
++     "revision": 1,
++   },
++   "coverage": "all-pages-have-text",
++   "emptyPages": [],
++   "pageCount": 1,
++   "passages": [
++     {
++       "documentId": "doc",
++       "fingerprint": "hash",
++       "id": "p",
++       "pageIndex": 0,
++       "quads": [
++         undefined,
++       ],
++       "quote": "text",
++     },
++   ],
+  }
+
+ ❯ tests/surfing-context.test.ts:25:237
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/3]⎯
+
+ FAIL  tests/surfing-context.test.ts > rejects sparse or degenerate evidence geometry 1
+AssertionError: promise resolved "{ context: { …(3) }, …(5) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "characterCount": 4,
++   "context": {
++     "documentId": "doc",
++     "fingerprint": "hash",
++     "revision": 1,
++   },
++   "coverage": "all-pages-have-text",
++   "emptyPages": [],
++   "pageCount": 1,
++   "passages": [
++     {
++       "documentId": "doc",
++       "fingerprint": "hash",
++       "id": "p",
++       "pageIndex": 0,
++       "quads": [
++         [
++           undefined,
++           undefined,
++           undefined,
++           undefined,
++           undefined,
++           undefined,
++           undefined,
++           undefined,
++         ],
++       ],
++       "quote": "text",
++     },
++   ],
+  }
+
+ ❯ tests/surfing-context.test.ts:25:237
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/3]⎯
+
+ FAIL  tests/surfing-context.test.ts > rejects sparse or degenerate evidence geometry 2
+AssertionError: promise resolved "{ context: { …(3) }, …(5) }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "characterCount": 4,
++   "context": {
++     "documentId": "doc",
++     "fingerprint": "hash",
++     "revision": 1,
++   },
++   "coverage": "all-pages-have-text",
++   "emptyPages": [],
++   "pageCount": 1,
++   "passages": [
++     {
++       "documentId": "doc",
++       "fingerprint": "hash",
++       "id": "p",
++       "pageIndex": 0,
++       "quads": [
++         [
++           0,
++           0,
++           0,
++           0,
++           0,
++           0,
++           0,
++           0,
++         ],
++       ],
++       "quote": "text",
++     },
++   ],
+  }
+
+ ❯ tests/surfing-context.test.ts:25:237
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/3]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  3 failed | 19 passed (22)
+   Start at  00:57:23
+   Duration  349ms (tests 78%, transform 13%, import 6%, worker 2%)
+

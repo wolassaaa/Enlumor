@@ -1,0 +1,29 @@
+COMMAND: npx vitest run tests/editing-sources.test.ts
+INPUT: self-created PDFs
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/editing-sources.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-sources.test.ts [ tests/editing-sources.test.ts ]
+Error: Cannot find module '../src/main/editing-sources' imported from D:/codex project/Enlumor/.worktrees/v04-wave-ab/tests/editing-sources.test.ts
+ ❯ tests/editing-sources.test.ts:6:1
+      4| import { readFileSync, writeFileSync, unlinkSync } from 'node:fs';
+      5| import { createHash } from 'node:crypto';
+      6| import { EditingSourceService } from '../src/main/editing-sources';
+       | ^
+      7| import { openEditingWorkspace } from '../src/main/editing-workspace';
+      8| import type { Workspace } from '../src/main/workspace';
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  11:01:35
+   Duration  188ms (worker 97%, environment 3%)
+
+
+EXIT: 1

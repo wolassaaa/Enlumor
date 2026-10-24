@@ -1,0 +1,29 @@
+Change: new docs/SURFING_HANDOFF_2026-10-24.md (documentation only); no production branch/field altered.
+Original state: target absent (BASELINE.txt); original runtime14 and candidate264 SHA manifests reused unchanged.
+Modified handoff SHA256: 88b58bb396a366b50c86255a72d1888b629919834686712859cae478c9db5281
+Four artifacts:
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T6-handoff/MODIFIED_FILE.md
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T6-handoff/DIFF_FILE.patch
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T6-handoff/VERIFICATION.txt
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T6-handoff/ROLLBACK.sh
+
+BASELINE command: creation transaction via python - (assert not p.exists(); capture existing manifests; write BASELINE.txt before creating handoff).
+Input: absent docs/SURFING_HANDOFF_2026-10-24.md; existing runtime/candidate.
+Literal output: BASELINE: handoff absent; production unchanged.
+Exit: 0.
+
+MODIFIED command: python evidence/surfing-2026-10-24/T6-handoff/CHECK.py
+Input: live handoff, MODIFIED_FILE.md, runtime14 manifest, candidate264 manifest, historical test logs.
+Literal output: MODIFIED PASS: 11 absolute evidence links exist; handoff copy hash matches; 14 runtime and 264 candidate hashes unchanged; six historical log assertions verified.
+Exit: 0 (final saved checker executed after isolated rollback).
+
+ROLLBACK command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' -lc 'chmod +x evidence/surfing-2026-10-24/T6-handoff/ROLLBACK.sh && evidence/surfing-2026-10-24/T6-handoff/ROLLBACK.sh evidence/surfing-2026-10-24/T6-handoff/rollback-copy'
+Input: marker-protected isolated copy with modified handoff and matching SHA256 manifest.
+Literal output: ROLLBACK PASS: isolated handoff absent; live handoff and candidate retained.
+Exit: 0.
+Restored behavior/status: new handoff absent only in isolated copy (original state); live handoff and independent candidate retained unchanged. Rollback does not touch production/runtime or other worktrees.
+
+Actual failed attempts preserved here: default bash resolved to WSL without /bin/bash (exit1); explicit Git Bash then manifest CRLF interpreted as filename CR (exit1). Manifest/script normalized to LF; same isolated rollback actually rerun and passed, no threshold/assertion weakened.
+
+Historical tests are read from their raw logs, NOT newly rerun in this documentation transaction: unit608, Python21, related UI20, final large2; full165=164pass/1existing dense1000 failure. Test-only additions would make full167, not rerun. Real model/papers NOT EXECUTED. Large ASCII/mock observations not release/performance/semantic quality gates.
+Automation remains ACTIVE until08:00; this transaction does not pause it early.

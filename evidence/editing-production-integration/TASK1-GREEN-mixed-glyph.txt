@@ -1,0 +1,15 @@
+COMMAND: npx vitest run tests/editing-sources.test.ts -t 'mixed font heights'
+INPUT: real one-line mixed-size glyph PDF
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:12168) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+ Test Files  1 passed (1)
+      Tests  1 passed | 15 skipped (16)
+   Start at  11:20:54
+   Duration  1.39s (tests 94%, transform 4%, import 2%)
+
+
+EXIT: 0

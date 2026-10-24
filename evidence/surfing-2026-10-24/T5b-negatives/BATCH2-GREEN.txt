@@ -1,0 +1,11 @@
+
+Running 2 tests using 1 worker
+
+(node:20444) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\surfing.spec.ts:91:1 › Surfing source replacement after preparation reports source change and sends no request (3.1s)
+(node:20444) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 2 tests\e2e\surfing.spec.ts:97:1 › Surfing SQL save failure blocks Ctrl+W until explicit retry and retains committed record (4.6s)
+
+  2 passed (8.7s)

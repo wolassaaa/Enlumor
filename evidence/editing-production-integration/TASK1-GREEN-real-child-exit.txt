@@ -1,0 +1,13 @@
+COMMAND: npx vitest run tests/pdf-task-cancel.test.ts
+INPUT: actual Node child PID handshake; verify OS process no longer exists after cancellation
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+
+ Test Files  1 passed (1)
+      Tests  3 passed (3)
+   Start at  11:18:44
+   Duration  375ms (tests 81%, transform 11%, import 6%, worker 2%)
+
+
+EXIT: 0

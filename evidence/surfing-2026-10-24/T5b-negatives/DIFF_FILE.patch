@@ -1,0 +1,159 @@
+--- a/src/main/surfing-requests.ts
++++ b/src/main/surfing-requests.ts
+@@ -66,7 +66,7 @@
+     const route=parseSurfingRoute(raw,snapshot);this.lastRoute={context:{...input.context},profileId:input.profileId,route:structuredClone(route)};
+     this.ports.emit({requestId:job.id,type:'route',route});
+    }
+-  }catch(error){if(current()){const code=error instanceof Error&&publicErrors.has(error.message)?error.message:'AI_FAILED';this.ports.emit({requestId:job.id,type:'error',code});}}
++  }catch(error){if(current()){const prefix=error instanceof Error?error.message.split(':',1)[0]:'';const code=publicErrors.has(prefix)?prefix:'AI_FAILED';this.ports.emit({requestId:job.id,type:'error',code});}}
+   finally{if(this.active===job)this.active=undefined;}
+  }
+ }
+--- a/tests/surfing-requests.test.ts
++++ b/tests/surfing-requests.test.ts
+@@ -42,3 +42,14 @@
+ it('refuses explanation before a validated route exists',async()=>{const h=setup();await expect(h.service.explain({...input(),stopIndex:0})).rejects.toThrow('SURFING_ROUTE_REQUIRED');expect(h.calls).toEqual([]);});
+ it('rejects an explanation with invented evidence',async()=>{const h=setup();await h.service.start(input());h.ports.generate=async()=>JSON.stringify({text:'answer',passageIds:['fake']});await h.service.explain({...input(),requestId:'explain-one',stopIndex:0});expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});});
+ it('does not reuse another profile or context route for explanation',async()=>{const h=setup();await h.service.start(input());await expect(h.service.explain({...input(),profileId:'other',stopIndex:0})).rejects.toThrow('SURFING_ROUTE_REQUIRED');});
++
++it.each([
++ ['SOURCE_CHANGED: C:/fixture-private-name.pdf changed','SOURCE_CHANGED'],
++ ['SOURCE_MISSING: C:/fixture-private-name.pdf missing','SOURCE_MISSING'],
++ ['PASSWORD_REQUIRED: fixture-private-password-detail','PASSWORD_REQUIRED'],
++ ['AI_HTTP_429: fixture-private-provider-message','AI_HTTP_429'],
++ ['SOURCE_CHANGED_OTHER: fixture-private-name','AI_FAILED'],
++ ['UNRECOGNIZED: fixture-private-name','AI_FAILED'],
++])('keeps only exact public error prefix for %s',async(message,code)=>{
++ const h=setup();h.ports.load=async()=>{throw Error(message);};await h.service.start(input());expect(h.events).toEqual([{requestId:'req-one',type:'error',code}]);expect(JSON.stringify(h.events)).not.toContain('fixture-private');expect(h.calls).toEqual([]);
++});
+--- a/tests/e2e/surfing.spec.ts
++++ b/tests/e2e/surfing.spec.ts
+@@ -75,3 +75,27 @@
+   await expect.poll(()=>app.evaluate(()=>(globalThis as any).surfingTransitionHeld.length)).toBeGreaterThan(0);await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已暂停');release();await page.waitForTimeout(250);await expect(page.getByLabel('Surfing 解释',{exact:true})).not.toContainText('Late explanation past transition gate');await app.evaluate(()=>{for(const resolve of (globalThis as any).surfingTransitionHeld.splice(0))resolve();});await expect(page.getByLabel('Surfing 共读',{exact:true})).toHaveCount(0);if(transition==='switch')await expect(page.getByRole('tab',{name:'Second source.pdf',exact:true})).toHaveAttribute('aria-selected','true');else await expect(page.getByRole('tab',{name:'Real source.pdf',exact:true})).toHaveCount(0);expect(calls).toBe(2);
+  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+ });
++
++test('Surfing background blur cancels held explanation and foreground return does not restart',async()=>{
++ let calls=0,release=()=>{};const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const data=JSON.parse(JSON.parse(raw).messages[1].content);calls++;if(data.selectedStop){release=()=>sendMock(res,{text:'Late background answer',passageIds:[data.passages[0].id]});return;}sendMock(res,{stops:[{title:'Background entry',reason:'Actual source',passageIds:[data.passages[0].id]}]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','negative-background');
++ try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await page.getByRole('button',{name:'Background entry',exact:true}).click();await expect.poll(()=>calls).toBe(2);await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');await app.evaluate(({BrowserWindow})=>{BrowserWindow.getAllWindows()[0].emit('blur');});await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已暂停');release();await app.evaluate(({BrowserWindow})=>{BrowserWindow.getAllWindows()[0].emit('focus');});await page.waitForTimeout(400);await expect(page.getByLabel('Surfing 解释',{exact:true})).not.toContainText('Late background answer');await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已暂停');expect(calls).toBe(2);
++ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
++});
++
++test('Surfing changed model rejects old explanation and cached restoration without another request',async()=>{
++ let calls=0;const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const data=JSON.parse(JSON.parse(raw).messages[1].content);calls++;sendMock(res,data.selectedStop?{text:'Original model explanation',passageIds:[data.passages[0].id]}:{stops:[{title:'Model-bound entry',reason:'Actual source',passageIds:[data.passages[0].id]}]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const endpoint='http://127.0.0.1:'+(server.address() as any).port+'/v1';const {app,page}=await launchAndPrepareSurfing(endpoint,'negative-model');const {DatabaseSync}=await import('node:sqlite');let db:InstanceType<typeof DatabaseSync>|undefined;
++ try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await page.getByRole('button',{name:'Model-bound entry',exact:true}).click();await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Original model explanation');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');db=new DatabaseSync(path.join(folder,'negative-model/workspace.sqlite'));const before=db.prepare('SELECT payload FROM surfing_sessions').get()!.payload;await page.evaluate(async endpoint=>{const reply=await window.enlumor.saveAiProfile({id:'local',name:'Local test',protocol:'openai-chat',endpoint,model:'gpt-4.1-mini',maxOutputTokens:1000,timeoutMs:10000,parameters:{}});if(!reply.ok)throw Error(reply.error.message);},endpoint);await page.getByRole('button',{name:'解释这个切入点',exact:true}).click();await expect(page.locator('.surfing-error')).toContainText('SURFING_PROFILE_CHANGED');await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Original model explanation');expect(calls).toBe(2);await page.locator('.surfing-setup summary').click();await page.getByRole('button',{name:'准备本地全文',exact:true}).click();await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('未恢复');await expect(page.getByLabel('Surfing 共读',{exact:true})).toContainText('SURFING_PROFILE_CHANGED');await expect(page.getByRole('button',{name:'Model-bound entry',exact:true})).toHaveCount(0);await expect(page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true})).not.toBeChecked();expect(db.prepare('SELECT payload FROM surfing_sessions').get()!.payload).toBe(before);expect(calls).toBe(2);
++ }finally{db?.close();await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
++});
++
++test('Surfing source replacement after preparation reports source change and sends no request',async()=>{
++ let calls=0;const server=createServer(async(_req,res)=>{calls++;sendMock(res,{stops:[]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','negative-source');const fs=await import('node:fs'),original=fs.readFileSync(source),before=createHash('sha256').update(original).digest('hex');
++ try{fs.appendFileSync(source,'\n% fixture source changed after snapshot\n');expect(createHash('sha256').update(fs.readFileSync(source)).digest('hex')).not.toBe(before);await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.locator('.surfing-error')).toContainText('SOURCE_CHANGED');await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('需要处理');await page.waitForTimeout(200);expect(calls).toBe(0);await expect(page.locator('.surfing-stops')).toHaveCount(0);await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('1');
++ }finally{fs.writeFileSync(source,original);expect(createHash('sha256').update(fs.readFileSync(source)).digest('hex')).toBe(before);await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
++});
++
++test('Surfing SQL save failure blocks Ctrl+W until explicit retry and retains committed record',async()=>{
++ const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const data=JSON.parse(JSON.parse(raw).messages[1].content);sendMock(res,data.selectedStop?{text:'Unsaved tab explanation',passageIds:[data.passages[0].id]}:{stops:[{title:'Protected tab entry',reason:'Actual source',passageIds:[data.passages[0].id]}]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','negative-close-failure');const {DatabaseSync}=await import('node:sqlite');let db:InstanceType<typeof DatabaseSync>|undefined;
++ try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');db=new DatabaseSync(path.join(folder,'negative-close-failure/workspace.sqlite'));const before=db.prepare('SELECT payload FROM surfing_sessions').get()!.payload;db.exec("CREATE TRIGGER fail_surfing_tab_save BEFORE UPDATE ON surfing_sessions BEGIN SELECT RAISE(ABORT,'SURFING_TEST_TAB_SAVE_FAILED'); END");await page.getByRole('button',{name:'Protected tab entry',exact:true}).click();await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Unsaved tab explanation');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('保存失败');await page.keyboard.press('Control+w');await expect(page.locator('.statusbar [role="status"]')).toContainText('尚未保存');await expect(page.getByRole('tab',{name:'Real source.pdf',exact:true})).toHaveAttribute('aria-selected','true');await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Unsaved tab explanation');expect(db.prepare('SELECT payload FROM surfing_sessions').get()!.payload).toBe(before);db.exec('DROP TRIGGER fail_surfing_tab_save');await page.getByRole('button',{name:'重试保存 Surfing 进度',exact:true}).click();await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');const committed=JSON.parse(String(db.prepare('SELECT payload FROM surfing_sessions').get()!.payload));expect(committed.answers['0'].text).toBe('Unsaved tab explanation');await page.keyboard.press('Control+w');await expect(page.getByRole('tab',{name:'Real source.pdf',exact:true})).toHaveCount(0);await expect(page.getByLabel('Surfing 共读',{exact:true})).toHaveCount(0);
++ }finally{db?.close();await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
++});
+--- a/docs/WAVE_A_STATE.json
++++ b/docs/WAVE_A_STATE.json
+@@ -20,7 +20,7 @@
+     "unit": 139,
+     "build": "PASS"
+   },
+-  "updatedAt": "2026-10-24T03:06:10.170927+08:00",
++  "updatedAt": "2026-10-24T03:31:22.046059+08:00",
+   "task1Commit": "dc9f231",
+   "lastVerified": {
+     "unit": 155,
+@@ -113,9 +113,9 @@
+   "surfingOvernight": {
+     "plan": "docs/SURFING_OVERNIGHT_2026-10-24.md",
+     "evidence": "evidence/surfing-2026-10-24",
+-    "unit": 602,
++    "unit": 608,
+     "python": 21,
+-    "packagedMockSurfing": 10,
++    "packagedMockSurfing": 14,
+     "realModel": "NOT_EXECUTED",
+     "developmentFullUi": {
+       "passed": 157,
+@@ -125,16 +125,18 @@
+         "packaged-only test launched absent release/win-unpacked/Enlumor.exe; rerun against isolated candidate in progress"
+       ]
+     },
+-    "candidate": "evidence/surfing-2026-10-24/T5-package/MODIFIED_FILE/win-unpacked/Enlumor-Surfing-Candidate.exe",
++    "candidate": "evidence/surfing-2026-10-24/T5b-negatives/MODIFIED_FILE/win-unpacked/Enlumor-Surfing-Candidate.exe",
+     "published": false,
+     "packagedFullUi": {
+-      "passed": 160,
++      "passed": 164,
+       "failed": 1,
+-      "failure": "existing editing-preview dense1000 erase/undo1251ms >1000ms; mutation worst longtask63ms >50ms"
++      "failure": "existing editing-preview dense1000 erase/undo1273ms >1000ms; mutation worst longtask62ms >50ms"
+     },
+     "performanceText": "PASS_ORIGINAL_THRESHOLDS",
+     "performanceScan": "PASS_ORIGINAL_THRESHOLDS",
+     "review": "NO_UNRESOLVED_CONFIRMED_CRITICAL_IMPORTANT_FOR_SURFING; ESCAPE_MINOR_RECORDED",
+-    "nextTask": "T5b offline Electron negative coverage: background/model change/source replacement/save-failure tab close; then real-paper and real-model acceptance remain separate"
+-  }
++    "nextTask": "T5c large synthetic full-text snapshot/route/cancel and explicit over-limit rejection; offline only; real-paper/model acceptance separate",
++    "sourceErrorClassification": "EXACT_PUBLIC_PREFIX_ONLY_NO_PRIVATE_SUFFIX; RED_TO_GREEN"
++  },
++  "releaseGate": "FAIL_EXISTING_EDITING_PREVIEW_DENSE1000"
+ }
+--- a/docs/SURFING_OVERNIGHT_2026-10-24.md
++++ b/docs/SURFING_OVERNIGHT_2026-10-24.md
+@@ -114,3 +114,19 @@
+ ## 下一未完成项 T5b（不是重做完整回归）
+ 优先补基础Surfing已有接口的真实Electron离线负例：后台取消、改变模型配置后的恢复/解释隔离、已准备来源替换、保存失败时标签关闭保护。只增测试验证现有合同；发现实际RED再最小修复，不以新功能填时间。复用本地SSE与临时profile，不读个人密钥、不调用付费API。两项后整体挑刺/回归；若源码未改，不重复8.7分钟完整套件来制造进度。
+ 两篇真实论文样本及真实模型质量验收需要另外的实际输入/用户操作，不能用合成PDF或mock代替。旧编辑预览性能1251ms/63ms失败独立保留，不把修旧复杂编辑列入基础Surfing新增功能。07:30后只测试/收口，08:00停实施并暂停20min-enlumor-2。
++
++
++## 03:19 T5b在途记录（继续同一候选，不重启套件）
++第一批后台/模型变更两项旧候选包首次PASS，属于补充回归，不虚构RED。后台用注入真实main blur/focus处理器，未声称OS实际切后台或提供商忽略abort；模型项通过IPC更新公开配置，未声称设置面板全交互。只读review确认断言有效。
++第二批来源替换/SQL失败Ctrl+W：旧包1失败/1通过。实际SOURCE_CHANGED:详细说明被请求服务的整串白名单误降级为AI_FAILED；无网络泄出，但诊断不明确。新增6单位回归先4失败/32通过，再只提取第一个冒号前prefix且保留精确publicErrors白名单后36通过。未知/相似前缀仍AI_FAILED，后缀路径/说明不输出。新开发版两项Electron8.7秒通过，PDF hash恢复、保存失败原记录保留、重试提交后才允许关tab。只读review未发现新增Critical/Important。
++已创建新独立候选 T5b-negatives/MODIFIED_FILE（旧T5-package候选及证据保留），源Python未变，复用上一批bundled worker。当前在途：全单测后启动完整包内165项串行回归（T5b-negatives/ALL-UNIT.txt与FULL-PACKAGED-E2E.txt）。不要并发UI/性能/构建；结束后再更新实际数量与当前候选入口。错误分类是唯一生产代码改动，未改性能门槛或旧编辑预览实现。
++
++
++## 03:31 T5b收口：4项负例、错误分类修复与新候选
++- 背景/模型两项首次即PASS，只作为补充覆盖；第二批SQL失败Ctrl+W首次PASS，来源替换首次RED（AI_FAILED而非SOURCE_CHANGED）。六单位先4失败/32通过→仅改公开错误prefix分类→36通过；未知/相似prefix继续AI_FAILED、无私有后缀输出。两项开发版ElectronGREEN8.7秒。
++- 最终608单测、21Python、typecheck/build通过；新独立包完整165项中164通过/1失败，Surfing14项全部通过。唯一旧编辑预览dense1000仍1273ms>1000ms，mutation worst62ms>50ms；不放宽门槛，不冒充整包全绿。当前text/scan原性能门槛均PASS：启动中位数445.1/428.4ms，滚动p95 11.5/12.9ms，保存p95 4.9/4.7ms。
++- 两批只读review确认断言与修复；最终边界核对确认无新增已确认Critical/Important。后台仅注入main blur/focus，模型仅真实IPC签名校验；真实服务与两篇论文仍未验收。源PDF测试finally恢复并验hash，临时SQLite finally关闭。
++- 当前候选入口为 evidence/surfing-2026-10-24/T5b-negatives/OPEN-CANDIDATE.cmd（固定独立user-data，--check通过），旧T5-package包与证据原样保留。新包编译字节与dist一致，构建map中surfing-requests.ts与当前源一致。四件证据和源码小快照在T5b-negatives；隔离回退恢复6原件，旧服务30项+显式“装饰SOURCE_CHANGED回退AI_FAILED且零外发”1项共31通过，活候选保留。来源错误和旧性能失败trace均保存。无提交/推送/发布/真实API调用，当前无在途实施者/构建/测试。
++
++## 下一未完成项T5c：大输入合成压力验证（不新增功能）
++现有Surfing大多采用2页短PDF；默认阅读器200页基准不等于全文Surfing性能。下一轮用本工作树临时合成约40页以上、80–120k字符的可核验PDF，测本地完整快照、全文路线请求、原文定位和取消，记录覆盖计数、实际时延与UI响应；证据必须含首/中/末页，不静默截断。另用超160k字符样本确认明确拒绝且零请求。合成样本不称真实论文，也不代替真实模型质量。先写验证测试；现有行为直接PASS则不虚构RED、也不强行改生产代码。只有实际失败才最小修复，按两项review/回归；源码未改不重跑11分钟完整套件。保持07:30/08:00收口不变。
+--- a/docs/acceptance/surfing-overnight-2026-10-24.md
++++ b/docs/acceptance/surfing-overnight-2026-10-24.md
+@@ -2,13 +2,13 @@
+ 
+ ## 打开哪一个
+ 
+-候选目录：`evidence/surfing-2026-10-24/T5-package/MODIFIED_FILE/win-unpacked`。
+-入口：同一 T5-package 目录的 `OPEN-CANDIDATE.cmd`。入口固定传入独立的 `T5-package/user-data`；这是新建的验收工作区，不复用日常配置或个人库。没有开启 editing-preview。
++候选目录：`evidence/surfing-2026-10-24/T5b-negatives/MODIFIED_FILE/win-unpacked`。
++入口：同一 T5b-negatives 目录的 `OPEN-CANDIDATE.cmd`。入口固定传入独立的 `T5b-negatives/user-data`；这是新建的验收工作区，不复用日常配置或个人库。没有开启 editing-preview。
+ 这是一份独立开发候选，不是正式发布。包内版本号仍为0.1.15，包名是 `enlumor-surfing-candidate`，exe名称带 Surfing-Candidate；正式版本和 release/latest 不变。
+ 
+ ## 已有证据与边界
+ 
+-- 离线单测602、Python21通过；包内Surfing本地SSE模拟10项通过。完整包回归结果在 `T5-package/VERIFICATION.txt`，不能以此小表代替完整门禁。
++- 离线单测608、Python21通过；包内Surfing本地SSE模拟14项通过。完整包回归结果在 `T5b-negatives/VERIFICATION.txt`，不能以此小表代替完整门禁。
+ - 真实模型调用尚未执行；本地mock检验的是流程、合同、取消及保存，不证明解释质量。
+ - 准备本地全文只提取文字，原文件保持不变；扫描/图像/图表/公式视觉含义不在这一轮覆盖内。空页明确列出；提取失败/超限不静默截断。
+ - 切入点和解释只能引用已核验的passageId；定位回到原PDF，临时强调不成为永久批注。
+@@ -44,5 +44,11 @@
+ ## 给下一轮 Codex 的复用提示
+ 
+ ```text
+-接续基础Surfing候选，不重做T1—T4。先读docs/SURFING_OVERNIGHT_2026-10-24.md、docs/WAVE_A_STATE.json及T5-package/VERIFICATION.txt，核对在途任务和Git差异。只在v04-wave-ab工作树推进。针对真实论文验收记录中的一个具体失败先写RED，再最小修复、GREEN、回归和隔离回退；保存原hash和原样证据。模型解释质量与离线mock结果分别记录。不调用付费API、不读个人密钥，不提交/推送/发布，不扩展SaaS或复杂AI编辑。
++接续基础Surfing候选，不重做T1—T4。先读docs/SURFING_OVERNIGHT_2026-10-24.md、docs/WAVE_A_STATE.json及T5b-negatives/VERIFICATION.txt，核对在途任务和Git差异。只在v04-wave-ab工作树推进。针对真实论文验收记录中的一个具体失败先写RED，再最小修复、GREEN、回归和隔离回退；保存原hash和原样证据。模型解释质量与离线mock结果分别记录。不调用付费API、不读个人密钥，不提交/推送/发布，不扩展SaaS或复杂AI编辑。
+ ```
++
++
++### 03:30补充回归
++
++后台测试注入真实主进程blur/focus处理器，并非操作系统实际失焦验收；模型测试通过真实IPC改配置，覆盖签名防线，不是设置面板全交互。来源替换明确返回SOURCE_CHANGED且零请求；保存失败的Ctrl+W保留原记录和解释，重试提交后才关闭。
++当前整包165项中164通过/1失败，旧editing-preview dense1000仍未过门槛，不作为正式发布。旧T5-package包保留供对照，当前入口以本表的T5b-negatives为准。

@@ -1,0 +1,13 @@
+{
+  "count": 1000,
+  "pointsPerStroke": 256,
+  "scrollP95Ms": 15.299999998882413,
+  "pointerP95Ms": 2.599999999627471,
+  "frameP95Ms": 10.600000001490116,
+  "longTasks": 0,
+  "worstLongTaskMs": 0,
+  "saveMs": 1,
+  "eraseUndoMs": 1307,
+  "mutationLongTasks": 2,
+  "mutationWorstLongTaskMs": 67
+}

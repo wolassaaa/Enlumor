@@ -1,0 +1,279 @@
+diff --git a/evidence/surfing-2026-10-24/T3B-budget/originals/package.json b/package.json
+index 3999070..642cb24 100644
+--- a/evidence/surfing-2026-10-24/T3B-budget/originals/package.json
++++ b/package.json
+@@ -50,6 +50,7 @@
+     "electronDist": "node_modules/electron/dist"
+   },
+   "dependencies": {
++    "js-tiktoken": "1.0.21",
+     "pdfjs-dist": "6.4.299",
+     "react": "19.3.1",
+     "react-dom": "19.3.1"
+diff --git a/evidence/surfing-2026-10-24/T3B-budget/originals/package-lock.json b/package-lock.json
+index 500e641..1bba654 100644
+--- a/evidence/surfing-2026-10-24/T3B-budget/originals/package-lock.json
++++ b/package-lock.json
+@@ -8,6 +8,7 @@
+       "name": "enlumor",
+       "version": "0.1.15",
+       "dependencies": {
++        "js-tiktoken": "1.0.21",
+         "pdfjs-dist": "6.4.299",
+         "react": "19.3.1",
+         "react-dom": "19.3.1"
+@@ -2353,7 +2354,6 @@
+       "version": "1.5.1",
+       "resolved": "https://registry.npmjs.org/base64-js/-/base64-js-1.5.1.tgz",
+       "integrity": "sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==",
+-      "dev": true,
+       "funding": [
+         {
+           "type": "github",
+@@ -3848,6 +3848,15 @@
+         "jiti": "lib/jiti-cli.mjs"
+       }
+     },
++    "node_modules/js-tiktoken": {
++      "version": "1.0.21",
++      "resolved": "https://registry.npmjs.org/js-tiktoken/-/js-tiktoken-1.0.21.tgz",
++      "integrity": "sha512-biOj/6M5qdgx5TKjDnFT1ymSpM5tbd3ylwDtrQvFQSu0Z7bBYko2dF+W/aUkXUPuk6IVpRxk/3Q2sHOzGlS36g==",
++      "license": "MIT",
++      "dependencies": {
++        "base64-js": "^1.5.1"
++      }
++    },
+     "node_modules/js-yaml": {
+       "version": "4.3.2",
+       "resolved": "https://registry.npmjs.org/js-yaml/-/js-yaml-4.3.2.tgz",
+diff --git a/evidence/surfing-2026-10-24/T3B-budget/originals/build.mjs b/scripts/build.mjs
+index 893cdaa..92a87b7 100644
+--- a/evidence/surfing-2026-10-24/T3B-budget/originals/build.mjs
++++ b/scripts/build.mjs
+@@ -1,6 +1,7 @@
+ import { build } from 'esbuild';
+ import { build as viteBuild } from 'vite';
+ import { copyAssets } from './assets.mjs';
+-await build({ entryPoints: ['src/main/index.ts', 'src/main/preload.ts'], outdir: 'dist/main', bundle: true, platform: 'node', format: 'cjs', outExtension: { '.js': '.cjs' }, external: ['electron'], sourcemap: true });
++await build({ entryPoints: ['src/main/index.ts', 'src/main/preload.ts', 'src/main/surfing-token-worker.ts'], outdir: 'dist/main', bundle: true, platform: 'node', format: 'cjs', outExtension: { '.js': '.cjs' }, external: ['electron'], sourcemap: true });
+ await viteBuild();
+ copyAssets('dist/renderer/pdf-assets');
++
+diff --git a/evidence/surfing-2026-10-24/T3B-budget/originals/surfing-requests.ts b/src/main/surfing-requests.ts
+index 8071140..57c8fd6 100644
+--- a/evidence/surfing-2026-10-24/T3B-budget/originals/surfing-requests.ts
++++ b/src/main/surfing-requests.ts
+@@ -10,7 +10,7 @@ export type SurfingRequestPorts={
+  load:(context:CommandContext,signal:AbortSignal)=>Promise<SurfingContext>;
+  profile:(id:string)=>{profile:AiProfileInput;contextWindowTokens:number};
+  /** Includes protocol message framing; null means tokenizer/capacity is not established. */
+- measureInputTokens:(profile:AiProfileInput,prompt:AiPrompt)=>number|null;
++ measureInputTokens:(profile:AiProfileInput,prompt:AiPrompt,signal:AbortSignal)=>number|null|Promise<number|null>;
+  generate:(profile:AiProfileInput,prompt:AiPrompt,options:{signal:AbortSignal;onDelta:(text:string)=>void})=>Promise<string>;
+  emit:(event:SurfingRouteEvent)=>void;
+ };
+@@ -34,7 +34,8 @@ export class SurfingRequests{
+    const snapshot=structuredClone(loaded);if(!same(snapshot.context,input.context))throw Error('SURFING_SOURCE_INVALID');
+    const prompt=buildSurfingRoutePrompt(snapshot);
+    if(prompt.system.length+prompt.user.length>200000)throw Error('SURFING_CONTEXT_TOO_LARGE');
+-   const tokens=this.ports.measureInputTokens(profile,prompt);
++   const tokens=await this.ports.measureInputTokens(profile,prompt,job.controller.signal);
++   if(!current())return;
+    if(tokens===null||!Number.isSafeInteger(tokens)||tokens<0)throw Error('SURFING_CAPACITY_UNKNOWN');
+    if(tokens+profile.maxOutputTokens>contextWindowTokens)throw Error('SURFING_CONTEXT_TOO_LARGE');
+    if(!current())return;let outputSize=0;
+@@ -46,3 +47,4 @@ export class SurfingRequests{
+  }
+ }
+ 
++
+diff --git a/evidence/surfing-2026-10-24/T3B-budget/originals/surfing-requests.test.ts b/tests/surfing-requests.test.ts
+index e12d771..01f4415 100644
+--- a/evidence/surfing-2026-10-24/T3B-budget/originals/surfing-requests.test.ts
++++ b/tests/surfing-requests.test.ts
+@@ -27,3 +27,10 @@ describe('bounded Surfing route request service',()=>{
+ it.each(['AI_HTTP_401','AI_HTTP_429','AI_REQUEST_FAILED','AI_CANCELLED','SURFING_UNSUPPORTED_GEOMETRY'])('preserves the actual public runtime error %s',async code=>{
+  const h=setup();h.ports.generate=async()=>{throw Error(code);};await h.service.start(input());expect(h.events).toEqual([{requestId:'req-one',type:'error',code}]);
+ });
++
++it('awaits an asynchronous model-specific counter before sending',async()=>{
++ const h=setup();let release!:(n:number)=>void;h.ports.measureInputTokens=()=>new Promise(resolve=>release=resolve);const job=h.service.start(input());await new Promise(r=>setTimeout(r,0));expect(h.calls).toEqual([]);release(2000);await job;expect(h.calls).toHaveLength(1);expect(h.events[0].type).toBe('route');
++});
++it('cancels while token counter is pending without generating',async()=>{
++ const h=setup();let release!:(n:number)=>void;h.ports.measureInputTokens=()=>new Promise(resolve=>release=resolve);const job=h.service.start(input());await new Promise(r=>setTimeout(r,0));h.service.cancel('req-one');release(2000);await job;expect(h.calls).toEqual([]);expect(h.events).toEqual([]);
++});
+diff --git a/src/renderer/surfing-command-host.ts b/src/renderer/surfing-command-host.ts
+new file mode 100644
+index 0000000..80fce21
+--- /dev/null
++++ b/src/renderer/surfing-command-host.ts
+@@ -0,0 +1,25 @@
++import type {CruiseBlock} from '../shared/cruise';
++import type {DocumentCommand,DocumentCommandPorts,CommandResult} from '../shared/document-commands';
++import type {SurfingContext} from '../shared/surfing-context';
++import {runDocumentCommand} from './reading-commands';
++type Reader={go:(pageNumber:number,isCurrent:()=>boolean)=>void;locateCruiseBlock:(block:CruiseBlock,isCurrent:()=>boolean)=>Promise<void>;clearCruiseFocus:()=>void};
++type Document={id:string;fingerprint:string;pageCount:number};
++/** Surfing IDs belong to the verified native snapshot, not PDF.js's block cache. */
++export function createSurfingCommandHost(getReader:()=>Reader|null,getDocument:()=>Document|null,getSnapshot:()=>SurfingContext|null){
++ let bound:SurfingContext|null=null,epoch=0,sequence=0,cancellation=new AbortController();
++ let viewportJob:symbol|null=null;
++ function invalidate(){viewportJob=null;epoch++;cancellation.abort();cancellation=new AbortController();getReader()?.clearCruiseFocus();}
++ const getContext=()=>{const doc=getDocument(),s=getSnapshot();if(!getReader()||!s||s!==bound||!doc||doc.id!==s.context.documentId||doc.fingerprint!==s.context.fingerprint||doc.pageCount!==s.pageCount)return null;return {...s.context,revision:s.context.revision+epoch};};
++ const ports:DocumentCommandPorts={getContext,getPageCount:()=>getDocument()?.pageCount||0,readPage:async pageIndex=>structuredClone(bound?.passages.filter(p=>p.pageIndex===pageIndex)||[]),navigate:async(pageIndex,current)=>{if(current())getReader()?.go(pageIndex+1,current);},focus:async(block,current)=>{if(current())await getReader()?.locateCruiseBlock(block,current);},clearFocus:()=>getReader()?.clearCruiseFocus(),pause:invalidate};
++ return {invalidate,run:(command:DocumentCommand):Promise<CommandResult>=>{
++  const next=getSnapshot();if(next!==bound){if(bound)invalidate();bound=next;}
++  if(command.type==='clear_focus')invalidate();
++  const viewport=command.type==='go_to_page'||command.type==='show_evidence';if(viewport&&viewportJob)invalidate();
++  const requestId=`surf-command-${++sequence}`,context=getContext();
++  if(!context)return Promise.resolve({requestId,ok:false,error:{code:'COMMAND_STALE',message:'The reading context has changed.'}});
++  const owner=viewport?Symbol():null;if(owner)viewportJob=owner;
++  return runDocumentCommand({requestId,context,command},ports,cancellation.signal).finally(()=>{if(owner&&viewportJob===owner)viewportJob=null;});
++ }};
++}
++
++
+diff --git a/tests/surfing-command-host.test.ts b/tests/surfing-command-host.test.ts
+new file mode 100644
+index 0000000..32c0338
+--- /dev/null
++++ b/tests/surfing-command-host.test.ts
+@@ -0,0 +1,24 @@
++import {describe,it,expect} from 'vitest';
++import {createSurfingCommandHost} from '../src/renderer/surfing-command-host';
++import type {SurfingContext} from '../src/shared/surfing-context';
++const fingerprint='a'.repeat(64);
++const source=():SurfingContext=>({context:{documentId:'doc',fingerprint,revision:1},pageCount:2,passages:[{id:'surf-1-0-0',documentId:'doc',fingerprint,pageIndex:1,quote:'Native trusted passage',quads:[[0,10,20,10,0,0,20,0]]}],emptyPages:[0],characterCount:22,coverage:'partial-text'});
++function setup(){let doc:{id:string;fingerprint:string;pageCount:number}|null={id:'doc',fingerprint,pageCount:2};let snapshot:SurfingContext|null=source();const effects:any[]=[];const reader={go:(page:number,current:()=>boolean)=>{if(current())effects.push(['go',page]);},locateCruiseBlock:async(b:any,current:()=>boolean)=>{if(current())effects.push(['focus',b.id]);},clearCruiseFocus:()=>effects.push(['clear'])};return{effects,reader,host:createSurfingCommandHost(()=>reader,()=>doc,()=>snapshot),switchDoc:()=>{doc={id:'other',fingerprint,pageCount:2};},replace:()=>{snapshot=source();},clear:()=>{snapshot=null;}};}
++describe('Surfing trusted-snapshot command adapter',()=>{
++ it('resolves Python source ID from trusted snapshot, not PDF.js block cache',async()=>{const h=setup();const result=await h.host.run({type:'show_evidence',pageIndex:1,passageId:'surf-1-0-0'});expect(result.ok).toBe(true);expect(h.effects).toEqual([['focus','surf-1-0-0']]);});
++ it('rejects invented source ID without moving viewport',async()=>{const h=setup();const r=await h.host.run({type:'show_evidence',pageIndex:1,passageId:'fake'});expect(r).toMatchObject({ok:false,error:{code:'EVIDENCE_NOT_FOUND'}});expect(h.effects).toEqual([]);});
++ it('rejects a correct ID on a wrong page',async()=>{const h=setup();expect(await h.host.run({type:'show_evidence',pageIndex:0,passageId:'surf-1-0-0'})).toMatchObject({ok:false,error:{code:'EVIDENCE_NOT_FOUND'}});expect(h.effects).toEqual([]);});
++ it('reports stale context when document does not match snapshot',async()=>{const h=setup();h.switchDoc();expect(await h.host.run({type:'go_to_page',pageIndex:1})).toMatchObject({ok:false,error:{code:'COMMAND_STALE'}});expect(h.effects).toEqual([]);});
++ it('returns cloned page data without a viewport change',async()=>{const h=setup();const r=await h.host.run({type:'read_page',pageIndex:1});expect(r.ok).toBe(true);if(r.ok&&r.result.kind==='page')r.result.blocks[0].quote='mutated';const again=await h.host.run({type:'read_page',pageIndex:1});expect(again).toMatchObject({ok:true,result:{blocks:[{quote:'Native trusted passage'}]}});expect(h.effects).toEqual([]);});
++ it('cancels the actual pending focus when user takes over',async()=>{const h=setup();let release!:()=>void;h.reader.locateCruiseBlock=(_b,current)=>new Promise(resolve=>{release=()=>{if(current())h.effects.push(['late-focus']);resolve();};});const pending=h.host.run({type:'show_evidence',pageIndex:1,passageId:'surf-1-0-0'});await new Promise(r=>setTimeout(r,0));h.host.invalidate();release();expect(await pending).toMatchObject({ok:false});expect(h.effects).not.toContainEqual(['late-focus']);});
++ it('snapshot replacement invalidates already scheduled viewport effects',async()=>{const h=setup();let release!:()=>void;h.reader.locateCruiseBlock=(_b,current)=>new Promise(resolve=>{release=()=>{if(current())h.effects.push(['late-focus']);resolve();};});const pending=h.host.run({type:'show_evidence',pageIndex:1,passageId:'surf-1-0-0'});await new Promise(r=>setTimeout(r,0));h.replace();release();expect(await pending).toMatchObject({ok:false,error:{code:'COMMAND_STALE'}});expect(h.effects).not.toContainEqual(['late-focus']);});
++ it('missing snapshot cannot navigate',async()=>{const h=setup();h.clear();expect(await h.host.run({type:'go_to_page',pageIndex:1})).toMatchObject({ok:false,error:{code:'COMMAND_STALE'}});expect(h.effects).toEqual([]);});
++ it('converts zero-based page index once through the existing command contract',async()=>{const h=setup();expect((await h.host.run({type:'go_to_page',pageIndex:1})).ok).toBe(true);expect(h.effects).toEqual([['go',2]]);});
++});
++
++it.each(['go_to_page','show_evidence'] as const)('new %s intent preempts a pending old focus',async kind=>{
++ const h=setup();let release!:()=>void;let calls=0;
++ h.reader.locateCruiseBlock=(b,current)=>{calls++;if(calls===1)return new Promise(resolve=>{release=()=>{if(current())h.effects.push(['late-old-focus']);resolve();};});if(current())h.effects.push(['new-focus',b.id]);return Promise.resolve();};
++ const old=h.host.run({type:'show_evidence',pageIndex:1,passageId:'surf-1-0-0'});await new Promise(r=>setTimeout(r,0));
++ const next=await h.host.run(kind==='go_to_page'?{type:'go_to_page',pageIndex:0}:{type:'show_evidence',pageIndex:1,passageId:'surf-1-0-0'});expect(next.ok).toBe(true);release();expect(await old).toMatchObject({ok:false});expect(h.effects).not.toContainEqual(['late-old-focus']);
++});
+diff --git a/src/main/surfing-token-count.ts b/src/main/surfing-token-count.ts
+new file mode 100644
+index 0000000..ba5e401
+--- /dev/null
++++ b/src/main/surfing-token-count.ts
+@@ -0,0 +1,18 @@
++import {Tiktoken} from 'js-tiktoken/lite';
++import ranks from 'js-tiktoken/ranks/o200k_base';
++import type {AiProfileInput,AiPrompt} from '../shared/ai';
++type Model=Pick<AiProfileInput,'protocol'|'model'>;
++import {supportedSurfingTokenizer} from './surfing-tokenizer-models';
++export {supportedSurfingTokenizer} from './surfing-tokenizer-models';
++let encoder:Tiktoken|undefined;
++/** Worker-only counter. Count content with o200k, roles + chat framing, plus 1024 reserve.
++ * This conservative client estimate is not a promise about private server templates.
++ * Actual context-window size remains explicitly configured, never inferred from model name.
++ */
++export function countSurfingPromptTokens(profile:Model,prompt:AiPrompt):number|null{
++ if(!supportedSurfingTokenizer(profile)||typeof prompt?.system!=='string'||typeof prompt?.user!=='string'||prompt.system.length+prompt.user.length>200000)return null;
++ encoder??=new Tiktoken(ranks);
++ const count=(s:string)=>encoder!.encode(s,[],[]).length;
++ return count(prompt.system)+count(prompt.user)+count('system')+count('user')+9+1024;
++}
++
+diff --git a/src/main/surfing-tokenizer-models.ts b/src/main/surfing-tokenizer-models.ts
+new file mode 100644
+index 0000000..d31fd42
+--- /dev/null
++++ b/src/main/surfing-tokenizer-models.ts
+@@ -0,0 +1,5 @@
++import type {AiProfileInput} from '../shared/ai';
++type Model=Pick<AiProfileInput,'protocol'|'model'>;
++const models=new Set(['gpt-4o','gpt-4o-2024-05-13','gpt-4o-2024-08-06','gpt-4o-2024-11-20','gpt-4o-mini','gpt-4o-mini-2024-07-18','gpt-4.1','gpt-4.1-2025-04-14','gpt-4.1-mini','gpt-4.1-mini-2025-04-14','gpt-4.1-nano','gpt-4.1-nano-2025-04-14']);
++export function supportedSurfingTokenizer(profile:Model){return profile.protocol==='openai-chat'&&models.has(profile.model);}
++
+diff --git a/src/main/surfing-token-worker.ts b/src/main/surfing-token-worker.ts
+new file mode 100644
+index 0000000..664f3d1
+--- /dev/null
++++ b/src/main/surfing-token-worker.ts
+@@ -0,0 +1,3 @@
++import {parentPort,workerData} from 'node:worker_threads';
++import {countSurfingPromptTokens} from './surfing-token-count';
++try{parentPort?.postMessage(countSurfingPromptTokens(workerData.profile,workerData.prompt));}catch{parentPort?.postMessage(null);}
+diff --git a/src/main/surfing-token-worker-host.ts b/src/main/surfing-token-worker-host.ts
+new file mode 100644
+index 0000000..f055571
+--- /dev/null
++++ b/src/main/surfing-token-worker-host.ts
+@@ -0,0 +1,22 @@
++import {Worker} from 'node:worker_threads';
++import type {AiProfileInput,AiPrompt} from '../shared/ai';
++import {supportedSurfingTokenizer} from './surfing-tokenizer-models';
++type Model=Pick<AiProfileInput,'protocol'|'model'>;
++/** Keep tokenizer tables and computation out of Electron's foreground main thread. */
++export function measureSurfingInputTokens(profile:Model,prompt:AiPrompt,signal:AbortSignal,workerPath:string):Promise<number|null>{
++ if(signal.aborted)return Promise.reject(Error('SURFING_CANCELED'));
++ if(!supportedSurfingTokenizer(profile))return Promise.resolve(null);
++ return new Promise((resolve,reject)=>{
++  let settled=false,worker:Worker|undefined,timer:ReturnType<typeof setTimeout>|undefined;
++  const finish=(value:number|null,error?:Error)=>{if(settled)return;settled=true;clearTimeout(timer);signal.removeEventListener('abort',abort);void worker?.terminate();if(error)reject(error);else resolve(value);};
++  const abort=()=>finish(null,Error('SURFING_CANCELED'));
++  signal.addEventListener('abort',abort,{once:true});
++  try{
++   worker=new Worker(workerPath,{workerData:{profile:{protocol:profile.protocol,model:profile.model},prompt:{system:prompt.system,user:prompt.user}}});
++   worker.once('message',value=>finish(Number.isSafeInteger(value)&&value>=0?value:null));
++   worker.once('error',()=>finish(null));worker.once('exit',()=>finish(null));
++   timer=setTimeout(()=>finish(null),10000);
++   if(signal.aborted)abort();
++  }catch{finish(null);}
++ });
++}
+diff --git a/tests/surfing-token-count.test.ts b/tests/surfing-token-count.test.ts
+new file mode 100644
+index 0000000..03621ad
+--- /dev/null
++++ b/tests/surfing-token-count.test.ts
+@@ -0,0 +1,13 @@
++import {describe,it,expect} from 'vitest';
++import {countSurfingPromptTokens,supportedSurfingTokenizer} from '../src/main/surfing-token-count';
++const profile={protocol:'openai-chat' as const,model:'gpt-4o-mini'};
++const prompt={system:'You are a reader.',user:'Hello world'};
++describe('explicit model-aware Surfing token budget',()=>{
++ it('counts actual o200k tokens plus documented framing and conservative reserve',()=>{expect(countSurfingPromptTokens(profile,prompt)).toBe(1024+9+1+1+5+2);});
++ it('does not guess tokenizer for unknown models or other protocols',()=>{expect(countSurfingPromptTokens({...profile,model:'custom-model'},prompt)).toBe(null);expect(countSurfingPromptTokens({...profile,protocol:'anthropic-messages'},prompt)).toBe(null);});
++ it('accepts an exact recognized model, not a lookalike display name',()=>{expect(supportedSurfingTokenizer(profile)).toBe(true);expect(supportedSurfingTokenizer({...profile,model:'gpt-4o-mini-random'})).toBe(false);});
++ it('counts literal special-token-like paper text as data',()=>{expect(countSurfingPromptTokens(profile,{system:'test',user:'<|endoftext|>'})).toBeGreaterThan(1024);});
++ it('counts non-ASCII text through the tokenizer rather than character division',()=>{const short=countSurfingPromptTokens(profile,{system:'',user:'论文'});expect(short).toBeGreaterThan(1024);expect(short).toBeLessThan(1100);});
++ it('fails closed on an oversized prompt before tokenization',()=>{expect(countSurfingPromptTokens(profile,{system:'',user:'x'.repeat(200001)})).toBe(null);});
++});
++
+diff --git a/tests/surfing-token-worker.test.ts b/tests/surfing-token-worker.test.ts
+new file mode 100644
+index 0000000..35807ce
+--- /dev/null
++++ b/tests/surfing-token-worker.test.ts
+@@ -0,0 +1,17 @@
++import {afterAll,beforeAll,describe,it,expect} from 'vitest';
++import {mkdtempSync,rmSync} from 'node:fs';
++import {tmpdir} from 'node:os';
++import {join} from 'node:path';
++import {buildSync} from 'esbuild';
++import {measureSurfingInputTokens} from '../src/main/surfing-token-worker-host';
++const root=mkdtempSync(join(tmpdir(),'enlumor-surfing-tokens-')),entry=join(root,'counter.cjs');
++const profile={protocol:'openai-chat' as const,model:'gpt-4o-mini'};
++beforeAll(()=>{buildSync({entryPoints:['src/main/surfing-token-worker.ts'],outfile:entry,bundle:true,platform:'node',format:'cjs'});});
++afterAll(()=>rmSync(root,{recursive:true,force:true}));
++describe('off-main-thread Surfing token counting',()=>{
++ it('returns model-aware count from a real worker',async()=>{expect(await measureSurfingInputTokens(profile,{system:'You are a reader.',user:'Hello world'},new AbortController().signal,entry)).toBe(1042);});
++ it('does not guess unknown model encoding',async()=>{expect(await measureSurfingInputTokens({...profile,model:'unknown'},{system:'s',user:'u'},new AbortController().signal,entry)).toBe(null);});
++ it('honors an already canceled operation',async()=>{const c=new AbortController();c.abort();await expect(measureSurfingInputTokens(profile,{system:'s',user:'u'},c.signal,entry)).rejects.toThrow('SURFING_CANCELED');});
++ it('terminates a running count on cancellation',async()=>{const c=new AbortController();const job=measureSurfingInputTokens(profile,{system:'s',user:'text '.repeat(20000)},c.signal,entry);c.abort();await expect(job).rejects.toThrow('SURFING_CANCELED');});
++ it('returns unknown when worker bundle is missing instead of guessing',async()=>{expect(await measureSurfingInputTokens(profile,{system:'s',user:'u'},new AbortController().signal,join(root,'missing.cjs'))).toBe(null);});
++});

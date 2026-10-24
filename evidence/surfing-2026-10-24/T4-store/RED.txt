@@ -1,0 +1,27 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:41792) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/surfing-sessions.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-sessions.test.ts [ tests/surfing-sessions.test.ts ]
+Error: Cannot find module '../src/main/surfing-sessions' imported from D:/codex project/Enlumor/.worktrees/v04-wave-ab/tests/surfing-sessions.test.ts
+ ❯ tests/surfing-sessions.test.ts:6:1
+      4| import {join} from 'node:path';
+      5| import {Workspace} from '../src/main/workspace';
+      6| import {SurfingSessions,validateSurfingSession,surfingProfileSignature…
+       | ^
+      7| import type {SurfingSession} from '../src/shared/surfing-session';
+      8| let ws:Workspace,store:SurfingSessions,root:string,doc:any;
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  02:23:22
+   Duration  168ms (worker 96%, environment 4%)
+

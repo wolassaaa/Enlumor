@@ -1,0 +1,37 @@
+
+Running 1 test using 1 worker
+
+(node:14800) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer (2.3s)
+
+
+  1) tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer 
+
+    Error: expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 770.7321624755859
+    Received:    792.0000610351562
+
+      106 |   await page.getByLabel('Surfing 随时提问',{exact:true}).fill('给我讲讲这个abstract');await page.getByRole('button',{name:'发送问题',exact:true}).click();
+      107 |   await expect(page.getByLabel('Surfing 对话',{exact:true})).toContainText('从全文第二页给出解释',{timeout:10000});expect(seen[0].passages.some((p:any)=>p.pageNumber===2)).toBe(true);expect(seen[0].question).toBe('给我讲讲这个abstract');await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('1');
+    > 108 |   const panel=await page.getByLabel('Surfing 共读',{exact:true}).boundingBox(),viewer=await page.locator('#viewerContainer').boundingBox();expect(viewer!.width).toBeGreaterThan(300);expect(await page.locator('#viewer .page').first().evaluate(el=>el.getBoundingClientRect().width)).toBeLessThanOrEqual(viewer!.width);expect(panel!.x).toBeGreaterThanOrEqual(viewer!.x+viewer!.width-1);
+          |                                                                                                                                                                                                                                                                                        ^
+      109 |   await page.getByRole('button',{name:'对话原文 · 第 2 页',exact:true}).click();await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('2');
+      110 |   await page.getByLabel('Surfing 随时提问',{exact:true}).fill('它与RNN有什么不同');await page.getByRole('button',{name:'发送问题',exact:true}).click();await expect(page.getByLabel('Surfing 对话',{exact:true})).toContainText('关联上一轮摘要');expect(seen[1].conversation[0].question).toBe('给我讲讲这个abstract');expect(seen[1].pageNumber).toBe(2);
+      111 |   await page.getByLabel('Surfing 随时提问',{exact:true}).fill('继续讲');await page.getByRole('button',{name:'发送问题',exact:true}).click();await expect.poll(()=>seen.length).toBe(3);await page.getByRole('button',{name:'暂停 Surfing',exact:true}).click();release();await page.waitForTimeout(200);await expect(page.getByLabel('Surfing 对话',{exact:true})).not.toContainText('迟到的解释');
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\surfing.spec.ts:108:280
+
+    Error Context: test-results\surfing-Surfing-whole-pape-44774-ble-and-cancels-late-answer\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\surfing-Surfing-whole-pape-44774-ble-and-cancels-late-answer\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\surfing-Surfing-whole-pape-44774-ble-and-cancels-late-answer\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer 

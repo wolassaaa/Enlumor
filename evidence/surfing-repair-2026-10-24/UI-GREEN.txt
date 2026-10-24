@@ -1,0 +1,46 @@
+
+Running 1 test using 1 worker
+
+(node:53764) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer (7.3s)
+
+
+  1) tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByLabel('Surfing 对话', { exact: true })
+    Expected substring: "从全文第二页给出解释"
+    Received string:    "我们从哪里开始？你可以直接问“摘要讲了什么”，也可以让我带你读懂整篇。每次回答都会结合已提取全文和最近对话，不局限于当前一小块。带我读懂这篇"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" getByLabel('Surfing 对话', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Surfing 对话', { exact: true })
+        14 × locator resolved to <div aria-label="Surfing 对话" class="surfing-conversation">…</div>
+           - unexpected value "我们从哪里开始？你可以直接问“摘要讲了什么”，也可以让我带你读懂整篇。每次回答都会结合已提取全文和最近对话，不局限于当前一小块。带我读懂这篇"
+
+
+      105 |  try{
+      106 |   await page.getByLabel('Surfing 随时提问',{exact:true}).fill('给我讲讲这个abstract');await page.getByRole('button',{name:'发送问题',exact:true}).click();
+    > 107 |   await expect(page.getByLabel('Surfing 对话',{exact:true})).toContainText('从全文第二页给出解释');expect(seen[0].passages.some((p:any)=>p.pageNumber===2)).toBe(true);expect(seen[0].question).toBe('给我讲讲这个abstract');await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('1');
+          |                                                            ^
+      108 |   const panel=await page.getByLabel('Surfing 共读',{exact:true}).boundingBox(),viewer=await page.locator('#viewerContainer').boundingBox();expect(viewer!.width).toBeGreaterThan(300);expect(panel!.x).toBeGreaterThanOrEqual(viewer!.x+viewer!.width-1);
+      109 |   await page.getByRole('button',{name:'对话原文 · 第 2 页',exact:true}).click();await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('2');
+      110 |   await page.getByLabel('Surfing 随时提问',{exact:true}).fill('它与RNN有什么不同');await page.getByRole('button',{name:'发送问题',exact:true}).click();await expect(page.getByLabel('Surfing 对话',{exact:true})).toContainText('关联上一轮摘要');expect(seen[1].conversation[0].question).toBe('给我讲讲这个abstract');expect(seen[1].pageNumber).toBe(2);
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\surfing.spec.ts:107:60
+
+    Error Context: test-results\surfing-Surfing-whole-pape-44774-ble-and-cancels-late-answer\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\surfing-Surfing-whole-pape-44774-ble-and-cancels-late-answer\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\surfing-Surfing-whole-pape-44774-ble-and-cancels-late-answer\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer 

@@ -1,0 +1,33 @@
+COMMAND: npx vitest run tests/editing-workspace.test.ts
+INPUT: unsafe SQL integer and two-connection WAL view fixtures
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:26584) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/editing-workspace.test.ts (18 tests | 1 failed) 485ms
+   ❯ production Workspace schema5 and editing transactions (18)
+     × schema enforces nonnegative safe integer versions even at the SQL boundary 27ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > schema enforces nonnegative safe integer versions even at the SQL boundary
+AssertionError: expected [Function] to throw an error
+ ❯ tests/editing-workspace.test.ts:122:165
+    120|   it('schema enforces nonnegative safe integer versions even at the SQ…
+    121|     const f=fixture();const {workspace:w}=await open(f.file);
+    122|     for(const v of [-1,1.5,Number.MAX_SAFE_INTEGER+1])expect(()=>w.db.…
+       |                                                                                                                                                                     ^
+    123|   });
+    124|   it('view reads marks, legacy diagnostics and history from one real W…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 17 passed (18)
+   Start at  11:16:32
+   Duration  681ms (tests 88%, transform 7%, import 4%, worker 1%)
+
+
+EXIT: 1

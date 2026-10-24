@@ -1,0 +1,77 @@
+
+Running 2 tests using 1 worker
+
+(node:46496) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\surfing.spec.ts:47:1 › Surfing restores committed progress after restart without API or automatic navigation (31.5s)
+(node:46544) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  2 tests\e2e\surfing.spec.ts:54:1 › Surfing failed save keeps progress, blocks close and permits explicit retry (6.5s)
+
+
+  1) tests\e2e\surfing.spec.ts:47:1 › Surfing restores committed progress after restart without API or automatic navigation 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: 'Saved entry', exact: true })
+
+
+      47 | test('Surfing restores committed progress after restart without API or automatic navigation',async()=>{
+      48 |  let calls=0;const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const data=JSON.parse(JSON.parse(raw).messages[1].content);calls++;const id=data.passages.find((p:any)=>p.pageNumber===2).id;sendMock(res,data.selectedStop?{text:'Persisted local explanation',passageIds:[id]}:{stops:[{title:'Saved entry',reason:'Keep the exploration',passageIds:[id]}]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const endpoint='http://127.0.0.1:'+(server.address() as any).port+'/v1';let {app,page}=await launchAndPrepareSurfing(endpoint,'persistence');
+    > 49 |  try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await page.getByRole('button',{name:'Saved entry',exact:true}).click();await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Persisted local explanation');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');expect(calls).toBe(2);await page.waitForTimeout(350);await app.evaluate(({app})=>app.exit(0));
+         |                                                                                                                                        ^
+      50 |  app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,'persistence')],env:{...process.env,ENLUMOR_PYTHON:python}});page=await app.firstWindow();await expect(page.locator('.textLayer span').first()).toBeVisible();await page.getByLabel('跳转页码',{exact:true}).fill('1');await page.getByLabel('跳转页码',{exact:true}).press('Enter');await page.getByRole('button',{name:'打开 Surfing',exact:true}).click();await page.getByRole('button',{name:'准备本地全文',exact:true}).click();await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已暂停');await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Persisted local explanation');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('1');await expect(page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true})).not.toBeChecked();await page.waitForTimeout(300);expect(calls).toBe(2);
+      51 |  await page.getByRole('button',{name:'Saved entry',exact:true}).click();await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('2');expect(calls).toBe(2);await page.locator('.surfing-setup summary').click();await page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true}).check();await page.getByRole('button',{name:'解释这个切入点',exact:true}).click();await expect.poll(()=>calls).toBe(3);await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');
+      52 |  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\surfing.spec.ts:49:136
+
+    Error Context: test-results\surfing-Surfing-restores-c-25168-API-or-automatic-navigation\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\surfing-Surfing-restores-c-25168-API-or-automatic-navigation\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\surfing-Surfing-restores-c-25168-API-or-automatic-navigation\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\surfing.spec.ts:54:1 › Surfing failed save keeps progress, blocks close and permits explicit retry 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('Surfing 保存状态', { exact: true })
+    Expected: "已保存"
+    Received: "等待新路线"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('Surfing 保存状态', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Surfing 保存状态', { exact: true })
+        14 × locator resolved to <span aria-label="Surfing 保存状态">等待新路线</span>
+           - unexpected value "等待新路线"
+
+
+      54 | test('Surfing failed save keeps progress, blocks close and permits explicit retry',async()=>{
+      55 |  const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const data=JSON.parse(JSON.parse(raw).messages[1].content);sendMock(res,data.selectedStop?{text:'Unsaved explanation remains visible',passageIds:[data.passages[0].id]}:{stops:[{title:'Retry entry',reason:'An actual source',passageIds:[data.passages[0].id]}]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','save-failure');let db:import('node:sqlite').DatabaseSync|undefined;
+    > 56 |  try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');const {DatabaseSync}=await import('node:sqlite');db=new DatabaseSync(path.join(folder,'save-failure','workspace.sqlite'));db.exec("CREATE TRIGGER fail_surfing_save BEFORE UPDATE ON surfing_sessions BEGIN SELECT RAISE(ABORT,'SURFING_TEST_SAVE_FAILED'); END");await page.getByRole('button',{name:'Retry entry',exact:true}).click();await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Unsaved explanation remains visible');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('保存失败');await page.getByRole('button',{name:'关闭 Surfing',exact:true}).click();await expect(page.getByLabel('Surfing 共读',{exact:true})).toHaveCount(1);await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Unsaved explanation remains visible');db.exec('DROP TRIGGER fail_surfing_save');await page.getByRole('button',{name:'重试保存 Surfing 进度',exact:true}).click();await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');await page.getByRole('button',{name:'关闭 Surfing',exact:true}).click();await expect(page.getByLabel('Surfing 共读',{exact:true})).toHaveCount(0);
+         |                                                                                                                                    ^
+      57 |  }finally{db?.close();await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+      58 | });
+      59 |
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\surfing.spec.ts:56:132
+
+    Error Context: test-results\surfing-Surfing-failed-sav-5256d--and-permits-explicit-retry\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\surfing-Surfing-failed-sav-5256d--and-permits-explicit-retry\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\surfing-Surfing-failed-sav-5256d--and-permits-explicit-retry\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests\e2e\surfing.spec.ts:47:1 › Surfing restores committed progress after restart without API or automatic navigation 
+    tests\e2e\surfing.spec.ts:54:1 › Surfing failed save keeps progress, blocks close and permits explicit retry 

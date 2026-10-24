@@ -1,0 +1,20 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/surfing-route.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-route.test.ts [ tests/surfing-route.test.ts ]
+Error: Cannot find module '../src/shared/surfing-route' imported from D:/codex project/Enlumor/.worktrees/v04-wave-ab/tests/surfing-route.test.ts
+ ❯ tests/surfing-route.test.ts:2:1
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  00:54:07
+   Duration  165ms (worker 95%, environment 5%)
+

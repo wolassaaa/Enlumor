@@ -1,0 +1,169 @@
+COMMAND: npx vitest run tests/editing-workspace.test.ts
+INPUT: schema5 write guard and failed constructor fixtures
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:42460) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/editing-workspace.test.ts (16 tests | 16 failed) 134ms
+   ❯ production Workspace schema5 and editing transactions (16)
+     × backs up v4 with integrity and untouched old rows, atomically creates seven tables and stable user 14ms
+     × reopens v5 without resetting receipts, versions, history or deleted tombstones; backup restores independently 8ms
+     × leaves old v4 intact on backup failure 8ms
+     × leaves old v4 intact on ddl failure 8ms
+     × leaves old v4 intact on busy failure 7ms
+     × leaves old v4 intact on stale failure 7ms
+     × does not mutate a newer database 8ms
+     × rolls back partial deltas/history/receipt and rejects async callbacks 8ms
+     × two real connections racing the same version commit once 9ms
+     × last precommit cancel rolls back, while postcommit cancel preserves durable receipt 7ms
+     × history lists only version-applicable groups and clears redo for its actual owner 8ms
+     × revokes transaction ports after return or rejected async callback; late continuations cannot write 8ms
+     × confirmation consume failure rolls back all changes and zero consumption; successful approval survives reopen 9ms
+     × recovers real committed receipt if connection reports an error after COMMIT without retry 8ms
+     × explicitly allowing schema5 does not itself migrate v4; migrated legacy write port is readonly 8ms
+     × closes newly opened candidate connection if initial connection configuration throws 8ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 16 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > backs up v4 with integrity and untouched old rows, atomically creates seven tables and stable user
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:20:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > reopens v5 without resetting receipts, versions, history or deleted tombstones; backup restores independently
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:35:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > leaves old v4 intact on backup failure
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > leaves old v4 intact on ddl failure
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > leaves old v4 intact on busy failure
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > leaves old v4 intact on stale failure
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:48:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > does not mutate a newer database
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:58:59
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > rolls back partial deltas/history/receipt and rejects async callbacks
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:60:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > two real connections racing the same version commit once
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:67:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > last precommit cancel rolls back, while postcommit cancel preserves durable receipt
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:74:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > history lists only version-applicable groups and clears redo for its actual owner
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:80:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[8/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > revokes transaction ports after return or rejected async callback; late continuations cannot write
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:90:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[9/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > confirmation consume failure rolls back all changes and zero consumption; successful approval survives reopen
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:97:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[10/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > recovers real committed receipt if connection reports an error after COMMIT without retry
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:107:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[11/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > explicitly allowing schema5 does not itself migrate v4; migrated legacy write port is readonly
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:112:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[12/16]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > closes newly opened candidate connection if initial connection configuration throws
+ReferenceError: version is not defined
+ ❯ new Workspace src/main/workspace.ts:57:5
+
+ ❯ editingFixture tests/helpers/editing-fixtures.ts:12:57
+ ❯ fixture tests/editing-workspace.test.ts:11:30
+ ❯ tests/editing-workspace.test.ts:116:13
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[13/16]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  16 failed (16)
+   Start at  11:15:23
+   Duration  336ms (tests 65%, transform 23%, import 11%, worker 2%)
+
+
+EXIT: 1

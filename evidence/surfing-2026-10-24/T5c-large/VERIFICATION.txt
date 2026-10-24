@@ -1,0 +1,105 @@
+T5c LARGE SYNTHETIC INPUT VALIDATION — TEST/DOCUMENT CHANGES ONLY
+2026-10-24T03:45:18.934529+08:00 / feat/v04-wave-ab.
+
+FOUR ARTIFACT PATHS:
+MODIFIED_FILE=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5c-large\MODIFIED_FILE.zip (new test, two synthetic PDFs, input manifest and three updated docs)
+DIFF_FILE=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5c-large\DIFF_FILE.patch
+VERIFICATION=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5c-large\VERIFICATION.txt
+ROLLBACK=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5c-large\ROLLBACK.sh
+Actual executable remains D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\MODIFIED_FILE\win-unpacked\Enlumor-Surfing-Candidate.exe. No new binary build or product change in this slice.
+
+CHANGED BRANCH/FIELD:
+New tests/e2e/surfing-large.spec.ts covers large existing Surfing prepare/route/evidence/controls and over-limit rejection. Progress/acceptance docs updated. Production/runtime changes=0. Fourteen Surfing runtime source hashes and all264 packaged file hashes match the pre-slice T5b baseline (RUNTIME-AND-CANDIDATE-UNCHANGED.txt). Candidate exe SHA256=b7944d8e30c03945b3e8d1129d90417bc08b4489dc02d6db7e62362d5b43a1ed.
+
+BASELINE:
+Exact command: @{testExisted=(Test-Path tests/e2e/surfing-large.spec.ts)} | ConvertTo-Json
+Input: before creating the new test.
+Literal output: {"testExisted":false}, exit0 (BASELINE-ABSENCE.json).
+Retained product baseline: prior T5b 608 unit tests passed, full packaged165 had164 pass/1 old preview dense performance failure. Tests first exercised existing candidate; no production implementation was written and no failing run was invented.
+
+MODIFIED FIRST RUN:
+Command: npx playwright test tests/e2e/surfing-large.spec.ts --workers=1
+Environment: ENLUMOR_TEST_APP=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\MODIFIED_FILE\win-unpacked\Enlumor-Surfing-Candidate.exe
+Input: generated single-column ASCII PDF42 pages/924 passages/96096 characters, and86 pages/196768 characters; temp user-data and only127.0.0.1 SSE mock.
+Literal result: 2 passed (14.0s), exit0 (FIRST-RUN.txt).
+No RED→GREEN fix is claimed: new coverage directly passed existing behavior. First observation preserved separately in LARGE-METRICS-FIRST.json /OVERLIMIT-METRICS-FIRST.json.
+
+MODIFIED RELATED REGRESSION:
+Command: npm run typecheck
+Literal result: tsc --noEmit, no diagnostics, exit0 (TYPECHECK.txt).
+Command: npm test -- --reporter=dot
+Literal result: Test Files39 passed(39); Tests608 passed(608), exit0 (ALL-UNIT.txt).
+Command: npx playwright test tests/e2e/surfing.spec.ts tests/e2e/surfing-large.spec.ts tests/e2e/document-commands.spec.ts --workers=1
+Environment: same actual candidate.
+Literal result: 20 passed (1.9m), exit0 (RELATED-E2E.txt). Existing Surfing14 +large2 +document commands4.
+Independent review suggested distinguishing all text equality from complete page binding and documenting timing/geometry limits. Test was strengthened to compare the entire ordered{pageNumber,text} sequence, not just text and page-number set; app-registered pageCount/fingerprint must equal generated manifest.
+Command: npm run typecheck
+Literal result: tsc --noEmit, no diagnostics, exit0 (FINAL-TYPECHECK.txt).
+Command: npx playwright test tests/e2e/surfing-large.spec.ts --workers=1
+Input: same unmodified PDF hashes, enhanced full-page binding assertions and metric scope labels.
+Literal result: 2 passed (13.4s), exit0 (FINAL-LARGE-E2E.txt).
+
+OBSERVED LARGE CASE (FINAL RUN):
+{
+  "synthetic": true,
+  "realModel": false,
+  "timingScope": "Playwright operation and waits; renderer observations only; not a performance gate",
+  "geometryScope": "Last-page first-line overlap only, not exact coverage",
+  "sourceHash": "420f8b352b421776fe740ccd1364bc1e8d918ea291a17220ddf8dbb55d8b1d79",
+  "pageCount": 42,
+  "expectedCharacters": 96096,
+  "completed": true,
+  "prepareMs": 1397,
+  "routeMs": 978,
+  "locateExplainMs": 906,
+  "pauseMs": 55,
+  "requestCount": 3,
+  "promptDataCharacters": 139724,
+  "ui": {
+    "samples": 501,
+    "frameP95Ms": 11.600000001490116,
+    "worstFrameMs": 18.800000000745058,
+    "longTasks": 0,
+    "worstLongTaskMs": 0
+  },
+  "sourceHashAfter": "420f8b352b421776fe740ccd1364bc1e8d918ea291a17220ddf8dbb55d8b1d79"
+}
+Functional assertions: no model request on prepare; snapshot has all42 pages/924 passages/96096 chars. All three route/explanation requests match every expected passage and page binding. Route arrival does not navigate. User selection locates final page42; actual first line and flash have positive geometric overlap. Back visits22 then1 with no new request. Continue explicitly starts full-context explanation, pause stops ownership, no late content or extra request. Source hash unchanged.
+
+OBSERVED OVER-LIMIT CASE:
+{
+  "synthetic": true,
+  "realModel": false,
+  "pageCount": 86,
+  "expectedCharacters": 196768,
+  "prepareRejectMs": 1113,
+  "modelRequests": 0,
+  "sourceHash": "1935d66bbbd6cc936bfe7e0dfcb70ad584ab58282b2625b98dd628dba7d87260",
+  "sourceHashAfter": "1935d66bbbd6cc936bfe7e0dfcb70ad584ab58282b2625b98dd628dba7d87260",
+  "error": "SURFING_CONTEXT_TOO_LARGE",
+  "completed": true
+}
+Functional assertions: explicit SURFING_CONTEXT_TOO_LARGE, no partial scope/routes, consent/generation disabled, calls0, source hash unchanged.
+
+LIMITS (DO NOT OVERSTATE):
+These are synthetic single-column ASCII PDFs, not two real academic papers. Mock model output tests transport/contracts/control, not model interpretation quality. Times include Playwright operations and polling/waits. locateExplainMs includes native location +mock explanation +test wait, NOT pure location or real provider latency. Frame/longtask observation is renderer-only with NO new performance threshold assertions; not a whole-system performance gate. Geometry assertion is overlap, NOT exact coverage. The stronger final assertion does verify all passage page/text bindings. Real models and real-paper quality remain NOT EXECUTED.
+Last complete packaged gate remains165 cases/164 pass/1 old preview dense1000 failure1273ms>1000ms and mutation62ms>50ms. The expanded167 whole suite was NOT rerun because runtime and candidate are byte-unchanged; no all-green release claim. Default text/scan performance remains the separately recorded T5b run, not this large-input measurement.
+
+ROLLBACK:
+Command: "C:/Program Files/Git/bin/bash.exe" -c 'evidence/surfing-2026-10-24/T5c-large/ROLLBACK.sh evidence/surfing-2026-10-24/T5c-large/rollback-copy'
+Input: explicitly marker-protected isolated copy, three original docs and four new test/input files; original/final SHA256 manifests. Never live source or actual candidate.
+Literal output: ROLLBACK PASS: three original document hashes restored; four new test/input files absent; live coverage and candidate retained.
+Exit0 (ROLLBACK.txt).
+Command: npx vitest run --root evidence/surfing-2026-10-24/T5c-large/rollback-copy --config "D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5c-large\rollback-copy\vitest.config.mts" tests/surfing-context.test.ts tests/surfing-route.test.ts tests/surfing-requests.test.ts
+Input: unchanged baseline runtime and existing context/route/request tests after coverage/doc rollback.
+Literal result: Test Files3 passed(3); Tests78 passed(78), exit0 (ROLLBACK-TEST.txt).
+Restored behavior/status: original docs/hash restored, new coverage and generated input files absent; existing trusted snapshot, route and request behavior still passes78 controls. Candidate binary was never changed. No isolated UI rebuild/launch claim. Live test/input archive and current candidate retain validated state.
+
+FIXTURE SHA256:
+large.pdf=420f8b352b421776fe740ccd1364bc1e8d918ea291a17220ddf8dbb55d8b1d79
+overlimit.pdf=1935d66bbbd6cc936bfe7e0dfcb70ad584ab58282b2625b98dd628dba7d87260
+input-manifest.json=6f69e93754eab257cea647031e11c7d63e24a6be92b86668665f06cfead69382
+Generation and full expected text are reproducible from the new test; fixture cache verifies hashes before reuse rather than silently overwriting evidence.
+
+REVIEW/NEXT:
+Read-only review found no Critical/Important. Scope labels were incorporated, page binding strengthened and rerun. Next is read-only aggregate gap review, evidence index and handoff; no speculative features or repetitive long tests. Keep real-model/paper and old preview performance pending, remain quiet when unchanged.07:30 verification/closeout only;08:00 stop implementation and pause same heartbeat.

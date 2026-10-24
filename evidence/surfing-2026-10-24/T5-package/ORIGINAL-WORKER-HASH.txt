@@ -1,0 +1,5 @@
+
+Algorithm : SHA256
+Hash      : 833D380100AA2632732936E658951CEEAE031A267300FA6EBD38BA6F01AFD579
+Path      : D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pdf-worker\enlumor-pdf-worker\enlumor-pdf-worker.exe
+

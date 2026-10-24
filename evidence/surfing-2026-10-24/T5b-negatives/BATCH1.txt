@@ -1,0 +1,11 @@
+
+Running 2 tests using 1 worker
+
+(node:53172) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 1 tests\e2e\surfing.spec.ts:79:1 › Surfing background blur cancels held explanation and foreground return does not restart (5.0s)
+(node:53172) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 2 tests\e2e\surfing.spec.ts:85:1 › Surfing changed model rejects old explanation and cached restoration without another request (5.0s)
+
+  2 passed (11.2s)

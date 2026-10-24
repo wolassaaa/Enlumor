@@ -1,0 +1,9 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T5b-negatives/rollback-copy
+
+
+ Test Files  2 passed (2)
+      Tests  31 passed (31)
+   Start at  03:31:23
+   Duration  185ms (tests 55%, import 25%, transform 12%, worker 8%)
+

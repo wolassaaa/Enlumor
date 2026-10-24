@@ -57,6 +57,41 @@ def editing_page(source, fingerprint, page_index):
     if len(json.dumps(result,ensure_ascii=True).encode('utf-8'))>1024*1024-64: raise ValueError('PDF_RESPONSE_TOO_LARGE')
     return result
 
+def surfing_document(source, fingerprint, max_characters=160000, max_passages=5000, max_pages=2000):
+    """Trusted, bounded text/anchor snapshot. No OCR or image-understanding claim."""
+    for value, maximum in ((max_characters,160000),(max_passages,5000),(max_pages,2000)):
+        if type(value) is not int or not 0 < value <= maximum: raise ValueError('SURFING_INVALID_INPUT')
+    editing_source(source,fingerprint)
+    pages=[];characters=0;passages=0
+    with fitz.open(source) as doc:
+        if doc.needs_pass: raise ValueError('PASSWORD_REQUIRED')
+        if not doc.is_pdf or not len(doc): raise ValueError('INVALID_PDF')
+        if len(doc)>max_pages: raise ValueError('SURFING_CONTEXT_TOO_LARGE')
+        page_count=len(doc)
+        for index,page in enumerate(doc):
+            page.set_rotation(0);inverse=~page.transformation_matrix
+            blocks=[]
+            for bi,block in enumerate(page.get_text('dict',flags=fitz.TEXTFLAGS_DICT & ~fitz.TEXT_PRESERVE_IMAGES)['blocks']):
+                if block.get('type') != 0: continue
+                for li,line in enumerate(block['lines']):
+                    quote=''.join(span['text'] for span in line['spans'])
+                    if not quote.strip(): continue
+                    if len(quote)>1200: raise ValueError('SURFING_CONTEXT_TOO_LARGE')
+                    characters+=len(quote);passages+=1
+                    if characters>max_characters or passages>max_passages: raise ValueError('SURFING_CONTEXT_TOO_LARGE')
+                    q=fitz.recover_line_quad(line)
+                    if not q.is_convex or q.is_empty or not page.rect.contains(q.rect): raise ValueError('SURFING_SOURCE_INVALID')
+                    points=[point*inverse for point in (q.ul,q.ur,q.ll,q.lr)]
+                    quad=[n for point in points for n in (point.x,point.y)]
+                    # The current reader locator requires conventional horizontal quads.
+                    if any(not math.isfinite(n) or abs(n)>1e7 for n in quad) or quad[2]<=quad[0] or quad[1]<=quad[5]: raise ValueError('SURFING_UNSUPPORTED_GEOMETRY')
+                    blocks.append({'id':f'surf-{index}-{bi}-{li}','quote':quote,'quads':[quad]})
+            pages.append({'pageIndex':index,'passages':blocks})
+    editing_source(source,fingerprint)
+    result={'fingerprint':fingerprint,'pageCount':page_count,'pages':pages}
+    if len(json.dumps(result,ensure_ascii=True).encode('utf-8'))>1024*1024-64: raise ValueError('SURFING_CONTEXT_TOO_LARGE')
+    return result
+
 def digest(path):
     with open(path, 'rb') as stream:
         return hashlib.file_digest(stream, 'sha256').hexdigest()
@@ -183,6 +218,7 @@ if __name__ == '__main__':
         elif request['operation'] == 'editing-document': result = editing_document(request['source'],request['fingerprint'])
         elif request['operation'] == 'editing-page': result = editing_page(request['source'],request['fingerprint'],request['pageIndex'])
         elif request['operation'] == 'verify-block': result = verify_block(request['source'], request['fingerprint'], request['block'])
+        elif request['operation'] == 'surfing-document': result = surfing_document(request['source'], request['fingerprint'])
         elif request['operation'] == 'export': result = export_pdf(request['source'], request['target'], request['fingerprint'], request['annotations'])
         else: raise ValueError('INVALID_OPERATION')
         print(json.dumps({'ok': True, 'value': result}, ensure_ascii=True))

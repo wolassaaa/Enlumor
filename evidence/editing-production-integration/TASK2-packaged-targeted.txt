@@ -1,0 +1,102 @@
+(node:21448) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 13 tests using 1 worker
+
+(node:37208) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+DENSE_INK {"count":30,"pointsPerStroke":256,"scrollP95Ms":9.200000000186265,"pointerP95Ms":0.7000000001862645,"frameP95Ms":8.600000000558794,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.8999999994412065,"eraseUndoMs":60,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  1 tests\e2e\dense-ink.spec.ts:8:68 › default dense 30 x 256 points: scroll erase save undo (4.1s)
+DENSE_INK {"count":300,"pointsPerStroke":256,"scrollP95Ms":9.399999999441206,"pointerP95Ms":1.599999999627471,"frameP95Ms":9.199999999254942,"longTasks":0,"worstLongTaskMs":0,"saveMs":1.1000000005587935,"eraseUndoMs":134,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  2 tests\e2e\dense-ink.spec.ts:8:68 › default dense 300 x 256 points: scroll erase save undo (2.9s)
+DENSE_INK {"count":1000,"pointsPerStroke":256,"scrollP95Ms":11.699999999254942,"pointerP95Ms":3,"frameP95Ms":9.400000000372529,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.7999999998137355,"eraseUndoMs":377,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  3 tests\e2e\dense-ink.spec.ts:8:68 › default dense 1000 x 256 points: scroll erase save undo (4.2s)
+DENSE_INK {"count":30,"pointsPerStroke":256,"scrollP95Ms":9.799999999813735,"pointerP95Ms":0.7999999998137355,"frameP95Ms":8.700000000186265,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.8999999994412065,"eraseUndoMs":110,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  4 tests\e2e\dense-ink.spec.ts:8:68 › preview dense 30 x 256 points: scroll erase save undo (3.0s)
+DENSE_INK {"count":300,"pointsPerStroke":256,"scrollP95Ms":14.900000000372529,"pointerP95Ms":1.5,"frameP95Ms":8.900000000372529,"longTasks":0,"worstLongTaskMs":0,"saveMs":1.099999999627471,"eraseUndoMs":495,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  5 tests\e2e\dense-ink.spec.ts:8:68 › preview dense 300 x 256 points: scroll erase save undo (4.6s)
+DENSE_INK {"count":1000,"pointsPerStroke":256,"scrollP95Ms":25.09999999962747,"pointerP95Ms":2.7000000001862645,"frameP95Ms":9.5,"longTasks":0,"worstLongTaskMs":0,"saveMs":2.099999999627471,"eraseUndoMs":1622,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  x   6 tests\e2e\dense-ink.spec.ts:8:68 › preview dense 1000 x 256 points: scroll erase save undo (10.8s)
+(node:36736) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:36736) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  7 tests\e2e\editing-workflow.spec.ts:18:1 › preview real tools commit to SQL and visible PDF, preserve history across reopening and block stale export (4.4s)
+  x   8 tests\e2e\editing-workflow.spec.ts:33:1 › preview free note and explicit ordinary anchor replacement use separate placement and durable versions (6.7s)
+(node:42356) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42356) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  9 tests\e2e\editing-workflow.spec.ts:38:1 › preview old unconverted export is honest and original PDF/native annotation remain unchanged (1.4s)
+  ok 10 tests\e2e\editing-workflow.spec.ts:42:1 › lost post-COMMIT reply recovers receipt without duplicate request; source preparation cancels on session switch (2.2s)
+  ok 11 tests\e2e\editing-workflow.spec.ts:47:1 › v4 conversion preserves original rows, readonly legacy explicit reanchor audit, native PDF annotations stay separate (2.0s)
+  ok 12 tests\e2e\editing-workflow.spec.ts:54:1 › real IPC rejects extra identity, stale revisions, unknown commands and subframe sender; cross-page batch has one history group (1.5s)
+  ok 13 tests\e2e\editing-workflow.spec.ts:61:1 › preview geometry, note placement, retry same request, undo/new branch and kill recovery (2.9s)
+
+
+  1) tests\e2e\dense-ink.spec.ts:8:68 › preview dense 1000 x 256 points: scroll erase save undo ────
+
+    Error: local end-to-end erase/undo budget
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 1000
+    Received:    1622
+
+      23 |  const mutation=await page.evaluate(async()=>{await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));const w=window as any;w.denseMutationObserver.disconnect();return{mutationLongTasks:w.denseMutationTasks.length,mutationWorstLongTaskMs:Math.max(0,...w.denseMutationTasks)};});
+      24 |  const result={count,pointsPerStroke:256,scrollP95Ms:scroll,...metrics,saveMs,eraseUndoMs,...mutation};const evidence=process.env.ENLUMOR_EVIDENCE_DIR||'evidence/round-six';mkdirSync(evidence,{recursive:true});writeFileSync(path.join(evidence,`TASK2-${preview?'preview':'default'}-dense-${count}.json`),JSON.stringify(result,null,2));console.log('DENSE_INK '+JSON.stringify(result));if(cdp){writeFileSync(path.join(evidence,`TASK2-${preview?'preview':'default'}-profile-${count}.json`),JSON.stringify((await cdp.send('Profiler.stop')).profile));await cdp.detach();}
+    > 25 |  expect(eraseUndoMs,'local end-to-end erase/undo budget').toBeLessThanOrEqual(1000);expect(reused,'unchanged ink SVG should survive commit and undo').toBe(true);expect(mutation.mutationWorstLongTaskMs).toBeLessThanOrEqual(50);expect(metrics.pointerP95Ms).toBeLessThanOrEqual(8);expect(metrics.frameP95Ms).toBeLessThanOrEqual(34);expect(scroll).toBeLessThanOrEqual(34);expect(saveMs).toBeLessThanOrEqual(20);expect(metrics.longTasks).toBe(0);
+         |                                                           ^
+      26 |  const last=page.locator('.annotation-card').last();await last.scrollIntoViewIfNeeded();await expect(last.locator('.annotation-source')).toBeVisible();await last.locator('.annotation-source').focus();await expect(last.locator('.annotation-source')).toBeFocused();await page.keyboard.press('Enter');await expect(page.locator('.flash')).toHaveCount(1);await expect(page.locator('.flash')).toBeVisible();await expect(page.locator('.drawn-ink')).toHaveCount(count);
+      27 |  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}
+      28 | });
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\dense-ink.spec.ts:25:59
+
+    Error Context: test-results\dense-ink-preview-dense-10-487fb-ints-scroll-erase-save-undo\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\dense-ink-preview-dense-10-487fb-ints-scroll-erase-save-undo\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\dense-ink-preview-dense-10-487fb-ints-scroll-erase-save-undo\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2) tests\e2e\editing-workflow.spec.ts:33:1 › preview free note and explicit ordinary anchor replacement use separate placement and durable versions 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: locator('.selection-preview')
+    Expected substring: "source"
+    Received string:    "已选 1 页原文Pr"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toContainText" locator('.selection-preview') with timeout 5000ms
+      - waiting for locator('.selection-preview')
+        14 × locator resolved to <div class="selection-preview">…</div>
+           - unexpected value "已选 1 页原文Pr"
+
+
+      14 | async function open(page:Page){await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();}
+      15 | function sql(profile:string,query:string){const db=new DatabaseSync(path.join(profile,'workspace.sqlite'),{readOnly:true});try{return db.prepare(query).all();}finally{db.close();}}
+    > 16 | async function select(page:Page,index=0){await page.keyboard.press('Escape');await page.evaluate(()=>window.getSelection()?.removeAllRanges());const span=page.locator('.page[data-page-number="1"] .textLayer span').nth(index);const b=(await span.boundingBox())!;await page.mouse.move(b.x+1,b.y+b.height*.5);await page.mouse.down();await page.mouse.move(b.x+b.width-1,b.y+b.height*.5,{steps:12});await page.mouse.up();await expect(page.locator('.selection-preview')).toContainText('source');}
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  ^
+      17 | async function stop(app:ElectronApplication){await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}
+      18 | test('preview real tools commit to SQL and visible PDF, preserve history across reopening and block stale export',async()=>{
+      19 |  test.setTimeout(120000);const profile=path.join(folder,'seven-tools'),original=hash();let {app,page}=await launch(profile);
+        at select (D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\editing-workflow.spec.ts:16:466)
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\editing-workflow.spec.ts:35:2
+
+    Error Context: test-results\editing-workflow-preview-f-234cc-cement-and-durable-versions\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\editing-workflow-preview-f-234cc-cement-and-durable-versions\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\editing-workflow-preview-f-234cc-cement-and-durable-versions\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  2 failed
+    tests\e2e\dense-ink.spec.ts:8:68 › preview dense 1000 x 256 points: scroll erase save undo ─────
+    tests\e2e\editing-workflow.spec.ts:33:1 › preview free note and explicit ordinary anchor replacement use separate placement and durable versions 
+  11 passed (53.9s)

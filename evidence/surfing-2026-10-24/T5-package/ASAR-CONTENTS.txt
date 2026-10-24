@@ -1,0 +1,4 @@
+ASAR_ENTRY /dist/main/index.cjs
+ASAR_ENTRY /dist/main/preload.cjs
+ASAR_ENTRY /dist/main/surfing-token-worker.cjs
+PACKAGED_METADATA {"name":"enlumor-surfing-candidate","version":"0.1.15"}

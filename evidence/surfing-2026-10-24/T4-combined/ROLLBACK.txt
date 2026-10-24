@@ -1,0 +1,1 @@
+ROLLBACK PASS: nine original hashes restored; three new files absent; live candidate retains changes.

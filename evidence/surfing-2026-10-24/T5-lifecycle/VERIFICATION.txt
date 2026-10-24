@@ -1,0 +1,31 @@
+T5 lifecycle review fix — feat/v04-wave-ab
+Changed branches: renderer load() and closeTab() now call surfingCancel.current?.() synchronously before the first flush/await. Routine autosave remains non-cancelling. No unrelated feature changes.
+
+Four paths:
+MODIFIED_FILE=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-lifecycle\MODIFIED_FILE.zip
+DIFF_FILE=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-lifecycle\DIFF_FILE.patch
+VERIFICATION=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-lifecycle\VERIFICATION.txt
+ROLLBACK=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-lifecycle\ROLLBACK.sh
+
+BASELINE command: npx playwright test tests/e2e/surfing.spec.ts --grep 'delayed reading flush' --workers=1
+Input: real Electron/local SSE held explanation; hold reading:save IPC; switch document tab or Ctrl+W on last tab.
+Literal output/result: 2 failed; Expected "已暂停"; Received "解释中".
+Exit status: 1 (RED.txt).
+
+MODIFIED command: npm run build
+Input: current candidate. Result: build succeeded; existing chunk warning retained. Exit 0 (BUILD.txt).
+MODIFIED command: same Playwright command as BASELINE.
+Literal result: 2 passed (12.0s). Exit 0 (GREEN.txt).
+MODIFIED command: npm test -- --reporter=dot
+Literal result: Test Files 39 passed (39); Tests 602 passed (602). Exit 0 (ALL-UNIT.txt).
+Additional packaged Surfing suite: 10 passed (49.7s), exit 0. See sibling T5-package/SURFING-E2E.txt; this verifies local mock flow, not real model quality.
+
+ROLLBACK exact command: "C:/Program Files/Git/bin/bash.exe" -c 'evidence/surfing-2026-10-24/T5-lifecycle/ROLLBACK.sh evidence/surfing-2026-10-24/T5-lifecycle/rollback-copy'
+Input: isolated marked copy; original and final SHA256 manifests; never live source.
+Literal output: ROLLBACK PASS: two original hashes restored; live transition cancellation remains changed.
+Exit 0.
+Restored behavior command: npx vitest run --root evidence/surfing-2026-10-24/T5-lifecycle/rollback-copy --config "D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-lifecycle\rollback-copy\vitest.config.mts" tests/cruise-takeover.test.ts
+Literal result: Test Files 1 passed (1); Tests 3 passed (3). Exit 0.
+Restored status: original App capture/reader callback tests pass; both source hashes restored, newly inserted transition-cancel lines absent from the corresponding load/closeTab branches. Isolated rollback UI was not rebuilt/launched; no claim that restored code passes the new regression (its baseline is RED above).
+
+Independent review verified the two synchronous cancellation points cover the reported race. Escape handling is a recorded Minor, not silently expanded. Whole packaged regression still fails the preexisting preview dense1000 performance gate; this fix does not claim to resolve that or real-model acceptance.

@@ -1,0 +1,49 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/surfing-requests.test.ts (26 tests | 2 failed) 52ms
+   × awaits an asynchronous model-specific counter before sending 18ms
+   × cancels while token counter is pending without generating 13ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-requests.test.ts > awaits an asynchronous model-specific counter before sending
+AssertionError: expected [] to have a length of 1 but got +0
+
+- Expected
++ Received
+
+- 1
++ 0
+
+ ❯ tests/surfing-requests.test.ts:32:258
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/surfing-requests.test.ts > cancels while token counter is pending without generating
+AssertionError: expected [ { requestId: 'req-one', …(2) } ] to deeply equal []
+
+- Expected
++ Received
+
+- []
++ [
++   {
++     "code": "SURFING_CAPACITY_UNKNOWN",
++     "requestId": "req-one",
++     "type": "error",
++   },
++ ]
+
+ ❯ tests/surfing-requests.test.ts:35:287
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 24 passed (26)
+   Start at  01:47:34
+   Duration  222ms (tests 51%, transform 34%, import 11%, worker 4%)
+

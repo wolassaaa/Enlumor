@@ -1,0 +1,36 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:44656) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:40160) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/editing-workspace.test.ts (19 tests | 1 failed) 547ms
+   ❯ production Workspace schema5 and editing transactions (19)
+     × projects only history metadata for dense strokes while preserving undo/redo and foreign-write applicability 32ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > projects only history metadata for dense strokes while preserving undo/redo and foreign-write applicability
+AssertionError: expected 'error' to be 'committed' // Object.is equality
+
+Expected: "committed"
+Received: "error"
+
+ ❯ committed tests/editing-workspace.test.ts:16:53
+     14| const hash=(file:string)=>createHash('sha256').update(readFileSync(fil…
+     15| const signal=()=>new AbortController().signal;
+     16| function committed(r:EditResult) { expect(r.status).toBe('committed');…
+       |                                                     ^
+     17| afterEach(()=>{vi.restoreAllMocks(); for(const w of workspaces.splice(…
+     18| describe('production Workspace schema5 and editing transactions',()=>{
+ ❯ tests/editing-workspace.test.ts:22:18
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed | 2 passed (3)
+      Tests  1 failed | 179 passed (180)
+   Start at  12:09:17
+   Duration  1.59s (tests 93%, transform 4%, import 2%)
+

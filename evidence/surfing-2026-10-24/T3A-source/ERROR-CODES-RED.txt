@@ -1,0 +1,143 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/surfing-requests.test.ts (24 tests | 5 failed) 30ms
+   × preserves the actual public runtime error AI_HTTP_401 5ms
+   × preserves the actual public runtime error AI_HTTP_429 1ms
+   × preserves the actual public runtime error AI_REQUEST_FAILED 1ms
+   × preserves the actual public runtime error AI_CANCELLED 1ms
+   × preserves the actual public runtime error SURFING_UNSUPPORTED_GEOMETRY 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 5 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-requests.test.ts > preserves the actual public runtime error AI_HTTP_401
+AssertionError: expected [ { requestId: 'req-one', …(2) } ] to deeply equal [ { requestId: 'req-one', …(2) } ]
+
+- Expected
++ Received
+
+  [
+    {
+-     "code": "AI_HTTP_401",
++     "code": "AI_FAILED",
+      "requestId": "req-one",
+      "type": "error",
+    },
+  ]
+
+ ❯ tests/surfing-requests.test.ts:28:113
+     26|
+     27| it.each(['AI_HTTP_401','AI_HTTP_429','AI_REQUEST_FAILED','AI_CANCELLED…
+     28|  const h=setup();h.ports.generate=async()=>{throw Error(code);};await …
+       |                                                                                                                 ^
+     29| });
+     30|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/5]⎯
+
+ FAIL  tests/surfing-requests.test.ts > preserves the actual public runtime error AI_HTTP_429
+AssertionError: expected [ { requestId: 'req-one', …(2) } ] to deeply equal [ { requestId: 'req-one', …(2) } ]
+
+- Expected
++ Received
+
+  [
+    {
+-     "code": "AI_HTTP_429",
++     "code": "AI_FAILED",
+      "requestId": "req-one",
+      "type": "error",
+    },
+  ]
+
+ ❯ tests/surfing-requests.test.ts:28:113
+     26|
+     27| it.each(['AI_HTTP_401','AI_HTTP_429','AI_REQUEST_FAILED','AI_CANCELLED…
+     28|  const h=setup();h.ports.generate=async()=>{throw Error(code);};await …
+       |                                                                                                                 ^
+     29| });
+     30|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/5]⎯
+
+ FAIL  tests/surfing-requests.test.ts > preserves the actual public runtime error AI_REQUEST_FAILED
+AssertionError: expected [ { requestId: 'req-one', …(2) } ] to deeply equal [ { requestId: 'req-one', …(2) } ]
+
+- Expected
++ Received
+
+  [
+    {
+-     "code": "AI_REQUEST_FAILED",
++     "code": "AI_FAILED",
+      "requestId": "req-one",
+      "type": "error",
+    },
+  ]
+
+ ❯ tests/surfing-requests.test.ts:28:113
+     26|
+     27| it.each(['AI_HTTP_401','AI_HTTP_429','AI_REQUEST_FAILED','AI_CANCELLED…
+     28|  const h=setup();h.ports.generate=async()=>{throw Error(code);};await …
+       |                                                                                                                 ^
+     29| });
+     30|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/5]⎯
+
+ FAIL  tests/surfing-requests.test.ts > preserves the actual public runtime error AI_CANCELLED
+AssertionError: expected [ { requestId: 'req-one', …(2) } ] to deeply equal [ { requestId: 'req-one', …(2) } ]
+
+- Expected
++ Received
+
+  [
+    {
+-     "code": "AI_CANCELLED",
++     "code": "AI_FAILED",
+      "requestId": "req-one",
+      "type": "error",
+    },
+  ]
+
+ ❯ tests/surfing-requests.test.ts:28:113
+     26|
+     27| it.each(['AI_HTTP_401','AI_HTTP_429','AI_REQUEST_FAILED','AI_CANCELLED…
+     28|  const h=setup();h.ports.generate=async()=>{throw Error(code);};await …
+       |                                                                                                                 ^
+     29| });
+     30|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/5]⎯
+
+ FAIL  tests/surfing-requests.test.ts > preserves the actual public runtime error SURFING_UNSUPPORTED_GEOMETRY
+AssertionError: expected [ { requestId: 'req-one', …(2) } ] to deeply equal [ { requestId: 'req-one', …(2) } ]
+
+- Expected
++ Received
+
+  [
+    {
+-     "code": "SURFING_UNSUPPORTED_GEOMETRY",
++     "code": "AI_FAILED",
+      "requestId": "req-one",
+      "type": "error",
+    },
+  ]
+
+ ❯ tests/surfing-requests.test.ts:28:113
+     26|
+     27| it.each(['AI_HTTP_401','AI_HTTP_429','AI_REQUEST_FAILED','AI_CANCELLED…
+     28|  const h=setup();h.ports.generate=async()=>{throw Error(code);};await …
+       |                                                                                                                 ^
+     29| });
+     30|
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/5]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  5 failed | 19 passed (24)
+   Start at  01:24:37
+   Duration  194ms (tests 41%, transform 36%, import 18%, worker 5%)
+

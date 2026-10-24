@@ -1,0 +1,38 @@
+T3c UI vertical slice verification / feat/v04-wave-ab / 2026-10-24 Asia/Taipei
+Changed fields: Surfing Bridge/runtime/route-stop explanation IPC and panel; synchronous user takeover; regeneration cache invalidation; stale-runtime error.
+Artifacts:
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3C-ui/MODIFIED_FILE.tsx
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3C-ui/DIFF_FILE.patch
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3C-ui/VERIFICATION.txt
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3C-ui/ROLLBACK.sh
+Seven original hashes ORIGINAL_FILES.sha256; five new files absent initially; final12-file hashes FINAL_FILES.sha256.
+BASELINE command: npx vitest run tests/surfing-requests.test.ts
+Input: four new explanation tests before implementation. Literal summary Tests  4 failed | 26 passed (30). Exit1; EXPLAIN-RED.txt.
+BASELINE command: npx vitest run tests/surfing-runtime.test.ts
+Input: runtime module absent. Literal summary Test Files  1 failed (1); Tests  no tests. Exit1; RUNTIME-RED.txt.
+BASELINE command: npx playwright test tests/e2e/surfing.spec.ts --workers=1
+Input: actual pre-integration development app, missing Surfing button. Literal summary 1 failed. Exit1; UI-RED.txt.
+Review BASELINE command: npx playwright test tests/e2e/surfing.spec.ts --workers=1 --grep 'immediately cancels|regeneration'
+Input: four regression scenarios against pre-fix compiled UI. Literal summary 4 failed. Exit1; REVIEW-RED.txt.
+Stale BASELINE command: npx vitest run tests/surfing-runtime.test.ts
+Input: invalidated runtime submission expectation. Literal summary Tests  1 failed | 6 passed (7). Exit1; STALE-RED.txt.
+MODIFIED command: npx vitest run tests/surfing-runtime.test.ts tests/surfing-requests.test.ts
+Literal summary Test Files  2 passed (2); Tests  37 passed (37). Exit0; STALE-GREEN.txt.
+MODIFIED command: npm test -- --reporter=dot
+Literal summary Test Files  38 passed (38); Tests  581 passed (581). Exit0; FINAL-ALL-UNIT.txt. Prior full run failed one old hook-slot test; see REVIEW.md and CRUISE-TAKEOVER-GREEN.txt (3 passed, exit0).
+MODIFIED command: npm run build
+Result TypeScript and all candidate bundles generated. Exit0; FINAL-BUILD2.txt.
+MODIFIED command: npx playwright test tests/e2e/surfing.spec.ts tests/e2e/document-commands.spec.ts --workers=1
+Literal summary 9 passed (28.6s). Exit0; FINAL-ELECTRON.txt.
+FINAL MODIFIED command: npx playwright test tests/e2e/surfing.spec.ts --workers=1
+Input final compiled source and localhost SSE mock only; authored real two-page PDF in temporary profile; source SHA256 unchanged.
+Literal summary 5 passed (20.0s). Exit0; FINAL-SURFING.txt. Covers no network on preparation/no consent, full extracted text, manual source choice, explanation, skip/back without new requests, pause, wheel/PageDown, regeneration cancellation/429 and manual retry. No actual model quality/production performance claim.
+ROLLBACK command: "C:/Program Files/Git/bin/bash.exe" -c './evidence/surfing-2026-10-24/T3C-ui/ROLLBACK.sh evidence/surfing-2026-10-24/T3C-ui/rollback-copy'
+Input marked separate12-file copy with originals/manifests.
+Literal output ROLLBACK PASS: seven original hashes restored; five new files absent; live Surfing candidate retains changes.
+Exit0; ROLLBACK-RUN.txt.
+RESTORED command: npx vitest run --root evidence/surfing-2026-10-24/T3C-ui/rollback-copy tests/surfing-requests.test.ts
+Input restored original request module/tests and unchanged route helper.
+Literal summary Test Files  1 passed (1); Tests  26 passed (26). Exit0; ROLLBACK-BEHAVIOR.txt.
+Restored behavior/status: original26 service tests pass in separate copy; old hashes match and new UI/runtime absent there. Live candidate remains changed; original0.1.15 package/personal database untouched. No commit/push/publish.
+Independent review two Important resolved RED→GREEN; no open Critical. UI screenshot reopened visually after collapsing config. Snapshot is localhost mock fixture, not live AI or user-study evidence. Persistence not implemented; panel explicitly states session-only progress. Model encoding coverage limited to explicitly configured known o200k OpenAI-chat models, other models fail closed. Full packaged regression/performance and real model acceptance pending.

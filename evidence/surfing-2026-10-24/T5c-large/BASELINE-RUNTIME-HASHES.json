@@ -1,0 +1,58 @@
+[
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\main\\surfing-requests.ts",
+    "Hash": "9BB5B796C659A83B7384EEA32F5A9F623C42737F5FDB39CAD210613D4E54DB65"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\main\\surfing-runtime.ts",
+    "Hash": "4A3D46106A5538EE39608384CFCB6F4264DEF73021966E0AB93F7FBCB5DF21A3"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\main\\surfing-sessions.ts",
+    "Hash": "233DEA956AB1919194FAAC1900E8A48AE94AF23C76259652EFE08EDBA032954D"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\main\\surfing-source.ts",
+    "Hash": "D7B9DAA9853FCAC5182C78F9325633590C6417F3C056D65530BEBFE19DF09763"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\main\\surfing-token-count.ts",
+    "Hash": "C5882648F9E406FA48491B955E905217EADCF24F87F75B47FFAE3F4FAB2062A3"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\main\\surfing-token-worker-host.ts",
+    "Hash": "2A01BF1EDFAB6A112FF44324ABE5596221E9AA44D89EECFB90697802F2E0C4EF"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\main\\surfing-token-worker.ts",
+    "Hash": "5C8486C7F996FE652A898122ACB9C3D1C134F19E187AA7A6D9CD01C5140D6A49"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\main\\surfing-tokenizer-models.ts",
+    "Hash": "6DEDA97F043CCBB9F27D9F8E7842BF988DC8C3B4BFC98FACA342A9AE510C2A4E"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\shared\\surfing-bridge.ts",
+    "Hash": "0B01059C6C9E52EB65EE068BABF6A4B8C3BCC6E4FEBE67C8F3EDD6DA9F988D1C"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\shared\\surfing-context.ts",
+    "Hash": "9A911D268D03C463D618497AF77C977EC91439D72B692028509019B461129451"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\shared\\surfing-route.ts",
+    "Hash": "0B6D31ED36F67A4E151626F511CDE094829A088914B1649DFC1768E91DE4F9B1"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\shared\\surfing-session.ts",
+    "Hash": "71C7B60D9F22859CC464EDC1FD754522BBD1D8737E32042B42E5C3A0010B31E8"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\renderer\\SurfingPanel.tsx",
+    "Hash": "B6824048B4E5AA1DA529A3D8C671AC0E0761006116725CB04FCA93F3E8928A60"
+  },
+  {
+    "Path": "D:\\codex project\\Enlumor\\.worktrees\\v04-wave-ab\\src\\renderer\\surfing-command-host.ts",
+    "Hash": "C0BC76FC2EE7486B14F371F6DF091401698A88FC759DC45EBBD3E7C34E7DFAAA"
+  }
+]

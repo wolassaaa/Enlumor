@@ -1,0 +1,81 @@
+BASIC SURFING — OFFLINE CANDIDATE VERIFICATION
+2026-10-24 03:06 Asia/Taipei / branch feat/v04-wave-ab / no commit, push or publication.
+
+FOUR ARTIFACT PATHS:
+MODIFIED_FILE=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\MODIFIED_FILE (actual unpacked candidate; retain the entire win-unpacked directory)
+DIFF_FILE=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\DIFF_FILE.patch
+VERIFICATION=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\VERIFICATION.txt
+ROLLBACK=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\ROLLBACK.sh
+Additional source snapshot=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\SOURCE_SNAPSHOT.zip (37 files; 10 preserved originals +27 new Surfing sources/docs)
+User entry=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\OPEN-CANDIDATE.cmd (explicit isolated user-data; --check passed)
+Manual real-paper/model checklist=D:\codex project\Enlumor\.worktrees\v04-wave-ab\docs\acceptance\surfing-overnight-2026-10-24.md
+
+CHANGED BRANCHES/FIELDS:
+Full-document trusted local extraction / strict route and explanation evidence / bounded tokenizer worker budget / user-driven navigation and takeover / persisted workspace.surfing_sessions.payload (route, selected, answers, fingerprint, model signature, paused state).
+T5 load() / closeTab(): synchronous surfingCancel before first flush/await; ordinary reading autosave does not cancel.
+Package-only productName=Enlumor-Surfing-Candidate, extraMetadata.name=enlumor-surfing-candidate. Version stays0.1.15; this is not a release replacement. No formal release/latest write, no personal database/key read, no paid API. All model tests use127.0.0.1 mocks and temporary workspaces.
+
+BASELINE:
+Command: npm run test:e2e
+Input: pre-lifecycle-fix T4 source, development app; packaged-only test initially uses absent default release path.
+Literal result: 2 failed /157 passed (7.3m). Exit1. Full output: T5-gates/FULL-E2E.txt.
+Failures: existing preview dense1000 eraseUndo1307ms >1000ms (mutation worst67ms >50ms); packaged-only default exe absent. This is not a Surfing quality pass.
+Command: npx playwright test tests/e2e/surfing.spec.ts --grep 'delayed reading flush' --workers=1
+Input: held local explanation +held reading:save, tab switch /Ctrl+W.
+Literal result: 2 failed; Expected "已暂停"; Received "解释中". Exit1. Full output: T5-lifecycle/RED.txt.
+
+MODIFIED BUILD / PACKAGE:
+Command: npm run build
+Input: lifecycle-corrected candidate. Result: completed; existing >500kB renderer chunk warning retained. Exit0 (T5-lifecycle/BUILD.txt).
+Command: npm run build:worker
+Input: current python/export_pdf.py; existing local PyInstaller/PyMuPDF. Literal output: Build complete! The results are available in: D:\codex project\Enlumor\.worktrees\v04-wave-ab\.cache\pdf-worker
+Exit0 (BUILD-WORKER.txt).
+Command: node node_modules/electron-builder/cli.js --win dir --publish never --config.directories.output=evidence/surfing-2026-10-24/T5-package/MODIFIED_FILE --config.productName=Enlumor-Surfing-Candidate --config.extraMetadata.name=enlumor-surfing-candidate --config.npmRebuild=false --config.win.signAndEditExecutable=false
+Environment: CSC_IDENTITY_AUTO_DISCOVERY=false. Input: built dist + freshly bundled worker + existing Electron distribution; no installer/publication/signing. Literal result: packaging platform=win32 arch=x64 electron=44.7.2; executable resource editing and code signing skipped. Exit0 (PACKAGE.txt).
+ASAR read check: index.cjs, preload.cjs, surfing-token-worker.cjs present. PACKAGED_METADATA {"name":"enlumor-surfing-candidate","version":"0.1.15"}. Exit0 (ASAR-CONTENTS.txt). First inventory probe used wrong Windows separator; normalized inventory then passed. Package runtime verification below is the decisive worker test.
+Executable SHA256=ae92b1fe516aa5bb65e6b42a449806f37fea50562a1f029f1fc3a8ac37ecc191
+ASAR SHA256=cae51a68451800c0eb8defeb440dcee159b18dff2e4330b90cfd83e8558643d5
+Bundled worker SHA256=04bf01cea81c388e2e3978729636d327f636cd09b298a2e9cd5e22d060c3c221
+Full package manifest=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\CANDIDATE_FILES.sha256 (264 files)
+
+MODIFIED TESTS:
+Command: npx playwright test tests/e2e/surfing.spec.ts --grep 'delayed reading flush' --workers=1
+Literal result: 2 passed (12.0s), exit0 (T5-lifecycle/GREEN.txt).
+Command: npm test -- --reporter=dot
+Literal result: Test Files 39 passed (39); Tests 602 passed (602), exit0 (T5-lifecycle/ALL-UNIT.txt).
+Command: npm run typecheck
+Literal result: tsc --noEmit; no diagnostics, exit0 (FINAL-TYPECHECK.txt).
+Command: npm run test:python
+Literal result: Ran 21 tests in 4.845s / OK, exit0 (FINAL-PYTHON.txt).
+Command: npx playwright test tests/e2e/surfing.spec.ts --workers=1
+Environment: ENLUMOR_TEST_APP=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\MODIFIED_FILE\win-unpacked\Enlumor-Surfing-Candidate.exe
+Input: actual packaged executable, ASAR tokenizer worker, bundled PDF worker, real synthetic PDF, isolated profiles, local SSE mock.
+Literal result: 10 passed (49.7s), exit0 (SURFING-E2E.txt).
+Command: npx playwright test --workers=1
+Environment: same candidate; ENLUMOR_EVIDENCE_DIR=evidence/surfing-2026-10-24/T5-package/full-evidence.
+Literal result: 1 failed /160 passed (8.7m), exit1 (FULL-PACKAGED-E2E.txt).
+Failure: existing editing-preview dense1000; Expected <=1000; Received1251. Mutation worst63ms also exceeds50ms. Original thresholds were NOT weakened. The160 passing cases include packaged open/export without external Python and all10 Surfing cases. DENSE-FAILURE-TRACE.zip and full-evidence JSON preserved. Whole package is NOT all-green; not release acceptance.
+
+MODIFIED PERFORMANCE:
+Command: node scripts/benchmark.mjs surfing-text "D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\MODIFIED_FILE\win-unpacked\Enlumor-Surfing-Candidate.exe" --thumbnails
+Command: node scripts/benchmark.mjs surfing-scan "D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\MODIFIED_FILE\win-unpacked\Enlumor-Surfing-Candidate.exe" --thumbnails --scanned
+Environment: ENLUMOR_EVIDENCE_DIR=evidence/surfing-2026-10-24/T5-package/performance.
+Input: generated200-page text/scan ~32MB,1000 annotations, thumbnails; actual candidate exe. Both exit0.
+Command: node --input-type=module -e "import {readFileSync} from 'node:fs';import {assertPerformance} from './scripts/performance-gate.mjs';for(const label of ['surfing-text','surfing-scan']){const report=JSON.parse(readFileSync('evidence/surfing-2026-10-24/T5-package/performance/'+label+'.json'));assertPerformance(report);console.log(label+' PERFORMANCE_GATE: PASS '+JSON.stringify(report));}"
+Literal result: surfing-text PERFORMANCE_GATE: PASS; surfing-scan PERFORMANCE_GATE: PASS. Exit0 (PERFORMANCE-GATES.txt contains full literal metrics).
+Text exe startup median434.9ms, scrollingp95 11.5ms, reading-savep95 4.4ms; scan458.4ms/12.5ms/5.9ms. Retained canvases8/thumbnails4 each. Original budgets: startup median<=1500ms, framep95<=34ms,savep95<=20ms,canvases<=30/thumb<=8. These default reading benchmarks do not erase the independent preview dense-ink failure.
+
+ROLLBACK (SOURCE ONLY, ISOLATED COPY):
+Command: "C:/Program Files/Git/bin/bash.exe" -c 'evidence/surfing-2026-10-24/T5-package/ROLLBACK.sh evidence/surfing-2026-10-24/T5-package/rollback-copy'
+Input: explicitly marked isolated source copy, preserved pre-Surfing source originals (state JSON preserved before T5 update), FINAL_FILES.sha256 and ORIGINAL_FILES.sha256. Never applied to live source or candidate executable.
+Literal output: ROLLBACK PASS: 10 original hashes restored; 27 new Surfing source/doc files absent; live source and candidate retained.
+Exit0 (ROLLBACK.txt).
+Command: npx vitest run --root evidence/surfing-2026-10-24/T5-package/rollback-copy --config "D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5-package\rollback-copy\vitest.config.mts" tests/cruise-takeover.test.ts
+Literal result: Test Files1 passed(1); Tests3 passed(3), exit0 (ROLLBACK-UNIT.txt).
+Command: .venv/Scripts/python.exe -m unittest discover -s evidence/surfing-2026-10-24/T5-package/rollback-copy/tests/python -v
+Literal result: Ran14 tests in4.555s /OK, exit0 (ROLLBACK-PYTHON.txt).
+Restored behavior/status: original App takeover callbacks and pre-Surfing PDF export/editing Python behavior pass; Surfing source modules/test absent and original hashes restored. Whole rollback app was not rebuilt/launched. Live source remains modified, candidate retained.
+
+FINAL REVIEW / NEXT:
+Independent read-only reviewer confirms no remaining confirmed Critical/Important for Surfing; the two transition cancellation points cover the reported race. Escape (old host only) remains Minor. Three separate conclusions: (1)basic Surfing packaged offline flow passes; (2)whole package gate fails existing preview dense performance; (3)real-model quality and two real papers NOT EXECUTED. No synthetic PDF ormock is described as real-paper acceptance.
+T5b next: bounded offline Electron negative coverage for background/model/source-change/save-failure tab-close. No repeated full suite absent source changes; no new SaaS/cross-paper/complexAI-edit features. At07:30 verification only; at08:00 stop implementation and pause same heartbeat.

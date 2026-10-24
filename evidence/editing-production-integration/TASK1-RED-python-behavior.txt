@@ -1,0 +1,97 @@
+COMMAND: node scripts/python.mjs -m unittest discover -s tests/python -p test_editing_anchors.py -v
+INPUT: self-created PDFs, stub operations
+test_metadata_never_extracts_text_and_scanned_page_has_no_characters (test_editing_anchors.EditingAnchorTests.test_metadata_never_extracts_text_and_scanned_page_has_no_characters) ... FAIL
+test_missing_changed_invalid_page_and_cli (test_editing_anchors.EditingAnchorTests.test_missing_changed_invalid_page_and_cli) ... FAIL
+test_native_four_vertices_crop_rotations_and_source_unchanged (test_editing_anchors.EditingAnchorTests.test_native_four_vertices_crop_rotations_and_source_unchanged) ... 
+  test_native_four_vertices_crop_rotations_and_source_unchanged (test_editing_anchors.EditingAnchorTests.test_native_four_vertices_crop_rotations_and_source_unchanged) (rotation=0) ... FAIL
+  test_native_four_vertices_crop_rotations_and_source_unchanged (test_editing_anchors.EditingAnchorTests.test_native_four_vertices_crop_rotations_and_source_unchanged) (rotation=90) ... FAIL
+  test_native_four_vertices_crop_rotations_and_source_unchanged (test_editing_anchors.EditingAnchorTests.test_native_four_vertices_crop_rotations_and_source_unchanged) (rotation=180) ... FAIL
+  test_native_four_vertices_crop_rotations_and_source_unchanged (test_editing_anchors.EditingAnchorTests.test_native_four_vertices_crop_rotations_and_source_unchanged) (rotation=270) ... FAIL
+test_native_negative_media_coordinates (test_editing_anchors.EditingAnchorTests.test_native_negative_media_coordinates) ... FAIL
+test_source_changed_during_extraction_is_rejected (test_editing_anchors.EditingAnchorTests.test_source_changed_during_extraction_is_rejected) ... FAIL
+
+======================================================================
+FAIL: test_metadata_never_extracts_text_and_scanned_page_has_no_characters (test_editing_anchors.EditingAnchorTests.test_metadata_never_extracts_text_and_scanned_page_has_no_characters)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\python\test_editing_anchors.py", line 37, in test_metadata_never_extracts_text_and_scanned_page_has_no_characters
+    self.assertEqual(editing_document(source,fp)['pageCount'],1)
+    ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_missing_changed_invalid_page_and_cli (test_editing_anchors.EditingAnchorTests.test_missing_changed_invalid_page_and_cli)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\python\test_editing_anchors.py", line 48, in test_missing_changed_invalid_page_and_cli
+    with self.assertRaisesRegex(ValueError,'SOURCE_CHANGED'):editing_page(source,'a'*64,0)
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+======================================================================
+FAIL: test_native_four_vertices_crop_rotations_and_source_unchanged (test_editing_anchors.EditingAnchorTests.test_native_four_vertices_crop_rotations_and_source_unchanged) (rotation=0)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\python\test_editing_anchors.py", line 23, in test_native_four_vertices_crop_rotations_and_source_unchanged
+    meta=editing_document(source,fp);self.assertEqual(meta['fingerprint'],fp);self.assertEqual(meta['pageCount'],1)
+                                                                              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_native_four_vertices_crop_rotations_and_source_unchanged (test_editing_anchors.EditingAnchorTests.test_native_four_vertices_crop_rotations_and_source_unchanged) (rotation=90)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\python\test_editing_anchors.py", line 23, in test_native_four_vertices_crop_rotations_and_source_unchanged
+    meta=editing_document(source,fp);self.assertEqual(meta['fingerprint'],fp);self.assertEqual(meta['pageCount'],1)
+                                                                              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_native_four_vertices_crop_rotations_and_source_unchanged (test_editing_anchors.EditingAnchorTests.test_native_four_vertices_crop_rotations_and_source_unchanged) (rotation=180)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\python\test_editing_anchors.py", line 23, in test_native_four_vertices_crop_rotations_and_source_unchanged
+    meta=editing_document(source,fp);self.assertEqual(meta['fingerprint'],fp);self.assertEqual(meta['pageCount'],1)
+                                                                              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_native_four_vertices_crop_rotations_and_source_unchanged (test_editing_anchors.EditingAnchorTests.test_native_four_vertices_crop_rotations_and_source_unchanged) (rotation=270)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\python\test_editing_anchors.py", line 23, in test_native_four_vertices_crop_rotations_and_source_unchanged
+    meta=editing_document(source,fp);self.assertEqual(meta['fingerprint'],fp);self.assertEqual(meta['pageCount'],1)
+                                                                              ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^
+AssertionError: 0 != 1
+
+======================================================================
+FAIL: test_native_negative_media_coordinates (test_editing_anchors.EditingAnchorTests.test_native_negative_media_coordinates)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\python\test_editing_anchors.py", line 43, in test_native_negative_media_coordinates
+    fp=hashlib.sha256(p.read_bytes()).hexdigest();self.assertEqual(editing_document(str(p),fp)['pageBounds'],[[-40.0,-50.0,360.0,450.0]])
+                                                  ~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: Lists differ: [] != [[-40.0, -50.0, 360.0, 450.0]]
+
+Second list contains 1 additional elements.
+First extra element 0:
+[-40.0, -50.0, 360.0, 450.0]
+
+- []
++ [[-40.0, -50.0, 360.0, 450.0]]
+
+======================================================================
+FAIL: test_source_changed_during_extraction_is_rejected (test_editing_anchors.EditingAnchorTests.test_source_changed_during_extraction_is_rejected)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\python\test_editing_anchors.py", line 65, in test_source_changed_during_extraction_is_rejected
+    with self.assertRaisesRegex(ValueError,'SOURCE_CHANGED'):editing_page(source,fp,0)
+         ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.261s
+
+FAILED (failures=8)
+
+EXIT: 1

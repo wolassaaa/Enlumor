@@ -1,0 +1,60 @@
+Changed fields/branches:
+- New askSurfing / surfing:ask IPC and SurfingRequests.ask: question+pageIndex; full trusted paper plus host-owned recent conversation. No route prerequisite.
+- Runtime separates profile conversations, rejects edited same-profile configuration until reprepare; cancellation/stale checks reused.
+- Renderer right companion panel, current-page questions, explicit evidence buttons; paper fit width; old Cruise labelled legacy.
+- DeepSeek Chat/Reasoner OpenAI Chat-compatible conservative UTF8 byte budget +4096, explicit user-entered context window; not precise tokenizer/capacity inference.
+- Conversation transient, max6 turns and18000 JSON characters; only validated completed replies remembered. Original route persistence remains separate.
+
+Four artifacts (absolute):
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-repair-2026-10-24/MODIFIED_FILE
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-repair-2026-10-24/DIFF_FILE.patch
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-repair-2026-10-24/VERIFICATION.txt
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-repair-2026-10-24/ROLLBACK.sh
+
+Original hashes: ORIGINAL_HASHES.json and originals/ (14 exact source/test files). Modified hashes: FINAL_HASHES.json, SOURCE_SNAPSHOT.zip. Actual packaged candidate: MODIFIED_FILE/win-unpacked/Enlumor-Surfing-Repair.exe; keep directory intact. New OPEN-REPAIR.cmd uses isolated user-data, no personal/old test credentials copied.
+
+BASELINE command: npx vitest run tests/surfing-requests.test.ts tests/surfing-token-count.test.ts --reporter=dot
+Input: new whole-paper conversation and DeepSeek tests against original implementation.
+Literal result: Test Files  2 failed (2); Tests  9 failed | 42 passed (51)
+Underlying test exit: 1. PowerShell wrapper then printed log tail and exited0; that wrapper exit is not a passing test. Raw RED.txt retained.
+UI baseline command: npx playwright test tests/e2e/surfing.spec.ts -g 'whole-paper conversation' --timeout=15000
+Input: original UI without whole-paper question field.
+Literal result: 1 failed; Test timeout of 15000ms exceeded.
+Underlying test exit1; wrapper log-tail exit0. UI-RED.txt retained.
+Additional RED: PROFILE-RED.txt (1failed/15passed); FIT-RED.txt page width792.0000610351562 > viewer770.7321624755859. Real assertions, not fabricated RED.
+
+MODIFIED command: npx vitest run --reporter=dot
+Input: frozen live sources, complete unit suite.
+Literal result: Test Files  39 passed (39); Tests  619 passed (619)
+Exit0; FROZEN-UNIT.txt.
+MODIFIED command: npm run build
+Input: same frozen source (BUILD-PACKAGE.txt).
+Literal result: tsc --noEmit completed; built renderer/main/preload/token worker; exit0. Existing bundle-size warning retained.
+MODIFIED command: npx electron-builder --win dir --config evidence/surfing-repair-2026-10-24/builder.json
+Input: frozen build and unchanged bundled PDF worker; isolated output, separate product/package name.
+Literal result: appOutDir=evidence\surfing-repair-2026-10-24\MODIFIED_FILE\win-unpacked; packaging completed; exit0. PACKAGE.txt.
+MODIFIED command (PowerShell): $env:ENLUMOR_TEST_APP=(Join-Path (Get-Location) 'evidence/surfing-repair-2026-10-24/MODIFIED_FILE/win-unpacked/Enlumor-Surfing-Repair.exe'); npx playwright test tests/e2e/surfing.spec.ts
+Input: actual repair executable, temporary local SSE servers and generated 2-page PDF, including deepseek-chat profile for new conversation case.
+Literal result: 15 passed (1.0m)
+Exit0; PACKAGED-E2E.txt. New case checks full paper despite parked title/page1, no route prerequisite, page2 evidence navigation, next question includes previous validated reply/currentpage2, PDF fits left viewport, canceled late answer absent.
+MODIFIED command: node evidence/surfing-repair-2026-10-24/CHECK.mjs
+Input: 14 live SHA hashes, source zip, packaged ASAR, current build/source map.
+Literal output: REPAIR_CHECK PASS: 14 live source/test hashes match snapshot; three packaged main/preload/token-worker bundles match build; request source matches source map.
+Exit0.
+MODIFIED command: & evidence/surfing-repair-2026-10-24/OPEN-REPAIR.cmd --check
+Literal output: REPAIR_LAUNCHER_CHECK: PASS
+Exit0.
+
+ROLLBACK command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' -lc 'evidence/surfing-repair-2026-10-24/ROLLBACK.sh evidence/surfing-repair-2026-10-24/rollback-copy'
+Input: marker-protected isolated copy, final SHA manifest, originals14.
+Literal output: ROLLBACK PASS: 14 original source/test hashes restored in isolated copy; live repair retained.
+Exit0. Repeated after final footer correction; ROLLBACK-FINAL.txt.
+ROLLBACK command: npx vitest run tests/surfing-requests.test.ts tests/surfing-token-count.test.ts tests/surfing-runtime.test.ts --root evidence/surfing-repair-2026-10-24/rollback-copy --exclude '**/originals/**' --reporter=dot
+Input: restored original source and original tests, isolated dependency junction.
+Literal result: Test Files  3 passed (3); Tests  56 passed (56)
+Exit0; ROLLBACK-FROZEN-TEST.txt.
+Restored status/behavior: original request service has no ask method, original renderer top panel and old tokenizer recognition restored only in isolated copy. All14 original hashes match. Live14 repaired files and new264-file candidate remain modified.
+
+Failed/intermediate attempts retained: UI-GREEN.txt initially timed out waiting for reply, diagnostic rerun succeeded; final packaged case passed. FINAL-E2E.txt14pass/1fail found footer masked model-restore failure as transient conversation; fixed conditional status, actual packaged15pass. First rollback test accidentally discovered originals/ test duplicates (2suite loadfail/62pass); corrected discovery excludes backup originals, actual56pass. Intermediate17-item Surfing/large coverage passed before final fit/footer corrections, not reported as final package coverage.
+
+Limits: real paid/provider response quality NOT EXECUTED; mock validates transport/context/controls, not semantic quality. Two actual papers still pending. Whole release suite/performance not rerun; historical old dense1000 performance failure not fixed. Conversation is ephemeral and bounded, not claimed persisted or unlimited. No personal keys read/output, paid API, commit/push/release, formal0.1.15 replacement or automation resume.

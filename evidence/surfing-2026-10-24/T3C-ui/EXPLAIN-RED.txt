@@ -1,0 +1,45 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/surfing-requests.test.ts (30 tests | 4 failed) 57ms
+   × explains a selected validated stop with full source, never arbitrary renderer prompts 3ms
+   × refuses explanation before a validated route exists 0ms
+   × rejects an explanation with invented evidence 0ms
+   × does not reuse another profile or context route for explanation 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-requests.test.ts > explains a selected validated stop with full source, never arbitrary renderer prompts
+TypeError: h.service.explain is not a function
+ ❯ tests/surfing-requests.test.ts:40:18
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+ FAIL  tests/surfing-requests.test.ts > refuses explanation before a validated route exists
+TypeError: h.service.explain is not a function
+ ❯ tests/surfing-requests.test.ts:42:107
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/4]⎯
+
+ FAIL  tests/surfing-requests.test.ts > rejects an explanation with invented evidence
+TypeError: h.service.explain is not a function
+ ❯ tests/surfing-requests.test.ts:43:203
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/4]⎯
+
+ FAIL  tests/surfing-requests.test.ts > does not reuse another profile or context route for explanation
+TypeError: h.service.explain is not a function
+ ❯ tests/surfing-requests.test.ts:44:150
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 26 passed (30)
+   Start at  02:01:30
+   Duration  230ms (tests 55%, transform 27%, import 14%, worker 4%)
+

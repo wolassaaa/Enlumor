@@ -1,0 +1,24 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/surfing-context.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-context.test.ts [ tests/surfing-context.test.ts ]
+Error: Cannot find module '../src/shared/surfing-context' imported from D:/codex project/Enlumor/.worktrees/v04-wave-ab/tests/surfing-context.test.ts
+ ❯ tests/surfing-context.test.ts:2:1
+      1| import {describe,it,expect} from 'vitest';
+      2| import {prepareSurfingContext} from '../src/shared/surfing-context';
+       | ^
+      3| import type {CruiseBlock} from '../src/shared/cruise';
+      4| const context={documentId:'doc',fingerprint:'hash',revision:1};
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  00:53:23
+   Duration  165ms (worker 94%, environment 6%)
+

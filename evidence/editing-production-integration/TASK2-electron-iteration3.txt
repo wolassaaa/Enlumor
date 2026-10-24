@@ -1,0 +1,39 @@
+(node:14936) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:24188) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:24188) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  1 tests\e2e\editing-workflow.spec.ts:17:1 › preview real tools commit to SQL and visible PDF, preserve history across reopening and block stale export (33.3s)
+
+
+  1) tests\e2e\editing-workflow.spec.ts:17:1 › preview real tools commit to SQL and visible PDF, preserve history across reopening and block stale export 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for locator('.annotation-card').first().getByRole('button', { name: '显示', exact: true })
+
+
+      23 |  for(const [label,type,y] of [['绘制直线','line',220],['绘制箭头','arrow',260],['绘制画笔','ink',300]] as const){await page.getByRole('button',{name:label,exact:true}).click();await page.mouse.move(bounds.x+80,bounds.y+y);await page.mouse.down();await page.mouse.move(bounds.x+180,bounds.y+y+20,{steps:12});await page.mouse.up();await expect(page.locator('.drawn-'+type)).toHaveCount(1);}
+      24 |  expect(sql(profile,'select count(*) n from edit_marks')[0].n).toBe(7);expect(sql(profile,'select count(*) n from annotations')[0].n).toBe(0);
+    > 25 |  const first=page.locator('.annotation-card').first();await first.getByRole('button',{name:'隐藏',exact:true}).click();await expect(page.locator('.mark.highlight')).toHaveCount(0);await first.getByRole('button',{name:'显示',exact:true}).click();await expect(page.locator('.mark.highlight')).toHaveCount(1);await first.getByRole('button',{name:'固定',exact:true}).click();await expect(first).toContainText('已固定');
+         |                                                                                                                                                                                                                                          ^
+      26 |  await page.getByRole('button',{name:'导出批注 PDF',exact:false}).click();await expect(page.getByRole('alert')).toContainText('新标识导出尚未接入');await page.getByRole('button',{name:'关闭错误提示'}).click();
+      27 |  await page.screenshot({path:path.join(evidence,'TASK2-seven-tools.png')});expect(hash()).toBe(original);
+      28 |  await stop(app);({app,page}=await launch(profile));await expect(page.locator('.annotation-card')).toHaveCount(7);await expect(page.locator('.drawn-ink')).toHaveCount(1);await expect(page.getByRole('button',{name:'撤销',exact:true})).toBeEnabled();expect(sql(profile,'select count(*) n from edit_receipts')[0].n).toBe(10);
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\editing-workflow.spec.ts:25:234
+
+    Error Context: test-results\editing-workflow-preview-r-95f68-ning-and-block-stale-export\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\editing-workflow-preview-r-95f68-ning-and-block-stale-export\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\editing-workflow-preview-r-95f68-ning-and-block-stale-export\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\editing-workflow.spec.ts:17:1 › preview real tools commit to SQL and visible PDF, preserve history across reopening and block stale export 

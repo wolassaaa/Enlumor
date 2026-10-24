@@ -1,0 +1,47 @@
+Surfing T1/T2 verification (2026-10-24 Asia/Taipei)
+Changed branch: feat/v04-wave-ab; HEAD ac6d4ac remains unchanged.
+Changed fields: extracted-text coverage/emptyPages/characterCount; evidence-bound stops/title/reason/passageIds. All four source/test files were absent at baseline; prior working-tree files untouched by this slice.
+Artifacts (absolute):
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/MODIFIED_FILE.ts
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/DIFF_FILE.patch
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/VERIFICATION.txt
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/ROLLBACK.sh
+BASELINE command: npx vitest run tests/surfing-context.test.ts
+Input: new tests, context module absent.
+Literal summary: Test Files  1 failed (1); Tests  no tests
+Exit: 1. Full original output: T1-RED.txt.
+BASELINE command: npx vitest run tests/surfing-route.test.ts
+Input: new tests, route module absent.
+Literal summary: Test Files  1 failed (1); Tests  no tests
+Exit: 1. Full original output: T2-RED.txt.
+MODIFIED command: npx vitest run tests/surfing-context.test.ts tests/surfing-route.test.ts
+Input: new modules and tests in candidate checkout.
+Literal summary: Test Files  2 passed (2); Tests  38 passed (38)
+Exit: 0. Full original output: T2-GREEN.txt.
+MODIFIED command: npm run typecheck
+Literal output: > enlumor@0.1.15 typecheck / > tsc --noEmit
+Exit: 0. Full original output: T2-TYPECHECK.txt.
+MODIFIED command: npm test -- --reporter=dot
+Literal summary: Test Files  32 passed (32); Tests  506 passed (506)
+Exit: 0. Full original output: T2-ALL-UNIT.txt.
+ROLLBACK command: "C:/Program Files/Git/bin/bash.exe" -c './evidence/surfing-2026-10-24/ROLLBACK.sh evidence/surfing-2026-10-24/rollback-copy'
+Input: separate marked copy of four new source/test files with NEW_FILES.sha256.
+Literal output: ROLLBACK PASS: four new files absent as at baseline; delivered working tree remains changed.
+Exit: 0. Full original output: ROLLBACK-RUN.txt.
+Restored status: four new files absent in isolated copy, matching baseline. Live candidate keeps new modules and tests; formal release and personal DB unchanged. NEW_FILES.sha256 records delivered hashes; ORIGINAL_STATUS.txt / ORIGINAL_HEAD.txt preserve pre-slice status.
+Product status: shared modules only, not UI-connected, no live model call, no claim of completed Surfing. Independent review pending at time this initial record was written; append final findings before handoff.
+
+FINAL REVIEW RESOLUTION / 2026-10-24 00:58:
+Independent read-only review complete: one Important and one Minor both addressed. Geometry regression RED command: npx vitest run tests/surfing-context.test.ts; literal summary Tests  3 failed | 19 passed (22); exit1. See REVIEW.md.
+FINAL MODIFIED command: npx vitest run tests/surfing-context.test.ts tests/surfing-route.test.ts
+Input: delivered final sources/tests, including sparse/degenerate geometry and nine-known-ID regression.
+Literal summary: Test Files  2 passed (2); Tests  42 passed (42)
+Exit0; FINAL-FOCUSED.txt.
+FINAL MODIFIED command: npm run typecheck
+Result: tsc --noEmit; exit0; FINAL-TYPECHECK.txt.
+FINAL MODIFIED command: npm test -- --reporter=dot
+Literal summary: Test Files  32 passed (32); Tests  510 passed (510)
+Exit0; FINAL-ALL-UNIT.txt.
+FINAL ROLLBACK: same command/input as above, refreshed to final NEW_FILES.sha256; literal output ROLLBACK PASS: four new files absent as at baseline; delivered working tree remains changed.
+Exit0. All delivered hash checks OK. MODIFIED_FILE.ts, DIFF_FILE.patch, executable ROLLBACK.sh reopened; this VERIFICATION.txt reopened after final append.
+Next task: T3a bounded Surfing request channel. No pending tests/builds. Heartbeat 20min-enlumor-2 ACTIVE targets current chat; duplicate 20min-enlumor PAUSED. Cutoff 2026-10-24 08:00 Asia/Taipei; after07:30 verification only. Surfing UI/live API/session restoration not complete.

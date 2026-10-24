@@ -1,0 +1,20 @@
+T3a first slice verification / branch feat/v04-wave-ab / 2026-10-24 01:02 Asia/Taipei
+Changed field: bounded consent/context/profile request and validated-route/error event; two new files absent at baseline. Host/IPC/UI not integrated.
+Artifacts:
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3A/MODIFIED_FILE.ts
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3A/DIFF_FILE.patch
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3A/VERIFICATION.txt
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3A/ROLLBACK.sh
+BASELINE command: npx vitest run tests/surfing-requests.test.ts
+Input: test exists, implementation absent. Literal summary: Test Files  1 failed (1); Tests  no tests. Exit1. Original output ../T3A-RED.txt.
+MODIFIED command: npx vitest run tests/surfing-requests.test.ts
+Input: new service and 19 tests. Literal summary: Test Files  1 passed (1); Tests  19 passed (19). Exit0. ../T3A-GREEN.txt.
+MODIFIED command: npm run typecheck
+Literal output: > enlumor@0.1.15 typecheck / > tsc --noEmit. Exit0. ../T3A-TYPECHECK.txt.
+MODIFIED command: npm test -- --reporter=dot
+Literal summary: Test Files  33 passed (33); Tests  529 passed (529). Exit0. ../T3A-ALL-UNIT.txt.
+ROLLBACK command: "C:/Program Files/Git/bin/bash.exe" -c './evidence/surfing-2026-10-24/T3A/ROLLBACK.sh evidence/surfing-2026-10-24/T3A/rollback-copy'
+Input: separately marked copy; final hashes NEW_FILES.sha256.
+Literal output: ROLLBACK PASS: two service files absent as at baseline; live candidate retains changes.
+Exit0. Restored status: new module/test absent in copy, live worktree remains changed; original release and personal data unchanged.
+All four artifacts reopened. No live model/network call, no commit/push/release, no pending test/build. Next: trusted host source adapter + explicit capacity measurement, then IPC/UI and Electron tests. No completed Surfing product claim.

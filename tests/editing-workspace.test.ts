@@ -16,6 +16,14 @@ const signal=()=>new AbortController().signal;
 function committed(r:EditResult) { expect(r.status).toBe('committed'); if(r.status!=='committed')throw Error(JSON.stringify(r)); return r; }
 afterEach(()=>{vi.restoreAllMocks(); for(const w of workspaces.splice(0))w.close(); for(const f of fixtures.splice(0))f.cleanup();});
 describe('production Workspace schema5 and editing transactions',()=>{
+  it('projects only history metadata for dense strokes while preserving undo/redo and foreign-write applicability',async()=>{
+    const f=fixture(),a=await open(f.file),h=editingHost(a.edits,f.context),points=Array.from({length:512},(_,i)=>i%2?100:20+i*.1);
+    const operations=Array.from({length:64},()=>({type:'create_mark' as const,markType:'ink' as const,pageIndex:0,color:'#123456',note:'',geometry:{points:[...points],quads:[[10,120,100,120,10,80,100,80]]}}));
+    const result=committed(await runEditingCommand({context:f.context,requestId:'dense-history',command:{type:'apply_edit_batch',operations}},h,signal()));
+    const spy=vi.spyOn(a.workspace.db,'prepare');expect(a.edits.history(f.context,a.edits.actor)).toEqual({undoIds:[result.operationId],redoIds:[]});const historySql=spy.mock.calls.map(c=>c[0]).filter(s=>s.includes('FROM edit_operations'));expect(historySql).toHaveLength(2);expect(historySql.every(s=>s.includes("json_extract(payload,'$.operationId','$.currentVersions','$.redoEligible')")&&!s.startsWith('SELECT payload'))).toBe(true);spy.mockRestore();
+    committed(await runEditingCommand({context:f.context,requestId:'dense-undo',command:{type:'undo_edit',operationId:result.operationId}},h,signal()));expect(a.edits.history(f.context,a.edits.actor)).toEqual({undoIds:[],redoIds:[result.operationId]});
+    const other=await open(f.file),id=Object.keys(result.versions)[0];other.workspace.db.prepare('UPDATE edit_versions SET version=3 WHERE documentId=? AND id=?').run(f.doc.id,id);expect(a.edits.history(f.context,a.edits.actor)).toEqual({undoIds:[],redoIds:[]});
+  });
   it('backs up v4 with integrity and untouched old rows, atomically creates seven tables and stable user',async()=>{
     const f=fixture(); const {workspace:w,edits,backupPath}=await open(f.file);
     expect(version(w.db)).toBe(5); expect(backupPath).toMatch(/\.pre-v5\..+\.bak$/);
@@ -134,3 +142,38 @@ describe('production Workspace schema5 and editing transactions',()=>{
     const fresh=a.edits.view(f.context,a.edits.actor);expect(fresh.marks[0]).toMatchObject({version:2,note:'other connection'});expect(fresh.diagnostics).toEqual([{legacyId:'new-broken',reason:'INVALID_LEGACY_PAYLOAD'}]);expect(fresh.history.undoIds).toEqual([]);
   });
 });
+describe('targeted snapshot scope for dense documents',()=>{
+  const ink=(y:number)=>({type:'create_mark' as const,markType:'ink' as const,pageIndex:0,color:'#123456',note:'',geometry:{points:Array.from({length:512},(_,i)=>i%2?y:20+i*.1),quads:[[10,y+10,100,y+10,10,y-10,100,y-10]]}});
+  async function seeded(file:string){const a=await open(file),h=editingHost(a.edits,f0(a));const r=committed(await runEditingCommand({context:h.getContext()!,requestId:'seed',command:{type:'apply_edit_batch',operations:[ink(100),ink(200),ink(300)]}},h,signal()));return{a,h,ids:Object.keys(r.versions).sort()};}
+  let current:ReturnType<typeof editingFixture>;const f0=(_:unknown)=>current.context;
+  it('reads only requested marks and versions, including tombstones, from the same rows',async()=>{
+    current=fixture();const {a,h,ids}=await seeded(current.file);
+    const deleted=committed(await runEditingCommand({context:current.context,requestId:'delete',command:{type:'delete_marks',targets:[{id:ids[2],expectedVersion:1}]}},h,signal()));
+    expect(deleted.versions[ids[2]]).toBe(2);
+    const scoped=a.edits.readSnapshot(current.context,[ids[0],ids[2],'missing']);
+    expect(scoped.marks.map(m=>m.id)).toEqual([ids[0]]);expect(scoped.versions).toEqual({[ids[0]]:1,[ids[2]]:2});
+    expect(a.edits.readSnapshot(current.context).marks.map(m=>m.id).sort()).toEqual(ids.slice(0,2));
+  });
+  it('plans delete and undo from the target ids only, erase from the whole page',async()=>{
+    current=fixture();const {a,h,ids}=await seeded(current.file);const spy=vi.spyOn(a.edits,'readSnapshot');
+    const deleted=committed(await runEditingCommand({context:current.context,requestId:'delete',command:{type:'delete_marks',targets:[{id:ids[1],expectedVersion:1}]}},h,signal()));
+    expect(spy.mock.calls.map(c=>c[1])).toEqual([[ids[1]],[ids[1]]]);spy.mockClear();
+    committed(await runEditingCommand({context:current.context,requestId:'undo',command:{type:'undo_edit',operationId:deleted.operationId}},h,signal()));
+    expect(spy.mock.calls.map(c=>c[1])).toEqual([[ids[1]],[ids[1]]]);spy.mockClear();
+    committed(await runEditingCommand({context:current.context,requestId:'erase',command:{type:'erase_ink',pageIndex:0,from:[30,100],to:[30,100],radius:2}},h,signal()));
+    expect(spy.mock.calls.map(c=>c[1])).toEqual([undefined,undefined]);
+  });
+  it('commits byte-identical operations and receipts with a scoped or a full snapshot',async()=>{
+    current=fixture();const first=await seeded(current.file);first.a.workspace.close();workspaces.splice(workspaces.indexOf(first.a.workspace),1);
+    const copy=current.file.replace(/\.sqlite$/,'-full.sqlite');copyFileSync(current.file,copy);
+    const scoped=await open(current.file),full=await open(copy),fullHost={...editingHost(full.edits,current.context),readSnapshot:(c:typeof current.context)=>full.edits.readSnapshot(c)} as EditHost;
+    for(const [requestId,command] of [['delete',{type:'delete_marks',targets:[{id:first.ids[0],expectedVersion:1}]}],['update',{type:'set_marks_visibility',targets:[{id:first.ids[1],expectedVersion:1}],visible:false}]] as const){
+      const x=committed(await runEditingCommand({context:current.context,requestId,command},editingHost(scoped.edits,current.context),signal()));
+      const y=committed(await runEditingCommand({context:current.context,requestId,command},fullHost,signal()));expect(x).toEqual(y);
+      committed(await runEditingCommand({context:current.context,requestId:requestId+'-undo',command:{type:'undo_edit',operationId:x.operationId}},editingHost(scoped.edits,current.context),signal()));
+      committed(await runEditingCommand({context:current.context,requestId:requestId+'-undo',command:{type:'undo_edit',operationId:y.operationId}},fullHost,signal()));
+    }
+    for(const t of ['edit_marks','edit_versions','edit_operations','edit_receipts'])expect(scoped.workspace.db.prepare(`SELECT * FROM ${t} ORDER BY rowid`).all()).toEqual(full.workspace.db.prepare(`SELECT * FROM ${t} ORDER BY rowid`).all());
+  });
+});
+

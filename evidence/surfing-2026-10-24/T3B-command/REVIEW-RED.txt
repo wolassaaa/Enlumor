@@ -1,0 +1,33 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/surfing-command-host.test.ts (11 tests | 2 failed) 38ms
+   × new go_to_page intent preempts a pending old focus 22ms
+   × new show_evidence intent preempts a pending old focus 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-command-host.test.ts > new go_to_page intent preempts a pending old focus
+ FAIL  tests/surfing-command-host.test.ts > new show_evidence intent preempts a pending old focus
+AssertionError: expected { requestId: 'surf-command-1', …(2) } to match object { ok: false }
+(5 matching properties omitted from actual)
+
+- Expected
++ Received
+
+  {
+-   "ok": false,
++   "ok": true,
+  }
+
+ ❯ tests/surfing-command-host.test.ts:23:196
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 9 passed (11)
+   Start at  01:49:50
+   Duration  205ms (tests 46%, transform 32%, import 17%, worker 5%)
+

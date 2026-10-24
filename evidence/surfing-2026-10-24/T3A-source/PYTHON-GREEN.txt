@@ -1,0 +1,12 @@
+test_all_pages_text_and_geometry_are_bound_to_unchanged_original (test_surfing_source.SurfingSourceTests.test_all_pages_text_and_geometry_are_bound_to_unchanged_original) ... ok
+test_cli_exposes_only_requested_document_extraction (test_surfing_source.SurfingSourceTests.test_cli_exposes_only_requested_document_extraction) ... ok
+test_deterministic_ids_and_native_geometry (test_surfing_source.SurfingSourceTests.test_deterministic_ids_and_native_geometry) ... ok
+test_invalid_limits (test_surfing_source.SurfingSourceTests.test_invalid_limits) ... ok
+test_limits_reject_without_truncated_success (test_surfing_source.SurfingSourceTests.test_limits_reject_without_truncated_success) ... ok
+test_passage_count_limit (test_surfing_source.SurfingSourceTests.test_passage_count_limit) ... ok
+test_wrong_fingerprint_rejected (test_surfing_source.SurfingSourceTests.test_wrong_fingerprint_rejected) ... ok
+
+----------------------------------------------------------------------
+Ran 7 tests in 0.275s
+
+OK

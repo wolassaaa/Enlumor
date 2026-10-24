@@ -1,0 +1,37 @@
+
+Running 1 test using 1 worker
+
+(node:11788) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\surfing.spec.ts:13:1 › Surfing explicitly sends full text, offers evidence entry points and explains user-selected source (31.5s)
+
+
+  1) tests\e2e\surfing.spec.ts:13:1 › Surfing explicitly sends full text, offers evidence entry points and explains user-selected source 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '打开 Surfing', exact: true })
+
+
+      20 |  try{const page=await app.firstWindow();await page.evaluate(async endpoint=>{await window.enlumor.saveAiProfile({id:'surf-local',name:'Local mock only',protocol:'openai-chat',endpoint,model:'gpt-4o-mini',maxOutputTokens:1000,timeoutMs:10000,parameters:{}});},endpoint);
+      21 |  await app.evaluate(({dialog},file)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[file]});},source);await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();
+    > 22 |  await page.getByRole('button',{name:'打开 Surfing',exact:true}).click();expect(requests).toHaveLength(0);await page.getByRole('button',{name:'准备本地全文',exact:true}).click();await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已准备文字');expect(requests).toHaveLength(0);
+         |                                                                ^
+      23 |  await page.getByLabel('Surfing 模型上下文窗口（tokens）',{exact:true}).fill('128000');await expect(page.getByRole('button',{name:'生成探索切入点',exact:true})).toBeDisabled();await page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true}).check();await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();
+      24 |  await expect(page.getByRole('button',{name:'Explore the research question',exact:true})).toBeVisible();expect(requests).toHaveLength(1);expect(requests[0].passages.some((p:any)=>p.pageNumber===1)).toBe(true);expect(requests[0].passages.some((p:any)=>p.pageNumber===2)).toBe(true);await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('1');
+      25 |  await page.getByRole('button',{name:'Explore the research question',exact:true}).click();await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Local simulated explanation');await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('2');expect(requests).toHaveLength(2);
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\surfing.spec.ts:22:64
+
+    Error Context: test-results\surfing-Surfing-explicitly-a5f8c-plains-user-selected-source\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\surfing-Surfing-explicitly-a5f8c-plains-user-selected-source\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\surfing-Surfing-explicitly-a5f8c-plains-user-selected-source\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\surfing.spec.ts:13:1 › Surfing explicitly sends full text, offers evidence entry points and explains user-selected source 

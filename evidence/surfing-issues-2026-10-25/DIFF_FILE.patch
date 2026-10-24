@@ -1,0 +1,725 @@
+--- /dev/null
++++ b/docs/SURFING_ISSUES_2026-10-25.md
+@@ -0,0 +1,326 @@
++# Enlumor 问题总账 · 2026-10-25
++
++## 记录原则
++本账覆盖本聊天可回溯的用户原话、截图、确认期望，以及交接中已记录的工程问题。已分页读取到最早消息；不把其他聊天没有证据的情况补写成事实。
++U01–U08是同一次截图反馈与后续方向确认的拆分，不是8次独立故障。D是用户实际提出的决策问题；P是协作/交付审计；T是测试/审查发现；G是待验或当前能力边界。**工程修复＋mock通过不等于你已认可，未收到修复版确认就保留待验。**
++
++## 你最初遇到的情况（保留原话）
++> 遇到了这样的问题， 就是这个与我心中想象的还是差得太远了。
++
++截图中的提问是“给我讲讲这个abstract讲了什么”；回答却表示只有论文标题、没有摘要。原文在下面，解释/输入/回答占上面，正文还显示内部block ID。随后你确认了“整篇结构、随时插话、当前阅读位置和前文承接”的方向，并说“是的，去修理一下”。这里不把旧Cruise的失败说成模型从未被你试过，也不把新修复版的离线结果写成你已验收。
++
++[保留的反馈原图](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png) · [可追溯用户原话摘录](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-issues-2026-10-25/USER_HISTORY.json) · [当前交接](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/docs/SURFING_HANDOFF_2026-10-24.md) · [机器可读问题账](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/docs/SURFING_ISSUES_2026-10-25.json)
++
++## 一览
++|编号|类别|问题|当前状态|优先级|
++|---|---|---|---|---|
++|U01|用户反馈/期望|交付体验与用户心中Surfing差距很大|修复候选已实现；用户体验验收待确认|P0|
++|U02|用户反馈/期望|看着摘要问abstract，模型只拿到标题|工程修复及离线回归已过；修复版真实论文/模型待验|P0|
++|U03|用户反馈/期望|AI面板占主视图，原文被挤到下面|布局已修复及离线验证；用户可读性待确认|P0|
++|U04|用户反馈/期望|产品更像逐块配聊天框，而非整篇共读|首轮工程修复；带读的真实价值待验|P0|
++|U05|用户反馈/期望|Surfing与旧Cruise入口/模式容易混淆|文案与交接已改；真实辨识度待验|P1|
++|U06|用户反馈/期望|内部block ID直接暴露在回答正文|工程处理已加；真实模型输出待验|P1|
++|U07|用户反馈/期望|需要随时插话，且知道当前在看哪里与前面聊过什么|会话内链路离线已验；实际多轮质量待用户确认|P0|
++|U08|用户反馈/期望|应能按论文结构探索，而非普通泛聊|待真实论文和人工阅读价值验收|P0|
++|D01|用户提出的决策问题|11月4日前推进到什么程度，才能证明项目价值|目标已收敛；真实效果与演示材料待验|P0|
++|D02|用户提出的决策问题|个人投入有限，希望先做好基础Surfing再争取资金|阶段顺序明确；资金结果和后续服务决策未定|P1|
++|D03|用户提出的决策问题|试用模型与长期模型路线尚需实际验证|DeepSeek本地mock已验；修复版真实模型、Claude路径未验|P1|
++|P01|协作/交付问题|曾把流程跑通说得太接近产品做好|持续执行的交付约束|P0|
++|P02|协作/交付问题|多候选与旧交接入口造成交接风险|文档/入口已同步；仍需接手时核验|P1|
++|T01|测试/审查发现|来源替换的详细错误被降为泛化AI_FAILED|工程已修复/离线验证|P1|
++|T02|测试/审查发现|普通500ms自动保存曾错误暂停活动解释|工程已修复/离线验证|P1|
++|T03|测试/审查发现|原生关闭前存在迟到解释/保存竞态|工程已修复/离线验证|P1|
++|T04|测试/审查发现|切标签/关闭标签前同类取消竞态|工程已修复/离线验证|P1|
++|T05|测试/审查发现|旧密集编辑预览性能门禁未通过|未解决；历史失败保留|P1|
++|T06|测试/审查发现|原版Surfing未识别截图使用的DeepSeek模型预算|兼容链路离线已验；真实提供商待验|P1|
++|T07|测试/审查发现|切换到另一已同意服务被旧签名错误拦截|工程已修复/离线验证|P1|
++|T08|测试/审查发现|右侧面板出现后PDF未适宽导致横向溢出|工程已修复/离线验证|P1|
++|T09|测试/审查发现|保存状态文案曾掩盖模型变更后的恢复失败|工程已修复/离线验证|P1|
++|T10|测试/审查发现|Escape仅暂停旧host，未覆盖Surfing|已知未解决Minor|P2|
++|G01|待验收/现存边界|修复版真实模型讲解质量未验|待真实用户试读|P0|
++|G02|待验收/现存边界|两篇实际论文验收仍缺记录|待验收|P0|
++|G03|待验收/现存边界|当前问答不持久保存，仅路线进度持久化|明确现存限制；后续需求待确认|P1|
++|G04|待验收/现存边界|模型窗口仍需手动填，DeepSeek预算是保守估算|现存限制；实际易用性待用户确认|P2|
++|G05|待验收/现存边界|图表/扫描件/公式视觉及跨论文未覆盖|明确现存范围，不是新增用户故障|P2|
++|G06|待验收/现存边界|修复包未跑完整发布门禁/整机性能|尚未正式发布验收|P1|
++|T11|本轮只读核对发现|当前dist构建产物与保留的修复包不一致|新发现待查；不作为用户亲历故障|P1|
++
++## 逐项记录
++
++### U01 交付体验与用户心中Surfing差距很大
++- **类别／优先级**：用户反馈/期望／P0
++- **依据**：用户原话：遇到了这样的问题， 就是这个与我心中想象的还是差得太远了。；turn 01a16c88-61e5-7970-9cff-6b5a2b5f2a52
++- **实际表现／边界**：用户对旧候选的整体体验明确不满意；不是仅提一个报错。
++- **期望**：整篇理解、原文旁共读、随时插话和上下文承接。
++- **已处理**：随后用户说“是的，去修理一下”，授权按确认方向修复。
++- **状态**：修复候选已实现；用户体验验收待确认
++- **关闭条件**：用户用实际论文完成一次自然阅读，并明确确认体验方向符合预期。
++
++### U02 看着摘要问abstract，模型只拿到标题
++- **类别／优先级**：用户反馈/期望／P0
++- **依据**：[evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png)
++- **实际表现／边界**：截图提问“给我讲讲这个abstract讲了什么”；回答指出只收到Attention Is All You Need这一句标题，摘要未提供。诊断定位为旧Cruise当前块追问。
++- **期望**：按整篇和当前阅读位置找到摘要，基于实际摘要解释，不把模型没收到原文的责任交给用户。
++- **已处理**：修复新增主进程全文ask接口；不要求先生成路线；包内mock验证停在第1页仍携带第2页文字。
++- **状态**：工程修复及离线回归已过；修复版真实论文/模型待验
++- **关闭条件**：同篇论文停在标题重问摘要，核对请求覆盖和真实回答、原文证据。
++
++### U03 AI面板占主视图，原文被挤到下面
++- **类别／优先级**：用户反馈/期望／P0
++- **依据**：[evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png)
++- **实际表现／边界**：截图中解释、追问输入、状态和回答占上方大块空间，论文原文仅留在下方。
++- **期望**：原文是阅读主视图，解释在旁边，不需要频繁上下切换。
++- **已处理**：改右侧共读，打开时隐藏批注栏，原文适宽；包内检查左右不重叠且原文宽度适合视口。
++- **状态**：布局已修复及离线验证；用户可读性待确认
++- **关闭条件**：在实际论文上同时阅读原文与解释，检查滚动、字号、输入和窄窗口。
++
++### U04 产品更像逐块配聊天框，而非整篇共读
++- **类别／优先级**：用户反馈/期望／P0
++- **依据**：截图＋用户在turn 01a16d91-90fd-77d2-b3d6-bdd461db0040确认前一条方向
++- **实际表现／边界**：旧界面围绕当前1/34块，追问说明仅发当前原文；真实使用目标与块操作不一致。
++- **期望**：直接说“带我读懂这篇”，不先管理块或路线。
++- **已处理**：直接提问和带读入口独立于可选探索路线。
++- **状态**：首轮工程修复；带读的真实价值待验
++- **关闭条件**：无需先生成路线即可提问，回答说明论文问题、核心思路及有价值的下一阅读处。
++
++### U05 Surfing与旧Cruise入口/模式容易混淆
++- **类别／优先级**：用户反馈/期望／P1
++- **依据**：[evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png)
++- **实际表现／边界**：截图顶部有Surfing和Cruise，实际显示的是旧Cruise追问。截图不证明用户具体点错了哪个按钮，不把入口问题归咎于用户。
++- **期望**：用户容易知道当前处于整篇共读还是旧逐块阅读。
++- **已处理**：旧入口显示“逐块阅读（旧）”，当前交接/根启动器统一指向修复包。
++- **状态**：文案与交接已改；真实辨识度待验
++- **关闭条件**：用户能进入Surfing并正确描述其上下文范围；旧窗口不再被当成新修复版。
++
++### U06 内部block ID直接暴露在回答正文
++- **类别／优先级**：用户反馈/期望／P1
++- **依据**：[evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png)
++- **实际表现／边界**：回答包含长串[block:…]标记，干扰阅读且没有可读的证据呈现。
++- **期望**：使用可读的页码/原文引用，点击即可核对。
++- **已处理**：修复版独立来源按钮、验证已知passage ID，并剔除特定block/passage内联标记。
++- **状态**：工程处理已加；真实模型输出待验
++- **关闭条件**：真实回答不出现内部ID噪声；按钮对应相关原句，不以ID合法代替证据相关性。
++
++### U07 需要随时插话，且知道当前在看哪里与前面聊过什么
++- **类别／优先级**：用户反馈/期望／P0
++- **依据**：用户确认turn 01a16d91-90fd-77d2-b3d6-bdd461db0040；此项是确认的交互期望，不是新增一次用户故障
++- **实际表现／边界**：旧当前块问答不符合已确认的整篇/阅读位置/前文承接目标；没有证据证明用户报告过重启后丢聊天。
++- **期望**：连续追问能承接全文、当前页与前文，打断后不出现迟到内容。
++- **已处理**：主进程维护同文档/模型最近成功对话（最多6轮/18000JSON字符），加入当前页；支持打断和暂停。
++- **状态**：会话内链路离线已验；实际多轮质量待用户确认
++- **关闭条件**：先问摘要→问“它与RNN有什么不同”→变更所在页再问“这里”；检查承接与取消。
++
++### U08 应能按论文结构探索，而非普通泛聊
++- **类别／优先级**：用户反馈/期望／P0
++- **依据**：用户确认turn 01a16d91-90fd-77d2-b3d6-bdd461db0040
++- **实际表现／边界**：仅把整篇文本塞进聊天仍未必构成用户希望的理解与带读。
++- **期望**：结合问题、论证、章节与相关原文，给出有意义的阅读切入点。
++- **已处理**：已有带读提示、可选探索路线及原文定位；没有以mock结论宣称语义合格。
++- **状态**：待真实论文和人工阅读价值验收
++- **关闭条件**：用户能说明每个切入点为什么值得读，解释与论文结构相符。
++
++### D01 11月4日前推进到什么程度，才能证明项目价值
++- **类别／优先级**：用户提出的决策问题／P0
++- **依据**：用户：11.4号那个要讲；要推进到多少才能证明出自己；先review现状再列计划
++- **实际表现／边界**：演示目标、剩余工作与资金申请证明材料需要明确。11月4日是用户给的讲述日期，本台账没有把它核定为fund官方截止日。
++- **期望**：可重复、有价值、可展示的基础Surfing闭环及真实试读证据。
++- **已处理**：已做阶段review、夜间计划与交接；保留真实验收空项。
++- **状态**：目标已收敛；真实效果与演示材料待验
++- **关闭条件**：两篇实际论文有明确成功/失败记录，演示不依赖未完成能力。
++
++### D02 个人投入有限，希望先做好基础Surfing再争取资金
++- **类别／优先级**：用户提出的决策问题／P1
++- **依据**：用户：现在这个我自己个人投入，还是太少了；如果有学校的资金注入…保留byok…saas服务
++- **实际表现／边界**：预算和速度受个人投入影响，担心基础能力没做好就扩展产品。
++- **期望**：先证明基础价值，再评估赞助、BYOK保留与SaaS路径。
++- **已处理**：本轮暂不扩SaaS/计费，优先单篇基础阅读。
++- **状态**：阶段顺序明确；资金结果和后续服务决策未定
++- **关闭条件**：先有真实用户认可的阅读闭环，再另立资金与服务计划。
++
++### D03 试用模型与长期模型路线尚需实际验证
++- **类别／优先级**：用户提出的决策问题／P1
++- **依据**：用户：后面会增加一个claude pro 5x套餐来试试；长远来看…用gpt；截图来源DeepSeek
++- **实际表现／边界**：模型体验与投入路线需通过实际试读确认；截图证明旧Cruise有DeepSeek回答，不等于修复版已真实验收。
++- **期望**：保留BYOK选择，分开记录协议兼容、预算与实际语义效果。
++- **已处理**：修复版支持识别的OpenAI Chat模型和DeepSeek Chat/Reasoner兼容路径。
++- **状态**：DeepSeek本地mock已验；修复版真实模型、Claude路径未验
++- **关闭条件**：按实际服务记录模型、窗口、质量、耗时与费用；不把订阅意向写成API已接通。
++
++### P01 曾把流程跑通说得太接近产品做好
++- **类别／优先级**：协作/交付问题／P0
++- **依据**：本聊天助手承认“之前我把流程跑通说得太接近产品做好了，判断偏乐观”
++- **实际表现／边界**：离线测试数字给了过强的产品成熟印象，随后用户明确否定体验。
++- **期望**：工程通过、真实语义通过、用户体验认可三者分开。
++- **已处理**：交接/验收表明确用户接受度待确认；此台账不把修复条目标成已获用户验收。
++- **状态**：持续执行的交付约束
++- **关闭条件**：以后每次报告分别列工程证据、真实模型结果和用户确认。
++
++### P02 多候选与旧交接入口造成交接风险
++- **类别／优先级**：协作/交付问题／P1
++- **依据**：[docs/SURFING_HANDOFF_2026-10-24.md](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/docs/SURFING_HANDOFF_2026-10-24.md)
++- **实际表现／边界**：历史T5-package、T5b和后续Repair并存；早期文档曾指向旧T5b。此项是交付审计发现，不是用户明确报告打开了错误exe。
++- **期望**：入口唯一、版本与测试数据目录明确，接手不重做旧任务。
++- **已处理**：根目录Surfing-测试入口.cmd及主交接已统一Repair，保留历史包对照。
++- **状态**：文档/入口已同步；仍需接手时核验
++- **关闭条件**：从根启动器实际运行Repair，源码/构建/候选hash一致。
++
++### T01 来源替换的详细错误被降为泛化AI_FAILED
++- **类别／优先级**：测试/审查发现／P1
++- **依据**：[evidence/surfing-2026-10-24/T5b-negatives/VERIFICATION.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T5b-negatives/VERIFICATION.txt)
++- **实际表现／边界**：SOURCE_CHANGED:详细说明未匹配完整白名单，误降级AI_FAILED；不是外发泄漏。
++- **期望**：返回明确公开SOURCE_CHANGED，私有路径/后缀不显示。
++- **已处理**：精确提取冒号前公开prefix；6单位先RED再GREEN，包内来源替换零请求通过。
++- **状态**：工程已修复/离线验证
++- **关闭条件**：替换来源后拒绝请求，显示SOURCE_CHANGED，不泄露私有说明。
++
++### T02 普通500ms自动保存曾错误暂停活动解释
++- **类别／优先级**：测试/审查发现／P1
++- **依据**：[evidence/surfing-2026-10-24/T4-combined/VERIFICATION.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T4-combined/VERIFICATION.txt)
++- **实际表现／边界**：在普通reading flush中暂停导致正常自动保存打断解释。
++- **期望**：普通自动保存不干扰解释，关闭门禁才同步取消。
++- **已处理**：取消普通flush中的pause，专用关闭处理保留同步取消。
++- **状态**：工程已修复/离线验证
++- **关闭条件**：解释持续超过自动保存周期仍进行；实际关闭前则暂停。
++
++### T03 原生关闭前存在迟到解释/保存竞态
++- **类别／优先级**：测试/审查发现／P1
++- **依据**：[evidence/surfing-2026-10-24/T4-combined/VERIFICATION.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T4-combined/VERIFICATION.txt)
++- **实际表现／边界**：原生reading:flush处理未先同步取消，迟到结果可越过关闭保存门禁。
++- **期望**：先取消，再flush，迟到结果不产生新进度。
++- **已处理**：专用关闭handler先surfingCancel，真实Electron RED→GREEN。
++- **状态**：工程已修复/离线验证
++- **关闭条件**：延迟解释与关闭并发时结果被抑制，保存回执可信。
++
++### T04 切标签/关闭标签前同类取消竞态
++- **类别／优先级**：测试/审查发现／P1
++- **依据**：[evidence/surfing-2026-10-24/T5-lifecycle/VERIFICATION.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T5-lifecycle/VERIFICATION.txt)
++- **实际表现／边界**：load/closeTab没有在await flush前同步停止Surfing。
++- **期望**：切文档前即取消，旧文档内容不进入新文档。
++- **已处理**：load guard及有效closeTab入口先同步取消；两项Electron RED→GREEN。
++- **状态**：工程已修复/离线验证
++- **关闭条件**：延迟save和迟到解释并发时，旧结果不落入新标签。
++
++### T05 旧密集编辑预览性能门禁未通过
++- **类别／优先级**：测试/审查发现／P1
++- **依据**：[evidence/surfing-2026-10-24/T5b-negatives/FULL-PACKAGED-E2E.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T5b-negatives/FULL-PACKAGED-E2E.txt)
++- **实际表现／边界**：历史完整165项164通过/1失败：dense1000 eraseUndo1273ms>1000ms，mutation worst62ms>50ms。不是用户截图报告的Surfing故障，也不是修复包最新测量。
++- **期望**：保持原门槛，独立处理编辑性能。
++- **已处理**：本轮未改该旧复杂编辑实现或门槛。
++- **状态**：未解决；历史失败保留
++- **关闭条件**：在同环境实际重测该旧门禁并达标，不能用Surfing专项通过替代。
++
++### T06 原版Surfing未识别截图使用的DeepSeek模型预算
++- **类别／优先级**：测试/审查发现／P1
++- **依据**：[evidence/surfing-repair-2026-10-24/VERIFICATION.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-repair-2026-10-24/VERIFICATION.txt)
++- **实际表现／边界**：原版只认可已列出的OpenAI模型；DeepSeek旧Cruise可调用，不代表当时Surfing支持。
++- **期望**：显式支持目标兼容路径并正确提示预算来源。
++- **已处理**：DeepSeek Chat/Reasoner按UTF8字节+4096保守预算；新增单位RED→GREEN和包内mock。
++- **状态**：兼容链路离线已验；真实提供商待验
++- **关闭条件**：实际DeepSeek配置可全文提问；超容量明确失败，预算不声称精确token。
++
++### T07 切换到另一已同意服务被旧签名错误拦截
++- **类别／优先级**：测试/审查发现／P1
++- **依据**：[evidence/surfing-repair-2026-10-24/VERIFICATION.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-repair-2026-10-24/VERIFICATION.txt)
++- **实际表现／边界**：修复过程中运行时把新profile与旧activeSource签名比较，错误返回PROFILE_CHANGED。
++- **期望**：不同profile开启独立对话；同profile配置被编辑仍阻止旧上下文复用。
++- **已处理**：不同profile先reset旧对话/进度；同profile变化继续拒绝；专项RED→GREEN。
++- **状态**：工程已修复/离线验证
++- **关闭条件**：新服务可开始，旧历史不串；修改同服务配置须重新准备。
++
++### T08 右侧面板出现后PDF未适宽导致横向溢出
++- **类别／优先级**：测试/审查发现／P1
++- **依据**：[evidence/surfing-repair-2026-10-24/VERIFICATION.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-repair-2026-10-24/VERIFICATION.txt)
++- **实际表现／边界**：新增UI几何断言实测page792.000061px>viewer770.732162px。
++- **期望**：原文缩放适配剩余阅读区域。
++- **已处理**：Surfing面板挂载后请求page-width，包内视口宽度断言通过。
++- **状态**：工程已修复/离线验证
++- **关闭条件**：不同窗口下原文完整可读，不被共读面板遮挡。
++
++### T09 保存状态文案曾掩盖模型变更后的恢复失败
++- **类别／优先级**：测试/审查发现／P1
++- **依据**：[evidence/surfing-repair-2026-10-24/VERIFICATION.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-repair-2026-10-24/VERIFICATION.txt)
++- **实际表现／边界**：中间FINAL-E2E14通过/1失败：“对话仅本次打开”遮住应显示的“未恢复”。
++- **期望**：模型绑定错误与保存/恢复失败应清楚可见。
++- **已处理**：仅原始未保存状态显示会话说明，其余保存错误状态保留；实际修复包15项通过。
++- **状态**：工程已修复/离线验证
++- **关闭条件**：损坏/变更模型恢复失败可见，旧记录仍保留。
++
++### T10 Escape仅暂停旧host，未覆盖Surfing
++- **类别／优先级**：测试/审查发现／P2
++- **依据**：[docs/SURFING_OVERNIGHT_2026-10-24.md](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/docs/SURFING_OVERNIGHT_2026-10-24.md)
++- **实际表现／边界**：夜间审查记录为Minor；未据此扩展快捷键。
++- **期望**：暂停交互范围一致且清晰。
++- **已处理**：现有Surfing暂停按钮可用，Escape未在本轮修复。
++- **状态**：已知未解决Minor
++- **关闭条件**：补明确快捷键需求和回归后验证Escape能取消Surfing且无迟到内容。
++
++### G01 修复版真实模型讲解质量未验
++- **类别／优先级**：待验收/现存边界／P0
++- **依据**：[docs/acceptance/surfing-overnight-2026-10-24.md](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/docs/acceptance/surfing-overnight-2026-10-24.md)
++- **实际表现／边界**：619单测及修复包15项mock证明上下文/控制链路，不证明真实讲解质量。用户旧Cruise截图是实际失败证据，应保留而非说用户从未试过模型。
++- **期望**：修复版回答贴合论文、有用、无臆造、证据相关。
++- **已处理**：留人工验收记录，不自行付费调用或写通过。
++- **状态**：待真实用户试读
++- **关闭条件**：记录问题、原文、实际回答、期望和用户判断。
++
++### G02 两篇实际论文验收仍缺记录
++- **类别／优先级**：待验收/现存边界／P0
++- **依据**：[docs/acceptance/surfing-overnight-2026-10-24.md](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/docs/acceptance/surfing-overnight-2026-10-24.md)
++- **实际表现／边界**：现有合成2页/42页文字PDF不等于两篇实际论文；截图中的Attention论文旧失败不算修复版通过。
++- **期望**：真实排版、论证、术语及引用在两篇论文中有效。
++- **已处理**：保留论文A/B表格待填。
++- **状态**：待验收
++- **关闭条件**：两篇分别记提取顺序、摘要/章节/引用、继续和重开行为。
++
++### G03 当前问答不持久保存，仅路线进度持久化
++- **类别／优先级**：待验收/现存边界／P1
++- **依据**：[evidence/surfing-repair-2026-10-24/VERIFICATION.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-repair-2026-10-24/VERIFICATION.txt)
++- **实际表现／边界**：最近对话限本次打开、6轮/18000JSON字符；不等于无限或跨重启记忆。不是用户已报告聊天丢失。
++- **期望**：如用户需要跨会话承接，先确认产品行为和保存边界。
++- **已处理**：界面已说明会话内问答；持久化未实现，不假报已保存。
++- **状态**：明确现存限制；后续需求待确认
++- **关闭条件**：重开后状态与文案一致；若另行实现聊天保存，需独立验收。
++
++### G04 模型窗口仍需手动填，DeepSeek预算是保守估算
++- **类别／优先级**：待验收/现存边界／P2
++- **依据**：[evidence/surfing-repair-2026-10-24/VERIFICATION.txt](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-repair-2026-10-24/VERIFICATION.txt)
++- **实际表现／边界**：未知模型/协议不猜容量；UTF8预算可能较保守，首次配置与发送确认仍有操作成本。不是用户明确投诉过该输入框。
++- **期望**：配置可理解、超限明确，使用体验与实际提供商能力相符。
++- **已处理**：已写模型范围与估算说明，保留显式容量。
++- **状态**：现存限制；实际易用性待用户确认
++- **关闭条件**：正确配置能请求，容量不足清楚拒绝，不静默截断论文。
++
++### G05 图表/扫描件/公式视觉及跨论文未覆盖
++- **类别／优先级**：待验收/现存边界／P2
++- **依据**：[docs/SURFING_OVERNIGHT_2026-10-24.md](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/docs/SURFING_OVERNIGHT_2026-10-24.md)
++- **实际表现／边界**：当前可信全文主要是可提取文字；几何重叠测试不等于任意版式精准覆盖，合成ASCII不代表实际论文。
++- **期望**：只声明实际理解范围，不把未见图像当成已理解。
++- **已处理**：边界已列入交接；未做OCR/多模态/跨论文/SaaS。
++- **状态**：明确现存范围，不是新增用户故障
++- **关闭条件**：实际材料发现提取/定位失败时单列实例；图像能力另行确认。
++
++### G06 修复包未跑完整发布门禁/整机性能
++- **类别／优先级**：待验收/现存边界／P1
++- **依据**：[docs/SURFING_HANDOFF_2026-10-24.md](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/docs/SURFING_HANDOFF_2026-10-24.md)
++- **实际表现／边界**：当前最终实际包仅15项Surfing专项；旧165/中间17等数字来自不同候选和时点。
++- **期望**：发布结论有对应当前包的完整证据。
++- **已处理**：候选hash与build已对照，历史结果单独标记。
++- **状态**：尚未正式发布验收
++- **关闭条件**：需要发布时对最终包重跑明确全套及性能，保持失败门槛。
++
++### T11 当前dist构建产物与保留的修复包不一致
++- **类别／优先级**：本轮只读核对发现／P1
++- **依据**：[evidence/surfing-issues-2026-10-25/BUILD-DRIFT.json](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-issues-2026-10-25/BUILD-DRIFT.json)
++- **实际表现／边界**：2026-10-25运行旧修复CHECK.mjs返回PACKAGED_BUNDLE_MISMATCH index.cjs、退出1。14个修复来源/测试hash仍匹配；修复包264文件hash保持。当前dist/main/index.cjs与包内index.cjs不同；没有据此推断修改者或原因，也未证明当前dist是坏包。
++- **期望**：用于交接/重新打包的构建产物与其对应源码和候选有明确一致性证据。
++- **已处理**：保留失败原样日志和两个SHA256，只读记录；本轮没有重建dist、覆盖候选或改生产代码。
++- **状态**：新发现待查；不作为用户亲历故障
++- **关闭条件**：接手者先核对当前dist来源与构建输入；对明确目标重建/比对并留证后再宣布包/构建一致。
++
++## 后续怎么记
++每次新反馈追加：编号、版本/入口、论文与页码、操作序列、你的原话、期望、实际回答/截图、复现、修复证据、你的确认。重现旧问题就在原编号下加记录，失败历史必须保留，不以改文案代替解决。
++
++## 接手提示
++```text
++先读问题总账和当前交接。U/P0是体验主线，优先收集真实论文上的修复版反馈，不按测试数字自行关单。T类测试缺陷不要改写成用户亲历，G类能力边界不要改写成既成故障。所有修复同时记录原表现、工程证据和用户确认；没有后者就保留待验。不要重做已有实现、自动付费调用或恢复夜间自动化。
++```
+--- /dev/null
++++ b/docs/SURFING_ISSUES_2026-10-25.json
+@@ -0,0 +1,369 @@
++{
++  "recordedDate": "2026-10-25",
++  "timezone": "Asia/Seoul",
++  "sourceThread": "01a16949-eadc-7591-b182-77e6a6d59d01",
++  "basis": "本聊天已分页读到最早消息、截图、现有进度/交接/原样验证；其他聊天未凭空补全。",
++  "statusRule": "工程修复和离线通过不等于用户验收；用户实际问题、确认期望、团队测试和待验边界分开。",
++  "issues": [
++    {
++      "id": "U01",
++      "category": "用户反馈/期望",
++      "title": "交付体验与用户心中Surfing差距很大",
++      "source": "用户原话：遇到了这样的问题， 就是这个与我心中想象的还是差得太远了。；turn 01a16c88-61e5-7970-9cff-6b5a2b5f2a52",
++      "observed": "用户对旧候选的整体体验明确不满意；不是仅提一个报错。",
++      "expected": "整篇理解、原文旁共读、随时插话和上下文承接。",
++      "action": "随后用户说“是的，去修理一下”，授权按确认方向修复。",
++      "status": "修复候选已实现；用户体验验收待确认",
++      "acceptance": "用户用实际论文完成一次自然阅读，并明确确认体验方向符合预期。",
++      "priority": "P0"
++    },
++    {
++      "id": "U02",
++      "category": "用户反馈/期望",
++      "title": "看着摘要问abstract，模型只拿到标题",
++      "source": "evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png",
++      "observed": "截图提问“给我讲讲这个abstract讲了什么”；回答指出只收到Attention Is All You Need这一句标题，摘要未提供。诊断定位为旧Cruise当前块追问。",
++      "expected": "按整篇和当前阅读位置找到摘要，基于实际摘要解释，不把模型没收到原文的责任交给用户。",
++      "action": "修复新增主进程全文ask接口；不要求先生成路线；包内mock验证停在第1页仍携带第2页文字。",
++      "status": "工程修复及离线回归已过；修复版真实论文/模型待验",
++      "acceptance": "同篇论文停在标题重问摘要，核对请求覆盖和真实回答、原文证据。",
++      "priority": "P0"
++    },
++    {
++      "id": "U03",
++      "category": "用户反馈/期望",
++      "title": "AI面板占主视图，原文被挤到下面",
++      "source": "evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png",
++      "observed": "截图中解释、追问输入、状态和回答占上方大块空间，论文原文仅留在下方。",
++      "expected": "原文是阅读主视图，解释在旁边，不需要频繁上下切换。",
++      "action": "改右侧共读，打开时隐藏批注栏，原文适宽；包内检查左右不重叠且原文宽度适合视口。",
++      "status": "布局已修复及离线验证；用户可读性待确认",
++      "acceptance": "在实际论文上同时阅读原文与解释，检查滚动、字号、输入和窄窗口。",
++      "priority": "P0"
++    },
++    {
++      "id": "U04",
++      "category": "用户反馈/期望",
++      "title": "产品更像逐块配聊天框，而非整篇共读",
++      "source": "截图＋用户在turn 01a16d91-90fd-77d2-b3d6-bdd461db0040确认前一条方向",
++      "observed": "旧界面围绕当前1/34块，追问说明仅发当前原文；真实使用目标与块操作不一致。",
++      "expected": "直接说“带我读懂这篇”，不先管理块或路线。",
++      "action": "直接提问和带读入口独立于可选探索路线。",
++      "status": "首轮工程修复；带读的真实价值待验",
++      "acceptance": "无需先生成路线即可提问，回答说明论文问题、核心思路及有价值的下一阅读处。",
++      "priority": "P0"
++    },
++    {
++      "id": "U05",
++      "category": "用户反馈/期望",
++      "title": "Surfing与旧Cruise入口/模式容易混淆",
++      "source": "evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png",
++      "observed": "截图顶部有Surfing和Cruise，实际显示的是旧Cruise追问。截图不证明用户具体点错了哪个按钮，不把入口问题归咎于用户。",
++      "expected": "用户容易知道当前处于整篇共读还是旧逐块阅读。",
++      "action": "旧入口显示“逐块阅读（旧）”，当前交接/根启动器统一指向修复包。",
++      "status": "文案与交接已改；真实辨识度待验",
++      "acceptance": "用户能进入Surfing并正确描述其上下文范围；旧窗口不再被当成新修复版。",
++      "priority": "P1"
++    },
++    {
++      "id": "U06",
++      "category": "用户反馈/期望",
++      "title": "内部block ID直接暴露在回答正文",
++      "source": "evidence/surfing-handoff-2026-10-24/USER_FEEDBACK.png",
++      "observed": "回答包含长串[block:…]标记，干扰阅读且没有可读的证据呈现。",
++      "expected": "使用可读的页码/原文引用，点击即可核对。",
++      "action": "修复版独立来源按钮、验证已知passage ID，并剔除特定block/passage内联标记。",
++      "status": "工程处理已加；真实模型输出待验",
++      "acceptance": "真实回答不出现内部ID噪声；按钮对应相关原句，不以ID合法代替证据相关性。",
++      "priority": "P1"
++    },
++    {
++      "id": "U07",
++      "category": "用户反馈/期望",
++      "title": "需要随时插话，且知道当前在看哪里与前面聊过什么",
++      "source": "用户确认turn 01a16d91-90fd-77d2-b3d6-bdd461db0040；此项是确认的交互期望，不是新增一次用户故障",
++      "observed": "旧当前块问答不符合已确认的整篇/阅读位置/前文承接目标；没有证据证明用户报告过重启后丢聊天。",
++      "expected": "连续追问能承接全文、当前页与前文，打断后不出现迟到内容。",
++      "action": "主进程维护同文档/模型最近成功对话（最多6轮/18000JSON字符），加入当前页；支持打断和暂停。",
++      "status": "会话内链路离线已验；实际多轮质量待用户确认",
++      "acceptance": "先问摘要→问“它与RNN有什么不同”→变更所在页再问“这里”；检查承接与取消。",
++      "priority": "P0"
++    },
++    {
++      "id": "U08",
++      "category": "用户反馈/期望",
++      "title": "应能按论文结构探索，而非普通泛聊",
++      "source": "用户确认turn 01a16d91-90fd-77d2-b3d6-bdd461db0040",
++      "observed": "仅把整篇文本塞进聊天仍未必构成用户希望的理解与带读。",
++      "expected": "结合问题、论证、章节与相关原文，给出有意义的阅读切入点。",
++      "action": "已有带读提示、可选探索路线及原文定位；没有以mock结论宣称语义合格。",
++      "status": "待真实论文和人工阅读价值验收",
++      "acceptance": "用户能说明每个切入点为什么值得读，解释与论文结构相符。",
++      "priority": "P0"
++    },
++    {
++      "id": "D01",
++      "category": "用户提出的决策问题",
++      "title": "11月4日前推进到什么程度，才能证明项目价值",
++      "source": "用户：11.4号那个要讲；要推进到多少才能证明出自己；先review现状再列计划",
++      "observed": "演示目标、剩余工作与资金申请证明材料需要明确。11月4日是用户给的讲述日期，本台账没有把它核定为fund官方截止日。",
++      "expected": "可重复、有价值、可展示的基础Surfing闭环及真实试读证据。",
++      "action": "已做阶段review、夜间计划与交接；保留真实验收空项。",
++      "status": "目标已收敛；真实效果与演示材料待验",
++      "acceptance": "两篇实际论文有明确成功/失败记录，演示不依赖未完成能力。",
++      "priority": "P0"
++    },
++    {
++      "id": "D02",
++      "category": "用户提出的决策问题",
++      "title": "个人投入有限，希望先做好基础Surfing再争取资金",
++      "source": "用户：现在这个我自己个人投入，还是太少了；如果有学校的资金注入…保留byok…saas服务",
++      "observed": "预算和速度受个人投入影响，担心基础能力没做好就扩展产品。",
++      "expected": "先证明基础价值，再评估赞助、BYOK保留与SaaS路径。",
++      "action": "本轮暂不扩SaaS/计费，优先单篇基础阅读。",
++      "status": "阶段顺序明确；资金结果和后续服务决策未定",
++      "acceptance": "先有真实用户认可的阅读闭环，再另立资金与服务计划。",
++      "priority": "P1"
++    },
++    {
++      "id": "D03",
++      "category": "用户提出的决策问题",
++      "title": "试用模型与长期模型路线尚需实际验证",
++      "source": "用户：后面会增加一个claude pro 5x套餐来试试；长远来看…用gpt；截图来源DeepSeek",
++      "observed": "模型体验与投入路线需通过实际试读确认；截图证明旧Cruise有DeepSeek回答，不等于修复版已真实验收。",
++      "expected": "保留BYOK选择，分开记录协议兼容、预算与实际语义效果。",
++      "action": "修复版支持识别的OpenAI Chat模型和DeepSeek Chat/Reasoner兼容路径。",
++      "status": "DeepSeek本地mock已验；修复版真实模型、Claude路径未验",
++      "acceptance": "按实际服务记录模型、窗口、质量、耗时与费用；不把订阅意向写成API已接通。",
++      "priority": "P1"
++    },
++    {
++      "id": "P01",
++      "category": "协作/交付问题",
++      "title": "曾把流程跑通说得太接近产品做好",
++      "source": "本聊天助手承认“之前我把流程跑通说得太接近产品做好了，判断偏乐观”",
++      "observed": "离线测试数字给了过强的产品成熟印象，随后用户明确否定体验。",
++      "expected": "工程通过、真实语义通过、用户体验认可三者分开。",
++      "action": "交接/验收表明确用户接受度待确认；此台账不把修复条目标成已获用户验收。",
++      "status": "持续执行的交付约束",
++      "acceptance": "以后每次报告分别列工程证据、真实模型结果和用户确认。",
++      "priority": "P0"
++    },
++    {
++      "id": "P02",
++      "category": "协作/交付问题",
++      "title": "多候选与旧交接入口造成交接风险",
++      "source": "docs/SURFING_HANDOFF_2026-10-24.md",
++      "observed": "历史T5-package、T5b和后续Repair并存；早期文档曾指向旧T5b。此项是交付审计发现，不是用户明确报告打开了错误exe。",
++      "expected": "入口唯一、版本与测试数据目录明确，接手不重做旧任务。",
++      "action": "根目录Surfing-测试入口.cmd及主交接已统一Repair，保留历史包对照。",
++      "status": "文档/入口已同步；仍需接手时核验",
++      "acceptance": "从根启动器实际运行Repair，源码/构建/候选hash一致。",
++      "priority": "P1"
++    },
++    {
++      "id": "T01",
++      "category": "测试/审查发现",
++      "title": "来源替换的详细错误被降为泛化AI_FAILED",
++      "source": "evidence/surfing-2026-10-24/T5b-negatives/VERIFICATION.txt",
++      "observed": "SOURCE_CHANGED:详细说明未匹配完整白名单，误降级AI_FAILED；不是外发泄漏。",
++      "expected": "返回明确公开SOURCE_CHANGED，私有路径/后缀不显示。",
++      "action": "精确提取冒号前公开prefix；6单位先RED再GREEN，包内来源替换零请求通过。",
++      "status": "工程已修复/离线验证",
++      "acceptance": "替换来源后拒绝请求，显示SOURCE_CHANGED，不泄露私有说明。",
++      "priority": "P1"
++    },
++    {
++      "id": "T02",
++      "category": "测试/审查发现",
++      "title": "普通500ms自动保存曾错误暂停活动解释",
++      "source": "evidence/surfing-2026-10-24/T4-combined/VERIFICATION.txt",
++      "observed": "在普通reading flush中暂停导致正常自动保存打断解释。",
++      "expected": "普通自动保存不干扰解释，关闭门禁才同步取消。",
++      "action": "取消普通flush中的pause，专用关闭处理保留同步取消。",
++      "status": "工程已修复/离线验证",
++      "acceptance": "解释持续超过自动保存周期仍进行；实际关闭前则暂停。",
++      "priority": "P1"
++    },
++    {
++      "id": "T03",
++      "category": "测试/审查发现",
++      "title": "原生关闭前存在迟到解释/保存竞态",
++      "source": "evidence/surfing-2026-10-24/T4-combined/VERIFICATION.txt",
++      "observed": "原生reading:flush处理未先同步取消，迟到结果可越过关闭保存门禁。",
++      "expected": "先取消，再flush，迟到结果不产生新进度。",
++      "action": "专用关闭handler先surfingCancel，真实Electron RED→GREEN。",
++      "status": "工程已修复/离线验证",
++      "acceptance": "延迟解释与关闭并发时结果被抑制，保存回执可信。",
++      "priority": "P1"
++    },
++    {
++      "id": "T04",
++      "category": "测试/审查发现",
++      "title": "切标签/关闭标签前同类取消竞态",
++      "source": "evidence/surfing-2026-10-24/T5-lifecycle/VERIFICATION.txt",
++      "observed": "load/closeTab没有在await flush前同步停止Surfing。",
++      "expected": "切文档前即取消，旧文档内容不进入新文档。",
++      "action": "load guard及有效closeTab入口先同步取消；两项Electron RED→GREEN。",
++      "status": "工程已修复/离线验证",
++      "acceptance": "延迟save和迟到解释并发时，旧结果不落入新标签。",
++      "priority": "P1"
++    },
++    {
++      "id": "T05",
++      "category": "测试/审查发现",
++      "title": "旧密集编辑预览性能门禁未通过",
++      "source": "evidence/surfing-2026-10-24/T5b-negatives/FULL-PACKAGED-E2E.txt",
++      "observed": "历史完整165项164通过/1失败：dense1000 eraseUndo1273ms>1000ms，mutation worst62ms>50ms。不是用户截图报告的Surfing故障，也不是修复包最新测量。",
++      "expected": "保持原门槛，独立处理编辑性能。",
++      "action": "本轮未改该旧复杂编辑实现或门槛。",
++      "status": "未解决；历史失败保留",
++      "acceptance": "在同环境实际重测该旧门禁并达标，不能用Surfing专项通过替代。",
++      "priority": "P1"
++    },
++    {
++      "id": "T06",
++      "category": "测试/审查发现",
++      "title": "原版Surfing未识别截图使用的DeepSeek模型预算",
++      "source": "evidence/surfing-repair-2026-10-24/VERIFICATION.txt",
++      "observed": "原版只认可已列出的OpenAI模型；DeepSeek旧Cruise可调用，不代表当时Surfing支持。",
++      "expected": "显式支持目标兼容路径并正确提示预算来源。",
++      "action": "DeepSeek Chat/Reasoner按UTF8字节+4096保守预算；新增单位RED→GREEN和包内mock。",
++      "status": "兼容链路离线已验；真实提供商待验",
++      "acceptance": "实际DeepSeek配置可全文提问；超容量明确失败，预算不声称精确token。",
++      "priority": "P1"
++    },
++    {
++      "id": "T07",
++      "category": "测试/审查发现",
++      "title": "切换到另一已同意服务被旧签名错误拦截",
++      "source": "evidence/surfing-repair-2026-10-24/VERIFICATION.txt",
++      "observed": "修复过程中运行时把新profile与旧activeSource签名比较，错误返回PROFILE_CHANGED。",
++      "expected": "不同profile开启独立对话；同profile配置被编辑仍阻止旧上下文复用。",
++      "action": "不同profile先reset旧对话/进度；同profile变化继续拒绝；专项RED→GREEN。",
++      "status": "工程已修复/离线验证",
++      "acceptance": "新服务可开始，旧历史不串；修改同服务配置须重新准备。",
++      "priority": "P1"
++    },
++    {
++      "id": "T08",
++      "category": "测试/审查发现",
++      "title": "右侧面板出现后PDF未适宽导致横向溢出",
++      "source": "evidence/surfing-repair-2026-10-24/VERIFICATION.txt",
++      "observed": "新增UI几何断言实测page792.000061px>viewer770.732162px。",
++      "expected": "原文缩放适配剩余阅读区域。",
++      "action": "Surfing面板挂载后请求page-width，包内视口宽度断言通过。",
++      "status": "工程已修复/离线验证",
++      "acceptance": "不同窗口下原文完整可读，不被共读面板遮挡。",
++      "priority": "P1"
++    },
++    {
++      "id": "T09",
++      "category": "测试/审查发现",
++      "title": "保存状态文案曾掩盖模型变更后的恢复失败",
++      "source": "evidence/surfing-repair-2026-10-24/VERIFICATION.txt",
++      "observed": "中间FINAL-E2E14通过/1失败：“对话仅本次打开”遮住应显示的“未恢复”。",
++      "expected": "模型绑定错误与保存/恢复失败应清楚可见。",
++      "action": "仅原始未保存状态显示会话说明，其余保存错误状态保留；实际修复包15项通过。",
++      "status": "工程已修复/离线验证",
++      "acceptance": "损坏/变更模型恢复失败可见，旧记录仍保留。",
++      "priority": "P1"
++    },
++    {
++      "id": "T10",
++      "category": "测试/审查发现",
++      "title": "Escape仅暂停旧host，未覆盖Surfing",
++      "source": "docs/SURFING_OVERNIGHT_2026-10-24.md",
++      "observed": "夜间审查记录为Minor；未据此扩展快捷键。",
++      "expected": "暂停交互范围一致且清晰。",
++      "action": "现有Surfing暂停按钮可用，Escape未在本轮修复。",
++      "status": "已知未解决Minor",
++      "acceptance": "补明确快捷键需求和回归后验证Escape能取消Surfing且无迟到内容。",
++      "priority": "P2"
++    },
++    {
++      "id": "G01",
++      "category": "待验收/现存边界",
++      "title": "修复版真实模型讲解质量未验",
++      "source": "docs/acceptance/surfing-overnight-2026-10-24.md",
++      "observed": "619单测及修复包15项mock证明上下文/控制链路，不证明真实讲解质量。用户旧Cruise截图是实际失败证据，应保留而非说用户从未试过模型。",
++      "expected": "修复版回答贴合论文、有用、无臆造、证据相关。",
++      "action": "留人工验收记录，不自行付费调用或写通过。",
++      "status": "待真实用户试读",
++      "acceptance": "记录问题、原文、实际回答、期望和用户判断。",
++      "priority": "P0"
++    },
++    {
++      "id": "G02",
++      "category": "待验收/现存边界",
++      "title": "两篇实际论文验收仍缺记录",
++      "source": "docs/acceptance/surfing-overnight-2026-10-24.md",
++      "observed": "现有合成2页/42页文字PDF不等于两篇实际论文；截图中的Attention论文旧失败不算修复版通过。",
++      "expected": "真实排版、论证、术语及引用在两篇论文中有效。",
++      "action": "保留论文A/B表格待填。",
++      "status": "待验收",
++      "acceptance": "两篇分别记提取顺序、摘要/章节/引用、继续和重开行为。",
++      "priority": "P0"
++    },
++    {
++      "id": "G03",
++      "category": "待验收/现存边界",
++      "title": "当前问答不持久保存，仅路线进度持久化",
++      "source": "evidence/surfing-repair-2026-10-24/VERIFICATION.txt",
++      "observed": "最近对话限本次打开、6轮/18000JSON字符；不等于无限或跨重启记忆。不是用户已报告聊天丢失。",
++      "expected": "如用户需要跨会话承接，先确认产品行为和保存边界。",
++      "action": "界面已说明会话内问答；持久化未实现，不假报已保存。",
++      "status": "明确现存限制；后续需求待确认",
++      "acceptance": "重开后状态与文案一致；若另行实现聊天保存，需独立验收。",
++      "priority": "P1"
++    },
++    {
++      "id": "G04",
++      "category": "待验收/现存边界",
++      "title": "模型窗口仍需手动填，DeepSeek预算是保守估算",
++      "source": "evidence/surfing-repair-2026-10-24/VERIFICATION.txt",
++      "observed": "未知模型/协议不猜容量；UTF8预算可能较保守，首次配置与发送确认仍有操作成本。不是用户明确投诉过该输入框。",
++      "expected": "配置可理解、超限明确，使用体验与实际提供商能力相符。",
++      "action": "已写模型范围与估算说明，保留显式容量。",
++      "status": "现存限制；实际易用性待用户确认",
++      "acceptance": "正确配置能请求，容量不足清楚拒绝，不静默截断论文。",
++      "priority": "P2"
++    },
++    {
++      "id": "G05",
++      "category": "待验收/现存边界",
++      "title": "图表/扫描件/公式视觉及跨论文未覆盖",
++      "source": "docs/SURFING_OVERNIGHT_2026-10-24.md",
++      "observed": "当前可信全文主要是可提取文字；几何重叠测试不等于任意版式精准覆盖，合成ASCII不代表实际论文。",
++      "expected": "只声明实际理解范围，不把未见图像当成已理解。",
++      "action": "边界已列入交接；未做OCR/多模态/跨论文/SaaS。",
++      "status": "明确现存范围，不是新增用户故障",
++      "acceptance": "实际材料发现提取/定位失败时单列实例；图像能力另行确认。",
++      "priority": "P2"
++    },
++    {
++      "id": "G06",
++      "category": "待验收/现存边界",
++      "title": "修复包未跑完整发布门禁/整机性能",
++      "source": "docs/SURFING_HANDOFF_2026-10-24.md",
++      "observed": "当前最终实际包仅15项Surfing专项；旧165/中间17等数字来自不同候选和时点。",
++      "expected": "发布结论有对应当前包的完整证据。",
++      "action": "候选hash与build已对照，历史结果单独标记。",
++      "status": "尚未正式发布验收",
++      "acceptance": "需要发布时对最终包重跑明确全套及性能，保持失败门槛。",
++      "priority": "P1"
++    },
++    {
++      "id": "T11",
++      "category": "本轮只读核对发现",
++      "title": "当前dist构建产物与保留的修复包不一致",
++      "source": "evidence/surfing-issues-2026-10-25/BUILD-DRIFT.json",
++      "observed": "2026-10-25运行旧修复CHECK.mjs返回PACKAGED_BUNDLE_MISMATCH index.cjs、退出1。14个修复来源/测试hash仍匹配；修复包264文件hash保持。当前dist/main/index.cjs与包内index.cjs不同；没有据此推断修改者或原因，也未证明当前dist是坏包。",
++      "expected": "用于交接/重新打包的构建产物与其对应源码和候选有明确一致性证据。",
++      "action": "保留失败原样日志和两个SHA256，只读记录；本轮没有重建dist、覆盖候选或改生产代码。",
++      "status": "新发现待查；不作为用户亲历故障",
++      "acceptance": "接手者先核对当前dist来源与构建输入；对明确目标重建/比对并留证后再宣布包/构建一致。",
++      "priority": "P1"
++    }
++  ]
++}
+--- a/docs/SURFING_HANDOFF_2026-10-24.md
++++ b/docs/SURFING_HANDOFF_2026-10-24.md
+@@ -1,4 +1,6 @@
+ # Enlumor Surfing 交接 · 2026-10-24 · 修复版为准
++
++> 2026-10-25补充：[问题总账：用户反馈、测试缺陷、待验边界与逐项关闭条件](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/docs/SURFING_ISSUES_2026-10-25.md)。接手时先读；修复版未获用户确认的问题保持待验。另见T11：2026-10-25当前dist与保留的修复包不一致，旧包hash未变；构建一致性需重新核对，不把历史包/构建匹配当作本次新通过。
+ 
+ ## 先看结论
+ **当前交接对象是 Surfing-Repair，不是早期 T5b 候选。** 基础流程与后续“全文对话＋原文旁共读”修复已实现和打包；用户对新修复版的实际试读结果仍待收集，不等于产品体验已获认可。
+--- a/docs/WAVE_A_STATE.json
++++ b/docs/WAVE_A_STATE.json
+@@ -167,7 +167,11 @@
+       "maxHistoryJsonCharacters": 18000,
+       "persistent": false
+     },
+-    "automation": "PAUSED"
++    "automation": "PAUSED",
++    "issueLedger": "docs/SURFING_ISSUES_2026-10-25.md",
++    "issueLedgerData": "docs/SURFING_ISSUES_2026-10-25.json",
++    "userAcceptance": "PENDING_NO_REPAIR_ACCEPTANCE_RECEIVED",
++    "buildConsistencyLatest": "2026-10-25: repair candidate264 and source14 hashes match repair manifests, but current dist/main/index.cjs differs from packaged repair; T11 pending investigation; no rebuild performed."
+   },
+   "releaseGate": "FAIL_EXISTING_EDITING_PREVIEW_DENSE1000",
+   "surfingOvernightHistoricalBeforeRepair": {

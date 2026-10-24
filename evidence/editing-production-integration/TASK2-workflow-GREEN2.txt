@@ -1,0 +1,17 @@
+(node:43656) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 7 tests using 1 worker
+
+(node:42084) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:42084) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 1 tests\e2e\editing-workflow.spec.ts:18:1 › preview real tools commit to SQL and visible PDF, preserve history across reopening and block stale export (4.2s)
+  ok 2 tests\e2e\editing-workflow.spec.ts:33:1 › preview free note and explicit ordinary anchor replacement use separate placement and durable versions (2.2s)
+  ok 3 tests\e2e\editing-workflow.spec.ts:38:1 › preview old unconverted export is honest and original PDF/native annotation remain unchanged (1.4s)
+  ok 4 tests\e2e\editing-workflow.spec.ts:42:1 › lost post-COMMIT reply recovers receipt without duplicate request; source preparation cancels on session switch (2.0s)
+  ok 5 tests\e2e\editing-workflow.spec.ts:47:1 › v4 conversion preserves original rows, readonly legacy explicit reanchor audit, native PDF annotations stay separate (1.9s)
+  ok 6 tests\e2e\editing-workflow.spec.ts:54:1 › real IPC rejects extra identity, stale revisions, unknown commands and subframe sender; cross-page batch has one history group (1.9s)
+  ok 7 tests\e2e\editing-workflow.spec.ts:61:1 › preview geometry, note placement, retry same request, undo/new branch and kill recovery (3.1s)
+
+  7 passed (17.8s)

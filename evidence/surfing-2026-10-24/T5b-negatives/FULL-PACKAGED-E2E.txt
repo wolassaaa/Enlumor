@@ -1,0 +1,233 @@
+(node:3412) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 165 tests using 1 worker
+
+(node:46632) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+  ok   1 tests\e2e\ai-settings.spec.ts:4:1 › model settings save masked configuration and preserve it after restart (4.0s)
+  ok   2 tests\e2e\ai-settings.spec.ts:5:1 › connection test uses only fixed text and modal errors retain the editable draft (2.0s)
+
+  ok   3 tests\e2e\arrows-ink.spec.ts:15:1 › arrow direction and Escape cancellation preserve native endpoints through rotation restart and standard export (5.4s)
+  ok   4 tests\e2e\arrows-ink.spec.ts:35:1 › ink keeps an ordered closed stroke through cancel undo restart and native export (5.4s)
+  ok   5 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 0 degrees and display scale 1 matches native SVG and PDF coordinates (3.2s)
+  ok   6 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 90 degrees and display scale 1.5 matches native SVG and PDF coordinates (3.3s)
+  ok   7 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 180 degrees and display scale 1 matches native SVG and PDF coordinates (3.3s)
+  ok   8 tests\e2e\arrows-ink.spec.ts:55:114 › arrow creation at 270 degrees and display scale 2 matches native SVG and PDF coordinates (3.4s)
+  ok   9 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 0 degrees and display scale 1 matches native SVG and PDF coordinates (3.2s)
+  ok  10 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 90 degrees and display scale 1.5 matches native SVG and PDF coordinates (3.3s)
+  ok  11 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 180 degrees and display scale 1 matches native SVG and PDF coordinates (3.3s)
+  ok  12 tests\e2e\arrows-ink.spec.ts:55:114 › ink creation at 270 degrees and display scale 2 matches native SVG and PDF coordinates (3.4s)
+  ok  13 tests\e2e\arrows-ink.spec.ts:73:1 › long ink gesture bounds stored samples and preserves first and terminal coordinates (2.7s)
+  ok  14 tests\e2e\arrows-ink.spec.ts:84:44 › arrow draft uses selected color and cancels on rotation without saving (2.7s)
+  ok  15 tests\e2e\arrows-ink.spec.ts:84:44 › ink draft uses selected color and cancels on rotation without saving (2.6s)
+  ok  16 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (same-turn) (2.6s)
+  ok  17 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (same-turn) (2.6s)
+  ok  18 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (same-turn) (2.7s)
+  ok  19 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (same-turn) (2.7s)
+  ok  20 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-library changes the page layout (after-render) (2.6s)
+  ok  21 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before hide-notes changes the page layout (after-render) (2.6s)
+  ok  22 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before spacing changes the page layout (after-render) (2.6s)
+  ok  23 tests\e2e\arrows-ink.spec.ts:94:187 › arrow gesture cancels before right-divider changes the page layout (after-render) (2.7s)
+  ok  24 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (same-turn) (2.6s)
+  ok  25 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (same-turn) (2.6s)
+  ok  26 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (same-turn) (2.7s)
+  ok  27 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (same-turn) (2.6s)
+  ok  28 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-library changes the page layout (after-render) (2.6s)
+  ok  29 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before hide-notes changes the page layout (after-render) (2.7s)
+  ok  30 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before spacing changes the page layout (after-render) (2.7s)
+  ok  31 tests\e2e\arrows-ink.spec.ts:94:187 › ink gesture cancels before right-divider changes the page layout (after-render) (2.6s)
+
+  ok  32 tests\e2e\complex-pdf.spec.ts:22:1 › double columns and repeated Chinese text retain the selected occurrence through crop rotation restart and repeat export (7.0s)
+  ok  33 tests\e2e\complex-pdf.spec.ts:42:1 › search Next preserves match counts across cached and newly visited pages (2.9s)
+  ok  34 tests\e2e\complex-pdf.spec.ts:47:1 › vector page renders and cached scan page restores no-text feedback after leaving and returning (2.6s)
+  ok  35 tests\e2e\complex-pdf.spec.ts:52:1 › scan-only document shows capability feedback on initial open (2.4s)
+
+  ok  36 tests\e2e\cruise-anchors.spec.ts:10:35 › page blocks retain right-column occurrence through crop source rotation zoom at display scale 1.5 without permanent annotations (3.2s)
+  ok  37 tests\e2e\cruise-anchors.spec.ts:10:35 › page blocks retain right-column occurrence through crop source rotation zoom at display scale 2 without permanent annotations (3.2s)
+(node:46632) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  38 tests\e2e\cruise.spec.ts:7:1 › Cruise streams current block only, valid reference, pause/manual takeover/cancel and exit preserve PDF (4.2s)
+  ok  39 tests\e2e\cruise.spec.ts:8:1 › missing configuration guides settings and refreshes service after closing settings (2.7s)
+  ok  40 tests\e2e\cruise.spec.ts:9:1 › manual Cruise stays on saved block beyond 20 seconds; foreground pause and legacy auto restart never request on their own (27.4s)
+
+  ok  41 tests\e2e\cruise.spec.ts:46:1 › scan pages can be skipped sequentially without a fake block or navigation loop (2.4s)
+  ok  42 tests\e2e\cruise.spec.ts:48:69 › Cruise empty stays incomplete; manual retry saves one result and preserves annotations/source (3.5s)
+  ok  43 tests\e2e\cruise.spec.ts:48:69 › Cruise 429 stays incomplete; manual retry saves one result and preserves annotations/source (3.4s)
+  ok  44 tests\e2e\cruise.spec.ts:48:69 › Cruise truncated stays incomplete; manual retry saves one result and preserves annotations/source (3.4s)
+  ok  45 tests\e2e\cruise.spec.ts:48:69 › Cruise timeout stays incomplete; manual retry saves one result and preserves annotations/source (3.9s)
+  ok  46 tests\e2e\cruise.spec.ts:109:1 › current-block follow-up streams separately, bounds previous completed explanation, and never persists question/answer (3.8s)
+  ok  47 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up cancel retains question and only manual retry succeeds without changing explanation/cache/source (3.6s)
+  ok  48 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up 429 retains question and only manual retry succeeds without changing explanation/cache/source (3.6s)
+  ok  49 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up truncated retains question and only manual retry succeeds without changing explanation/cache/source (3.7s)
+  ok  50 tests\e2e\cruise.spec.ts:123:70 › current-block follow-up timeout retains question and only manual retry succeeds without changing explanation/cache/source (4.2s)
+  ok  51 tests\e2e\cruise.spec.ts:133:1 › failed normal partial is not sent as previous model answer in a follow-up (3.3s)
+  ok  52 tests\e2e\cruise.spec.ts:138:104 › follow-up pause invalidates ownership before late provider completion (3.5s)
+  ok  53 tests\e2e\cruise.spec.ts:138:104 › follow-up block invalidates ownership before late provider completion (3.5s)
+  ok  54 tests\e2e\cruise.spec.ts:138:104 › follow-up profile invalidates ownership before late provider completion (3.5s)
+  ok  55 tests\e2e\cruise.spec.ts:138:104 › follow-up settings invalidates ownership before late provider completion (3.5s)
+  ok  56 tests\e2e\cruise.spec.ts:138:104 › follow-up background invalidates ownership before late provider completion (3.5s)
+  ok  57 tests\e2e\cruise.spec.ts:138:104 › follow-up unmount invalidates ownership before late provider completion (3.5s)
+
+  ok  58 tests\e2e\cruise.spec.ts:138:104 › follow-up document invalidates ownership before late provider completion (4.4s)
+  ok  59 tests\e2e\cruise.spec.ts:155:243 › follow-up manual wheel cancels before late completion and preserves user viewport/cache/source (3.9s)
+  ok  60 tests\e2e\cruise.spec.ts:155:243 › follow-up manual key-page cancels before late completion and preserves user viewport/cache/source (3.9s)
+  ok  61 tests\e2e\cruise.spec.ts:155:243 › follow-up manual page cancels before late completion and preserves user viewport/cache/source (3.9s)
+  ok  62 tests\e2e\cruise.spec.ts:155:243 › follow-up manual selection cancels before late completion and preserves user viewport/cache/source (3.9s)
+  ok  63 tests\e2e\cruise.spec.ts:155:243 › follow-up manual key-selection cancels before late completion and preserves user viewport/cache/source (3.9s)
+  ok  64 tests\e2e\cruise.spec.ts:155:243 › follow-up manual zoom cancels before late completion and preserves user viewport/cache/source (3.9s)
+  ok  65 tests\e2e\cruise.spec.ts:155:243 › follow-up manual zoom-out cancels before late completion and preserves user viewport/cache/source (3.9s)
+  ok  66 tests\e2e\cruise.spec.ts:155:243 › follow-up manual fit-width cancels before late completion and preserves user viewport/cache/source (3.4s)
+  ok  67 tests\e2e\cruise.spec.ts:155:243 › follow-up manual fit-page cancels before late completion and preserves user viewport/cache/source (3.9s)
+  ok  68 tests\e2e\cruise.spec.ts:155:243 › follow-up manual annotation cancels before late completion and preserves user viewport/cache/source (4.0s)
+  ok  69 tests\e2e\cruise.spec.ts:155:243 › follow-up manual annotation-source cancels before late completion and preserves user viewport/cache/source (3.5s)
+  ok  70 tests\e2e\cruise.spec.ts:155:243 › follow-up manual drawing cancels before late completion and preserves user viewport/cache/source (4.0s)
+  ok  71 tests\e2e\cruise.spec.ts:155:243 › follow-up manual search cancels before late completion and preserves user viewport/cache/source (4.3s)
+  ok  72 tests\e2e\cruise.spec.ts:155:243 › follow-up manual search-next cancels before late completion and preserves user viewport/cache/source (4.3s)
+  ok  73 tests\e2e\cruise.spec.ts:155:243 › follow-up manual rotation cancels before late completion and preserves user viewport/cache/source (3.9s)
+  ok  74 tests\e2e\cruise.spec.ts:155:243 › follow-up manual layout cancels before late completion and preserves user viewport/cache/source (4.0s)
+  ok  75 tests\e2e\cruise.spec.ts:155:243 › follow-up manual blocks cancels before late completion and preserves user viewport/cache/source (4.0s)
+  ok  76 tests\e2e\cruise.spec.ts:155:243 › follow-up manual sidebar cancels before late completion and preserves user viewport/cache/source (4.0s)
+  ok  77 tests\e2e\cruise.spec.ts:155:243 › follow-up manual divider cancels before late completion and preserves user viewport/cache/source (4.0s)
+  ok  78 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 高亮 invalidates follow-up before late events (3.7s)
+  ok  79 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 下划线 invalidates follow-up before late events (3.7s)
+  ok  80 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 删除线 invalidates follow-up before late events (3.6s)
+  ok  81 tests\e2e\cruise.spec.ts:192:55 › retained-selection popover 写便签 invalidates follow-up before late events (3.7s)
+DENSE_INK {"count":30,"pointsPerStroke":256,"scrollP95Ms":10.5,"pointerP95Ms":0.6999999992549419,"frameP95Ms":10.300000000745058,"longTasks":0,"worstLongTaskMs":0,"saveMs":1.199999999254942,"eraseUndoMs":65,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  82 tests\e2e\dense-ink.spec.ts:8:68 › default dense 30 x 256 points: scroll erase save undo (4.5s)
+DENSE_INK {"count":300,"pointsPerStroke":256,"scrollP95Ms":11,"pointerP95Ms":2.399999998509884,"frameP95Ms":10.5,"longTasks":0,"worstLongTaskMs":0,"saveMs":1,"eraseUndoMs":127,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  83 tests\e2e\dense-ink.spec.ts:8:68 › default dense 300 x 256 points: scroll erase save undo (4.8s)
+DENSE_INK {"count":1000,"pointsPerStroke":256,"scrollP95Ms":13,"pointerP95Ms":2.7999999970197678,"frameP95Ms":10.300000000745058,"longTasks":0,"worstLongTaskMs":0,"saveMs":1,"eraseUndoMs":376,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  84 tests\e2e\dense-ink.spec.ts:8:68 › default dense 1000 x 256 points: scroll erase save undo (5.6s)
+DENSE_INK {"count":30,"pointsPerStroke":256,"scrollP95Ms":10.899999998509884,"pointerP95Ms":0.6999999992549419,"frameP95Ms":10.199999999254942,"longTasks":0,"worstLongTaskMs":0,"saveMs":1.199999999254942,"eraseUndoMs":99,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  85 tests\e2e\dense-ink.spec.ts:8:68 › preview dense 30 x 256 points: scroll erase save undo (4.6s)
+DENSE_INK {"count":300,"pointsPerStroke":256,"scrollP95Ms":20.899999998509884,"pointerP95Ms":1.5,"frameP95Ms":10.399999998509884,"longTasks":0,"worstLongTaskMs":0,"saveMs":5,"eraseUndoMs":409,"mutationLongTasks":0,"mutationWorstLongTaskMs":0}
+  ok  86 tests\e2e\dense-ink.spec.ts:8:68 › preview dense 300 x 256 points: scroll erase save undo (5.5s)
+DENSE_INK {"count":1000,"pointsPerStroke":256,"scrollP95Ms":12.699999999254942,"pointerP95Ms":2.2999999970197678,"frameP95Ms":11.399999998509884,"longTasks":0,"worstLongTaskMs":0,"saveMs":0.7999999970197678,"eraseUndoMs":1273,"mutationLongTasks":1,"mutationWorstLongTaskMs":62}
+  x   87 tests\e2e\dense-ink.spec.ts:8:68 › preview dense 1000 x 256 points: scroll erase save undo (9.8s)
+(node:51060) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  88 tests\e2e\document-commands.spec.ts:72:1 › manual 1 to 3 navigation resolves the right repeated passage; clear retains note undo export and source hash (3.3s)
+  ok  89 tests\e2e\document-commands.spec.ts:110:53 › wheel cancels the actual pending focus frame without late scroll or flash (2.9s)
+  ok  90 tests\e2e\document-commands.spec.ts:110:53 › pause cancels the actual pending focus frame without late scroll or flash (2.8s)
+  ok  91 tests\e2e\document-commands.spec.ts:128:1 › switching documents rejects an old actual focus frame and reads only the latest source (2.7s)
+(node:51060) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  92 tests\e2e\editing-workflow.spec.ts:18:1 › preview real tools commit to SQL and visible PDF, preserve history across reopening and block stale export (6.6s)
+  ok  93 tests\e2e\editing-workflow.spec.ts:33:1 › preview free note and explicit ordinary anchor replacement use separate placement and durable versions (3.3s)
+  ok  94 tests\e2e\editing-workflow.spec.ts:38:1 › preview old unconverted export is honest and original PDF/native annotation remain unchanged (2.7s)
+  ok  95 tests\e2e\editing-workflow.spec.ts:42:1 › lost post-COMMIT reply recovers receipt without duplicate request; source preparation cancels on session switch (3.1s)
+  ok  96 tests\e2e\editing-workflow.spec.ts:47:1 › v4 conversion preserves original rows, readonly legacy explicit reanchor audit, native PDF annotations stay separate (3.3s)
+  ok  97 tests\e2e\editing-workflow.spec.ts:54:1 › real IPC rejects extra identity, stale revisions, unknown commands and subframe sender; cross-page batch has one history group (3.0s)
+  ok  98 tests\e2e\editing-workflow.spec.ts:61:1 › preview geometry, note placement, retry same request, undo/new branch and kill recovery (5.6s)
+
+  ok  99 tests\e2e\eraser.spec.ts:10:1 › one eraser sweep deletes two entire strokes atomically and one undo restores both (3.0s)
+  ok 100 tests\e2e\eraser.spec.ts:15:1 › empty interior does not erase a closed stroke and Escape cancels matching preview (2.9s)
+  ok 101 tests\e2e\eraser.spec.ts:20:1 › eraser persistence and repeat exports remove only workspace ink and preserve source PDF annotation (6.0s)
+  ok 102 tests\e2e\eraser.spec.ts:27:1 › failed erase restores preview and retains original deletion for visible retry (2.9s)
+  ok 103 tests\e2e\eraser.spec.ts:34:1 › eraser ignores original PDF ink and workspace arrows highlights and notes (3.2s)
+  ok 104 tests\e2e\eraser.spec.ts:42:57 › eraser hits rotated ink at 90 degrees and display scale 1.5 (2.9s)
+  ok 105 tests\e2e\eraser.spec.ts:42:57 › eraser hits rotated ink at 270 degrees and display scale 2 (3.0s)
+  ok 106 tests\e2e\eraser.spec.ts:46:1 › captured off-page pointer does not project a fictional eraser sweep onto the page edge (2.9s)
+  ok 107 tests\e2e\eraser.spec.ts:51:56 › eraser preview cancels before same-turn rotate and pointer release (2.8s)
+  ok 108 tests\e2e\eraser.spec.ts:51:56 › eraser preview cancels before same-turn layout and pointer release (2.9s)
+  ok 109 tests\e2e\eraser.spec.ts:51:56 › eraser preview cancels before same-turn page and pointer release (2.8s)
+
+  ok 110 tests\e2e\native-apis.spec.ts:4:53 › dashscope native configuration and actual Cruise explanation use shared controls (3.0s)
+  ok 111 tests\e2e\native-apis.spec.ts:4:53 › spark native configuration and actual Cruise explanation use shared controls (3.2s)
+
+  ok 112 tests\e2e\note-recovery.spec.ts:13:1 › note modal traps keyboard focus and restores its trigger after cancellation (2.8s)
+  ok 113 tests\e2e\note-recovery.spec.ts:21:1 › note saves its captured original anchor even if background selection is cleared (2.9s)
+  ok 114 tests\e2e\note-recovery.spec.ts:28:1 › failed note save retains draft and exact retry after closing details or Escape (3.2s)
+  ok 115 tests\e2e\note-recovery.spec.ts:36:1 › closing save error details keeps pending recovery visible and commits original delete on retry (3.0s)
+  ok 116 tests\e2e\note-recovery.spec.ts:43:1 › explicitly discarding a failed note edit preserves the previously saved note (3.1s)
+
+  ok 117 tests\e2e\page-navigation.spec.ts:9:43 › continuous: boundary buttons and actual page ignore unsubmitted draft (2.8s)
+  ok 118 tests\e2e\page-navigation.spec.ts:9:43 › single: boundary buttons and actual page ignore unsubmitted draft (2.9s)
+  ok 119 tests\e2e\page-navigation.spec.ts:13:1 › same-page viewport updates retain invalid feedback and unsubmitted draft (2.8s)
+  ok 120 tests\e2e\page-navigation.spec.ts:19:1 › invalid input stays on current page with accessible feedback; Escape resets and blur never jumps (3.1s)
+
+  ok 121 tests\e2e\reader.spec.ts:17:1 › packaged app opens and exports without external Python configuration (2.8s)
+  ok 122 tests\e2e\reader.spec.ts:33:1 › reading layout collapses panels and keeps selection tools near the text (3.1s)
+  ok 123 tests\e2e\reader.spec.ts:64:1 › PDF directory resolves nested entries to source pages (3.1s)
+  ok 124 tests\e2e\reader.spec.ts:80:1 › PDF thumbnails render on demand, navigate and release offscreen canvases (3.4s)
+
+  ok 125 tests\e2e\reader.spec.ts:117:1 › PDF thumbnail jobs cancel on rapid scroll and document replacement (3.4s)
+  ok 126 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1 (3.5s)
+  ok 127 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 1.5 (3.6s)
+  ok 128 tests\e2e\reader.spec.ts:145:34 › selection stays anchored across view rotation and zoom at Windows scale 2 (3.6s)
+  ok 129 tests\e2e\reader.spec.ts:163:1 › failed undo retries as undo and preserves the redo action (3.1s)
+  ok 130 tests\e2e\reader.spec.ts:183:1 › search markup does not duplicate selected text or quads (3.2s)
+  ok 131 tests\e2e\reader.spec.ts:197:1 › cross-page multiline selection is one undo step (3.1s)
+
+  ok 132 tests\e2e\reader.spec.ts:221:1 › cancel, corrupt, encrypted and image-only PDFs have explicit outcomes (3.4s)
+  ok 133 tests\e2e\reader.spec.ts:262:1 › offline reading, selected highlight, note, undo/redo, export and crash recovery (7.4s)
+  ok 134 tests\e2e\reader.spec.ts:300:1 › rejects replaced source and permits same-content relocation (3.2s)
+
+  ok 135 tests\e2e\reading-tools.spec.ts:15:1 › single-page mode navigates searches and restores without mounting all pages (5.6s)
+  ok 136 tests\e2e\reading-tools.spec.ts:29:1 › underline persists rotates supports undo and exports a standard annotation without changing source (6.2s)
+  ok 137 tests\e2e\reading-tools.spec.ts:47:1 › single-page cached overlays reflect offscreen deletion and undo when pages remount (3.3s)
+  ok 138 tests\e2e\settings-simple.spec.ts:6:1 › simple provider setup defaults model, validates inline, saves and tests current draft (2.5s)
+  ok 139 tests\e2e\settings-simple.spec.ts:30:1 › failed connection keeps saved credentials and retry uses corrected draft (2.4s)
+
+  ok 140 tests\e2e\strikeout-lines.spec.ts:15:1 › strikeout persists rotates and exports a native StrikeOut annotation (6.1s)
+  ok 141 tests\e2e\strikeout-lines.spec.ts:29:1 › line drag and Escape cancellation preserve native endpoints through rotation restart and standard export (6.1s)
+  ok 142 tests\e2e\strikeout-lines.spec.ts:48:1 › short line click stays armed and the next drag draws without extra toggles (3.0s)
+  ok 143 tests\e2e\strikeout-lines.spec.ts:56:1 › armed line tool cancels and cannot draw while an export is pending (3.4s)
+  ok 144 tests\e2e\strikeout-lines.spec.ts:66:1 › failed annotation remains retryable and cannot be replaced by an armed line gesture (3.2s)
+  ok 145 tests\e2e\strikeout-lines.spec.ts:76:1 › viewport rotation during a drag cancels it before a same-turn pointer release can persist wrong coordinates (3.0s)
+  ok 146 tests\e2e\strikeout-lines.spec.ts:85:57 › line creation at rotation 90 and display scale 1.5 retains native and exported endpoints (3.7s)
+  ok 147 tests\e2e\strikeout-lines.spec.ts:85:57 › line creation at rotation 270 and display scale 2 retains native and exported endpoints (3.7s)
+
+  ok 148 tests\e2e\surfing.spec.ts:13:1 › Surfing explicitly sends full text, offers evidence entry points and explains user-selected source (5.5s)
+  ok 149 tests\e2e\surfing.spec.ts:36:53 › Surfing wheel immediately cancels an in-flight explanation (5.3s)
+  ok 150 tests\e2e\surfing.spec.ts:36:53 › Surfing PageDown immediately cancels an in-flight explanation (5.2s)
+  ok 151 tests\e2e\surfing.spec.ts:41:49 › Surfing route regeneration cancel invalidates old clickable route and permits retry (5.4s)
+  ok 152 tests\e2e\surfing.spec.ts:41:49 › Surfing route regeneration failure invalidates old clickable route and permits retry (5.4s)
+  ok 153 tests\e2e\surfing.spec.ts:47:1 › Surfing restores committed progress after restart without API or automatic navigation (9.1s)
+  ok 154 tests\e2e\surfing.spec.ts:54:1 › Surfing failed save keeps progress, blocks close and permits explicit retry (5.1s)
+  ok 155 tests\e2e\surfing.spec.ts:60:1 › Surfing native close flush pauses pending explanation but ordinary reading autosave does not (6.0s)
+
+  ok 156 tests\e2e\surfing.spec.ts:66:58 › Surfing switch pauses before delayed reading flush and ignores late explanation (7.1s)
+  ok 157 tests\e2e\surfing.spec.ts:66:58 › Surfing close-last pauses before delayed reading flush and ignores late explanation (6.0s)
+  ok 158 tests\e2e\surfing.spec.ts:79:1 › Surfing background blur cancels held explanation and foreground return does not restart (5.0s)
+  ok 159 tests\e2e\surfing.spec.ts:85:1 › Surfing changed model rejects old explanation and cached restoration without another request (5.5s)
+  ok 160 tests\e2e\surfing.spec.ts:91:1 › Surfing source replacement after preparation reports source change and sends no request (3.1s)
+  ok 161 tests\e2e\surfing.spec.ts:97:1 › Surfing SQL save failure blocks Ctrl+W until explicit retry and retains committed record (5.1s)
+
+  ok 162 tests\e2e\workspace.spec.ts:18:1 › adjustable sidebars support drag, keyboard, spacing, persistence and a usable narrow reading viewport (5.3s)
+  ok 163 tests\e2e\workspace.spec.ts:41:1 › document tabs isolate progress and undo, deduplicate opens, restore session and close without deleting data (6.6s)
+  ok 164 tests\e2e\workspace.spec.ts:63:1 › note drafts block tab navigation and close shortcuts until saved or cancelled (3.4s)
+  ok 165 tests\e2e\workspace.spec.ts:79:1 › failed PDF renderer opening restores prior document, undo history and persisted active session (5.6s)
+
+
+  1) tests\e2e\dense-ink.spec.ts:8:68 › preview dense 1000 x 256 points: scroll erase save undo ────
+
+    Error: local end-to-end erase/undo budget
+
+    expect(received).toBeLessThanOrEqual(expected)
+
+    Expected: <= 1000
+    Received:    1273
+
+      24 |  const mutation=await page.evaluate(async()=>{await new Promise<void>(resolve=>requestAnimationFrame(()=>requestAnimationFrame(()=>resolve())));const w=window as any;w.denseMutationObserver.disconnect();return{mutationLongTasks:w.denseMutationTasks.length,mutationWorstLongTaskMs:Math.max(0,...w.denseMutationTasks)};});
+      25 |  const result={count,pointsPerStroke:256,scrollP95Ms:scroll,...metrics,saveMs,eraseUndoMs,...mutation};const evidence=process.env.ENLUMOR_EVIDENCE_DIR||'evidence/round-six';mkdirSync(evidence,{recursive:true});writeFileSync(path.join(evidence,`TASK2-${preview?'preview':'default'}-dense-${count}.json`),JSON.stringify(result,null,2));console.log('DENSE_INK '+JSON.stringify(result));if(preview&&process.env.ENLUMOR_PROFILE_INK){const main=await app.evaluate(async()=>{const p=(globalThis as any).inkMainProfile;const profile=(await p.post('Profiler.stop')).profile;p.session.disconnect();return{profile,timings:p.timings};});writeFileSync(path.join(evidence,`TASK2-preview-main-profile-${count}.json`),JSON.stringify(main));console.log('MAIN_TIMINGS '+JSON.stringify(main.timings));}if(cdp){writeFileSync(path.join(evidence,`TASK2-${preview?'preview':'default'}-profile-${count}.json`),JSON.stringify((await cdp.send('Profiler.stop')).profile));await cdp.detach();}
+    > 26 |  expect(eraseUndoMs,'local end-to-end erase/undo budget').toBeLessThanOrEqual(1000);expect(reused,'unchanged ink SVG should survive commit and undo').toBe(true);expect(mutation.mutationWorstLongTaskMs).toBeLessThanOrEqual(50);expect(metrics.pointerP95Ms).toBeLessThanOrEqual(8);expect(metrics.frameP95Ms).toBeLessThanOrEqual(34);expect(scroll).toBeLessThanOrEqual(34);expect(saveMs).toBeLessThanOrEqual(20);expect(metrics.longTasks).toBe(0);
+         |                                                           ^
+      27 |  const last=page.locator('.annotation-card').last();await last.scrollIntoViewIfNeeded();await expect(last.locator('.annotation-source')).toBeVisible();await last.locator('.annotation-source').focus();await expect(last.locator('.annotation-source')).toBeFocused();await page.keyboard.press('Enter');await expect(page.locator('.flash')).toHaveCount(1);await expect(page.locator('.flash')).toBeVisible();await expect(page.locator('.drawn-ink')).toHaveCount(count);
+      28 |  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});}
+      29 | });
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\dense-ink.spec.ts:26:59
+
+    Error Context: test-results\dense-ink-preview-dense-10-487fb-ints-scroll-erase-save-undo\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\dense-ink-preview-dense-10-487fb-ints-scroll-erase-save-undo\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\dense-ink-preview-dense-10-487fb-ints-scroll-erase-save-undo\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\dense-ink.spec.ts:8:68 › preview dense 1000 x 256 points: scroll erase save undo ─────
+  164 passed (11.0m)

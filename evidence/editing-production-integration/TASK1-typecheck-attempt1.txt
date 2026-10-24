@@ -1,0 +1,16 @@
+COMMAND: npm run typecheck
+INPUT: repository TypeScript
+
+> enlumor@0.1.15 typecheck
+> tsc --noEmit
+
+src/main/editing-sources.ts(122,40): error TS2345: Argument of type 'VerifiedAnchor | undefined' is not assignable to parameter of type 'VerifiedAnchor | null'.
+  Type 'undefined' is not assignable to type 'VerifiedAnchor | null'.
+src/main/editing-sources.ts(124,48): error TS2345: Argument of type 'VerifiedAnchor | undefined' is not assignable to parameter of type 'VerifiedAnchor | null'.
+  Type 'undefined' is not assignable to type 'VerifiedAnchor | null'.
+tests/editing-workspace.test.ts(51,102): error TS2322: Type '(namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]) => StatementResultingChanges' is not assignable to type '{ (...anonymousParameters: SQLInputValue[]): StatementResultingChanges; (namedParameters: Record<string, SQLInputValue>, ...anonymousParameters: SQLInputValue[]): StatementResultingChanges; }'.
+  Types of parameters 'namedParameters' and 'anonymousParameters' are incompatible.
+    Type 'SQLInputValue' is not assignable to type 'Record<string, SQLInputValue>'.
+      Type 'null' is not assignable to type 'Record<string, SQLInputValue>'.
+
+EXIT: 1

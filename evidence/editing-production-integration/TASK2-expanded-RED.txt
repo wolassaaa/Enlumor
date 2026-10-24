@@ -1,0 +1,64 @@
+(node:39000) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 2 tests using 1 worker
+
+(node:33556) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:33556) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 1 tests\e2e\editing-workflow.spec.ts:17:1 › preview real tools commit to SQL and visible PDF, preserve history across reopening and block stale export (4.1s)
+  x  2 tests\e2e\editing-workflow.spec.ts:31:1 › preview geometry, note placement, retry same request, undo/new branch and kill recovery (31.3s)
+
+
+  1) tests\e2e\editing-workflow.spec.ts:31:1 › preview geometry, note placement, retry same request, undo/new branch and kill recovery 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '重试保存', exact: true }).last()
+        - locator resolved to <button>重试保存</button>
+      - attempting click action
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <dialog open="" aria-modal="true" class="note-dialog" aria-labelledby="note-title">…</dialog> intercepts pointer events
+        - retrying click action
+        - waiting 20ms
+        2 × waiting for element to be visible, enabled and stable
+          - element is visible, enabled and stable
+          - scrolling into view if needed
+          - done scrolling
+          - <dialog open="" aria-modal="true" class="note-dialog" aria-labelledby="note-title">…</dialog> intercepts pointer events
+        - retrying click action
+          - waiting 100ms
+        56 × waiting for element to be visible, enabled and stable
+           - element is visible, enabled and stable
+           - scrolling into view if needed
+           - done scrolling
+           - <dialog open="" aria-modal="true" class="note-dialog" aria-labelledby="note-title">…</dialog> intercepts pointer events
+         - retrying click action
+           - waiting 500ms
+
+
+      33 |  try{await open(page);await select(page);await page.getByRole('button',{name:'添加便签',exact:true}).click();await page.getByLabel('便签内容').fill('retry the same draft');
+      34 |  await app.evaluate(({ipcMain}:any)=>{const original=ipcMain._invokeHandlers.get('editing:execute');let first=true;const requests:string[]=[];(globalThis as any).editingRequests=requests;ipcMain.removeHandler('editing:execute');ipcMain.handle('editing:execute',(e:any,v:any)=>{requests.push(v.request.requestId);if(first){first=false;return{ok:true,value:{status:'error',error:{code:'STORE_BUSY',message:'STORE_BUSY'}}};}return original(e,v);});});
+    > 35 |  await page.getByRole('button',{name:'保存便签',exact:true}).click();await expect(page.getByLabel('便签内容')).toHaveValue('retry the same draft');await page.getByRole('button',{name:'重试保存',exact:true}).last().click();await expect(page.locator('.note-dialog')).toHaveCount(0);expect(await app.evaluate(()=>new Set((globalThis as any).editingRequests).size)).toBe(1);expect(sql(profile,'select count(*) n from edit_receipts')[0].n).toBe(1);
+         |                                                                                                                                                                                                           ^
+      36 |  const card=page.locator('.annotation-card').first();await card.getByRole('button',{name:'位置',exact:true}).click();await page.getByLabel('横向偏移').fill('24');await page.getByLabel('纵向偏移').fill('12');await page.getByRole('button',{name:'应用位置',exact:true}).click();await expect(page.locator('.editing-geometry')).toHaveCount(0);expect(JSON.parse(String(sql(profile,'select payload from edit_marks')[0].payload)).placement).toEqual({dx:24,dy:12});await expect(page.locator('.mark.note')).toHaveCount(1);
+      37 |  await page.getByRole('button',{name:'撤销',exact:true}).click();await expect(page.getByRole('button',{name:'重做',exact:true})).toBeEnabled();await card.getByRole('button',{name:'固定',exact:true}).click();await expect(page.getByRole('button',{name:'重做',exact:true})).toBeDisabled();
+      38 |  const b=(await page.locator('.page[data-page-number="1"]').boundingBox())!;await page.getByRole('button',{name:'绘制箭头'}).click();await page.mouse.move(b.x+70,b.y+230);await page.mouse.down();await page.mouse.move(b.x+170,b.y+250);await page.mouse.up();await expect(page.locator('.drawn-arrow')).toHaveCount(1);const arrow=page.locator('.annotation-card').last();await arrow.getByRole('button',{name:'端点',exact:true}).click();await page.getByLabel('端点坐标').fill('80,450,200,420');await page.getByRole('button',{name:'应用位置',exact:true}).click();await expect(page.locator('.editing-geometry')).toHaveCount(0);expect(JSON.parse(String(sql(profile,"select payload from edit_marks where json_extract(payload,'$.type')='arrow'")[0].payload)).points).toEqual([80,450,200,420]);
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\editing-workflow.spec.ts:35:203
+
+    Error Context: test-results\editing-workflow-preview-g-fc1b1-ew-branch-and-kill-recovery\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\editing-workflow-preview-g-fc1b1-ew-branch-and-kill-recovery\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\editing-workflow-preview-g-fc1b1-ew-branch-and-kill-recovery\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\editing-workflow.spec.ts:31:1 › preview geometry, note placement, retry same request, undo/new branch and kill recovery 
+  1 passed (36.5s)

@@ -1,0 +1,39 @@
+(node:35748) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+Running 1 test using 1 worker
+
+(node:20568) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:20568) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  x  1 tests\e2e\editing-workflow.spec.ts:33:1 › preview free note and explicit ordinary anchor replacement use separate placement and durable versions (31.5s)
+
+
+  1) tests\e2e\editing-workflow.spec.ts:33:1 › preview free note and explicit ordinary anchor replacement use separate placement and durable versions 
+
+    TimeoutError: locator.click: Timeout 30000ms exceeded.
+    Call log:
+      - waiting for getByRole('button', { name: '自由便签', exact: true })
+
+
+      32 | });
+      33 | test('preview free note and explicit ordinary anchor replacement use separate placement and durable versions',async()=>{
+    > 34 |  const profile=path.join(folder,'anchors');const {app,page}=await launch(profile);try{await open(page);await page.getByRole('button',{name:'自由便签',exact:true}).click();await page.getByLabel('便签内容').fill('No text anchor');await page.getByRole('button',{name:'保存便签',exact:true}).click();await expect(page.locator('.mark.note')).toHaveCount(1);expect(JSON.parse(String(sql(profile,'select payload from edit_marks')[0].payload)).anchorId).toBeNull();
+         |                                                                                                                                                                ^
+      35 |  await select(page);await page.getByRole('button',{name:'高亮选区',exact:true}).click();await expect(page.locator('.mark.highlight')).toHaveCount(1);await expect(page.getByRole('status')).toContainText('已保存');await select(page,1);const card=page.locator('.annotation-card').last();await card.getByRole('button',{name:'更换原文',exact:true}).click();await expect(page.locator('.anchor-replace')).toContainText('Production editing source');await expect(page.locator('.anchor-replace')).toContainText('Second source line');await page.getByRole('button',{name:'确认更换原文',exact:true}).click();await expect(card.locator('.annotation-source')).toContainText('Second source line');expect(JSON.parse(String(sql(profile,"select payload from edit_marks where json_extract(payload,'$.type')='highlight'")[0].payload)).version).toBe(2);await expect(page.locator('.mark.highlight')).toHaveCount(1);await page.screenshot({path:path.join(evidence,'TASK2-free-note-anchor-replacement.png')});
+      36 |  }finally{await stop(app);}
+      37 | });
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\editing-workflow.spec.ts:34:160
+
+    Error Context: test-results\editing-workflow-preview-f-234cc-cement-and-durable-versions\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\editing-workflow-preview-f-234cc-cement-and-durable-versions\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\editing-workflow-preview-f-234cc-cement-and-durable-versions\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\editing-workflow.spec.ts:33:1 › preview free note and explicit ordinary anchor replacement use separate placement and durable versions 

@@ -1,0 +1,8 @@
+COMMAND: npm run typecheck
+INPUT: repository TypeScript
+
+> enlumor@0.1.15 typecheck
+> tsc --noEmit
+
+
+EXIT: 0

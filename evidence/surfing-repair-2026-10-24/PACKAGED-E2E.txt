@@ -1,0 +1,25 @@
+
+Running 15 tests using 1 worker
+
+(node:2580) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\surfing.spec.ts:13:1 › Surfing explicitly sends full text, offers evidence entry points and explains user-selected source (4.7s)
+  ok  2 tests\e2e\surfing.spec.ts:36:53 › Surfing wheel immediately cancels an in-flight explanation (3.6s)
+  ok  3 tests\e2e\surfing.spec.ts:36:53 › Surfing PageDown immediately cancels an in-flight explanation (3.5s)
+  ok  4 tests\e2e\surfing.spec.ts:41:49 › Surfing route regeneration cancel invalidates old clickable route and permits retry (3.7s)
+  ok  5 tests\e2e\surfing.spec.ts:41:49 › Surfing route regeneration failure invalidates old clickable route and permits retry (4.2s)
+  ok  6 tests\e2e\surfing.spec.ts:47:1 › Surfing restores committed progress after restart without API or automatic navigation (6.0s)
+(node:2580) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  7 tests\e2e\surfing.spec.ts:54:1 › Surfing failed save keeps progress, blocks close and permits explicit retry (3.8s)
+  ok  8 tests\e2e\surfing.spec.ts:60:1 › Surfing native close flush pauses pending explanation but ordinary reading autosave does not (4.3s)
+
+  ok  9 tests\e2e\surfing.spec.ts:66:58 › Surfing switch pauses before delayed reading flush and ignores late explanation (5.5s)
+  ok 10 tests\e2e\surfing.spec.ts:66:58 › Surfing close-last pauses before delayed reading flush and ignores late explanation (4.7s)
+  ok 11 tests\e2e\surfing.spec.ts:79:1 › Surfing background blur cancels held explanation and foreground return does not restart (3.5s)
+  ok 12 tests\e2e\surfing.spec.ts:85:1 › Surfing changed model rejects old explanation and cached restoration without another request (4.1s)
+  ok 13 tests\e2e\surfing.spec.ts:91:1 › Surfing source replacement after preparation reports source change and sends no request (2.2s)
+  ok 14 tests\e2e\surfing.spec.ts:97:1 › Surfing SQL save failure blocks Ctrl+W until explicit retry and retains committed record (3.8s)
+  ok 15 tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer (2.2s)
+
+  15 passed (1.0m)

@@ -1,0 +1,20 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/surfing-runtime.test.ts (0 test)
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-runtime.test.ts [ tests/surfing-runtime.test.ts ]
+Error: Cannot find module '../src/main/surfing-runtime' imported from D:/codex project/Enlumor/.worktrees/v04-wave-ab/tests/surfing-runtime.test.ts
+ ❯ tests/surfing-runtime.test.ts:2:1
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  no tests
+   Start at  02:02:59
+   Duration  157ms (worker 96%, environment 4%)
+

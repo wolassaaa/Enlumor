@@ -1,0 +1,40 @@
+ M .gitattributes
+ M docs/WAVE_A_STATE.json
+ M docs/WAVE_A_TASKS.md
+ M docs/superpowers/plans/2026-10-20-editing-production-integration.md
+ M evidence/cruise-control/cruise-active.png
+ M evidence/cruise-control/cruise.png
+ M evidence/v04-wave-a/A2-manual-legacy-restored.png
+ M evidence/v04-wave-a/a1-429-recovered.png
+ M evidence/v04-wave-a/a1-empty-recovered.png
+ M evidence/v04-wave-a/a1-timeout-recovered.png
+ M evidence/v04-wave-a/a1-truncated-recovered.png
+ M evidence/v051-wave-a/TASK1-follow-up-complete.png
+ M evidence/v051-wave-a/TASK2-manual-annotation-source.png
+ M evidence/v051-wave-a/TASK2-manual-annotation.png
+ M scripts/benchmark.mjs
+ M src/main/editing-workspace.ts
+ M src/main/index.ts
+ M src/main/preload.ts
+ M src/renderer/main.tsx
+ M src/renderer/pdf-reader.ts
+ M src/renderer/style.css
+ M src/shared/editing-bridge.ts
+ M src/shared/editing-marks.ts
+ M src/shared/editing-planner.ts
+ M src/shared/model.ts
+ M tests/e2e/dense-ink.spec.ts
+ M tests/editing-planner.test.ts
+ M tests/editing-workspace.test.ts
+?? docs/SURFING_OVERNIGHT_2026-10-24.md
+?? docs/acceptance/editing-production-integration.md
+?? evidence/editing-production-integration/
+?? evidence/surfing-2026-10-24/
+?? scripts/check-editing-production-rollback.mjs
+?? src/main/editing-ipc.ts
+?? src/renderer/editing-controller.ts
+?? src/renderer/editing-view.ts
+?? tests/e2e/editing-workflow.spec.ts
+?? tests/editing-bridge.test.ts
+?? tests/editing-view.test.ts
+?? "\347\274\226\350\276\221\346\216\245\345\205\245\351\252\214\346\224\266.cmd"

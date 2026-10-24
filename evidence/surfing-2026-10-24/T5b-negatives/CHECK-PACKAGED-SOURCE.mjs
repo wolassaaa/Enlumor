@@ -1,0 +1,12 @@
+import {extractFile} from '@electron/asar';
+import {readFileSync} from 'node:fs';
+import path from 'node:path';
+import {createHash} from 'node:crypto';
+const archive=path.resolve('evidence/surfing-2026-10-24/T5b-negatives/MODIFIED_FILE/win-unpacked/resources/app.asar');
+const compiled=extractFile(archive,path.join('dist','main','index.cjs'));
+if(!compiled.equals(readFileSync('dist/main/index.cjs')))throw Error('PACKAGED_BUNDLE_MISMATCH');
+const map=JSON.parse(readFileSync('dist/main/index.cjs.map','utf8'));
+const index=map.sources.findIndex(s=>s.endsWith('/surfing-requests.ts'));
+if(index<0||map.sourcesContent[index]!==readFileSync('src/main/surfing-requests.ts','utf8'))throw Error('BUILD_SOURCE_MISMATCH');
+console.log('PACKAGED_BUNDLE_MATCH: '+createHash('sha256').update(compiled).digest('hex'));
+console.log('BUILD_SOURCE_MATCH: surfing-requests.ts '+createHash('sha256').update(map.sourcesContent[index]).digest('hex'));

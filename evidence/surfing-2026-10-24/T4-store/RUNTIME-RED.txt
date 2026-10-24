@@ -1,0 +1,77 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/surfing-runtime.test.ts (14 tests | 7 failed) 235ms
+   × saves only authoritative generated results, not renderer model text 18ms
+   × restores route to backend in paused form without network, keys or navigation 14ms
+   × restored backend route supports explicit explanation without regenerating a route 15ms
+   × rejects stale selection saves after a replacement route commits 19ms
+   × does not claim a save succeeded when storage fails 13ms
+   × rejects changed model metadata on restore without overwriting saved data 16ms
+   × revalidates every stored evidence id against the freshly extracted paper 13ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 7 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-runtime.test.ts > saves only authoritative generated results, not renderer model text
+TypeError: h.runtime.saveProgress is not a function
+ ❯ tests/surfing-runtime.test.ts:18:150
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/7]⎯
+
+ FAIL  tests/surfing-runtime.test.ts > restores route to backend in paused form without network, keys or navigation
+TypeError: h.runtime.saveProgress is not a function
+ ❯ tests/surfing-runtime.test.ts:19:159
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/7]⎯
+
+ FAIL  tests/surfing-runtime.test.ts > restored backend route supports explicit explanation without regenerating a route
+TypeError: h.runtime.saveProgress is not a function
+ ❯ tests/surfing-runtime.test.ts:20:164
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/7]⎯
+
+ FAIL  tests/surfing-runtime.test.ts > rejects stale selection saves after a replacement route commits
+AssertionError: expected [Function] to throw error including 'SURFING_STALE' but got 'h.runtime.saveProgress is not a funct…'
+
+Expected: "SURFING_STALE"
+Received: "h.runtime.saveProgress is not a function"
+
+ ❯ tests/surfing-runtime.test.ts:21:357
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/7]⎯
+
+ FAIL  tests/surfing-runtime.test.ts > does not claim a save succeeded when storage fails
+AssertionError: expected [Function] to throw error including 'SQLITE_FULL' but got 'h.runtime.saveProgress is not a funct…'
+
+Expected: "SQLITE_FULL"
+Received: "h.runtime.saveProgress is not a function"
+
+ ❯ tests/surfing-runtime.test.ts:22:263
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/7]⎯
+
+ FAIL  tests/surfing-runtime.test.ts > rejects changed model metadata on restore without overwriting saved data
+TypeError: h.runtime.saveProgress is not a function
+ ❯ tests/surfing-runtime.test.ts:23:155
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/7]⎯
+
+ FAIL  tests/surfing-runtime.test.ts > revalidates every stored evidence id against the freshly extracted paper
+TypeError: h.runtime.saveProgress is not a function
+ ❯ tests/surfing-runtime.test.ts:24:155
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/7]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  7 failed | 7 passed (14)
+   Start at  02:26:09
+   Duration  402ms (tests 83%, transform 11%, import 5%, worker 2%)
+

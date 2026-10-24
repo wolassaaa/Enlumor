@@ -1,0 +1,1 @@
+ROLLBACK PASS: four new files absent as at baseline; delivered working tree remains changed.

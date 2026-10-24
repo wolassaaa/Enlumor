@@ -1,0 +1,10 @@
+COMMAND: npm run build
+INPUT: full TypeScript/build entry points
+
+> enlumor@0.1.15 build
+> tsc --noEmit && node scripts/build.mjs
+
+src/main/workspace.ts(57,8): error TS2304: Cannot find name 'version'.
+src/main/workspace.ts(59,12): error TS2304: Cannot find name 'version'.
+
+EXIT: 1

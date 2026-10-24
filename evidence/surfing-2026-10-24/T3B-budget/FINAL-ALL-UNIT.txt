@@ -1,0 +1,40 @@
+
+> enlumor@0.1.15 test
+> vitest run --reporter=dot
+
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:52240) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:3280) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:24240) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:47720) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:43308) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:22768) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+stdout | tests/editing-executor.test.ts > atomic editing executor against real temporary SQLite > commits a trusted source mark with atomic versions/history/receipt and leaves source PDF unchanged
+ISOLATION {"sourcePdf":"C:\\Users\\woola\\AppData\\Local\\Temp\\enlumor-edit-yj3dQY\\source.pdf","beforeHash":"a1ef8335cade47d55f16958cbb5d118b2a6255f52bdde980af943939822f08f7","afterHash":"a1ef8335cade47d55f16958cbb5d118b2a6255f52bdde980af943939822f08f7","selectedDatabase":"C:\\Users\\woola\\AppData\\Local\\Temp\\enlumor-edit-yj3dQY\\isolated.sqlite","untouchedDatabase":"C:\\Users\\woola\\AppData\\Local\\Temp\\enlumor-edit-OfqyrP\\isolated.sqlite","untouchedDatabaseHash":"c663f6d1af7d7a412ccee25b88d8c483f92195d8ce9a947a723154c4ca22fc4b"}
+
+(node:51116) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+·····························································································stdout | tests/editing-planner.test.ts > dense geometry copy compatibility and hostile arrays > copies the actual 1000 by 256-point workload without mutation or digest drift
+COPY_PROFILE {"arrays":1000,"points":256,"ms":132.80490000000003}
+
+(node:49960) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:47328) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:40980) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+·····························································································································································································································································································································································································································································································
+
+ Test Files  37 passed (37)
+      Tests  570 passed (570)
+   Start at  01:50:52
+   Duration  14.13s (tests 92%, import 4%, transform 2%, worker 1%)
+

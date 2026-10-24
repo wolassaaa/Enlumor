@@ -81,28 +81,37 @@ export class WorkspaceEdits {
   }
   private get db(){return this.workspace.db;}
   private context(c:CommandContext) {const d=this.workspace.document(c.documentId);if(d.fingerprint!==c.fingerprint)throw Error('SOURCE_CHANGED');return d;}
-  private marks(c:CommandContext):{marks:EditMark[];diagnostics:{legacyId:string;reason:string}[]} {
+  private marks(c:CommandContext,ids?:readonly string[]):{marks:EditMark[];diagnostics:{legacyId:string;reason:string}[]} {
     const doc=this.context(c); const bounds=Array.from({length:doc.pageCount},()=>[-1e7,-1e7,1e7,1e7] as [number,number,number,number]);
     const marks:EditMark[]=[],diagnostics:{legacyId:string;reason:string}[]=[];
-    for(const row of this.db.prepare('SELECT id,version,payload FROM edit_marks WHERE documentId=? AND fingerprint=? ORDER BY rowid').all(c.documentId,c.fingerprint)) {
+    const rows=ids?this.db.prepare('SELECT id,version,payload FROM edit_marks WHERE documentId=? AND fingerprint=? AND id IN (SELECT value FROM json_each(?)) ORDER BY rowid').all(c.documentId,c.fingerprint,JSON.stringify(ids))
+      :this.db.prepare('SELECT id,version,payload FROM edit_marks WHERE documentId=? AND fingerprint=? ORDER BY rowid').all(c.documentId,c.fingerprint);
+    for(const row of rows) {
       try {const m=JSON.parse(row.payload as string);validateMark(m,c,bounds);if(m.id!==row.id||m.version!==row.version)throw Error('version mismatch'); marks.push(m);}
       catch {diagnostics.push({legacyId:String(row.id),reason:'INVALID_EDIT_MARK'});}
     }
     return {marks,diagnostics};
   }
-  readSnapshot(c:CommandContext):EditSnapshot {
+  /** ids narrows marks and versions (tombstones included) to a targeted command's own rows. */
+  readSnapshot(c:CommandContext,ids?:readonly string[]):EditSnapshot {
     const versions:Record<string,number>={};
-    for(const r of this.db.prepare('SELECT id,version FROM edit_versions WHERE documentId=? AND fingerprint=?').all(c.documentId,c.fingerprint)){validateVersion(r.version);Object.defineProperty(versions,String(r.id),{value:Number(r.version),enumerable:true,writable:true,configurable:true});}
-    return {context:structuredClone(c),marks:this.marks(c).marks,versions};
+    const rows=ids?this.db.prepare('SELECT id,version FROM edit_versions WHERE documentId=? AND fingerprint=? AND id IN (SELECT value FROM json_each(?))').all(c.documentId,c.fingerprint,JSON.stringify(ids))
+      :this.db.prepare('SELECT id,version FROM edit_versions WHERE documentId=? AND fingerprint=?').all(c.documentId,c.fingerprint);
+    for(const r of rows){validateVersion(r.version);Object.defineProperty(versions,String(r.id),{value:Number(r.version),enumerable:true,writable:true,configurable:true});}
+    return {context:structuredClone(c),marks:this.marks(c,ids).marks,versions};
   }
   readReceipt(key:string):EditReceipt|null {const r=this.db.prepare('SELECT payload FROM edit_receipts WHERE requestKey=?').get(key);return r?JSON.parse(r.payload as string):null;}
   readOperation(c:CommandContext,id:string):EditOperation|null {const r=this.db.prepare('SELECT payload FROM edit_operations WHERE operationId=? AND documentId=? AND fingerprint=?').get(id,c.documentId,c.fingerprint);return r?JSON.parse(r.payload as string):null;}
   history(c:CommandContext,actor:EditActor):{undoIds:string[];redoIds:string[]} {
     this.context(c);const key=actorKey(actor);
     const current=this.db.prepare('SELECT version FROM edit_versions WHERE documentId=? AND fingerprint=? AND id=?');
-    const applicable=(o:EditOperation)=>Object.entries(o.currentVersions).every(([id,v])=>v<Number.MAX_SAFE_INTEGER&&Number(current.get(c.documentId,c.fingerprint,id)?.version??0)===v);
-    const undoIds=this.db.prepare("SELECT payload FROM edit_operations WHERE documentId=? AND fingerprint=? AND actorKey=? AND action='edit' AND state='applied' ORDER BY rowid DESC").all(c.documentId,c.fingerprint,key).map(r=>JSON.parse(r.payload as string) as EditOperation).filter(applicable).map(o=>o.operationId);
-    const redoIds=this.db.prepare("SELECT payload FROM edit_operations WHERE documentId=? AND fingerprint=? AND redoOwnerKey=? AND action='edit' AND state='undone' ORDER BY rowid DESC").all(c.documentId,c.fingerprint,key).map(r=>JSON.parse(r.payload as string) as EditOperation).filter(o=>o.redoEligible&&applicable(o)).map(o=>o.operationId);
+    const applicable=(o:{currentVersions:Record<string,number>})=>Object.entries(o.currentVersions).every(([id,v])=>v<Number.MAX_SAFE_INTEGER&&Number(current.get(c.documentId,c.fingerprint,id)?.version??0)===v);
+    // History buttons need metadata, not megabytes of stroke deltas/inverses.
+    // SQLite projects from the same authoritative rows/read transaction; no cache.
+    const fields="json_extract(payload,'$.operationId','$.currentVersions','$.redoEligible') AS metadata";
+    const decode=(r:Record<string,unknown>)=>{const [operationId,currentVersions,redoEligible]=JSON.parse(r.metadata as string);return{operationId:operationId as string,currentVersions:currentVersions as Record<string,number>,redoEligible:!!redoEligible};};
+    const undoIds=this.db.prepare(`SELECT ${fields} FROM edit_operations WHERE documentId=? AND fingerprint=? AND actorKey=? AND action='edit' AND state='applied' ORDER BY rowid DESC`).all(c.documentId,c.fingerprint,key).map(decode).filter(applicable).map(o=>o.operationId);
+    const redoIds=this.db.prepare(`SELECT ${fields} FROM edit_operations WHERE documentId=? AND fingerprint=? AND redoOwnerKey=? AND action='edit' AND state='undone' ORDER BY rowid DESC`).all(c.documentId,c.fingerprint,key).map(decode).filter(o=>o.redoEligible&&applicable(o)).map(o=>o.operationId);
     return {undoIds,redoIds};
   }
   legacyInputs(documentId:string):LegacyInput[] {
@@ -129,7 +138,7 @@ export class WorkspaceEdits {
     this.db.exec('BEGIN IMMEDIATE');
     let active=true,commitAttempted=false;
     try {
-      const ports:EditTransaction={readSnapshot:c=>this.readSnapshot(c),readReceipt:k=>this.readReceipt(k),readOperation:(c,id)=>this.readOperation(c,id),
+      const ports:EditTransaction={readSnapshot:(c,ids)=>this.readSnapshot(c,ids),readReceipt:k=>this.readReceipt(k),readOperation:(c,id)=>this.readOperation(c,id),
         readConfirmation:id=>{const r=this.db.prepare('SELECT payload,consumed FROM edit_confirmations WHERE id=?').get(id);return r?{...JSON.parse(r.payload as string),consumed:!!r.consumed}:null;},
         writeDeltas:(c,d)=>this.writeDeltas(c,d),writeHistory:w=>this.writeHistory(w),
         writeReceipt:r=>{const op=this.db.prepare('SELECT actorKey FROM edit_operations WHERE operationId=?').get(r.result.operationId);if(!op)throw Error('missing receipt operation');this.db.prepare('INSERT INTO edit_receipts VALUES(?,?,?,?,?,?)').run(r.requestKey,r.result.documentId,r.result.fingerprint,String(op.actorKey),r.requestDigest,JSON.stringify(r));},

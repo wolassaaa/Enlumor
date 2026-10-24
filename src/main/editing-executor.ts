@@ -23,7 +23,7 @@ export type EditOperation = {
 };
 export type HistoryWrite = { operation: EditOperation; target?: EditOperation; clearRedoFor?: EditActor };
 export type EditTransaction = {
-  readSnapshot(context: CommandContext): EditSnapshot;
+  readSnapshot(context: CommandContext, ids?: readonly string[]): EditSnapshot;
   readReceipt(requestKey: string): EditReceipt | null;
   readOperation(context: CommandContext, operationId: string): EditOperation | null;
   readConfirmation(id: string): EditConfirmation | null;
@@ -39,6 +39,8 @@ export type EditTransaction = {
  * Report an indeterminate transaction outcome as code COMMIT_UNCERTAIN; never retry it
  * inside the host. Read ports are side-effect-free, including receipt recovery.
  * Source/actor changes must invalidate getContext().revision. No UI effects live here.
+ * readSnapshot ids: every requested mark/version must be present; a host may ignore ids
+ * and return the whole snapshot, which plans identically.
  */
 export type EditHost = {
   getContext(): CommandContext | null;
@@ -46,7 +48,7 @@ export type EditHost = {
   getPageBounds(): EditEnvironment['pageBounds'];
   resolveAnchors(context: CommandContext): readonly VerifiedAnchor[] | Promise<readonly VerifiedAnchor[]>;
   allocateIds(requestKey: string, count: number): readonly string[];
-  readSnapshot(context: CommandContext): EditSnapshot;
+  readSnapshot(context: CommandContext, ids?: readonly string[]): EditSnapshot;
   readReceipt(requestKey: string): EditReceipt | null;
   readOperation(context: CommandContext, operationId: string): EditOperation | null;
   getConfirmation(binding: ConfirmationBinding): string | null | Promise<string | null>;
@@ -140,6 +142,28 @@ function prepare(input: EditRequest, snapshot: EditSnapshot, env: EditEnvironmen
   const p = prepareEdit(input,snapshot,env);
   return p.ok && p.kind === 'history' ? prepareHistory(p,snapshot,env,read) : p;
 }
+/**
+ * Targeted commands plan only from their own ids (get/depend/history), so a dense page need
+ * not be read and copied whole. erase/list/export and any unrecognized shape stay whole (undefined).
+ */
+function snapshotScope(command: EditRequest['command'], newIds: readonly string[], context: CommandContext, read: EditHost['readOperation']): string[] | undefined {
+  const ids = new Set<string>(newIds);
+  const add = (id: unknown) => typeof id === 'string' && !!ids.add(id);
+  function visit(c: any): boolean {
+    switch (c?.type) {
+      case 'create_mark': return true;
+      case 'get_mark': case 'update_mark': case 'set_mark_geometry': case 'set_mark_placement': case 'replace_mark_anchor': return add(c.id);
+      case 'delete_marks': case 'set_marks_visibility': case 'set_marks_retention': return Array.isArray(c.targets) && c.targets.every((t: any) => add(t?.id));
+      case 'apply_edit_batch': return Array.isArray(c.operations) && c.operations.every(visit);
+      case 'undo_edit': case 'redo_edit': {
+        const op = typeof c.operationId === 'string' ? read(context,c.operationId) : null;
+        return !!op && Array.isArray(op.deltas) && op.deltas.every(d => add(d?.id));
+      }
+      default: return false;
+    }
+  }
+  return visit(command) ? [...ids].sort() : undefined;
+}
 function binding(plan: MutationPlan, requestKey: string): ConfirmationBinding {
   return copyEditData({requestKey,context:plan.context,actor:plan.actor,digest:plan.digest,deltas:plan.deltas});
 }
@@ -163,7 +187,8 @@ export async function runEditingCommand(input: unknown, host: EditHost, signal: 
     const ids=count ? copyEditData(host.allocateIds(key,count)) : [];
     if (!same(ids,deriveEditingIds(key,count))) invalid();
     const env: EditEnvironment = {actor:copyEditData(actor),pageBounds:copyEditData(host.getPageBounds()),anchors,newIds:ids};
-    const preview=prepare(i.request,host.readSnapshot(context),env,(c,id)=>host.readOperation(c,id));
+    const read: EditHost['readOperation']=(c,id)=>host.readOperation(c,id);
+    const preview=prepare(i.request,host.readSnapshot(context,snapshotScope(i.request.command,ids,context,read)),env,read);
     if (!preview.ok) return failure(new ExecutionError(preview.error.code));
     checkCurrent(host,context,actor,signal);
     if (preview.kind === 'read') return {status:'read',read:copyEditData(preview.read)};
@@ -179,7 +204,8 @@ export async function runEditingCommand(input: unknown, host: EditHost, signal: 
       // A winner may have committed while this caller was resolving anchors/approval.
       const prior=replay(tx.readReceipt(i.requestKey),i.requestDigest); if (prior) return prior;
       checkCurrent(host,context,actor,signal);
-      const current=prepare(i.request,tx.readSnapshot(context),env,(c,id)=>tx.readOperation(c,id));
+      const txRead: EditHost['readOperation']=(c,id)=>tx.readOperation(c,id);
+      const current=prepare(i.request,tx.readSnapshot(context,snapshotScope(i.request.command,ids,context,txRead)),env,txRead);
       if (!current.ok) fail(current.error.code);
       if (current.kind !== 'prepared' || current.digest !== preview.digest) fail('VERSION_CONFLICT');
       if (!same(host.getPageBounds(),env.pageBounds)) fail('EDIT_STALE');

@@ -1,0 +1,88 @@
+warning: in the working copy of 'docs/WAVE_A_TASKS.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'docs/superpowers/plans/2026-10-20-editing-production-integration.md', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'evidence/round-six/complex-anchors.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/main/editing-workspace.ts', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'src/main/index.ts', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'src/main/preload.ts', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'src/renderer/main.tsx', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'src/renderer/pdf-reader.ts', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'src/renderer/style.css', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'src/shared/editing-bridge.ts', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'src/shared/model.ts', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'tests/e2e/dense-ink.spec.ts', CRLF will be replaced by LF the next time Git touches it
+warning: in the working copy of 'tests/editing-workspace.test.ts', CRLF will be replaced by LF the next time Git touches it
+ .gitattributes                                     |   2 +
+ docs/WAVE_A_STATE.json                             | 138 +++++++++++++++++++--
+ docs/WAVE_A_TASKS.md                               |   7 ++
+ .../2026-10-20-editing-production-integration.md   |  18 +--
+ evidence/arrows-ink/arrow-export.pdf               | Bin 103780 -> 103780 bytes
+ evidence/arrows-ink/arrow.png                      | Bin 54279 -> 57326 bytes
+ evidence/arrows-ink/ink-export.pdf                 | Bin 103941 -> 103941 bytes
+ evidence/arrows-ink/ink.png                        | Bin 55135 -> 58244 bytes
+ evidence/cruise-blocks/scan-blocks.png             | Bin 181873 -> 184723 bytes
+ evidence/cruise-control/cruise-active.png          | Bin 168326 -> 166100 bytes
+ evidence/cruise-control/cruise.png                 | Bin 114580 -> 110266 bytes
+ evidence/cruise-protocols/model-settings.png       | Bin 294929 -> 363500 bytes
+ .../TASK2-evidence-note-export.png                 | Bin 58742 -> 124021 bytes
+ evidence/layout-tabs/layout.png                    | Bin 45465 -> 108240 bytes
+ evidence/layout-tabs/tabs.png                      | Bin 49181 -> 114112 bytes
+ evidence/native-apis/spark-settings.png            | Bin 270770 -> 365255 bytes
+ evidence/note-recovery/pending-recovery.png        | Bin 54218 -> 110216 bytes
+ evidence/note-recovery/saved-note.png              | Bin 51291 -> 107117 bytes
+ evidence/reading-tools/single.png                  | Bin 50613 -> 115151 bytes
+ evidence/reading-tools/underline.png               | Bin 50834 -> 113609 bytes
+ evidence/round-six/complex-anchors.json            |  36 +++---
+ evidence/round-six/complex-export.pdf              | Bin 187735 -> 187735 bytes
+ evidence/round-six/complex-rotation.png            | Bin 179834 -> 187883 bytes
+ evidence/settings-simplify/settings-1024.png       | Bin 78453 -> 78474 bytes
+ evidence/settings-simplify/settings.png            | Bin 381545 -> 380398 bytes
+ evidence/strikeout-lines/line-export.pdf           | Bin 103709 -> 103709 bytes
+ evidence/strikeout-lines/line.png                  | Bin 52563 -> 57272 bytes
+ evidence/strikeout-lines/strikeout-export.pdf      | Bin 103815 -> 103815 bytes
+ evidence/strikeout-lines/strikeout.png             | Bin 53520 -> 58164 bytes
+ evidence/stroke-eraser/erased-export.pdf           | Bin 1923 -> 1923 bytes
+ evidence/thumbnails/thumbnails.png                 | Bin 51378 -> 61746 bytes
+ evidence/v04-wave-a/A2-manual-legacy-restored.png  | Bin 165467 -> 166440 bytes
+ evidence/v04-wave-a/a1-429-recovered.png           | Bin 171887 -> 166555 bytes
+ evidence/v04-wave-a/a1-empty-recovered.png         | Bin 171887 -> 166551 bytes
+ evidence/v04-wave-a/a1-timeout-recovered.png       | Bin 171887 -> 166555 bytes
+ evidence/v04-wave-a/a1-truncated-recovered.png     | Bin 171887 -> 166564 bytes
+ evidence/v051-wave-a/TASK1-follow-up-complete.png  | Bin 158957 -> 159508 bytes
+ .../v051-wave-a/TASK2-manual-annotation-source.png | Bin 166782 -> 167342 bytes
+ evidence/v051-wave-a/TASK2-manual-annotation.png   | Bin 167408 -> 167965 bytes
+ evidence/v051-wave-a/TASK2-manual-blocks.png       | Bin 179093 -> 179657 bytes
+ evidence/v051-wave-a/TASK2-manual-divider.png      | Bin 171201 -> 171761 bytes
+ evidence/v051-wave-a/TASK2-manual-drawing.png      | Bin 171974 -> 172547 bytes
+ evidence/v051-wave-a/TASK2-manual-fit-page.png     | Bin 163203 -> 163812 bytes
+ evidence/v051-wave-a/TASK2-manual-fit-width.png    | Bin 170888 -> 171471 bytes
+ evidence/v051-wave-a/TASK2-manual-key-page.png     | Bin 158196 -> 158785 bytes
+ .../v051-wave-a/TASK2-manual-key-selection.png     | Bin 189147 -> 189740 bytes
+ evidence/v051-wave-a/TASK2-manual-layout.png       | Bin 171259 -> 171933 bytes
+ evidence/v051-wave-a/TASK2-manual-page.png         | Bin 172706 -> 173348 bytes
+ evidence/v051-wave-a/TASK2-manual-rotation.png     | Bin 158849 -> 159417 bytes
+ evidence/v051-wave-a/TASK2-manual-search-next.png  | Bin 173333 -> 173971 bytes
+ evidence/v051-wave-a/TASK2-manual-search.png       | Bin 167892 -> 168512 bytes
+ evidence/v051-wave-a/TASK2-manual-selection.png    | Bin 189147 -> 189740 bytes
+ evidence/v051-wave-a/TASK2-manual-sidebar.png      | Bin 134439 -> 134989 bytes
+ evidence/v051-wave-a/TASK2-manual-wheel.png        | Bin 171410 -> 172568 bytes
+ evidence/v051-wave-a/TASK2-manual-zoom-out.png     | Bin 169363 -> 170000 bytes
+ evidence/v051-wave-a/TASK2-manual-zoom.png         | Bin 170905 -> 171487 bytes
+ package-lock.json                                  |  11 +-
+ package.json                                       |   1 +
+ python/export_pdf.py                               |  36 ++++++
+ scripts/benchmark.mjs                              |  25 ++--
+ scripts/build.mjs                                  |   3 +-
+ src/main/editing-workspace.ts                      |  10 +-
+ src/main/index.ts                                  |  39 +++++-
+ src/main/preload.ts                                |  19 +++
+ src/renderer/main.tsx                              | 127 +++++++++++++++----
+ src/renderer/pdf-reader.ts                         |  15 ++-
+ src/renderer/style.css                             |  13 ++
+ src/shared/editing-bridge.ts                       |  16 +++
+ src/shared/editing-marks.ts                        |  26 ++--
+ src/shared/editing-planner.ts                      |  11 +-
+ src/shared/model.ts                                |   5 +-
+ tests/e2e/dense-ink.spec.ts                        |   9 +-
+ tests/editing-planner.test.ts                      |  10 ++
+ tests/editing-workspace.test.ts                    |   9 ++
+ 74 files changed, 481 insertions(+), 105 deletions(-)

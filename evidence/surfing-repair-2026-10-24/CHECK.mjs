@@ -1,0 +1,10 @@
+import {extractFile} from '@electron/asar';
+import {readFileSync} from 'node:fs';import path from 'node:path';import {createHash} from 'node:crypto';
+const e='evidence/surfing-repair-2026-10-24';
+const hash=b=>createHash('sha256').update(b).digest('hex');
+const hashes=JSON.parse(readFileSync(e+'/FINAL_HASHES.json','utf8'));
+for(const [f,h] of Object.entries(hashes))if(hash(readFileSync(f))!==h)throw Error('SOURCE_CHANGED '+f);
+const archive=path.resolve(e+'/MODIFIED_FILE/win-unpacked/resources/app.asar');
+for(const f of ['index.cjs','preload.cjs','surfing-token-worker.cjs'])if(!extractFile(archive,path.join('dist','main',f)).equals(readFileSync('dist/main/'+f)))throw Error('PACKAGED_BUNDLE_MISMATCH '+f);
+const map=JSON.parse(readFileSync('dist/main/index.cjs.map','utf8'));const i=map.sources.findIndex(s=>s.endsWith('/surfing-requests.ts'));if(i<0||map.sourcesContent[i]!==readFileSync('src/main/surfing-requests.ts','utf8'))throw Error('BUILD_SOURCE_MISMATCH');
+console.log('REPAIR_CHECK PASS: 14 live source/test hashes match snapshot; three packaged main/preload/token-worker bundles match build; request source matches source map.');

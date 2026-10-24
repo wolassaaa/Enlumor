@@ -23,20 +23,30 @@ export function copyEditData<T>(input: T): T {
     seen.add(value);
     const array = Array.isArray(value), proto = Object.getPrototypeOf(value);
     if (array ? proto !== Array.prototype : proto !== Object.prototype && proto !== null) invalid();
-    const descriptors = Object.getOwnPropertyDescriptors(value);
-    const keys = Reflect.ownKeys(descriptors);
-    if (keys.some(key => typeof key !== 'string' || !('value' in descriptors[key]))) invalid();
     if (array) {
-      const length = descriptors.length.value as number;
+      // Dense paths dominate real ink snapshots. Read each own data descriptor once,
+      // without allocating a second 512-property descriptor object for every stroke.
+      const property = Object.getOwnPropertyDescriptor(value, 'length');
+      if (!property || !('value' in property) || !Number.isSafeInteger(property.value) || property.value < 0) invalid();
+      const length = property.value as number;
       if (length > 100000) invalid('EDIT_TOO_LARGE');
-      if (keys.length !== length + 1) invalid();
-      const result: unknown[] = [];
+      // Every index plus length must be present: cardinality + own-index checks
+      // rejects holes and *all* extra keys (including symbols/nonenumerable keys).
+      if (Reflect.ownKeys(value).length !== length + 1) invalid();
+      if (length && depth >= 32) invalid('EDIT_TOO_LARGE');
+      const result: unknown[] = new Array(length);
       for (let i = 0; i < length; i++) {
-        if (!Object.hasOwn(descriptors, String(i))) invalid();
-        result.push(visit(descriptors[i].value, depth + 1));
+        const entry = Object.getOwnPropertyDescriptor(value, i);
+        if (!entry || !('value' in entry)) invalid();
+        const item: unknown = entry.value;
+        if (typeof item === 'number') { if (!Number.isFinite(item)) invalid(); result[i] = Object.is(item, -0) ? 0 : item; }
+        else result[i] = visit(item, depth + 1);
       }
       return result;
     }
+    const descriptors = Object.getOwnPropertyDescriptors(value);
+    const keys = Reflect.ownKeys(descriptors);
+    if (keys.some(key => typeof key !== 'string' || !('value' in descriptors[key]))) invalid();
     const result: Record<string, unknown> = {};
     for (const key of keys as string[]) Object.defineProperty(result, key, { value: visit(descriptors[key].value, depth + 1), enumerable: true, writable: true, configurable: true });
     return result;

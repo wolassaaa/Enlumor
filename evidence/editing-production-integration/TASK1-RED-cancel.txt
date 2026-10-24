@@ -1,0 +1,49 @@
+COMMAND: npx vitest run tests/pdf-task-cancel.test.ts
+INPUT: actual local Node child JSON worker, AbortSignals
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/pdf-task-cancel.test.ts (3 tests | 2 failed) 5193ms
+   × preaborted PDF task rejects without launching work 60ms
+   × cancels actual in-flight child, clears abort listener, and settles only once on close 5008ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/pdf-task-cancel.test.ts > preaborted PDF task rejects without launching work
+AssertionError: promise resolved "{ delay: +0 }" instead of rejecting
+
+- Expected
++ Received
+
+- Error {
+-   "message": "rejected promise",
++ {
++   "delay": 0,
+  }
+
+ ❯ tests/pdf-task-cancel.test.ts:9:87
+      7| afterEach(()=>vi.restoreAllMocks());
+      8| it('preaborted PDF task rejects without launching work',async()=>{
+      9|   const c=new AbortController();c.abort();await expect(runPdfTask({del…
+       |                                                                                       ^
+     10| });
+     11| it('cancels actual in-flight child, clears abort listener, and settles…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/pdf-task-cancel.test.ts > cancels actual in-flight child, clears abort listener, and settles only once on close
+Error: Test timed out in 5000ms.
+If this is a long-running test, pass a timeout value as the last argument or configure it globally with "testTimeout".
+ ❯ tests/pdf-task-cancel.test.ts:11:1
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 1 passed (3)
+   Start at  11:05:26
+   Duration  5.35s (tests 99%, transform 1%)
+
+
+EXIT: 1

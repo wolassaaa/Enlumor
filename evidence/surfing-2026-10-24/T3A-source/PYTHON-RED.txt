@@ -1,0 +1,21 @@
+test_surfing_source (unittest.loader._FailedTest.test_surfing_source) ... ERROR
+
+======================================================================
+ERROR: test_surfing_source (unittest.loader._FailedTest.test_surfing_source)
+----------------------------------------------------------------------
+ImportError: Failed to import test module: test_surfing_source
+Traceback (most recent call last):
+  File "C:\Python314\Lib\unittest\loader.py", line 426, in _find_test_path
+    module = self._get_module_from_name(name)
+  File "C:\Python314\Lib\unittest\loader.py", line 367, in _get_module_from_name
+    __import__(name)
+    ~~~~~~~~~~^^^^^^
+  File "D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\python\test_surfing_source.py", line 5, in <module>
+    from export_pdf import surfing_document,verify_block
+ImportError: cannot import name 'surfing_document' from 'export_pdf' (D:\codex project\Enlumor\.worktrees\v04-wave-ab\python\export_pdf.py). Did you mean: 'editing_document'?
+
+
+----------------------------------------------------------------------
+Ran 1 test in 0.000s
+
+FAILED (errors=1)

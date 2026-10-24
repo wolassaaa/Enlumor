@@ -1,0 +1,7 @@
+0a24359daf613dfa3d577d012e4540df8b1b8d340eb1253129e39207c86592c0  docs/WAVE_A_STATE.json
+575f4fb2665cbe1561ad8d58d4c5d79e914f42acdfb7d95c15c83289703c5028  docs/SURFING_OVERNIGHT_2026-10-24.md
+2c7706f2daef73b3f0d3aae3e452f1e49cabe8ab95f8ef5755f5fd7f124ebf25  docs/acceptance/surfing-overnight-2026-10-24.md
+7fe1fa75cdfa3188f819940d9e3492e08af9b40d39a08a5c3d1ee88d96f1c9b9  tests/e2e/surfing-large.spec.ts
+420f8b352b421776fe740ccd1364bc1e8d918ea291a17220ddf8dbb55d8b1d79  evidence/surfing-2026-10-24/T5c-large/fixtures/large.pdf
+1935d66bbbd6cc936bfe7e0dfcb70ad584ab58282b2625b98dd628dba7d87260  evidence/surfing-2026-10-24/T5c-large/fixtures/overlimit.pdf
+6f69e93754eab257cea647031e11c7d63e24a6be92b86668665f06cfead69382  evidence/surfing-2026-10-24/T5c-large/fixtures/input-manifest.json

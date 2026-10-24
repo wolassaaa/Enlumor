@@ -1,0 +1,33 @@
+Change: handoff routing/state only. Four existing documents updated; Surfing-测试入口.cmd added. No production source or candidate binary changes.
+Changed fields: surfingOvernight.status=HANDOFF_READY_USER_ACCEPTANCE_PENDING; candidate/launcher point to Surfing-Repair; unit619, packagedMockSurfing15; conversation persistent=false; automationPAUSED; old overnight state retained as surfingOvernightHistoricalBeforeRepair. Main handoff replaces stale T5b instructions; acceptance and night ledger agree.
+
+Four artifacts:
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-handoff-2026-10-24/MODIFIED_FILE.zip
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-handoff-2026-10-24/DIFF_FILE.patch
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-handoff-2026-10-24/VERIFICATION.txt
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-handoff-2026-10-24/ROLLBACK.sh
+
+BASELINE exact command: python evidence/surfing-handoff-2026-10-24/CHECK.py baseline
+Input: four preserved original document bytes/hash values, original state JSON, recorded absent root launcher (not a new run of old product tests).
+Literal output: BASELINE PASS: original handoff/state target T5b; four original hashes preserved; root launcher originally absent.
+Exit0.
+
+MODIFIED exact command: python evidence/surfing-handoff-2026-10-24/CHECK.py
+Input: five current handoff files, MODIFIED_FILE.zip, absolute links, current state, frozen repair test logs, candidate264 SHA manifest and isolated restored copy.
+Literal output: MODIFIED PASS: five handoff files match archive; 12 absolute links resolve; current state/619-unit/15-packaged logs agree; 264 candidate hashes unchanged; isolated rollback verified.
+Exit0.
+MODIFIED exact command: node evidence/surfing-repair-2026-10-24/CHECK.mjs
+Literal output: REPAIR_CHECK PASS: 14 live source/test hashes match snapshot; three packaged main/preload/token-worker bundles match build; request source matches source map.
+Exit0.
+MODIFIED exact command (PowerShell): & '.\Surfing-测试入口.cmd' --check
+Literal output: REPAIR_LAUNCHER_CHECK: PASS
+Exit0. Test launches no user window or model request.
+
+ROLLBACK exact command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' -lc 'chmod +x evidence/surfing-handoff-2026-10-24/ROLLBACK.sh && evidence/surfing-handoff-2026-10-24/ROLLBACK.sh evidence/surfing-handoff-2026-10-24/rollback-copy'
+Input: marker-protected isolated copy with final5 hashes and originals4; no recursive deletion; new root launcher removed only there.
+Literal output: ROLLBACK PASS: four original document hashes restored; new root launcher absent; live handoff and repair retained.
+Exit0.
+Restored status: isolated documents again target old T5b and match original hashes; new launcher absent. Live latest handoff/state/launcher remain changed. This documentation rollback does not change application behavior/binaries or the automation.
+
+Historical tests are linked and verified, not rerun: repair619 unit, actual repair package15 Surfing, repaired source rollback56. Real model/two real papers/user acceptance pending. Historical full165=164pass/1old dense-performance failure, not a current repair full-release run. Prior T6 handoff checker is a point-in-time old handoff hash check; this new handoff supersedes it. Original evidence retained.
+No app windows forcibly closed, personal keys accessed, paid requests, runtime edits, commits, pushes, releases or automation resume. Reusable next-agent prompt and precise current entry are in docs/SURFING_HANDOFF_2026-10-24.md.

@@ -1,0 +1,385 @@
+--- a/tests/surfing-runtime.test.ts
++++ b/tests/surfing-runtime.test.ts
+@@ -12,3 +12,13 @@
+ });
+ 
+ it('reports stale preparation to the caller instead of leaving UI waiting for an event',async()=>{const h=setup();const s=await h.runtime.prepare('doc');h.runtime.invalidate();await expect(h.runtime.route({request:{requestId:'r',profileId:'local',context:s.context,consent:true},contextWindowTokens:10000})).rejects.toThrow('SURFING_STALE');expect(h.network).toEqual([]);});
++
++function persistence(h:ReturnType<typeof setup>){let stored:any=null;const p=h.ports.profile('local');h.ports.profileView=()=>({...p});h.ports.sessions={get:()=>stored?structuredClone(stored):null,save:s=>{stored=structuredClone(s);}};return{get:()=>stored,set:(s:any)=>{stored=structuredClone(s);}};}
++async function generated(){const h=setup(),disk=persistence(h),snapshot=await h.runtime.prepare('doc');await h.runtime.route({request:{requestId:'r',profileId:'local',context:snapshot.context,consent:true},contextWindowTokens:10000});return{h,disk,snapshot,routeRevision:h.events[0].routeRevision};}
++it('saves only authoritative generated results, not renderer model text',async()=>{const {h,disk,snapshot,routeRevision}=await generated();h.runtime.saveProgress({context:snapshot.context,routeRevision,selected:0});expect(disk.get()).toMatchObject({documentId:'doc',selected:0,status:'paused',route:{stops:[{title:'Problem'}]},answers:{}});expect(()=>h.runtime.saveProgress({context:snapshot.context,routeRevision,selected:0,answers:{injected:'text'}} as any)).toThrow('SURFING_INVALID_REQUEST');});
++it('restores route to backend in paused form without network, keys or navigation',async()=>{const {h,disk,snapshot,routeRevision}=await generated();h.runtime.saveProgress({context:snapshot.context,routeRevision,selected:0});const saved=disk.get();const next=setup();const nextDisk=persistence(next);nextDisk.set(saved);next.ports.profile=()=>{throw Error('must not decrypt credentials');};const prepared=await next.runtime.prepare('doc');const restored=next.runtime.getSavedProgress(prepared.context);expect(restored!.session.selected).toBe(0);expect(restored!.session.status).toBe('paused');expect(next.network).toEqual([]);expect(next.events).toEqual([]);});
++it('restored backend route supports explicit explanation without regenerating a route',async()=>{const {h,disk,snapshot,routeRevision}=await generated();h.runtime.saveProgress({context:snapshot.context,routeRevision,selected:0});const next=setup();persistence(next).set(disk.get());const prepared=await next.runtime.prepare('doc');next.runtime.getSavedProgress(prepared.context);next.ports.generate=async()=>JSON.stringify({text:'Restored explanation',passageIds:['surf-0-0-0']});await next.runtime.explain({request:{requestId:'e',profileId:'local',context:prepared.context,consent:true,stopIndex:0},contextWindowTokens:10000});expect(next.events.at(-1)).toMatchObject({type:'explanation',explanation:{text:'Restored explanation'}});});
++it('rejects stale selection saves after a replacement route commits',async()=>{const {h,disk,snapshot,routeRevision}=await generated();await h.runtime.route({request:{requestId:'new',profileId:'local',context:snapshot.context,consent:true},contextWindowTokens:10000});expect(()=>h.runtime.saveProgress({context:snapshot.context,routeRevision,selected:0})).toThrow('SURFING_STALE');expect(disk.get()).toBe(null);});
++it('does not claim a save succeeded when storage fails',async()=>{const {h,snapshot,routeRevision}=await generated();h.ports.sessions!.save=()=>{throw Error('SQLITE_FULL');};expect(()=>h.runtime.saveProgress({context:snapshot.context,routeRevision,selected:0})).toThrow('SQLITE_FULL');});
++it('rejects changed model metadata on restore without overwriting saved data',async()=>{const {h,disk,snapshot,routeRevision}=await generated();h.runtime.saveProgress({context:snapshot.context,routeRevision,selected:0});const next=setup();const d=persistence(next);d.set(disk.get());const before=d.get();const view=next.ports.profileView!('local')!;next.ports.profileView=()=>({...view,model:'changed'});const prepared=await next.runtime.prepare('doc');expect(()=>next.runtime.getSavedProgress(prepared.context)).toThrow('SURFING_PROFILE_CHANGED');expect(d.get()).toEqual(before);expect(next.network).toEqual([]);});
++it('revalidates every stored evidence id against the freshly extracted paper',async()=>{const {h,disk,snapshot,routeRevision}=await generated();h.runtime.saveProgress({context:snapshot.context,routeRevision,selected:0});const bad=disk.get();bad.route.stops[0].passageIds=['nonexistent'];const next=setup();persistence(next).set(bad);const prepared=await next.runtime.prepare('doc');expect(()=>next.runtime.getSavedProgress(prepared.context)).toThrow('SURFING_INVALID_SESSION');});
+--- a/tests/e2e/surfing.spec.ts
++++ b/tests/e2e/surfing.spec.ts
+@@ -43,3 +43,22 @@
+  try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByRole('button',{name:'Old entry',exact:true})).toBeVisible();await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect.poll(()=>calls).toBe(2);await expect(page.getByRole('button',{name:'Old entry',exact:true})).toHaveCount(0);if(mode==='cancel'){await page.getByRole('button',{name:'暂停 Surfing',exact:true}).click();release();}else await expect(page.getByRole('alert')).toContainText('AI_HTTP_429');await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByRole('button',{name:'Old entry',exact:true})).toBeVisible();expect(calls).toBe(3);
+  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+ });
++
++test('Surfing restores committed progress after restart without API or automatic navigation',async()=>{
++ let calls=0;const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const data=JSON.parse(JSON.parse(raw).messages[1].content);calls++;const id=data.passages.find((p:any)=>p.pageNumber===2).id;sendMock(res,data.selectedStop?{text:'Persisted local explanation',passageIds:[id]}:{stops:[{title:'Saved entry',reason:'Keep the exploration',passageIds:[id]}]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const endpoint='http://127.0.0.1:'+(server.address() as any).port+'/v1';let {app,page}=await launchAndPrepareSurfing(endpoint,'persistence');
++ try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await page.getByRole('button',{name:'Saved entry',exact:true}).click();await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Persisted local explanation');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');expect(calls).toBe(2);await page.waitForTimeout(350);await app.evaluate(({app})=>app.exit(0));
++ app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,'persistence')],env:{...process.env,ENLUMOR_PYTHON:python}});page=await app.firstWindow();await expect(page.locator('.textLayer span').first()).toBeVisible();await page.getByLabel('跳转页码',{exact:true}).fill('1');await page.getByLabel('跳转页码',{exact:true}).press('Enter');await page.getByRole('button',{name:'打开 Surfing',exact:true}).click();await page.getByRole('button',{name:'准备本地全文',exact:true}).click();await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已暂停');await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Persisted local explanation');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('1');await expect(page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true})).not.toBeChecked();await page.waitForTimeout(300);expect(calls).toBe(2);
++ await page.getByRole('button',{name:'Saved entry',exact:true}).click();await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('2');expect(calls).toBe(2);await page.locator('.surfing-setup summary').click();await page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true}).check();await page.getByRole('button',{name:'解释这个切入点',exact:true}).click();await expect.poll(()=>calls).toBe(3);await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');
++ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
++});
++test('Surfing failed save keeps progress, blocks close and permits explicit retry',async()=>{
++ const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const data=JSON.parse(JSON.parse(raw).messages[1].content);sendMock(res,data.selectedStop?{text:'Unsaved explanation remains visible',passageIds:[data.passages[0].id]}:{stops:[{title:'Retry entry',reason:'An actual source',passageIds:[data.passages[0].id]}]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','save-failure');let db:import('node:sqlite').DatabaseSync|undefined;
++ try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');const {DatabaseSync}=await import('node:sqlite');db=new DatabaseSync(path.join(folder,'save-failure','workspace.sqlite'));db.exec("CREATE TRIGGER fail_surfing_save BEFORE UPDATE ON surfing_sessions BEGIN SELECT RAISE(ABORT,'SURFING_TEST_SAVE_FAILED'); END");await page.getByRole('button',{name:'Retry entry',exact:true}).click();await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Unsaved explanation remains visible');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('保存失败');await page.getByRole('button',{name:'关闭 Surfing',exact:true}).click();await expect(page.getByLabel('Surfing 共读',{exact:true})).toHaveCount(1);await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Unsaved explanation remains visible');db.exec('DROP TRIGGER fail_surfing_save');await page.getByRole('button',{name:'重试保存 Surfing 进度',exact:true}).click();await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');await page.getByRole('button',{name:'关闭 Surfing',exact:true}).click();await expect(page.getByLabel('Surfing 共读',{exact:true})).toHaveCount(0);
++ }finally{db?.close();await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
++});
++
++test('Surfing native close flush pauses pending explanation but ordinary reading autosave does not',async()=>{
++ let calls=0,release=()=>{};const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const data=JSON.parse(JSON.parse(raw).messages[1].content);calls++;if(data.selectedStop){release=()=>sendMock(res,{text:'Unwanted after close flush',passageIds:[data.passages[0].id]});return;}sendMock(res,{stops:[{title:'Close pending entry',reason:'Original evidence',passageIds:[data.passages[0].id]}]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','close-pending');
++ try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await page.getByRole('button',{name:'Close pending entry',exact:true}).click();await expect.poll(()=>calls).toBe(2);await page.waitForTimeout(700);await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('解释中');await app.evaluate(({BrowserWindow})=>{BrowserWindow.getAllWindows()[0].webContents.send('reading:flush');});await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已暂停');release();await page.waitForTimeout(300);await expect(page.getByLabel('Surfing 解释',{exact:true})).not.toContainText('Unwanted after close flush');expect(calls).toBe(2);
++ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
++});
+--- a/src/main/index.ts
++++ b/src/main/index.ts
+@@ -1,3 +1,4 @@
++import {SurfingSessions} from './surfing-sessions';
+ import {SurfingRuntime} from './surfing-runtime';
+ import {measureSurfingInputTokens} from './surfing-token-worker-host';
+ import {openEditingWorkspace} from './editing-workspace';
+@@ -70,7 +71,9 @@
+     }
+   });
+   registerEditingIpc(handle,editingService);
+-  surfingRuntime=new SurfingRuntime({verified:id=>workspace.verified(id),extract:(request,signal)=>runPdfTask(request,signal),profile:id=>aiProfiles.resolve(id),measureInputTokens:(profile,prompt,signal)=>measureSurfingInputTokens(profile,prompt,signal,path.join(__dirname,'surfing-token-worker.cjs')),generate:(profile,prompt,options)=>generateText(profile,prompt,{...options,stream:true,fetch:(input,init)=>net.fetch(String(input),init)}),emit:event=>{if(!window.isDestroyed())window.webContents.send('surfing:text',event);}});
++  surfingRuntime=new SurfingRuntime({verified:id=>workspace.verified(id),extract:(request,signal)=>runPdfTask(request,signal),profile:id=>aiProfiles.resolve(id),profileView:id=>aiProfiles.list().find(p=>p.id===id)||null,sessions:new SurfingSessions(workspace),measureInputTokens:(profile,prompt,signal)=>measureSurfingInputTokens(profile,prompt,signal,path.join(__dirname,'surfing-token-worker.cjs')),generate:(profile,prompt,options)=>generateText(profile,prompt,{...options,stream:true,fetch:(input,init)=>net.fetch(String(input),init)}),emit:event=>{if(!window.isDestroyed())window.webContents.send('surfing:text',event);}});
++  handle('surfing:progress:get',context=>surfingRuntime!.getSavedProgress(context));
++  handle('surfing:progress:save',input=>surfingRuntime!.saveProgress(input));
+   handle('surfing:prepare',id=>surfingRuntime!.prepare(id));
+   handle('surfing:route',input=>surfingRuntime!.route(input));
+   handle('surfing:explain',input=>surfingRuntime!.explain(input));
+--- a/src/main/preload.ts
++++ b/src/main/preload.ts
+@@ -10,12 +10,14 @@
+   cancelUserEdit:v=>ipcRenderer.invoke('editing:cancel',v),
+   getUserEditReceipt:v=>ipcRenderer.invoke('editing:receipt',v),
+   reanchorLegacy:v=>ipcRenderer.invoke('editing:legacy-reanchor',v),
++  getSavedSurfingProgress:context=>ipcRenderer.invoke('surfing:progress:get',context),
++  saveSurfingProgress:input=>ipcRenderer.invoke('surfing:progress:save',input),
+   prepareSurfing:id=>ipcRenderer.invoke('surfing:prepare',id),
+   generateSurfingRoute:input=>ipcRenderer.invoke('surfing:route',input),
+   explainSurfingStop:input=>ipcRenderer.invoke('surfing:explain',input),
+   cancelSurfing:context=>ipcRenderer.invoke('surfing:cancel',context),
+   deactivateSurfing:context=>ipcRenderer.invoke('surfing:deactivate',context),
+-  onSurfingText:handler=>{const listener=(_event:unknown,event:import('./surfing-requests').SurfingRouteEvent)=>handler(event);ipcRenderer.on('surfing:text',listener);return()=>ipcRenderer.removeListener('surfing:text',listener);},
++  onSurfingText:handler=>{const listener=(_event:unknown,event:import('./surfing-runtime').SurfingRuntimeEvent)=>handler(event);ipcRenderer.on('surfing:text',listener);return()=>ipcRenderer.removeListener('surfing:text',listener);},
+   onAppBackground:handler=>{const listener=()=>handler();ipcRenderer.on('cruise:background',listener);return()=>ipcRenderer.removeListener('cruise:background',listener);},
+   getCruiseSession:id=>ipcRenderer.invoke('cruise:session:get',id),
+   saveCruiseSession:session=>ipcRenderer.invoke('cruise:session:save',session),
+--- a/src/main/surfing-requests.ts
++++ b/src/main/surfing-requests.ts
+@@ -30,6 +30,10 @@
+   const saved=this.lastRoute;
+   if(!saved||!same(saved.context,value.context)||saved.profileId!==value.profileId||!saved.route.stops[value.stopIndex])throw Error('SURFING_ROUTE_REQUIRED');
+   const {stopIndex,...request}=value;return this.execute(request,{index:stopIndex,stop:structuredClone(saved.route.stops[stopIndex])});
++ }
++ restoreRoute(context:CommandContext,profileId:string,route:SurfingRoute,snapshot:SurfingContext){
++  if(!same(this.ports.getContext(),context)||!same(snapshot.context,context))throw Error('SURFING_STALE');
++  const validated=parseSurfingRoute(JSON.stringify(route),snapshot);this.cancel();this.lastRoute={context:{...context},profileId,route:validated};
+  }
+  reset(){this.cancel();this.lastRoute=undefined;}
+  private async execute(value:SurfingRouteRequest,selection?:{index:number;stop:SurfingStop}):Promise<void>{
+--- a/src/main/surfing-runtime.ts
++++ b/src/main/surfing-runtime.ts
+@@ -1,18 +1,33 @@
+-import type {AiProfileInput} from '../shared/ai';
++import type {AiProfileInput,AiProfileView} from '../shared/ai';
+ import type {CommandContext} from '../shared/document-commands';
+ import type {SurfingContext} from '../shared/surfing-context';
++import type {SurfingSession} from '../shared/surfing-session';
+ import {createSurfingSourceLoader,type SurfingSourcePorts} from './surfing-source';
+-import {SurfingRequests,type SurfingRouteRequest,type SurfingExplainRequest,type SurfingRequestPorts} from './surfing-requests';
++import {SurfingRequests,type SurfingRouteRequest,type SurfingExplainRequest,type SurfingRequestPorts,type SurfingRouteEvent} from './surfing-requests';
++import {surfingProfileSignature,validateSurfingSession} from './surfing-sessions';
+ export type SurfingSubmission<T>={request:T;contextWindowTokens:number};
+-export type SurfingRuntimePorts=Pick<SurfingSourcePorts,'verified'|'extract'>&Pick<SurfingRequestPorts,'generate'|'measureInputTokens'|'emit'>&{profile:(id:string)=>AiProfileInput};
++export type SurfingSaveInput={context:CommandContext;routeRevision:number;selected:number|null};
++export type SurfingRestoredProgress={session:SurfingSession;routeRevision:number};
++export type SurfingRuntimeEvent=Exclude<SurfingRouteEvent,{type:'route'}>|(Extract<SurfingRouteEvent,{type:'route'}>&{routeRevision:number});
++export type SurfingRuntimePorts=Pick<SurfingSourcePorts,'verified'|'extract'>&Pick<SurfingRequestPorts,'generate'|'measureInputTokens'>&{profile:(id:string)=>AiProfileInput;profileView?:(id:string)=>AiProfileView|AiProfileInput|null;sessions?:{get:(documentId:string)=>SurfingSession|null;save:(session:SurfingSession)=>void};emit:(event:SurfingRuntimeEvent)=>void};
+ const same=(a:CommandContext|null,b:CommandContext|null)=>!!a&&!!b&&a.documentId===b.documentId&&a.fingerprint===b.fingerprint&&a.revision===b.revision;
+ export class SurfingRuntime{
+  private context:CommandContext|null=null;private snapshot:SurfingContext|null=null;private revision=0;private preparation?:AbortController;private budgets=new Map<string,number>();private requests:SurfingRequests;
++ private progress:SurfingSession|null=null;private routeRevision=0;private activeSource:SurfingSession['source']|null=null;
+  constructor(private ports:SurfingRuntimePorts){
+-  this.requests=new SurfingRequests({getContext:()=>this.getContext(),load:async context=>{if(!this.snapshot||!same(this.context,context))throw Error('SURFING_SOURCE_INVALID');const d=this.ports.verified(context.documentId);if(d.fingerprint!==context.fingerprint||d.pageCount!==this.snapshot.pageCount)throw Error('SURFING_SOURCE_INVALID');return structuredClone(this.snapshot);},profile:id=>({profile:this.ports.profile(id),contextWindowTokens:this.budgets.get(id)||0}),measureInputTokens:ports.measureInputTokens,generate:ports.generate,emit:ports.emit});
++  this.requests=new SurfingRequests({getContext:()=>this.getContext(),load:async context=>{if(!this.snapshot||!same(this.context,context))throw Error('SURFING_SOURCE_INVALID');const d=this.ports.verified(context.documentId);if(d.fingerprint!==context.fingerprint||d.pageCount!==this.snapshot.pageCount)throw Error('SURFING_SOURCE_INVALID');return structuredClone(this.snapshot);},profile:id=>{const p=this.ports.profile(id);this.activeSource={profileId:id,name:p.name,model:p.model,signature:surfingProfileSignature(p)};return{profile:p,contextWindowTokens:this.budgets.get(id)||0};},measureInputTokens:(profile,prompt,signal)=>this.ports.measureInputTokens(profile,prompt,signal),generate:(profile,prompt,options)=>this.ports.generate(profile,prompt,options),emit:event=>this.emit(event)});
++ }
++ private emit(event:SurfingRouteEvent){
++  if(event.type==='route'){
++   if(!this.context||!this.activeSource)return;this.routeRevision++;
++   this.progress={version:1,documentId:this.context.documentId,fingerprint:this.context.fingerprint,source:{...this.activeSource},route:structuredClone(event.route),selected:null,answers:{},contextWindowTokens:this.budgets.get(this.activeSource.profileId)!,status:'paused'};
++   this.ports.emit({...event,routeRevision:this.routeRevision});return;
++  }
++  if(event.type==='explanation'&&this.progress)this.progress.answers[String(event.stopIndex)]=structuredClone(event.explanation);
++  this.ports.emit(event);
+  }
+  getContext(){return this.context?{...this.context}:null;}
+- invalidate(){this.requests.reset();this.preparation?.abort();this.preparation=undefined;this.context=null;this.snapshot=null;this.budgets.clear();}
++ invalidate(){this.requests.reset();this.preparation?.abort();this.preparation=undefined;this.context=null;this.snapshot=null;this.progress=null;this.activeSource=null;this.budgets.clear();}
+  deactivate(context:CommandContext|null){if(same(this.context,context))this.invalidate();}
+  cancel(context?:CommandContext){if(context&&!same(this.context,context))return;this.requests.cancel();this.preparation?.abort();}
+  async prepare(documentId:string):Promise<SurfingContext>{
+@@ -23,6 +38,20 @@
+   catch(error){if(this.preparation===job){this.context=null;this.snapshot=null;}throw error;}
+   finally{if(this.preparation===job)this.preparation=undefined;}
+  }
++ getSavedProgress(context:CommandContext):SurfingRestoredProgress|null{
++  if(!this.snapshot||!same(this.context,context))throw Error('SURFING_STALE');
++  const saved=this.ports.sessions?.get(context.documentId);if(!saved)return null;
++  const clean=validateSurfingSession(saved,this.snapshot),view=this.ports.profileView?.(clean.source.profileId);
++  if(!view||surfingProfileSignature(view)!==clean.source.signature)throw Error('SURFING_PROFILE_CHANGED');
++  this.requests.restoreRoute(context,clean.source.profileId,clean.route,this.snapshot);this.progress=clean;this.activeSource={...clean.source};this.budgets.set(clean.source.profileId,clean.contextWindowTokens);this.routeRevision++;
++  return{session:structuredClone(clean),routeRevision:this.routeRevision};
++ }
++ saveProgress(input:SurfingSaveInput):void{
++  if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).sort().join(',')!=='context,routeRevision,selected')throw Error('SURFING_INVALID_REQUEST');
++  if(!this.progress||!this.snapshot||!same(this.context,input.context)||input.routeRevision!==this.routeRevision)throw Error('SURFING_STALE');
++  if(!this.ports.sessions)throw Error('SURFING_STORAGE_UNAVAILABLE');
++  const clean=validateSurfingSession({...this.progress,selected:input.selected},this.snapshot);this.ports.sessions.save(clean);this.progress=clean;
++ }
+  private configure<T extends SurfingRouteRequest>(input:SurfingSubmission<T>):T{
+   if(!input||typeof input!=='object'||Array.isArray(input)||Object.keys(input).sort().join(',')!=='contextWindowTokens,request'||!input.request||typeof input.request.profileId!=='string')throw Error('SURFING_INVALID_REQUEST');
+   if(!Number.isSafeInteger(input.contextWindowTokens)||input.contextWindowTokens<1||input.contextWindowTokens>10000000)throw Error('SURFING_CAPACITY_UNKNOWN');
+@@ -30,5 +59,10 @@
+   this.budgets.set(input.request.profileId,input.contextWindowTokens);return input.request;
+  }
+  route(input:SurfingSubmission<SurfingRouteRequest>){return Promise.resolve().then(()=>this.requests.start(this.configure(input)));}
+- explain(input:SurfingSubmission<SurfingExplainRequest>){return Promise.resolve().then(()=>this.requests.explain(this.configure(input)));}
++ explain(input:SurfingSubmission<SurfingExplainRequest>){return Promise.resolve().then(()=>{
++  const request=this.configure(input);
++  if(this.progress&&this.ports.profileView){const view=this.ports.profileView(request.profileId);if(!view||surfingProfileSignature(view)!==this.progress.source.signature)throw Error('SURFING_PROFILE_CHANGED');}
++  return this.requests.explain(request);
++ });}
+ }
++
+--- a/src/renderer/main.tsx
++++ b/src/renderer/main.tsx
+@@ -84,6 +84,7 @@
+   const cruiseOpenRef=useRef(cruiseOpen);cruiseOpenRef.current=cruiseOpen;
+   const [surfingOpen,setSurfingOpen]=useState(false),[surfingTakeover,setSurfingTakeover]=useState(0);
+   const surfingCancel=useRef<(()=>void)|null>(null);
++  const surfingFlush=useRef<(()=>Promise<void>)|null>(null);
+   const surfingOpenRef=useRef(surfingOpen);surfingOpenRef.current=surfingOpen;
+   // PdfReader keeps its initial selection callback; read the current panel state.
+   const commandHost=useRef<ReturnType<typeof createReaderCommandHost>|null>(null);
+@@ -145,6 +146,7 @@
+     if(noteOpen.current) throw new Error('UNSAVED_NOTE: 请先保存或取消便签');
+     await flight.current;
+     await editingController.current?.flush();
++    await surfingFlush.current?.();
+     await cruiseFlush.current?.();
+     await layoutFlight.current;
+     if (pending.current) throw new Error('UNSAVED_CHANGE');
+@@ -165,7 +167,7 @@
+       setDrawMode(null);const opened=activeDocument.current;if(!opened)return;
+       void commit({documentId:opened.id,upserts:[],deletes:ids});
+     },setTextNotice);
+-    const off = window.enlumor.onFlush(flush);
++    const off = window.enlumor.onFlush(async()=>{surfingCancel.current?.();await flush();});
+     void (async () => {
+       try { editingEnabled.current=unwrap(await window.enlumor.getEditingCapabilities()).enabled;if(editingEnabled.current)editingController.current=new EditingController(window.enlumor,acceptEditingView); const savedLayout = unwrap(await window.enlumor.getLayout()); setLayout(savedLayout); layoutRef.current = savedLayout; const list = unwrap(await window.enlumor.listDocuments()); setRecent(list);
+         const session = unwrap(await window.enlumor.getTabs());
+@@ -361,11 +363,11 @@
+           <button role="tab" aria-label={tab.name} aria-selected={doc?.id===tab.id} tabIndex={doc?.id===tab.id?0:-1} title={tab.path} disabled={busy||!!pending.current} onClick={()=>void load(tab.id)}>{tab.name}</button>
+           <button aria-label={`关闭 ${tab.name}`} title="关闭标签（Ctrl+W）" disabled={busy||!!pending.current} onClick={()=>void closeTab(tab.id)} onKeyDown={event=>event.stopPropagation()}>×</button>
+         </div>)}</div>}<div className="document-bar"><span className="document-name">{doc?.name || '还没有打开文档'}</span><span className="mode-pill">纯阅读</span></div>
+-        <div className="toolbar" onClickCapture={()=>notifyCruiseTakeover()}><button aria-label="打开 Surfing" disabled={!doc||busy} onClick={()=>{resetDrawing();setCruiseOpen(false);setSurfingOpen(true);}}>Surfing</button><button aria-label="打开 Cruise" disabled={!doc||busy} onClick={()=>{resetDrawing();setSurfingOpen(false);setCruiseOpen(true);}}>Cruise</button><button aria-label="读取本页阅读块" disabled={!doc||busy||blocksBusy} onClick={()=>void readBlocks()}>{blocksBusy?'读取中…':'阅读块'}</button><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{notifyCruiseTakeover();setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
++        <div className="toolbar" onClickCapture={()=>notifyCruiseTakeover()}><button aria-label="打开 Surfing" disabled={!doc||busy} onClick={()=>{resetDrawing();setCruiseOpen(false);setSurfingOpen(true);}}>Surfing</button><button aria-label="打开 Cruise" disabled={!doc||busy} onClick={()=>{const open=()=>{resetDrawing();setSurfingOpen(false);setCruiseOpen(true);};if(surfingFlush.current)void surfingFlush.current().then(open).catch(fail);else open();}}>Cruise</button><button aria-label="读取本页阅读块" disabled={!doc||busy||blocksBusy} onClick={()=>void readBlocks()}>{blocksBusy?'读取中…':'阅读块'}</button><label className="reading-layout"><span className="sr-only">阅读模式</span><select aria-label="阅读模式" disabled={!doc||busy} value={readingLayout} onChange={event=>{notifyCruiseTakeover();setParts([]);resetDrawing();const mode=event.target.value as 'continuous'|'single';reader.current?.setLayout(mode);setReadingLayout(mode);}}><option value="continuous">连续滚动</option><option value="single">单页阅读</option></select></label><div className="toolbar-group"><button aria-label="上一页" disabled={!doc||busy||currentPage<=1} onClick={() => navigatePage(currentPage-1)}>‹</button><input aria-label="跳转页码" className="page-input" inputMode="numeric" aria-invalid={!!pageError} aria-describedby={pageError?"page-error":undefined} disabled={!doc||busy} value={page} onChange={event => {setPage(event.target.value);setPageError('');}} onKeyDown={event => {if(event.key==='Enter'){event.preventDefault();submitPage();}else if(event.key==='Escape'){event.preventDefault();syncPage(currentPage);}}}/><span className="muted">/ {doc?.pageCount || '—'}</span><button aria-label="下一页" disabled={!doc||busy||currentPage>=doc.pageCount} onClick={() => navigatePage(currentPage+1)}>›</button></div>
+           <div className="toolbar-group"><button aria-label="缩小" disabled={!doc} onClick={() => reader.current?.zoom(zoom / 1.1)}>−</button><span className="zoom-label">{Math.round(zoom * 100)}%</span><button aria-label="放大" disabled={!doc} onClick={() => reader.current?.zoom(zoom * 1.1)}>+</button><button disabled={!doc} onClick={() => reader.current?.fit('page-width')}>适宽</button><button disabled={!doc} onClick={() => reader.current?.fit('page-fit')}>适页</button><button aria-label="旋转页面" disabled={!doc} onClick={() => reader.current?.rotate()}>↻</button></div>
+           <form className="search" onSubmit={event => { event.preventDefault(); notifyCruiseTakeover(); reader.current?.search(query); }}><input aria-label="全文搜索" placeholder="在文档中搜索…" disabled={!doc} value={query} onChange={event => setQuery(event.target.value)}/><button aria-label="搜索" disabled={!doc}>⌕</button><button type="button" aria-label="下一个搜索结果" disabled={!doc} onClick={() => reader.current?.search(query, true)}>↓</button></form>
+         </div>
+-        {surfingOpen&&doc&&reader.current&&<SurfingPanel key={doc.id} document={doc} reader={reader.current} takeover={surfingTakeover} takeoverRef={surfingCancel} settingsOpen={modelSettingsOpen} onSettings={()=>{modelSettingsTrigger.current=window.document.activeElement as HTMLElement;setModelSettingsOpen(true);}} onExit={()=>setSurfingOpen(false)}/>}
++        {surfingOpen&&doc&&reader.current&&<SurfingPanel key={doc.id} document={doc} reader={reader.current} takeover={surfingTakeover} takeoverRef={surfingCancel} flushRef={surfingFlush} settingsOpen={modelSettingsOpen} onSettings={()=>{modelSettingsTrigger.current=window.document.activeElement as HTMLElement;setModelSettingsOpen(true);}} onExit={()=>setSurfingOpen(false)}/>}
+         {cruiseOpen&&doc&&reader.current&&<CruisePanel key={doc.id} document={doc} reader={reader.current} takeover={cruiseTakeover} selection={parts} settingsOpen={modelSettingsOpen} flushRef={cruiseFlush} onSettings={()=>{modelSettingsTrigger.current=window.document.activeElement as HTMLElement;setModelSettingsOpen(true);}} onExit={()=>setCruiseOpen(false)}/>}
+         {blocksOpen&&<section onClickCapture={()=>notifyCruiseTakeover()} className="cruise-block-list" aria-label="本页阅读块"><div><strong>本页阅读块 · 原文定位</strong><button aria-label="收起阅读块" onClick={()=>{void documentCommand({type:'clear_focus'}).then(commandError);setBlocksOpen(false);}}>收起</button></div>{cruiseBlocks.length?cruiseBlocks.map((block,index)=><button key={block.id} data-block-id={block.id} aria-label={`定位阅读块 ${index+1}`} onClick={()=>{resetDrawing();void documentCommand({type:'show_evidence',pageIndex:block.pageIndex,passageId:block.id}).then(commandError);}}>{block.quote}</button>):<p>当前页没有可用阅读块；扫描页需要文字层，可略过或继续普通阅读。</p>}</section>}
+         {pageError && <div id="page-error" className="notice" role="alert">{pageError}</div>}
+--- a/src/renderer/SurfingPanel.tsx
++++ b/src/renderer/SurfingPanel.tsx
+@@ -1,3 +1,4 @@
++import type {SurfingSaveInput} from '../main/surfing-runtime';
+ import {useEffect,useRef,useState} from 'react';
+ import type {OpenedDocument} from '../shared/model';
+ import {unwrap} from '../shared/model';
+@@ -9,36 +10,52 @@
+ import {createSurfingCommandHost} from './surfing-command-host';
+ import type {PdfReader} from './pdf-reader';
+ const labels:Record<string,string>={idle:'尚未准备',preparing:'准备本地文字中',prepared:'已准备文字',loading:'生成探索路线中',explaining:'解释中',ready:'等待你的选择',paused:'已暂停',error:'需要处理'};
+-export function SurfingPanel({document:doc,reader,takeover,takeoverRef,settingsOpen,onSettings,onExit}:{document:OpenedDocument;reader:PdfReader;takeover:number;takeoverRef:{current:(()=>void)|null};settingsOpen:boolean;onSettings:()=>void;onExit:()=>void}){
++export function SurfingPanel({document:doc,reader,takeover,takeoverRef,flushRef,settingsOpen,onSettings,onExit}:{document:OpenedDocument;reader:PdfReader;takeover:number;takeoverRef:{current:(()=>void)|null};flushRef:{current:(()=>Promise<void>)|null};settingsOpen:boolean;onSettings:()=>void;onExit:()=>void}){
+  const [status,setStatus]=useState('idle'),[error,setError]=useState(''),[snapshot,setSnapshot]=useState<SurfingContext|null>(null),[route,setRoute]=useState<SurfingRoute|null>(null),[profiles,setProfiles]=useState<AiProfileView[]>([]),[profileId,setProfileId]=useState(''),[capacity,setCapacity]=useState(''),[consent,setConsent]=useState(false),[selected,setSelected]=useState<number|null>(null),[answers,setAnswers]=useState<Record<number,SurfingExplanation>>({});
++ const [saveStatus,setSaveStatus]=useState('尚未保存'),[saveError,setSaveError]=useState('');
++ const routeRevision=useRef(0),pendingSave=useRef<SurfingSaveInput|null>(null),saveRunning=useRef(false),saveFlight=useRef<Promise<void>>(Promise.resolve());
+  const mounted=useRef(true),epoch=useRef(0),source=useRef(snapshot),profileRef=useRef(profileId),routeRef=useRef(route),answersRef=useRef(answers),lastTakeover=useRef(takeover);source.current=snapshot;profileRef.current=profileId;routeRef.current=route;answersRef.current=answers;
+  const job=useRef<{id:string;profileId:string;source:SurfingContext;index?:number}|null>(null),host=useRef<ReturnType<typeof createSurfingCommandHost>|null>(null);
+  host.current??=createSurfingCommandHost(()=>reader,()=>doc,()=>source.current);
+  const selectedProfile=profiles.find(p=>p.id===profileId),supported=!!selectedProfile&&supportedSurfingTokenizer(selectedProfile),busy=status==='preparing'||status==='loading'||status==='explaining';
++ function persist():Promise<void>{
++  if(saveRunning.current)return saveFlight.current.then(()=>pendingSave.current?persist():undefined);if(!pendingSave.current)return Promise.resolve();saveRunning.current=true;
++  const task=(async()=>{while(pendingSave.current){const request=pendingSave.current;if(mounted.current)setSaveStatus('保存中');try{unwrap(await window.enlumor.saveSurfingProgress(request));}catch(e){if(pendingSave.current!==request)continue;if(mounted.current){setSaveStatus('保存失败');setSaveError(e instanceof Error?e.message:String(e));}throw e;}if(pendingSave.current===request)pendingSave.current=null;if(mounted.current&&routeRef.current&&routeRevision.current===request.routeRevision){setSaveStatus('已保存');setSaveError('');}}})();
++  saveFlight.current=task.finally(()=>{saveRunning.current=false;});return saveFlight.current;
++ }
++ function queueSave(index:number|null){const current=source.current;if(!current||!routeRef.current||routeRevision.current<1)return;pendingSave.current={context:{...current.context},routeRevision:routeRevision.current,selected:index};setSaveStatus('保存中');void persist().catch(()=>{});}
++ async function close(){pause();try{await persist();onExit();}catch{/* saved error and visible progress remain */}}
++ async function openSettings(){pause();try{await persist();onSettings();}catch{/* keep progress visible */}}
++ async function changeProfile(id:string){pause();const version=++epoch.current;try{await persist();}catch{return;}if(!mounted.current||version!==epoch.current)return;setProfileId(id);profileRef.current=id;setConsent(false);setRoute(null);routeRef.current=null;setAnswers({});answersRef.current={};setSelected(null);routeRevision.current=0;setSaveStatus('尚未保存');}
+  function pause(){epoch.current++;const active=job.current;job.current=null;host.current?.invalidate();const s=source.current;if(s&&active)void window.enlumor.cancelSurfing(s.context);if(mounted.current)setStatus('paused');}
+  function fail(value:unknown){if(mounted.current){setError(value instanceof Error?value.message:String(value));setStatus('error');}}
+- async function prepare(){pause();const version=++epoch.current;setSnapshot(null);source.current=null;setRoute(null);routeRef.current=null;setAnswers({});setSelected(null);setError('');setConsent(false);setStatus('preparing');try{const s=unwrap(await window.enlumor.prepareSurfing(doc.id));if(!mounted.current||epoch.current!==version)return;source.current=s;setSnapshot(s);setStatus('prepared');}catch(e){if(mounted.current&&epoch.current===version)fail(e);}}
++ async function prepare(){pause();const version=++epoch.current;try{await persist();}catch{return;}if(!mounted.current||epoch.current!==version)return;setSnapshot(null);source.current=null;setRoute(null);routeRef.current=null;setAnswers({});answersRef.current={};setSelected(null);setError('');setSaveError('');setSaveStatus('尚未保存');routeRevision.current=0;setConsent(false);setStatus('preparing');
++  try{const next=unwrap(await window.enlumor.prepareSurfing(doc.id));if(!mounted.current||epoch.current!==version)return;source.current=next;setSnapshot(next);setStatus('prepared');
++   try{const restored=unwrap(await window.enlumor.getSavedSurfingProgress(next.context));if(!mounted.current||epoch.current!==version)return;if(restored){const saved=restored.session;routeRef.current=saved.route;setRoute(saved.route);routeRevision.current=restored.routeRevision;setSelected(saved.selected);answersRef.current=saved.answers;setAnswers(saved.answers);profileRef.current=saved.source.profileId;setProfileId(saved.source.profileId);setCapacity(String(saved.contextWindowTokens));setConsent(false);setSaveStatus('已保存');setStatus('paused');}}
++   catch(e){if(mounted.current&&epoch.current===version){setSaveStatus('未恢复');setSaveError('保存的进度未恢复：'+(e instanceof Error?e.message:String(e)));}}
++  }catch(e){if(mounted.current&&epoch.current===version)fail(e);}
++ }
+  async function submit(index?:number){const s=source.current;if(!s||job.current)return;if(!consent||!selectedProfile||!supported||!Number.isSafeInteger(Number(capacity))||Number(capacity)<1){fail(Error('请确认服务、模型上下文窗口和全文发送范围。'));return;}
+-  if(index===undefined){setRoute(null);routeRef.current=null;setSelected(null);setAnswers({});answersRef.current={};}
++  if(index===undefined){const version=epoch.current;try{await persist();}catch{return;}if(!mounted.current||source.current!==s||job.current||epoch.current!==version)return;setSaveStatus('等待新路线');setRoute(null);routeRef.current=null;setSelected(null);setAnswers({});answersRef.current={};}
+   const id=crypto.randomUUID();job.current={id,profileId,source:s,index};setError('');setStatus(index===undefined?'loading':'explaining');
+   const request={requestId:id,profileId,context:s.context,consent:true as const},input={request,contextWindowTokens:Number(capacity)};
+   try{unwrap(index===undefined?await window.enlumor.generateSurfingRoute(input):await window.enlumor.explainSurfingStop({...input,request:{...request,stopIndex:index}}));}catch(e){if(mounted.current&&job.current?.id===id){job.current=null;fail(e);}}
+  }
+- async function choose(index:number,explain=true){const r=routeRef.current,s=source.current;if(!r?.stops[index]||!s)return;pause();const version=++epoch.current;setSelected(index);setError('');const block=s.passages.find(p=>p.id===r.stops[index].passageIds[0]);if(!block){fail(Error('SURFING_SOURCE_INVALID'));return;}
++ async function choose(index:number,explain=true){const r=routeRef.current,s=source.current;if(!r?.stops[index]||!s)return;pause();const version=++epoch.current;setSelected(index);queueSave(index);setError('');const block=s.passages.find(p=>p.id===r.stops[index].passageIds[0]);if(!block){fail(Error('SURFING_SOURCE_INVALID'));return;}
+   const result=await host.current!.run({type:'show_evidence',pageIndex:block.pageIndex,passageId:block.id});if(!mounted.current||version!==epoch.current)return;if(!result.ok){fail(Error(result.error.message));return;}
+   if(explain&&!answersRef.current[index])await submit(index);else setStatus('ready');
+  }
+- useEffect(()=>{mounted.current=true;takeoverRef.current=pause;
+-  const off=window.enlumor.onSurfingText(event=>{const j=job.current;if(!mounted.current||!j||event.requestId!==j.id||source.current!==j.source||profileRef.current!==j.profileId)return;job.current=null;if(event.type==='error'){fail(Error(event.code));return;}if(event.type==='route'){routeRef.current=event.route;setRoute(event.route);setAnswers({});answersRef.current={};setSelected(null);}else if(event.type==='explanation'){const next={...answersRef.current,[event.stopIndex]:event.explanation};answersRef.current=next;setAnswers(next);}setStatus('ready');});
++ useEffect(()=>{mounted.current=true;takeoverRef.current=pause;const flush=async()=>{await persist();if(pendingSave.current)throw Error('SURFING_UNSAVED_PROGRESS');};flushRef.current=flush;
++  const off=window.enlumor.onSurfingText(event=>{const j=job.current;if(!mounted.current||!j||event.requestId!==j.id||source.current!==j.source||profileRef.current!==j.profileId)return;job.current=null;if(event.type==='error'){fail(Error(event.code));return;}if(event.type==='route'){routeRevision.current=event.routeRevision;routeRef.current=event.route;setRoute(event.route);setAnswers({});answersRef.current={};setSelected(null);queueSave(null);}else if(event.type==='explanation'){const next={...answersRef.current,[event.stopIndex]:event.explanation};answersRef.current=next;setAnswers(next);queueSave(event.stopIndex);}setStatus('ready');});
+   const background=()=>{if(window.document.hidden)pause();};window.document.addEventListener('visibilitychange',background);const offBackground=window.enlumor.onAppBackground(pause);
+-  return()=>{if(takeoverRef.current===pause)takeoverRef.current=null;mounted.current=false;epoch.current++;job.current=null;off();offBackground();window.document.removeEventListener('visibilitychange',background);host.current?.invalidate();const s=source.current;if(s)void window.enlumor.deactivateSurfing(s.context);};
++  return()=>{if(flushRef.current===flush)flushRef.current=null;if(takeoverRef.current===pause)takeoverRef.current=null;mounted.current=false;epoch.current++;job.current=null;off();offBackground();window.document.removeEventListener('visibilitychange',background);host.current?.invalidate();const s=source.current;if(s)void window.enlumor.deactivateSurfing(s.context);};
+  },[doc.id,reader]);
+  useEffect(()=>{if(takeover!==lastTakeover.current){lastTakeover.current=takeover;pause();}},[takeover]);
+  useEffect(()=>{let active=true;if(settingsOpen){pause();setConsent(false);setRoute(null);routeRef.current=null;setAnswers({});setSelected(null);}else void window.enlumor.listAiProfiles().then(reply=>{if(!mounted.current||!active)return;const p=unwrap(reply);setProfiles(p);setProfileId(p.some(x=>x.id===profileRef.current)?profileRef.current:p[0]?.id||'');}).catch(fail);return()=>{active=false;};},[settingsOpen]);
+  const answer=selected===null?null:answers[selected];
+- return <section className="surfing-panel" aria-label="Surfing 共读"><header><div><strong>Surfing</strong><span>从一个值得探索的问题开始，不必先知道怎么问。</span></div><button onClick={onExit} aria-label="关闭 Surfing">关闭</button></header>
++ return <section className="surfing-panel" aria-label="Surfing 共读"><header><div><strong>Surfing</strong><span>从一个值得探索的问题开始，不必先知道怎么问。</span></div><button onClick={()=>void close()} aria-label="关闭 Surfing">关闭</button></header>
+  <p className="surfing-scope">{doc.name} · 只提取文字，不代表图表或公式视觉理解。准备文档不会发送网络请求。</p>
+- <details className="surfing-setup" open={!route}><summary>阅读范围与服务设置</summary><div className="surfing-controls"><button disabled={busy} onClick={()=>void prepare()}>准备本地全文</button><label>服务<select aria-label="Surfing 服务" value={profileId} disabled={busy} onChange={e=>{pause();setProfileId(e.target.value);profileRef.current=e.target.value;setConsent(false);setRoute(null);routeRef.current=null;setAnswers({});setSelected(null);}}>{profiles.length===0&&<option value="">尚未配置</option>}{profiles.map(p=><option key={p.id} value={p.id}>{p.name} · {p.model}</option>)}</select></label><label>模型窗口<input aria-label="Surfing 模型上下文窗口（tokens）" type="number" min="1" max="10000000" placeholder="按服务文档填写" value={capacity} disabled={busy} onChange={e=>setCapacity(e.target.value)}/></label><button onClick={onSettings}>配置模型</button></div>
++ <details className="surfing-setup" open={!route}><summary>阅读范围与服务设置</summary><div className="surfing-controls"><button disabled={busy} onClick={()=>void prepare()}>准备本地全文</button><label>服务<select aria-label="Surfing 服务" value={profileId} disabled={busy} onChange={e=>void changeProfile(e.target.value)}>{profiles.length===0&&<option value="">尚未配置</option>}{profiles.map(p=><option key={p.id} value={p.id}>{p.name} · {p.model}</option>)}</select></label><label>模型窗口<input aria-label="Surfing 模型上下文窗口（tokens）" type="number" min="1" max="10000000" placeholder="按服务文档填写" value={capacity} disabled={busy} onChange={e=>setCapacity(e.target.value)}/></label><button onClick={()=>void openSettings()}>配置模型</button></div>
+  <p className="surfing-help">首版已配置 o200k 编码的 OpenAI Chat 模型可用；未知模型不猜容量。计数在后台进行，含保守余量；BYOK 其他功能保持原样。</p>
+  {snapshot&&<p className="surfing-coverage">已读取 {snapshot.pageCount} 页 · {snapshot.passages.length} 段 · {snapshot.characterCount} 字符。{snapshot.emptyPages.length?`${snapshot.emptyPages.length} 页没有可提取文字；仅发送其余文字，非完整视觉内容。`:'每页均有文字，仍需核验提取顺序与原文。'}</p>}
+  <label className="surfing-consent"><input type="checkbox" aria-label="确认将当前论文提取文字发送给所选服务" checked={consent} disabled={!snapshot||busy} onChange={e=>setConsent(e.target.checked)}/>我确认将《{doc.name}》的全部已提取文字发送给 {selectedProfile?.name||'所选服务'}（{selectedProfile?.endpoint||'尚未选择'}），不包含图像理解。</label></details>
+@@ -46,5 +63,5 @@
+  {error&&<p role="alert" className="surfing-error">{error} · 可调整配置后重新尝试；不会自动重试。</p>}
+  {route&&<><ol className="surfing-stops">{route.stops.map((stop,index)=><li key={stop.title} className={selected===index?'is-current':''}><button onClick={()=>void choose(index)} aria-label={stop.title}>{index+1}. {stop.title}</button><p>{stop.reason}</p><small>{stop.passageIds.length} 处原文证据</small></li>)}</ol><div className="surfing-actions"><button disabled={selected===null||selected===0} onClick={()=>void choose(selected!-1,false)}>回看上一处</button><button disabled={selected===null||selected>=route.stops.length-1} onClick={()=>void choose(selected!+1,false)}>跳过到下一处</button><button disabled={selected===null||selected>=route.stops.length-1} onClick={()=>void choose(selected!+1,true)}>继续探索</button>{selected!==null&&<button disabled={busy||!consent} onClick={()=>void submit(selected)}>解释这个切入点</button>}</div></>}
+  {selected!==null&&<div className="surfing-answer" aria-label="Surfing 解释">{answer?<><p>{answer.text}</p><div>{answer.passageIds.map(id=>{const b=snapshot?.passages.find(p=>p.id===id);return b&&<button key={id} onClick={()=>void host.current!.run({type:'show_evidence',pageIndex:b.pageIndex,passageId:id})}>核对第 {b.pageIndex+1} 页原文</button>;})}</div></>:<p>这一处还没有解释。你可以只看原文，也可以主动请求解释。</p>}</div>}
+- <small className="surfing-help">当前探索进度仅在本次打开期间保留；持久恢复尚未接入。</small></section>;
++ <footer><span aria-label="Surfing 保存状态">{saveStatus}</span><small className="surfing-help"> · 本地保存探索进度；恢复时保持暂停，不自动发送请求或跳页。</small>{saveError&&<div role="alert">{saveError}{pendingSave.current&&<><button onClick={()=>void persist().catch(()=>{})}>重试保存 Surfing 进度</button><button onClick={()=>{pendingSave.current=null;onExit();}}>放弃未保存进度并关闭</button></>}</div>}</footer></section>;
+ }
+--- a/src/shared/surfing-bridge.ts
++++ b/src/shared/surfing-bridge.ts
+@@ -2,12 +2,14 @@
+ import type {CommandContext} from './document-commands';
+ import type {SurfingContext} from './surfing-context';
+ import type {SurfingRouteRequest,SurfingExplainRequest,SurfingRouteEvent} from '../main/surfing-requests';
+-import type {SurfingSubmission} from '../main/surfing-runtime';
++import type {SurfingSubmission,SurfingRuntimeEvent,SurfingSaveInput,SurfingRestoredProgress} from '../main/surfing-runtime';
+ export type SurfingBridge={
++ getSavedSurfingProgress(context:CommandContext):Promise<Reply<SurfingRestoredProgress|null>>;
++ saveSurfingProgress(input:SurfingSaveInput):Promise<Reply<void>>;
+  prepareSurfing(documentId:string):Promise<Reply<SurfingContext>>;
+  generateSurfingRoute(input:SurfingSubmission<SurfingRouteRequest>):Promise<Reply<void>>;
+  explainSurfingStop(input:SurfingSubmission<SurfingExplainRequest>):Promise<Reply<void>>;
+  cancelSurfing(context:CommandContext):Promise<Reply<void>>;
+  deactivateSurfing(context:CommandContext):Promise<Reply<void>>;
+- onSurfingText(handler:(event:SurfingRouteEvent)=>void):()=>void;
++ onSurfingText(handler:(event:SurfingRuntimeEvent)=>void):()=>void;
+ };
+--- /dev/null
++++ b/src/main/surfing-sessions.ts
+@@ -0,0 +1,49 @@
++import {createHash} from 'node:crypto';
++import type {AiProfileInput,AiProfileView} from '../shared/ai';
++import type {SurfingContext} from '../shared/surfing-context';
++import type {SurfingSession} from '../shared/surfing-session';
++import {parseSurfingRoute} from '../shared/surfing-route';
++import type {Workspace} from './workspace';
++const fail=():never=>{throw Error('SURFING_INVALID_SESSION');};
++const record=(v:unknown):v is Record<string,any>=>!!v&&typeof v==='object'&&!Array.isArray(v);
++const exact=(v:Record<string,unknown>,keys:string[])=>{if(Object.keys(v).sort().join(',')!==[...keys].sort().join(','))fail();};
++const identifier=(v:unknown):v is string=>typeof v==='string'&&/^[\w-]{1,100}$/.test(v)&&!['__proto__','constructor','prototype'].includes(v);
++export function surfingProfileSignature(p:AiProfileInput|AiProfileView){return createHash('sha256').update(JSON.stringify([p.id,p.protocol,p.endpoint,p.model,p.maxOutputTokens,p.timeoutMs,Object.entries(p.parameters).sort(([a],[b])=>a.localeCompare(b))])).digest('hex');}
++/** Structural validation at storage; fresh-source evidence validation again at restore. */
++export function validateSurfingSession(value:unknown,snapshot?:SurfingContext):SurfingSession{
++ try{
++  if(!record(value))return fail();if(Buffer.byteLength(JSON.stringify(value),'utf8')>262144)fail();const s=value as SurfingSession;
++  exact(value,['version','documentId','fingerprint','source','route','selected','answers','contextWindowTokens','status']);
++  if(s.version!==1||s.status!=='paused'||!identifier(s.documentId)||typeof s.fingerprint!=='string'||! /^[a-f0-9]{64}$/i.test(s.fingerprint)||!Number.isSafeInteger(s.contextWindowTokens)||s.contextWindowTokens<1||s.contextWindowTokens>10000000||!record(s.source)||!record(s.answers)||!record(s.route)||!Array.isArray(s.route.stops))fail();
++  exact(s.source,['profileId','name','model','signature']);
++  if(!identifier(s.source.profileId)||typeof s.source.name!=='string'||!s.source.name.trim()||s.source.name.length>100||typeof s.source.model!=='string'||!s.source.model.trim()||s.source.model.length>200||typeof s.source.signature!=='string'||! /^[a-f0-9]{64}$/.test(s.source.signature))fail();
++  const ids=new Set<string>();const add=(v:unknown)=>{if(!identifier(v))return fail();ids.add(v);};
++  for(const stop of s.route.stops){if(!record(stop)||!Array.isArray(stop.passageIds))fail();for(const id of stop.passageIds)add(id);}
++  if(Object.keys(s.answers).length>5)fail();
++  for(const [index,a] of Object.entries(s.answers)){
++   if(!/^[0-4]$/.test(index)||Number(index)>=s.route.stops.length||!record(a))fail();exact(a,['text','passageIds']);
++   if(typeof a.text!=='string'||!a.text.trim()||a.text.length>8192||!Array.isArray(a.passageIds)||!a.passageIds.length||a.passageIds.length>8||new Set(a.passageIds).size!==a.passageIds.length)fail();for(const id of a.passageIds)add(id);
++  }
++  if(snapshot&&(snapshot.context.documentId!==s.documentId||snapshot.context.fingerprint!==s.fingerprint))fail();
++  const known=snapshot||{context:{documentId:s.documentId,fingerprint:s.fingerprint,revision:0},pageCount:1,passages:[...ids].map(id=>({id,documentId:s.documentId,fingerprint:s.fingerprint,pageIndex:0,quote:'Structural reference only',quads:[[0,1,1,1,0,0,1,0]]})),emptyPages:[],characterCount:0,coverage:'all-pages-have-text' as const};
++  parseSurfingRoute(JSON.stringify(s.route),known);
++  if(snapshot)for(const a of Object.values(s.answers))if(a.passageIds.some(id=>!snapshot.passages.some(p=>p.id===id)))fail();
++  if(s.selected!==null&&(!Number.isInteger(s.selected)||s.selected<0||s.selected>=s.route.stops.length))fail();
++  return structuredClone(s);
++ }catch{return fail();}
++}
++export class SurfingSessions{
++ constructor(private workspace:Pick<Workspace,'db'|'verified'>){}
++ get(documentId:string):SurfingSession|null{
++  const doc=this.workspace.verified(documentId);
++  if(!this.workspace.db.prepare("SELECT name FROM sqlite_master WHERE type='table' AND name='surfing_sessions'").get())return null;
++  const row=this.workspace.db.prepare('SELECT payload FROM surfing_sessions WHERE documentId=?').get(documentId);if(!row)return null;
++  const payload=row.payload;if(typeof payload!=='string')return fail();if(Buffer.byteLength(payload,'utf8')>262144)fail();let value:unknown;try{value=JSON.parse(payload);}catch{return fail();}
++  const clean=validateSurfingSession(value);if(clean.documentId!==documentId||clean.fingerprint!==doc.fingerprint)fail();return clean;
++ }
++ save(value:SurfingSession):void{
++  const clean=validateSurfingSession(value),doc=this.workspace.verified(clean.documentId);if(doc.fingerprint!==clean.fingerprint)fail();
++  this.workspace.db.exec('CREATE TABLE IF NOT EXISTS surfing_sessions (documentId TEXT PRIMARY KEY REFERENCES documents(id),payload TEXT NOT NULL CHECK(length(payload)<=262144))');
++  this.workspace.db.prepare('INSERT INTO surfing_sessions(documentId,payload) VALUES(?,?) ON CONFLICT(documentId) DO UPDATE SET payload=excluded.payload').run(clean.documentId,JSON.stringify(clean));
++ }
++}
+--- /dev/null
++++ b/src/shared/surfing-session.ts
+@@ -0,0 +1,3 @@
++import type {SurfingRoute} from './surfing-route';
++import type {SurfingExplanation} from '../main/surfing-requests';
++export type SurfingSession={version:1;documentId:string;fingerprint:string;source:{profileId:string;name:string;model:string;signature:string};route:SurfingRoute;selected:number|null;answers:Record<string,SurfingExplanation>;contextWindowTokens:number;status:'paused'};
+--- /dev/null
++++ b/tests/surfing-sessions.test.ts
+@@ -0,0 +1,24 @@
++import {beforeEach,afterEach,describe,it,expect} from 'vitest';
++import {mkdtempSync,writeFileSync,readFileSync} from 'node:fs';
++import {tmpdir} from 'node:os';
++import {join} from 'node:path';
++import {Workspace} from '../src/main/workspace';
++import {SurfingSessions,validateSurfingSession,surfingProfileSignature} from '../src/main/surfing-sessions';
++import type {SurfingSession} from '../src/shared/surfing-session';
++let ws:Workspace,store:SurfingSessions,root:string,doc:any;
++const profile={id:'profile',name:'Model display',protocol:'openai-chat' as const,endpoint:'http://localhost/v1',model:'gpt-4o-mini',maxOutputTokens:1000,timeoutMs:10000,parameters:{}};
++const session=():SurfingSession=>({version:1,documentId:doc.id,fingerprint:doc.fingerprint,source:{profileId:'profile',name:'Model display',model:'gpt-4o-mini',signature:surfingProfileSignature(profile)},route:{stops:[{title:'Entry',reason:'Explore',passageIds:['surf-0-0-0']}]},selected:0,answers:{'0':{text:'Completed explanation',passageIds:['surf-0-0-0']}},contextWindowTokens:128000,status:'paused'});
++beforeEach(()=>{root=mkdtempSync(join(tmpdir(),'enlumor-surfing-store-'));const file=join(root,'paper.pdf');writeFileSync(file,'%PDF source fixture');ws=new Workspace(join(root,'workspace.sqlite'));doc=ws.register(file,2);store=new SurfingSessions(ws);});
++afterEach(()=>ws.close());
++describe('bounded local Surfing session storage',()=>{
++ it('does not create a table or change schema version merely by reading',()=>{const version=ws.db.prepare('PRAGMA user_version').get();expect(store.get(doc.id)).toBe(null);expect(ws.db.prepare("SELECT name FROM sqlite_master WHERE name='surfing_sessions'").get()).toBeUndefined();expect(ws.db.prepare('PRAGMA user_version').get()).toEqual(version);});
++ it('roundtrips across a closed database without changing source PDF',()=>{const before=readFileSync(doc.path);const s=session();store.save(s);ws.close();ws=new Workspace(join(root,'workspace.sqlite'));store=new SurfingSessions(ws);expect(store.get(doc.id)).toEqual(s);expect(readFileSync(doc.path)).toEqual(before);});
++ it('returns detached data and only accepts paused progress',()=>{store.save(session());const s=store.get(doc.id)!;s.answers['0'].text='changed';expect(store.get(doc.id)!.answers['0'].text).toBe('Completed explanation');expect(()=>store.save({...session(),status:'running'} as any)).toThrow('SURFING_INVALID_SESSION');});
++ it('rejects an invalid update without overwriting previous good data',()=>{store.save(session());const bad=session();bad.selected=2;expect(()=>store.save(bad)).toThrow('SURFING_INVALID_SESSION');expect(store.get(doc.id)).toEqual(session());});
++ it('keeps previous commit if SQLite rejects a replacement',()=>{store.save(session());ws.db.exec("CREATE TRIGGER block_surfing_update BEFORE UPDATE ON surfing_sessions BEGIN SELECT RAISE(ABORT,'fixture save failure'); END");const next=session();next.answers['0'].text='new result';expect(()=>store.save(next)).toThrow('fixture save failure');expect(store.get(doc.id)).toEqual(session());});
++ it.each(['source','oversized','unknownField','answerIndex','duplicateEvidence'])('rejects invalid %s data',kind=>{const s:any=session();if(kind==='source')s.source.credential='secret';if(kind==='oversized')s.answers['0'].text='x'.repeat(8193);if(kind==='unknownField')s.pendingRequest='run later';if(kind==='answerIndex')s.answers['5']=s.answers['0'];if(kind==='duplicateEvidence')s.route.stops[0].passageIds=['surf-0-0-0','surf-0-0-0'];expect(()=>store.save(s)).toThrow('SURFING_INVALID_SESSION');});
++ it('detects malformed saved payload without deleting it',()=>{store.save(session());ws.db.prepare('UPDATE surfing_sessions SET payload=? WHERE documentId=?').run('{',doc.id);expect(()=>store.get(doc.id)).toThrow('SURFING_INVALID_SESSION');expect(ws.db.prepare('SELECT payload FROM surfing_sessions WHERE documentId=?').get(doc.id)!.payload).toBe('{');});
++ it('rejects changed original files before restoring',()=>{store.save(session());writeFileSync(doc.path,'changed');expect(()=>store.get(doc.id)).toThrow('SOURCE_CHANGED');});
++ it('revalidates persisted evidence against the freshly prepared source',()=>{const s=session();const snapshot:any={context:{documentId:doc.id,fingerprint:doc.fingerprint,revision:8},passages:[{id:'other'}]};expect(()=>validateSurfingSession(s,snapshot)).toThrow('SURFING_INVALID_SESSION');});
++ it('never includes credentials in profile binding and detects changed model settings',()=>{const base=surfingProfileSignature(profile);expect(surfingProfileSignature({...profile,credential:{kind:'api-key',apiKey:'private'}})).toBe(base);expect(surfingProfileSignature({...profile,model:'gpt-4o'})).not.toBe(base);expect(surfingProfileSignature({...profile,name:'Renamed'})).toBe(base);});
++});

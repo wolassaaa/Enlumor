@@ -1,0 +1,30 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+ ❯ tests/surfing-runtime.test.ts (7 tests | 1 failed) 120ms
+   × reports stale preparation to the caller instead of leaving UI waiting for an event 18ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/surfing-runtime.test.ts > reports stale preparation to the caller instead of leaving UI waiting for an event
+AssertionError: promise resolved "undefined" instead of rejecting
+
+- Expected:
+Error {
+  "message": "rejected promise",
+}
+
++ Received:
+undefined
+
+ ❯ tests/surfing-runtime.test.ts:14:308
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 6 passed (7)
+   Start at  02:11:43
+   Duration  286ms (tests 73%, transform 16%, import 8%, worker 2%)
+

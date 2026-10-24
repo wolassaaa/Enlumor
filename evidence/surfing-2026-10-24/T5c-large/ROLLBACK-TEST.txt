@@ -1,0 +1,9 @@
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T5c-large/rollback-copy
+
+
+ Test Files  3 passed (3)
+      Tests  78 passed (78)
+   Start at  03:43:56
+   Duration  294ms (tests 52%, transform 32%, import 12%, worker 4%)
+

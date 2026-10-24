@@ -1,0 +1,37 @@
+T3b command adapter and tokenizer budget verification / branch feat/v04-wave-ab / 2026-10-24 Asia/Taipei
+Changed fields: source-bound evidence resolution and viewport-job preemption; async model-aware count with explicit output reserve and worker cancellation. Model context window remains user-configured, not inferred. Unknown protocol/model counters return null. Client count includes 1024 reserve, not a claim about private server templates.
+Artifacts:
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3B-budget/MODIFIED_FILE.ts
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3B-budget/DIFF_FILE.patch
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3B-budget/VERIFICATION.txt
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3B-budget/ROLLBACK.sh
+Five original hashes ORIGINAL_FILES.sha256; eight new files initially absent. FINAL_FILES.sha256 holds delivered 13-file hashes.
+BASELINE command: npx vitest run tests/surfing-command-host.test.ts
+Input: new tests, module absent. Literal summary Test Files  1 failed (1); Tests  no tests. Exit1. ../T3B-command/RED.txt.
+BASELINE command: npx vitest run tests/surfing-token-count.test.ts
+Input: counter module absent. Literal summary Test Files  1 failed (1); Tests  no tests. Exit1. RED.txt.
+BASELINE command: npx vitest run tests/surfing-token-worker.test.ts
+Input: worker host absent. Literal summary Test Files  1 failed (1); Tests  no tests. Exit1. WORKER-RED.txt.
+Review BASELINE command: npx vitest run tests/surfing-command-host.test.ts
+Input: two preemption regressions, unpatched adapter. Literal summary Tests  2 failed | 9 passed (11). Exit1. ../T3B-command/REVIEW-RED.txt.
+Async BASELINE command: npx vitest run tests/surfing-requests.test.ts
+Input: asynchronous counter tests against old synchronous service. Literal summary Tests  2 failed | 24 passed (26). Exit1. ASYNC-RED.txt.
+MODIFIED command: npx vitest run tests/surfing-command-host.test.ts tests/surfing-token-count.test.ts tests/surfing-token-worker.test.ts tests/surfing-requests.test.ts
+Literal summary Test Files  4 passed (4); Tests  48 passed (48). Exit0. REVIEW-GREEN.txt.
+MODIFIED command: npm run typecheck
+Literal output > enlumor@0.1.15 typecheck / > tsc --noEmit. Exit0. FINAL-TYPECHECK.txt.
+MODIFIED command: npm test -- --reporter=dot
+Literal summary Test Files  37 passed (37); Tests  570 passed (570). Exit0. FINAL-ALL-UNIT.txt.
+MODIFIED command: npm run build
+Result: TypeScript and main/preload/independent token-worker/renderer bundles generated. Exit0. FINAL-BUILD.txt. Existing renderer chunk-size notice remains, not declared solved.
+REGRESSION command: npx playwright test tests/e2e/document-commands.spec.ts --workers=1
+Literal summary 4 passed (9.5s). Exit0. ../T3B-command/ELECTRON.txt. This is the old document-command path, not Surfing UI acceptance.
+ROLLBACK command: "C:/Program Files/Git/bin/bash.exe" -c './evidence/surfing-2026-10-24/T3B-budget/ROLLBACK.sh evidence/surfing-2026-10-24/T3B-budget/rollback-copy'
+Input: marked isolated 13-file copy plus originals/manifests.
+Literal output ROLLBACK PASS: five original hashes restored; eight new files absent; live candidate remains changed.
+Exit0. ROLLBACK-RUN.txt.
+RESTORED command: npx vitest run --root evidence/surfing-2026-10-24/T3B-budget/rollback-copy tests/surfing-requests.test.ts
+Input: restored original service/tests with route helper copied unchanged.
+Literal summary Test Files  1 passed (1); Tests  24 passed (24). Exit0. ROLLBACK-BEHAVIOR.txt.
+Restored behavior: pre-slice request service passes its original24 tests; dependency/build files exact old hashes; new modules absent in isolated copy. Live source remains modified. Original release and personal DB unchanged. Worktree node_modules now local after npm install; Electron dist is read-only reused via local junction to existing primary dist, primary files not modified. Rollback fixture verifies source/package metadata, not removal/reinstallation of live dependencies.
+Independent review: no Critical; one Important preemption bug reproduced then fixed; see REVIEW.md. No pending tests/builds, no IPC/UI/live model/session restoration completion claim. Next: main/preload/Bridge and SurfingPanel integration; follow docs/SURFING_OVERNIGHT_2026-10-24.md.

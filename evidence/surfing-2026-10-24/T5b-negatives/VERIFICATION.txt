@@ -1,0 +1,83 @@
+T5b — EXISTING SURFING NEGATIVE COVERAGE / PUBLIC ERROR CLASSIFICATION
+Recorded 2026-10-24T03:32:28.681797+08:00 / feat/v04-wave-ab. No commit, push or release.
+
+FOUR ARTIFACT PATHS:
+MODIFIED_FILE=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\MODIFIED_FILE (actual unpacked candidate; keep all win-unpacked files)
+DIFF_FILE=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\DIFF_FILE.patch
+VERIFICATION=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\VERIFICATION.txt
+ROLLBACK=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\ROLLBACK.sh
+SOURCE_SNAPSHOT=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\SOURCE_SNAPSHOT.zip (six modified source/test/doc files)
+Current manual entry=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\OPEN-CANDIDATE.cmd; fixed isolated user-data, --check exit0.
+
+CHANGED BRANCH/FIELD:
+Only production change: src/main/surfing-requests.ts execute.catch public error classification now takes the substring before the FIRST colon, then requires exact membership in publicErrors. Only that code is emitted; unknown/similar prefixes still AI_FAILED. No paths/private suffix forwarded. No text extraction, navigation, model-generation, storage-schema or legacy editing logic changed. Other changes: six unit regression cases, four real Electron/local-mock negative cases, progress and acceptance docs. Candidate package still distinct enlumor-surfing-candidate /version0.1.15, not a formal release replacement. Old T5-package artifact retained. No personal key/database read, paid API, SaaS, publish or push.
+
+BASELINE / TEST-FIRST:
+Command: npx playwright test tests/e2e/surfing.spec.ts --grep 'background blur|changed model' --workers=1
+Environment: ENLUMOR_TEST_APP=old T5-package candidate exe.
+Input: held127.0.0.1 SSE explanation; injected real main blur/focus handlers; real saveAiProfile IPC metadata update and saved-session restore.
+Literal result: 2 passed (11.2s), exit0 (BATCH1.txt). These first-pass tests are added coverage, NOT a claimed RED→GREEN bug fix. Background is event injection, not OS focus switching; profile test is metadata-signature defense, not the settings-panel complete flow or real service quality.
+Command: npx playwright test tests/e2e/surfing.spec.ts --grep 'source replacement after|SQL save failure blocks' --workers=1
+Environment: old T5-package candidate.
+Input: alter only synthetic temp source PDF after trusted prepare; separately fail temp SQLite surfing_sessions UPDATE and Ctrl+W.
+Literal result: 1 failed /1 passed (14.3s), exit1 (BATCH2-BASELINE.txt).
+Literal failure: Expected substring "SOURCE_CHANGED"; Received string "AI_FAILED · 可调整配置后重新尝试；不会自动重试。". SOURCE-ERROR-RED-TRACE.zip retained.
+Root cause: Workspace.verified throws SOURCE_CHANGED: explanatory suffix; previous exact-whole-message whitelist rejected this decorated known code. It already failed closed, but diagnostics were wrong.
+Command: npx vitest run tests/surfing-requests.test.ts
+Input: known decorated SOURCE_CHANGED/SOURCE_MISSING/PASSWORD_REQUIRED/AI_HTTP_429 plus similar and unknown-prefix controls; all assert no private suffix and no generation.
+Literal result: Test Files1 failed(1); Tests4 failed|32 passed(36), exit1 (UNIT-RED.txt).
+
+MODIFIED:
+Same unit command: Test Files1 passed(1); Tests36 passed(36), exit0 (UNIT-GREEN.txt).
+Command: npm run build — current source. Result: build completed, existing renderer chunk warning retained, exit0 (BUILD.txt).
+Same second-batch Playwright command, development app: 2 passed (8.7s), exit0 (BATCH2-GREEN.txt).
+Command: npm test -- --reporter=dot
+Literal result: Test Files39 passed(39); Tests608 passed(608), exit0 (ALL-UNIT.txt).
+Command: npm run test:python
+Literal result: Ran21 tests in4.981s /OK, exit0 (PYTHON.txt).
+Command: npm run typecheck
+Literal output: tsc --noEmit, no diagnostics, exit0 (TYPECHECK.txt).
+Command: node node_modules/electron-builder/cli.js --win dir --publish never --config.directories.output=evidence/surfing-2026-10-24/T5b-negatives/MODIFIED_FILE --config.productName=Enlumor-Surfing-Candidate --config.extraMetadata.name=enlumor-surfing-candidate --config.npmRebuild=false --config.win.signAndEditExecutable=false
+Environment: CSC_IDENTITY_AUTO_DISCOVERY=false.
+Input: newly built dist, same unchanged bundled PDF worker, existing local Electron distribution. Literal result: packaging win32 x64 electron44.7.2; skipped dependency rebuild; resource editing and code signing skipped. Exit0 (PACKAGE.txt). Formal release/latest and prior candidate untouched.
+Command: node evidence/surfing-2026-10-24/T5b-negatives/CHECK-PACKAGED-SOURCE.mjs
+Input: actual app.asar native-path entry compared byte-for-byte with dist/main/index.cjs; local build source map compared to current surfing-requests.ts.
+Literal output:
+PACKAGED_BUNDLE_MATCH: f5982da4721c0117cd10a4064ac2c08a508e4619019bfe7e365c09abb5a063c0
+BUILD_SOURCE_MATCH: surfing-requests.ts 9bb5b796c659a83b7384eea32f5a9f623c42737f5fdb39cad210613d4e54db65
+
+Exit0. Initial optional ASAR probes used slash-separated archive paths on Windows and failed; native path.join verification then passed. No missing production module is claimed from those probe errors.
+
+MODIFIED FULL PACKAGED UI:
+Command: npx playwright test --workers=1
+Environment: ENLUMOR_TEST_APP=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\MODIFIED_FILE\win-unpacked\Enlumor-Surfing-Candidate.exe; ENLUMOR_EVIDENCE_DIR=evidence/surfing-2026-10-24/T5b-negatives/full-evidence.
+Input: actual candidate, ASAR tokenizer worker, bundled PDF worker, isolated temp workspaces, only local SSE mock model services.
+Literal summary: 1 failed /164 passed (11.0m), exit1 (FULL-PACKAGED-E2E.txt).
+All14 Surfing tests passed (10 existing +4 new negatives). Only failure: preexisting editing-preview dense1000 erase/undo Expected<=1000, Received1273ms; mutation worst62ms also exceeds50ms. Original thresholds unchanged. DENSE-FAILURE-TRACE.zip, DENSE-ERROR-CONTEXT.md and raw metrics retained. Whole package is NOT all-green; no formal release acceptance claim.
+Source replacement case: SOURCE_CHANGED displayed, calls0, no route or page jump; finally restores exact PDF hash. SQL Ctrl+W case: explanation and prior row retained on failure; explicit retry COMMIT contains answer, only then tab closes. Profile case: old record unchanged after metadata change, cached restore rejected and consent unchecked. These are local synthetic-PDF/mock tests, not two real papers or real model quality acceptance.
+
+MODIFIED DEFAULT READING PERFORMANCE:
+Command: node scripts/benchmark.mjs surfing-text "D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\MODIFIED_FILE\win-unpacked\Enlumor-Surfing-Candidate.exe" --thumbnails
+Command: node scripts/benchmark.mjs surfing-scan "D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\MODIFIED_FILE\win-unpacked\Enlumor-Surfing-Candidate.exe" --thumbnails --scanned
+Input: generated200 pages/~32MB/1000 marks, actual new candidate; ENLUMOR_EVIDENCE_DIR=evidence/surfing-2026-10-24/T5b-negatives/performance. Each exit0.
+Gate command: node --input-type=module -e "import {readFileSync} from 'node:fs';import {assertPerformance} from './scripts/performance-gate.mjs';for(const label of ['surfing-text','surfing-scan']){const report=JSON.parse(readFileSync('evidence/surfing-2026-10-24/T5b-negatives/performance/'+label+'.json'));assertPerformance(report);console.log(label+' PERFORMANCE_GATE: PASS '+JSON.stringify(report));}"
+Literal result: surfing-text PERFORMANCE_GATE: PASS; surfing-scan PERFORMANCE_GATE: PASS, exit0 (PERFORMANCE-GATES.txt contains full literal JSON).
+Text: exe startup median445.1ms /framep95 11.5ms /savep95 4.9ms. Scan428.4ms /12.9ms /4.7ms. Each retained canvases8/thumb4. No relaxed thresholds. These default reading fixtures do not measure full-size Surfing context preparation and do not fix the independent preview dense failure.
+
+ROLLBACK:
+Command: "C:/Program Files/Git/bin/bash.exe" -c 'evidence/surfing-2026-10-24/T5b-negatives/ROLLBACK.sh evidence/surfing-2026-10-24/T5b-negatives/rollback-copy'
+Input: isolated marker-protected source copy; original/final SHA256 manifests; never live source or candidate.
+Literal output: ROLLBACK PASS: six original source/doc hashes restored; live error-prefix fix and candidate retained.
+Exit0 (ROLLBACK.txt).
+Command: npx vitest run --root evidence/surfing-2026-10-24/T5b-negatives/rollback-copy --config "D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-2026-10-24\T5b-negatives\rollback-copy\vitest.config.mts" tests/surfing-requests.test.ts tests/rollback-prefix.test.ts
+Input: restored pre-change service, original30 tests, plus explicit baseline behavior test for decorated SOURCE_CHANGED.
+Literal result: Test Files2 passed(2); Tests31 passed(31), exit0 (ROLLBACK-TEST.txt).
+Restored behavior/status: decorated source error again maps to AI_FAILED, emits no private suffix and makes zero generation calls; all six original source/doc hashes restored. Restored app was not rebuilt/launched. Current live service keeps corrected SOURCE_CHANGED classification; actual modified candidate stays available.
+
+PACKAGE HASHES:
+exe SHA256=b7944d8e30c03945b3e8d1129d90417bc08b4489dc02d6db7e62362d5b43a1ed
+app.asar SHA256=ca34642e9cc86bae3e7908c0ba7b91258132cdfd3113d54692caca52e17e8780
+Full inventory CANDIDATE_FILES.sha256: 264 files. SOURCE_SNAPSHOT.zip matches the six current source/doc bytes. Original hashes preserved separately.
+
+REVIEW / NEXT:
+Independent read-only review confirms the only production change and narrow assertions, no newly confirmed Critical/Important. Escape Minor remains recorded. Separate outcomes: basic packaged Surfing offline14 pass; whole release gate fails old dense performance; real model/two real papers NOT EXECUTED. T5c next is synthetic large full-text input/cancellation/explicit over-limit rejection, not a new feature or substitute for real-paper acceptance. 07:30 verification-only,08:00 stop and pause same heartbeat.

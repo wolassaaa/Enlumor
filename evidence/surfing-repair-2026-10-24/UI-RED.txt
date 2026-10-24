@@ -1,0 +1,25 @@
+
+Running 1 test using 1 worker
+
+(node:11796) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  x  1 tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer (15.0s)
+
+
+  1) tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer 
+
+    Test timeout of 15000ms exceeded.
+
+    Error Context: test-results\surfing-Surfing-whole-pape-44774-ble-and-cancels-late-answer\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\surfing-Surfing-whole-pape-44774-ble-and-cancels-late-answer\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\surfing-Surfing-whole-pape-44774-ble-and-cancels-late-answer\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer 

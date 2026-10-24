@@ -1,0 +1,67 @@
+
+Running 15 tests using 1 worker
+
+(node:12344) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok  1 tests\e2e\surfing.spec.ts:13:1 › Surfing explicitly sends full text, offers evidence entry points and explains user-selected source (3.9s)
+  ok  2 tests\e2e\surfing.spec.ts:36:53 › Surfing wheel immediately cancels an in-flight explanation (4.2s)
+  ok  3 tests\e2e\surfing.spec.ts:36:53 › Surfing PageDown immediately cancels an in-flight explanation (3.1s)
+  ok  4 tests\e2e\surfing.spec.ts:41:49 › Surfing route regeneration cancel invalidates old clickable route and permits retry (4.3s)
+  ok  5 tests\e2e\surfing.spec.ts:41:49 › Surfing route regeneration failure invalidates old clickable route and permits retry (4.3s)
+  ok  6 tests\e2e\surfing.spec.ts:47:1 › Surfing restores committed progress after restart without API or automatic navigation (6.4s)
+(node:12344) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok  7 tests\e2e\surfing.spec.ts:54:1 › Surfing failed save keeps progress, blocks close and permits explicit retry (4.0s)
+  ok  8 tests\e2e\surfing.spec.ts:60:1 › Surfing native close flush pauses pending explanation but ordinary reading autosave does not (5.0s)
+
+  ok  9 tests\e2e\surfing.spec.ts:66:58 › Surfing switch pauses before delayed reading flush and ignores late explanation (6.7s)
+  ok 10 tests\e2e\surfing.spec.ts:66:58 › Surfing close-last pauses before delayed reading flush and ignores late explanation (4.9s)
+  ok 11 tests\e2e\surfing.spec.ts:79:1 › Surfing background blur cancels held explanation and foreground return does not restart (4.4s)
+  x  12 tests\e2e\surfing.spec.ts:85:1 › Surfing changed model rejects old explanation and cached restoration without another request (9.1s)
+(node:25228) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+  ok 13 tests\e2e\surfing.spec.ts:91:1 › Surfing source replacement after preparation reports source change and sends no request (2.6s)
+(node:25228) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+  ok 14 tests\e2e\surfing.spec.ts:97:1 › Surfing SQL save failure blocks Ctrl+W until explicit retry and retains committed record (4.0s)
+  ok 15 tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer (2.9s)
+
+
+  1) tests\e2e\surfing.spec.ts:85:1 › Surfing changed model rejects old explanation and cached restoration without another request 
+
+    Error: expect(locator).toHaveText(expected) failed
+
+    Locator:  getByLabel('Surfing 保存状态', { exact: true })
+    Expected: "未恢复"
+    Received: "对话仅本次打开"
+    Timeout:  5000ms
+
+    Call log:
+      - Expect "toHaveText" getByLabel('Surfing 保存状态', { exact: true }) with timeout 5000ms
+      - waiting for getByLabel('Surfing 保存状态', { exact: true })
+        14 × locator resolved to <span aria-label="Surfing 保存状态">对话仅本次打开</span>
+           - unexpected value "对话仅本次打开"
+
+
+      85 | test('Surfing changed model rejects old explanation and cached restoration without another request',async()=>{
+      86 |  let calls=0;const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const data=JSON.parse(JSON.parse(raw).messages[1].content);calls++;sendMock(res,data.selectedStop?{text:'Original model explanation',passageIds:[data.passages[0].id]}:{stops:[{title:'Model-bound entry',reason:'Actual source',passageIds:[data.passages[0].id]}]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const endpoint='http://127.0.0.1:'+(server.address() as any).port+'/v1';const {app,page}=await launchAndPrepareSurfing(endpoint,'negative-model');const {DatabaseSync}=await import('node:sqlite');let db:InstanceType<typeof DatabaseSync>|undefined;
+    > 87 |  try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await page.getByRole('button',{name:'Model-bound entry',exact:true}).click();await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Original model explanation');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');db=new DatabaseSync(path.join(folder,'negative-model/workspace.sqlite'));const before=db.prepare('SELECT payload FROM surfing_sessions').get()!.payload;await page.evaluate(async endpoint=>{const reply=await window.enlumor.saveAiProfile({id:'local',name:'Local test',protocol:'openai-chat',endpoint,model:'gpt-4.1-mini',maxOutputTokens:1000,timeoutMs:10000,parameters:{}});if(!reply.ok)throw Error(reply.error.message);},endpoint);await page.getByRole('button',{name:'解释这个切入点',exact:true}).click();await expect(page.locator('.surfing-error')).toContainText('SURFING_PROFILE_CHANGED');await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Original model explanation');expect(calls).toBe(2);await page.locator('.surfing-setup summary').click();await page.getByRole('button',{name:'准备本地全文',exact:true}).click();await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('未恢复');await expect(page.getByLabel('Surfing 共读',{exact:true})).toContainText('SURFING_PROFILE_CHANGED');await expect(page.getByRole('button',{name:'Model-bound entry',exact:true})).toHaveCount(0);await expect(page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true})).not.toBeChecked();expect(db.prepare('SELECT payload FROM surfing_sessions').get()!.payload).toBe(before);expect(calls).toBe(2);
+         |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ^
+      88 |  }finally{db?.close();await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+      89 | });
+      90 |
+        at D:\codex project\Enlumor\.worktrees\v04-wave-ab\tests\e2e\surfing.spec.ts:87:1212
+
+    Error Context: test-results\surfing-Surfing-changed-mo-fddc9-ion-without-another-request\error-context.md
+
+    attachment #2: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results\surfing-Surfing-changed-mo-fddc9-ion-without-another-request\trace.zip
+    Usage:
+
+        npx playwright show-trace test-results\surfing-Surfing-changed-mo-fddc9-ion-without-another-request\trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    tests\e2e\surfing.spec.ts:85:1 › Surfing changed model rejects old explanation and cached restoration without another request 
+  14 passed (1.2m)

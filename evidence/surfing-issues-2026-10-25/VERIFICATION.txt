@@ -1,0 +1,33 @@
+Change: records only. New markdown/JSON issue ledgers (30 unique entries); main handoff links them; surfingOvernight.issueLedger/issueLedgerData/userAcceptance/buildConsistencyLatest updated. Production/runtime/candidate unchanged by this task.
+Four paths:
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-issues-2026-10-25/MODIFIED_FILE.zip
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-issues-2026-10-25/DIFF_FILE.patch
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-issues-2026-10-25/VERIFICATION.txt
+D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-issues-2026-10-25/ROLLBACK.sh
+
+Evidence: same chat fully paginated to earliest turn;14 substantive user messages including current request recorded in USER_HISTORY.json, excluding ambient browser state and repeated heartbeats. User screenshot retained at prior handoff evidence. No other chat's experiences invented. U01-U08 split one screenshot/confirmed direction, not8 independent incidents. D3 user decisions, P2 delivery audits, T11 technical issues (including one new build-drift finding), G6 pending/limits. User repair acceptance remains pending.
+
+BASELINE command: python evidence/surfing-issues-2026-10-25/CHECK.py baseline
+Input: original handoff/state snapshots and hashes; two new ledgers recorded absent at creation.
+Literal output: BASELINE PASS: original handoff/state lack issue ledger; two original hashes retained; two ledgers originally absent.
+Exit0.
+MODIFIED command: python evidence/surfing-issues-2026-10-25/CHECK.py
+Input: current markdown/JSON, state links, original user evidence paths, final4 hashes, MODIFIED_FILE.zip, candidate264 manifest, isolated restored copy.
+Literal output: MODIFIED PASS: 30 classified issues complete; U01-U08 await user acceptance; source links/JSON/archive agree; isolated rollback verified; 264 candidate hashes unchanged.
+Exit0.
+ROLLBACK command (PowerShell): & 'C:/Program Files/Git/bin/bash.exe' -lc 'evidence/surfing-issues-2026-10-25/ROLLBACK.sh evidence/surfing-issues-2026-10-25/rollback-copy'
+Input: marker-protected isolated copy; two original documents and two new ledgers.
+Literal output: ROLLBACK PASS: two original documents restored; two new issue ledgers absent; live issue records retained.
+Exit0. Original2 hashes restored only in copy, new2 absent only there; live ledger/navigation/state remain changed. No application rollback in live worktree.
+
+Actual failure newly observed, NOT concealed as PASS:
+Command: node evidence/surfing-repair-2026-10-24/CHECK.mjs
+Input: current dist versus preserved repair ASAR and source14 manifest.
+Literal error: Error: PACKAGED_BUNDLE_MISMATCH index.cjs
+Exit1. Raw BUILD-CHECK-FAILED.txt retained; tracked asT11. No cause/actor inferred, no rebuild done.
+Read-only diagnostic command: node evidence/surfing-issues-2026-10-25/CHECK-BUILD-DRIFT.mjs
+Input: source14 hashes, preserved repair main bundle/current dist main.
+Result: source14HashesMatchRepair=true; packagedMainSha256=071fa74490811c40cd3bfd8fef12d878aa06596edf3ca397e3318f2d3a329fec; currentDistMainSha256=b8421e18f12e8e096f21a4a66507e4956d2e765abd9cf72a35717bb733ea621c.
+Exit0 diagnostic, not a build-consistency PASS.264 candidate SHA values independently remain unchanged.
+
+No full product tests/build rerun in this documentation task; historical619-unit/15-packaged mock results remain historical, not user acceptance. No paid calls, keys, user-data edits, app shutdowns, commits/pushes/releases or automation resume. Prior handoff checkers bind their point-in-time document hashes and are superseded by this issue-ledger transaction for current documents.

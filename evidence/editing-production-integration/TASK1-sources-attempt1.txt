@@ -1,0 +1,46 @@
+COMMAND: npx vitest run tests/editing-sources.test.ts tests/editing-workspace.test.ts
+INPUT: self-created PDFs/v4 databases
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:41624) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:30404) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/editing-sources.test.ts (9 tests | 2 failed) 7341ms
+   ❯ trusted source and atomic legacy conversion (9)
+     × converts verified legacy preserving content, keeps failed text and unknown JSON readonly, and never resurrects deleted mark 732ms
+     × reanchor rejects stale preview digest and atomically records independent compatibility audit 759ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > converts verified legacy preserving content, keeps failed text and unknown JSON readonly, and never resurrects deleted mark
+Error: table edit_legacy_imports has 8 columns but 9 values were supplied
+ ❯ src/main/editing-workspace.ts:160:15
+
+ ❯ WorkspaceEdits.transaction src/main/editing-workspace.ts:130:20
+ ❯ WorkspaceEdits.importLegacy src/main/editing-workspace.ts:153:10
+ ❯ EditingSourceService.convertLegacyPage src/main/editing-sources.ts:113:48
+ ❯ tests/editing-sources.test.ts:56:5
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/editing-sources.test.ts > trusted source and atomic legacy conversion > reanchor rejects stale preview digest and atomically records independent compatibility audit
+Error: table edit_legacy_imports has 8 columns but 9 values were supplied
+ ❯ src/main/editing-workspace.ts:160:15
+
+ ❯ WorkspaceEdits.transaction src/main/editing-workspace.ts:130:20
+ ❯ WorkspaceEdits.importLegacy src/main/editing-workspace.ts:153:10
+ ❯ EditingSourceService.reanchorLegacy src/main/editing-sources.ts:124:16
+ ❯ tests/editing-sources.test.ts:66:47
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed | 1 passed (2)
+      Tests  2 failed | 17 passed (19)
+   Start at  11:04:08
+   Duration  7.51s (tests 99%, transform 1%, import 1%)
+
+
+EXIT: 1

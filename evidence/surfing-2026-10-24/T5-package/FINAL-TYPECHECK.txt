@@ -1,0 +1,4 @@
+
+> enlumor@0.1.15 typecheck
+> tsc --noEmit
+

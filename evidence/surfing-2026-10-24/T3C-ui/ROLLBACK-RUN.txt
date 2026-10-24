@@ -1,0 +1,1 @@
+ROLLBACK PASS: seven original hashes restored; five new files absent; live Surfing candidate retains changes.

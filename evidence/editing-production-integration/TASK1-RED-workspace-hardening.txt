@@ -1,0 +1,62 @@
+COMMAND: npx vitest run tests/editing-workspace.test.ts
+INPUT: real version applicability, revoked transaction ports, confirmation trigger/commit error fixtures
+
+ RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab
+
+(node:17116) ExperimentalWarning: SQLite is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+ ❯ tests/editing-workspace.test.ts (14 tests | 2 failed) 368ms
+   ❯ production Workspace schema5 and editing transactions (14)
+     × history lists only version-applicable groups and clears redo for its actual owner 31ms
+     × revokes transaction ports after return or rejected async callback; late continuations cannot write 25ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > history lists only version-applicable groups and clears redo for its actual owner
+AssertionError: expected { undoIds: [ …(2) ], redoIds: [] } to deeply equal { …(2) }
+
+- Expected
++ Received
+
+  {
+    "redoIds": [],
+    "undoIds": [
+      "op-9599e9a93718ae1a14705c64ffc556eba5075d83394c711019641abb63dd3839",
++     "op-03b98b7f0c501721160785b8d7ff8a0c870c9f779c88a5f03f415a46aa65b725",
+    ],
+  }
+
+ ❯ tests/editing-workspace.test.ts:83:50
+     81|     const create=committed(await runEditingCommand({context:f.context,…
+     82|     const update=committed(await runEditingCommand({context:f.context,…
+     83|     expect(edits.history(f.context,edits.actor)).toEqual({undoIds:[upd…
+       |                                                  ^
+     84|     committed(await runEditingCommand({context:f.context,requestId:'un…
+     85|     expect(edits.history(f.context,edits.actor)).toEqual({undoIds:[],r…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+ FAIL  tests/editing-workspace.test.ts > production Workspace schema5 and editing transactions > revokes transaction ports after return or rejected async callback; late continuations cannot write
+AssertionError: expected [Function] to throw error including 'transaction ended' but got 'confirmation unavailable'
+
+Expected: "transaction ended"
+Received: "confirmation unavailable"
+
+ ❯ tests/editing-workspace.test.ts:91:84
+     89|   it('revokes transaction ports after return or rejected async callbac…
+     90|     const f=fixture();const {edits,workspace:w}=await open(f.file);let…
+     91|     edits.transaction(tx=>{saved=tx;});expect(()=>saved!.consumeConfir…
+       |                                                                                    ^
+     92|     let later:Promise<unknown>|undefined;
+     93|     expect(()=>edits.transaction(tx=>{later=Promise.resolve().then(()=…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 12 passed (14)
+   Start at  11:10:20
+   Duration  552ms (tests 85%, transform 9%, import 5%, worker 1%)
+
+
+EXIT: 1
