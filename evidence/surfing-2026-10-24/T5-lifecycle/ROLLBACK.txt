@@ -1,1 +1,0 @@
-ROLLBACK PASS: two original hashes restored; live transition cancellation remains changed.

@@ -1,9 +1,0 @@
-
-Running 1 test using 1 worker
-
-(node:44316) Warning: The 'NO_COLOR' env is ignored due to the 'FORCE_COLOR' env being set.
-(Use `node --trace-warnings ...` to show where the warning was created)
-CHAT_DIAGNOSTIC {"seen":1,"body":"Surfing\n读整篇，随时问，回到原文。\n关闭\n\nReal source.pdf · 只提取文字，不代表图表或公式视觉理解。准备文档不会发送网络请求。\n\n阅读范围与服务设置\n\n给我讲讲这个abstract\n\n摘要：从全文第二页给出解释。\n\n对话原文 · 第 2 页\n随时插话 · 当前第 1 页\n发送问题\n结合全文及最近对话；对话仅保留本次打开，不写入探索进度。\n生成探索切入点\n暂停 Surfing\n等待你的选择\n尚未保存 · 本地保存探索进度；恢复时保持暂停，不自动发送请求或跳页。"}
-  ok 1 tests\e2e\surfing.spec.ts:103:1 › Surfing whole-paper conversation answers abstract from title, remembers follow-up, keeps PDF visible and cancels late answer (5.6s)
-
-  1 passed (6.7s)

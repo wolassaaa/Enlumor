@@ -1,1 +1,0 @@
-ROLLBACK PASS: three original document hashes restored; four new test/input files absent; live coverage and candidate retained.

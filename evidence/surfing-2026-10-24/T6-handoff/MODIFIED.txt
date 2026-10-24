@@ -1,1 +1,0 @@
-MODIFIED PASS: 11 absolute evidence links exist; handoff copy hash matches; 14 runtime and 264 candidate hashes unchanged; six historical log assertions verified.

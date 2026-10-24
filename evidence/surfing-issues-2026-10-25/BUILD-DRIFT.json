@@ -1,7 +1,0 @@
-{
-  "recordedDate": "2026-10-25",
-  "source14HashesMatchRepair": true,
-  "packagedMainSha256": "071fa74490811c40cd3bfd8fef12d878aa06596edf3ca397e3318f2d3a329fec",
-  "currentDistMainSha256": "b8421e18f12e8e096f21a4a66507e4956d2e765abd9cf72a35717bb733ea621c",
-  "interpretation": "Packaged repair unchanged, but current dist does not match that repair. No actor/cause inferred. Do not use old bundle equality assertion as fresh proof; no rebuild done in documentation task."
-}

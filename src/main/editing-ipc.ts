@@ -5,7 +5,7 @@ import {tmpdir} from 'node:os';
 import type {Workspace} from './workspace';
 import type {WorkspaceEdits} from './editing-workspace';
 import type {EditingSourceService} from './editing-sources';
-import type {EditingSession} from '../shared/editing-bridge';
+import {toEditingViewWire,type EditingSession} from '../shared/editing-bridge';
 import {copyEditData,identifier,object,validateContext,version} from '../shared/editing-marks';
 import {canonicalDigest} from '../shared/editing-planner';
 import {deriveEditingIds,queryEditingReceipt,runEditingCommand,type EditHost} from './editing-executor';
@@ -63,7 +63,7 @@ export class EditingIpc {
 }
 export function registerEditingIpc(handle:(name:string,fn:(input:any)=>unknown)=>void,service:EditingIpc|null){
  handle('editing:capabilities',v=>{if(v!==undefined)throw Error('EDIT_INVALID');return{enabled:!!service};});if(!service)return;
- handle('editing:activate',v=>service.activate(v));handle('editing:view',v=>service.view(v));handle('editing:page',v=>service.page(v));handle('editing:anchor',v=>service.anchor(v));handle('editing:execute',v=>service.execute(v));handle('editing:cancel',v=>service.cancel(v));handle('editing:receipt',v=>service.receipt(v));handle('editing:legacy-reanchor',v=>service.reanchor(v));
+ handle('editing:activate',v=>service.activate(v));handle('editing:view',async v=>toEditingViewWire(await service.view(v)));handle('editing:page',async v=>toEditingViewWire(await service.page(v)));handle('editing:anchor',v=>service.anchor(v));handle('editing:execute',v=>service.execute(v));handle('editing:cancel',v=>service.cancel(v));handle('editing:receipt',v=>service.receipt(v));handle('editing:legacy-reanchor',async v=>toEditingViewWire(await service.reanchor(v)));
 }
 
 

@@ -1,9 +1,0 @@
-
- RUN  v5.0.4 D:/codex project/Enlumor/.worktrees/v04-wave-ab/evidence/surfing-2026-10-24/T3C-ui/rollback-copy
-
-
- Test Files  1 passed (1)
-      Tests  26 passed (26)
-   Start at  02:15:29
-   Duration  222ms (tests 43%, transform 38%, import 15%, worker 4%)
-

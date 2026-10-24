@@ -1,2 +1,0 @@
-SURFING_RUNTIME_UNCHANGED: 14 source hashes match baseline
-CANDIDATE_UNCHANGED: 264 packaged file hashes match T5b candidate

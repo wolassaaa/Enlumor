@@ -1,8 +1,8 @@
-import type {EditingView} from '../shared/editing-bridge';
+import type {EditingViewWire} from '../shared/editing-bridge';
 import type {EditActor,EditMark} from '../shared/editing-commands';
 export type MarkView={id:string;type:EditMark['type'];version:number|null;anchorId:string|null;pageIndex:number;quote:string;quads:number[][];points?:number[];color:string;note:string;origin:EditActor;retained:boolean;visible:boolean;editable:boolean;reason?:string;placement:{dx:number;dy:number}};
 /** An editable mark's content is fixed per version, so a prior projection at the same version is returned as-is (dense ink is not re-copied). */
-export function projectEditingView(view:EditingView,prior?:ReadonlyMap<string,{editable?:boolean;version?:number|null}>):MarkView[]{
+export function projectEditingView(view:EditingViewWire,prior?:ReadonlyMap<string,{editable?:boolean;version?:number|null}>):MarkView[]{
  const marks=view.marks.map((m):MarkView=>{const p=prior?.get(m.id);if(p&&p.editable&&p.version===m.version)return p as MarkView;
   const {id,type,version,anchorId,pageIndex,quote,quads,points,color,note,origin,retained,visible,placement}=m;return{id,type,version,anchorId,pageIndex,quote,quads:quads.map(q=>[...q]),...(points?{points:[...points]}:{}),color,note,origin:{...origin},retained,visible,editable:true,placement:{...placement}};});
  const ids=new Set(marks.map(m=>m.id));

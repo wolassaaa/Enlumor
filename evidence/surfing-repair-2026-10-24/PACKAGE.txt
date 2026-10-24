@@ -1,9 +1,0 @@
-  • electron-builder  version=26.15.3 os=10.0.26200
-  • loaded configuration  file=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-repair-2026-10-24\builder.json
-  • skipped dependencies rebuild  reason=npmRebuild is set to false
-  • packaging       platform=win32 arch=x64 electron=44.7.2 appOutDir=evidence\surfing-repair-2026-10-24\MODIFIED_FILE\win-unpacked
-  • using custom unpacked Electron distribution  electronDist=node_modules\electron\dist
-  • copying unpacked Electron  source=D:\codex project\Enlumor\.worktrees\v04-wave-ab\node_modules\electron\dist destination=D:\codex project\Enlumor\.worktrees\v04-wave-ab\evidence\surfing-repair-2026-10-24\MODIFIED_FILE\win-unpacked
-  • searching for node modules  pm=npm searchDir=D:\codex project\Enlumor\.worktrees\v04-wave-ab
-  • updating asar integrity executable resource  executablePath=evidence\surfing-repair-2026-10-24\MODIFIED_FILE\win-unpacked\Enlumor-Surfing-Repair.exe
-  • executable resource editing and code signing skipped — signAndEditExecutable is false. To skip only code signing while keeping icon and metadata applied, use signExecutable: false instead.  exe=evidence\surfing-repair-2026-10-24\MODIFIED_FILE\win-unpacked\Enlumor-Surfing-Repair.exe

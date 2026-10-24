@@ -1,4 +1,4 @@
-import type {EditingBridge,EditingSession,EditingView,EditResult} from '../shared/editing-bridge';
+import type {EditingBridge,EditingSession,EditingViewWire,EditResult} from '../shared/editing-bridge';
 import type {EditCommand,EditRequest} from '../shared/editing-commands';
 import {unwrap} from '../shared/model';
 /** Coordinates drafts and receipts, never predicts a commit or manufactures an inverse. */
@@ -7,7 +7,7 @@ export class EditingController {
  private epoch=0;
  private draft:{sessionId:string;request:EditRequest;uncertain:boolean}|null=null;
  private flight:Promise<EditResult>|null=null;
- constructor(private bridge:EditingBridge,private onView:(view:EditingView)=>void){}
+ constructor(private bridge:EditingBridge,private onView:(view:EditingViewWire)=>void){}
  get currentSession(){return this.session?structuredClone(this.session):null;}
  get hasDraft(){return this.draft!==null;}
  async activate(documentId:string|null){const epoch=++this.epoch;this.session=null;const s=unwrap(await this.bridge.activateEditingDocument(documentId));if(epoch!==this.epoch)return;this.session=s;if(s)await this.refresh(s,epoch);}

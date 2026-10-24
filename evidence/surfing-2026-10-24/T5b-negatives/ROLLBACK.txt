@@ -1,1 +1,0 @@
-ROLLBACK PASS: six original source/doc hashes restored; live error-prefix fix and candidate retained.

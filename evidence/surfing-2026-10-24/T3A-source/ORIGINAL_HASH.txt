@@ -1,5 +1,0 @@
-
-Algorithm : SHA256
-Hash      : 2496315AD6A87ED3A7E198B81BFC50B7746243DDE186D17654D2ACC3D45D1B5C
-Path      : D:\codex project\Enlumor\.worktrees\v04-wave-ab\python\export_pdf.py
-
