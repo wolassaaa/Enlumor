@@ -106,7 +106,16 @@ app.whenReady().then(() => {
     if (waitingClose) return;
     waitingClose = true;
     window.webContents.send('reading:flush');
-    closeTimer = setTimeout(() => { waitingClose = false; dialog.showMessageBox(window, { type: 'error', message: '尚未确认保存，请重试保存后关闭。' }); }, 10000);
+    closeTimer = setTimeout(async () => {
+      waitingClose = false;
+      const { response } = await dialog.showMessageBox(window, { type: 'error', message: '尚未确认保存，请重试保存后关闭。', buttons: ['保持打开', '不保存并关闭'], defaultId: 0, cancelId: 0 });
+      if (response === 1) { closeReady = true; window.close(); }
+    }, 10000);
+  });
+  // A dead renderer can never acknowledge the flush; without this the window could not be closed.
+  window.webContents.on('render-process-gone', () => {
+    closeReady = true;
+    if (waitingClose) { clearTimeout(closeTimer); waitingClose = false; window.close(); }
   });
   ipcMain.on('reading:flushed', (event, success) => {
     if (event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || !waitingClose) return;
