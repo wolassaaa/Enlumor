@@ -27,7 +27,8 @@
       "action": "修复新增主进程全文ask接口；不要求先生成路线；包内mock验证停在第1页仍携带第2页文字。",
       "status": "工程修复及离线回归已过；修复版真实论文/模型待验",
       "acceptance": "同篇论文停在标题重问摘要，核对请求覆盖和真实回答、原文证据。",
-      "priority": "P0"
+      "priority": "P0",
+      "offlineEvidence2026_10_25": "evidence/overnight-2026-10-25/04-real-paper/RESULTS.json（真实论文+本地模拟模型；真实模型与用户确认仍待验）"
     },
     {
       "id": "U03",
@@ -75,7 +76,8 @@
       "action": "修复版独立来源按钮、验证已知passage ID，并剔除特定block/passage内联标记。",
       "status": "工程处理已加；真实模型输出待验",
       "acceptance": "真实回答不出现内部ID噪声；按钮对应相关原句，不以ID合法代替证据相关性。",
-      "priority": "P1"
+      "priority": "P1",
+      "offlineEvidence2026_10_25": "evidence/overnight-2026-10-25/04-real-paper/RESULTS.json（真实论文+本地模拟模型；真实模型与用户确认仍待验）"
     },
     {
       "id": "U07",
@@ -87,7 +89,8 @@
       "action": "主进程维护同文档/模型最近成功对话（最多6轮/18000JSON字符），加入当前页；支持打断和暂停。",
       "status": "会话内链路离线已验；实际多轮质量待用户确认",
       "acceptance": "先问摘要→问“它与RNN有什么不同”→变更所在页再问“这里”；检查承接与取消。",
-      "priority": "P0"
+      "priority": "P0",
+      "offlineEvidence2026_10_25": "evidence/overnight-2026-10-25/04-real-paper/RESULTS.json（真实论文+本地模拟模型；真实模型与用户确认仍待验）"
     },
     {
       "id": "U08",
@@ -216,8 +219,8 @@
       "source": "evidence/surfing-2026-10-24/T5b-negatives/FULL-PACKAGED-E2E.txt",
       "observed": "历史完整165项164通过/1失败：dense1000 eraseUndo1273ms>1000ms，mutation worst62ms>50ms。不是用户截图报告的Surfing故障，也不是修复包最新测量。",
       "expected": "保持原门槛，独立处理编辑性能。",
-      "action": "本轮未改该旧复杂编辑实现或门槛。",
-      "status": "未解决；历史失败保留",
+      "action": "定向快照+IPC Float64Array传点+投影复用；dense全6项原阈值通过；候选包完整回归内通过。证据 evidence/dense1000-fix-2026-10-25/VERIFICATION.txt",
+      "status": "已修复（2026-10-25夜间）",
       "acceptance": "在同环境实际重测该旧门禁并达标，不能用Surfing专项通过替代。",
       "priority": "P1"
     },
@@ -276,8 +279,8 @@
       "source": "docs/SURFING_OVERNIGHT_2026-10-24.md",
       "observed": "夜间审查记录为Minor；未据此扩展快捷键。",
       "expected": "暂停交互范围一致且清晰。",
-      "action": "现有Surfing暂停按钮可用，Escape未在本轮修复。",
-      "status": "已知未解决Minor",
+      "action": "Escape 调用统一接管；tests/e2e/surfing-escape.spec.ts RED→GREEN；候选包回归通过",
+      "status": "已修复（2026-10-25夜间）",
       "acceptance": "补明确快捷键需求和回归后验证Escape能取消Surfing且无迟到内容。",
       "priority": "P2"
     },
@@ -348,8 +351,8 @@
       "source": "docs/SURFING_HANDOFF_2026-10-24.md",
       "observed": "当前最终实际包仅15项Surfing专项；旧165/中间17等数字来自不同候选和时点。",
       "expected": "发布结论有对应当前包的完整证据。",
-      "action": "候选hash与build已对照，历史结果单独标记。",
-      "status": "尚未正式发布验收",
+      "action": "evidence/overnight-2026-10-25/05-candidate/VERIFICATION.txt",
+      "status": "新候选已跑完整门禁；非正式发布",
       "acceptance": "需要发布时对最终包重跑明确全套及性能，保持失败门槛。",
       "priority": "P1"
     },
@@ -360,9 +363,40 @@
       "source": "evidence/surfing-issues-2026-10-25/BUILD-DRIFT.json",
       "observed": "2026-10-25运行旧修复CHECK.mjs返回PACKAGED_BUNDLE_MISMATCH index.cjs、退出1。14个修复来源/测试hash仍匹配；修复包264文件hash保持。当前dist/main/index.cjs与包内index.cjs不同；没有据此推断修改者或原因，也未证明当前dist是坏包。",
       "expected": "用于交接/重新打包的构建产物与其对应源码和候选有明确一致性证据。",
-      "action": "保留失败原样日志和两个SHA256，只读记录；本轮没有重建dist、覆盖候选或改生产代码。",
-      "status": "新发现待查；不作为用户亲历故障",
+      "action": "Claude 01:29:55 重建 dist（早于 01:31:12 检查）；新候选 BUILD-CONSISTENCY.json 0/8 不一致",
+      "status": "原因已查明并有新的一致性证据",
       "acceptance": "接手者先核对当前dist来源与构建输入；对明确目标重建/比对并留证后再宣布包/构建一致。",
+      "priority": "P1"
+    },
+    {
+      "id": "N01",
+      "category": "用户新需求（10-25）",
+      "title": "前端不好看，需要重新设计",
+      "status": "已实现，待用户确认",
+      "priority": "P1",
+      "evidence": "evidence/overnight-2026-10-25/02-redesign"
+    },
+    {
+      "id": "N02",
+      "category": "用户新需求（10-25）",
+      "title": "使用自己的SVG logo并拆分使用",
+      "status": "已实现，待用户确认；ICO未改",
+      "priority": "P2",
+      "evidence": "evidence/overnight-2026-10-25/02-redesign"
+    },
+    {
+      "id": "N03",
+      "category": "用户新需求（10-25）",
+      "title": "设计Surfing×Cruise共同底座与模型介入层",
+      "status": "设计稿v0，待审阅，未实施",
+      "priority": "P0",
+      "evidence": "docs/superpowers/specs/2026-10-25-reading-companion-foundation-design.md"
+    },
+    {
+      "id": "P03",
+      "category": "协作/交付问题",
+      "title": "夜间两个代理同时写同一工作树",
+      "status": "已记录；之后单一写入者",
       "priority": "P1"
     }
   ]

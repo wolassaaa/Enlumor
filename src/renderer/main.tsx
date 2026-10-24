@@ -189,7 +189,7 @@ function App() {
       }
       if (event.ctrlKey && event.key.toLowerCase()==='w') { event.preventDefault(); if(activeId.current)void closeTab(activeId.current);return; }
       if(event.key==='Escape'&&noteOpen.current){event.preventDefault();if(!locked.current&&!pending.current)closeNote();return;}
-      if (event.key === 'Escape') { void commandHost.current?.run({type:'pause'}).then(commandError); notifyCruiseTakeover(); resetDrawing(); setParts([]); setNote(null); setLayoutOpen(false); window.getSelection()?.removeAllRanges(); }
+      if (event.key === 'Escape') { void commandHost.current?.run({type:'pause'}).then(commandError); if(!event.isComposing)notifyCruiseTakeover(); resetDrawing(); setParts([]); setNote(null); setLayoutOpen(false); window.getSelection()?.removeAllRanges(); }
     };
     window.addEventListener('keydown', keyboard);
     const observer = new ResizeObserver(entries => setWorkspaceWidth(entries[0].contentRect.width));

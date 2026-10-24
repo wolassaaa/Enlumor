@@ -1,5 +1,10 @@
 # Enlumor Surfing 交接 · 2026-10-24 · 修复版为准
 
+> **2026-10-25 夜间（Claude 接手）更新，优先于下文：** 当前测试入口 `Surfing-测试入口.cmd` 已改为新候选 **Enlumor-Overnight**（`evidence/overnight-2026-10-25/05-candidate/`，独立 user-data）；旧修复版用 `Surfing-Repair-旧版入口.cmd`。
+> 新候选 = Surfing-Repair 源码 + dense1000 性能修复（T05）+ 前端重设计与 logo（N01/N02）+ Escape 暂停 Surfing（T10）。打包全量 e2e 168 过 + 1 项挂起重跑 3/3 过；4 项性能原阈值通过；包与 dist 0/8 不一致。真实模型与用户体验仍待验。
+> 共同底座设计稿：`docs/superpowers/specs/2026-10-25-reading-companion-foundation-design.md`（待审阅）。夜间总览：`docs/OVERNIGHT_REPORT_2026-10-25.md`。备份分支：`backup/overnight-baseline-2026-10-25`、`backup/overnight-candidate-2026-10-25`（用户分支未提交）。
+
+
 > 2026-10-25补充：[问题总账：用户反馈、测试缺陷、待验边界与逐项关闭条件](D:/codex%20project/Enlumor/.worktrees/v04-wave-ab/docs/SURFING_ISSUES_2026-10-25.md)。接手时先读；修复版未获用户确认的问题保持待验。另见T11：2026-10-25当前dist与保留的修复包不一致，旧包hash未变；构建一致性需重新核对，不把历史包/构建匹配当作本次新通过。
 
 ## 先看结论

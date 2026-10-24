@@ -10,6 +10,41 @@
 ## 一句话
 **一个阅读会话核心（谁在看哪篇、现在谁说了算），一套原文段落（模型和人都用同一种“原文地址”），一张能力表（人和模型能做的事、各自什么权限），一条模型回合流水线（看什么 → 花多少 → 说什么 → 指哪里 → 做什么 → 怎么撤回）。Surfing 和 Cruise 只是这条流水线上的两种“策略”，呈现层（今天的右侧面板、将来的 Intelligent UI）只消费同一种输出。**
 
+```mermaid
+flowchart TB
+  subgraph P[呈现层：今天右侧面板 · 以后 Intelligent UI（字幕/邻近气泡/边注/聚光）]
+    UI[只消费输出契约<br/>封闭词汇表的呈现意图]
+  end
+  subgraph E[模型回合流水线（共享）]
+    direction LR
+    I[意图] --> C[上下文计划<br/>ContextPack+覆盖报告] --> B[预算闸门<br/>窗口/配额预占] --> M[调用·流式] --> V[解析+校验<br/>输出契约 v1] --> O[所有权复核<br/>session/goal/nav/revision] --> X[提交+回执]
+  end
+  subgraph S[策略]
+    SP[SurfingPlanner<br/>你推进] 
+    CR[CruiseResearcher<br/>问题驱动]
+  end
+  subgraph K[会话核心（主进程权威）]
+    RS[ReadingSession<br/>mode · goal · cursors · play · navigationGeneration · conversation · ledger]
+    TO[唯一接管入口 userTookOver]
+  end
+  subgraph R[能力表（人和模型共用）]
+    T[T0 只读 · T1 视口≤1 · T2 临时视觉 · T3 AI自有批注 · T4 需确认 · T5 模型不可发起]
+  end
+  subgraph D[原文层 + 工作区]
+    PA[单一抽取器（主进程/Python）<br/>行级 passage + 段级 group]
+    WS[(SQLite：批注/会话/账本)]
+  end
+  PR[供应商层：协议适配 + 能力描述 + BYOK + 路由] 
+  SP & CR --> E
+  E --> PR
+  E --> R
+  E <--> K
+  R --> D
+  C --> D
+  X --> UI
+  TO -.用户滚动/选区/批注/Esc/后台.-> K
+```
+
 ---
 
 ## 0. 现状地图（2026-10-25 代码事实）

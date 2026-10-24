@@ -24,7 +24,7 @@ try{
   await page.screenshot({path:path.join(out,`02-reader-${tag}.png`)});
   const surf=page.getByRole('button',{name:'打开 Surfing'}).first();
   if(await surf.count()){await surf.click();await page.waitForTimeout(600);await page.screenshot({path:path.join(out,`03-surfing-${tag}.png`)});await surf.click().catch(()=>{});await page.waitForTimeout(300);}
-  if(tag==='1440'){const cruise=page.getByRole('button',{name:'打开 Cruise'}).first();if(await cruise.count()){await cruise.click();await page.waitForTimeout(500);await page.screenshot({path:path.join(out,`04-cruise-${tag}.png`)});await cruise.click().catch(()=>{});}
+  if(tag==='1440'){const cruise=page.getByRole('button',{name:'打开 Cruise'}).first();if(await cruise.count()){await cruise.click();await page.waitForTimeout(500);await page.screenshot({path:path.join(out,`04-cruise-${tag}.png`)});await page.getByRole('button',{name:'退出',exact:true}).first().click().catch(()=>{});await page.waitForTimeout(300);}
    const settings=page.getByRole('button',{name:'模型设置'}).first();if(await settings.count()){await settings.click();await page.waitForTimeout(500);await page.screenshot({path:path.join(out,`05-settings-${tag}.png`)});await page.keyboard.press('Escape');await page.waitForTimeout(300);}}
  }
  console.log('SHOTS '+out);

@@ -166,12 +166,14 @@ describe('targeted snapshot scope for dense documents',()=>{
   it('commits byte-identical operations and receipts with a scoped or a full snapshot',async()=>{
     current=fixture();const first=await seeded(current.file);first.a.workspace.close();workspaces.splice(workspaces.indexOf(first.a.workspace),1);
     const copy=current.file.replace(/\.sqlite$/,'-full.sqlite');copyFileSync(current.file,copy);
-    const scoped=await open(current.file),full=await open(copy),fullHost={...editingHost(full.edits,current.context),readSnapshot:(c:typeof current.context)=>full.edits.readSnapshot(c)} as EditHost;
-    for(const [requestId,command] of [['delete',{type:'delete_marks',targets:[{id:first.ids[0],expectedVersion:1}]}],['update',{type:'set_marks_visibility',targets:[{id:first.ids[1],expectedVersion:1}],visible:false}]] as const){
+    const scoped=await open(current.file),full=await open(copy),fullHost={...editingHost(full.edits,current.context),readSnapshot:(c:typeof current.context)=>full.edits.readSnapshot(c),transaction:(body:any)=>full.edits.transaction(tx=>body({...tx,readSnapshot:(c:typeof current.context)=>tx.readSnapshot(c)}))} as EditHost;
+    for(const [requestId,command] of [['delete',{type:'delete_marks',targets:[{id:first.ids[0],expectedVersion:1}]}],['update',{type:'set_marks_visibility',targets:[{id:first.ids[1],expectedVersion:1}],visible:false}],['create',{type:'apply_edit_batch',operations:[ink(400)]}]] as const){
       const x=committed(await runEditingCommand({context:current.context,requestId,command},editingHost(scoped.edits,current.context),signal()));
       const y=committed(await runEditingCommand({context:current.context,requestId,command},fullHost,signal()));expect(x).toEqual(y);
       committed(await runEditingCommand({context:current.context,requestId:requestId+'-undo',command:{type:'undo_edit',operationId:x.operationId}},editingHost(scoped.edits,current.context),signal()));
       committed(await runEditingCommand({context:current.context,requestId:requestId+'-undo',command:{type:'undo_edit',operationId:y.operationId}},fullHost,signal()));
+      committed(await runEditingCommand({context:current.context,requestId:requestId+'-redo',command:{type:'redo_edit',operationId:x.operationId}},editingHost(scoped.edits,current.context),signal()));
+      committed(await runEditingCommand({context:current.context,requestId:requestId+'-redo',command:{type:'redo_edit',operationId:y.operationId}},fullHost,signal()));
     }
     for(const t of ['edit_marks','edit_versions','edit_operations','edit_receipts'])expect(scoped.workspace.db.prepare(`SELECT * FROM ${t} ORDER BY rowid`).all()).toEqual(full.workspace.db.prepare(`SELECT * FROM ${t} ORDER BY rowid`).all());
   });

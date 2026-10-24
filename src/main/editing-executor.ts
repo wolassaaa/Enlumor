@@ -40,7 +40,8 @@ export type EditTransaction = {
  * inside the host. Read ports are side-effect-free, including receipt recovery.
  * Source/actor changes must invalidate getContext().revision. No UI effects live here.
  * readSnapshot ids: every requested mark/version must be present; a host may ignore ids
- * and return the whole snapshot, which plans identically.
+ * and return the whole snapshot, which plans identically for valid stored marks (a scoped
+ * read no longer lets an unrelated invalid row fail a targeted edit; whole-page commands still do).
  */
 export type EditHost = {
   getContext(): CommandContext | null;

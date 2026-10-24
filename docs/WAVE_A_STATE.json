@@ -14,13 +14,13 @@
   "automationId": "20min-enlumor-2",
   "schedule": "every 20 minutes; no new tasks after 07:30; stop and pause at 08:00 Asia/Taipei 2026-10-24",
   "notes": "User approved written production integration spec with 好，开始. Two-task implementation plan created, still requires written plan review. No runtime/product changes or personal-data migration.",
-  "automationStatus": "ACTIVE",
+  "automationStatus": "PAUSED",
   "automationTargetThread": "01a16949-eadc-7591-b182-77e6a6d59d01",
   "lastVerifiedBaseline": {
     "unit": 139,
     "build": "PASS"
   },
-  "updatedAt": "2026-10-24T03:43:19.101243+08:00",
+  "updatedAt": "2026-10-25T02:50:00+08:00",
   "task1Commit": "dc9f231",
   "lastVerified": {
     "unit": 155,
@@ -108,7 +108,7 @@
     "unit": 453,
     "python": 14,
     "build": "PASS",
-    "performanceCurrent": "DENSE1000_ERASE_UNDO_RED_1622MS_LIMIT1000MS; OTHER_GATES_PASS; PROFILING"
+    "performanceCurrent": "DENSE_ALL6_PASS_ORIGINAL_THRESHOLDS_2026-10-25 (preview1000 744-774ms, longtask 0)"
   },
   "surfingOvernight": {
     "plan": "docs/SURFING_OVERNIGHT_2026-10-24.md",
@@ -173,7 +173,7 @@
     "userAcceptance": "PENDING_NO_REPAIR_ACCEPTANCE_RECEIVED",
     "buildConsistencyLatest": "2026-10-25: repair candidate264 and source14 hashes match repair manifests, but current dist/main/index.cjs differs from packaged repair; T11 pending investigation; no rebuild performed."
   },
-  "releaseGate": "FAIL_EXISTING_EDITING_PREVIEW_DENSE1000",
+  "releaseGate": "CANDIDATE_OVERNIGHT_PASS_OFFLINE_GATES_REAL_MODEL_AND_USER_PENDING",
   "surfingOvernightHistoricalBeforeRepair": {
     "plan": "docs/SURFING_OVERNIGHT_2026-10-24.md",
     "evidence": "evidence/surfing-2026-10-24",
@@ -222,5 +222,33 @@
     },
     "relatedPackagedUi": 20,
     "coverageNote": "Last full packaged run165:164pass/1old-performance-fail. Test-only large additions verified in related20 and refined2; full167 suite not rerun, production/candidate hashes unchanged."
+  },
+  "overnight20261025": {
+    "owner": "Claude (takeover from Codex)",
+    "plan": "docs/OVERNIGHT_PLAN_2026-10-25.md",
+    "report": "docs/OVERNIGHT_REPORT_2026-10-25.md",
+    "candidate": "evidence/overnight-2026-10-25/05-candidate/MODIFIED_FILE/win-unpacked/Enlumor-Overnight.exe",
+    "launcher": "Surfing-测试入口.cmd -> OPEN-OVERNIGHT.cmd",
+    "packagedE2E": {
+      "passed": 168,
+      "failed": 1,
+      "failureRerun": "reader.spec.ts:300 hang; rerun 3/3 pass"
+    },
+    "performance": "text/scan/text-preview/scan-preview PASS original thresholds",
+    "unit": "623+ (see evidence)",
+    "python": 21,
+    "denseGate": "PASS",
+    "escapeT10": "FIXED",
+    "redesign": "DONE_PENDING_USER",
+    "logo": "DONE_PENDING_USER",
+    "foundationDesign": "docs/superpowers/specs/2026-10-25-reading-companion-foundation-design.md (DRAFT_PENDING_REVIEW)",
+    "realPaperOffline": "evidence/overnight-2026-10-25/04-real-paper/RESULTS.json PASS (mock model)",
+    "realModel": "NOT_EXECUTED",
+    "userAcceptance": "PENDING",
+    "backupRefs": [
+      "backup/overnight-baseline-2026-10-25",
+      "backup/overnight-candidate-2026-10-25"
+    ],
+    "committedToUserBranch": false
   }
 }
