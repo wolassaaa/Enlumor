@@ -1,0 +1,15 @@
+import {describe,it,expect} from 'vitest';
+import {createSurfingSourceLoader,type SurfingSourcePorts} from '../src/main/surfing-source';
+const context={documentId:'doc',fingerprint:'hash',revision:1};
+const passage={id:'surf-0-0-0',quote:'Original paper',quads:[[0,10,20,10,0,0,20,0]]};
+const raw=()=>({fingerprint:'hash',pageCount:2,pages:[{pageIndex:0,passages:[structuredClone(passage)]},{pageIndex:1,passages:[]}]});
+function setup(){let current:typeof context|null={...context};const calls:any[]=[];const ports:SurfingSourcePorts={getContext:()=>current,verified:id=>{calls.push(['verified',id]);return {id,path:'HOST_ONLY_PATH',fingerprint:'hash',pageCount:2};},extract:async(request,signal)=>{calls.push(['extract',request,signal]);return raw();}};return{ports,calls,load:createSurfingSourceLoader(ports),signal:new AbortController().signal,stale:()=>{current=null;}};}
+describe('trusted Surfing document source adapter',()=>{
+ it('uses only host-verified path and binds source geometry to document identity',async()=>{const h=setup();const s=await h.load(context,h.signal);expect(s.context).toEqual(context);expect(s.passages[0]).toEqual({...passage,...{documentId:'doc',fingerprint:'hash',pageIndex:0}});expect(s.coverage).toBe('partial-text');expect(s.emptyPages).toEqual([1]);expect(h.calls.filter(c=>c[0]==='extract')[0][1]).toEqual({operation:'surfing-document',source:'HOST_ONLY_PATH',fingerprint:'hash'});expect(JSON.stringify(s)).not.toContain('HOST_ONLY_PATH');});
+ it('checks original identity before and after extraction',async()=>{const h=setup();await h.load(context,h.signal);expect(h.calls.filter(c=>c[0]==='verified')).toHaveLength(2);});
+ it('does not extract a stale or canceled document',async()=>{const h=setup();h.stale();await expect(h.load(context,h.signal)).rejects.toThrow('SURFING_STALE');expect(h.calls).toEqual([]);});
+ it('cancels after extraction before returning data',async()=>{const h=setup(),c=new AbortController();h.ports.extract=async()=>{c.abort();return raw();};await expect(h.load(context,c.signal)).rejects.toThrow('SURFING_CANCELED');});
+ it('rejects document revision change during extraction',async()=>{const h=setup();h.ports.extract=async()=>{h.stale();return raw();};await expect(h.load(context,h.signal)).rejects.toThrow('SURFING_STALE');});
+ it.each(['fingerprint','pageCount','missingPage','duplicatePage','wrongPage','unknownPassage'])('rejects malformed/incomplete host result %s',async kind=>{const h=setup(),r:any=raw();if(kind==='fingerprint')r.fingerprint='wrong';if(kind==='pageCount')r.pageCount=9;if(kind==='missingPage')r.pages.pop();if(kind==='duplicatePage')r.pages[1]=r.pages[0];if(kind==='wrongPage')r.pages[1].pageIndex=9;if(kind==='unknownPassage')r.pages[0].passages[0].injected='extra';h.ports.extract=async()=>r;await expect(h.load(context,h.signal)).rejects.toThrow('SURFING_SOURCE_INVALID');});
+ it('rejects a file changed after extraction',async()=>{const h=setup();let calls=0;h.ports.verified=id=>({id,path:'path',fingerprint:++calls===1?'hash':'changed',pageCount:2});await expect(h.load(context,h.signal)).rejects.toThrow('SURFING_SOURCE_INVALID');});
+});

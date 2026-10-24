@@ -8,6 +8,8 @@ import path from 'node:path';
 const root = path.resolve('.');
 const evidence = process.env.ENLUMOR_EVIDENCE_DIR || 'evidence/performance';
 mkdirSync('.cache/benchmark', { recursive: true }); mkdirSync(evidence, { recursive: true });
+const editingPreview=process.argv.includes('--editing-preview');
+const editingArgs=editingPreview?['--editing-preview']:[];
 const scanned = process.argv.includes('--scanned');
 const source = path.join(root, scanned ? '.cache/benchmark/200-scanned-pages.pdf' : '.cache/benchmark/200-pages-32MiB.pdf');
 if (scanned && !existsSync(source)) execFileSync(path.join(root,'.venv/Scripts/python.exe'), ['-c', `import pymupdf as f,random;d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);pix=f.Pixmap(f.csGRAY,400,400,random.Random(i).randbytes(160000),False);p.insert_image(p.rect,stream=pix.tobytes('png'))\nd.save(${JSON.stringify(source)})`]);
@@ -20,23 +22,28 @@ let app;
 for (let i = 0; i < 3; i++) {
   const start = performance.now();
   const launch = benchmarkLaunch(process.argv[3] ? path.resolve(process.argv[3]) : undefined, root);
-  app = await electron.launch({ ...launch, args: [...launch.args, `--user-data-dir=${mkdtempSync(path.join(tmpdir(), 'enlumor-bench-'))}`], env });
+  app = await electron.launch({ ...launch, args: [...launch.args,...editingArgs, `--user-data-dir=${mkdtempSync(path.join(tmpdir(), 'enlumor-bench-'))}`], env });
   const page = await app.firstWindow(); await expect(page.locator('.wordmark')).toBeVisible();
   startup.push(performance.now() - start);
   if (i < 2) await app.close();
 }
-let scrolling, saves;
+let scrolling, saves, editing;
 try {
   await app.evaluate(({ dialog }, source) => { dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [source] }); }, source);
   const page = await app.firstWindow();
   await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
   await expect(page.locator('#viewer canvas').first()).toBeVisible({ timeout: 30000 });
   await expect(page.getByRole('status')).toContainText('已恢复', { timeout: 30000 });
-  await page.evaluate(async () => {
-    const list = await window.enlumor.listDocuments(); const doc = list.value[0];
-    const marks = Array.from({ length: 1000 }, (_, i) => ({ id: `stress-${i}`, documentId: doc.id, fingerprint: doc.fingerprint, pageIndex: i % 200, type: 'highlight', author: 'user', color: '#f4cf58', quote: `Evidence ${i}`, note: '', quads: [[48,570,200,570,48,550,200,550]] }));
-    await window.enlumor.applyAnnotationChange({ documentId: doc.id, upserts: marks, deletes: [] });
-  });
+  editing=await page.evaluate(async ({preview,scanned}) => {
+    if(!preview){const list=await window.enlumor.listDocuments();const doc=list.value[0];const marks=Array.from({length:1000},(_,i)=>({id:`stress-${i}`,documentId:doc.id,fingerprint:doc.fingerprint,pageIndex:i%200,type:'highlight',author:'user',color:'#f4cf58',quote:`Evidence ${i}`,note:'',quads:[[48,570,200,570,48,550,200,550]]}));const r=await window.enlumor.applyAnnotationChange({documentId:doc.id,upserts:marks,deletes:[]});if(!r.ok)throw Error(r.error.message);return null;}
+    const unwrap=r=>{if(!r.ok)throw Error(r.error.message);return r.value;};const doc=unwrap(await window.enlumor.listDocuments())[0],session=unwrap(await window.enlumor.activateEditingDocument(doc.id));
+    const anchors=[],anchorTimes=[],commitTimes=[];let start=performance.now();unwrap(await window.enlumor.prepareEditingPage({sessionId:session.sessionId,requestId:crypto.randomUUID(),pageIndex:0}));const compatibilityPageMs=performance.now()-start;
+    if(!scanned)for(let i=0;i<200;i++){start=performance.now();const a=unwrap(await window.enlumor.prepareEditingAnchor({sessionId:session.sessionId,requestId:crypto.randomUUID(),candidate:{pageIndex:i,quote:'Evidence page '+(i+1),quads:[[48,590,250,590,48,560,250,560]]}}));anchors.push(a.id);anchorTimes.push(performance.now()-start);}
+    for(let offset=0;offset<1000;offset+=64){const operations=Array.from({length:Math.min(64,1000-offset)},(_,j)=>{const i=offset+j;return{type:'create_mark',markType:scanned?'note':'highlight',pageIndex:i%200,color:'#f4cf58',note:scanned?'scan geometry '+i:'',...(scanned?{geometry:{quads:[[48,570,200,570,48,550,200,550]]}}:{anchorId:anchors[i%200]})};});start=performance.now();const result=unwrap(await window.enlumor.executeUserEdit({sessionId:session.sessionId,request:{requestId:crypto.randomUUID(),context:session.context,command:{type:'apply_edit_batch',operations}}}));if(result.status!=='committed')throw Error(JSON.stringify(result));commitTimes.push(performance.now()-start);}
+    const stats=a=>{const ordered=[...a].sort((a,b)=>a-b);return{firstMs:a[0]??null,p50Ms:ordered[Math.floor(ordered.length*.5)]??null,p95Ms:ordered[Math.floor(ordered.length*.95)]??null};};
+    const cancelId=crypto.randomUUID();start=performance.now();const pending=window.enlumor.prepareEditingPage({sessionId:session.sessionId,requestId:cancelId,pageIndex:199});unwrap(await window.enlumor.cancelUserEdit({sessionId:session.sessionId,requestId:cancelId}));const canceled=await pending;
+    return{anchorPreparation:stats(anchorTimes),compatibilityPageMs,editCommit:stats(commitTimes),cancelResponseMs:performance.now()-start,cancelResult:canceled.ok?'completed':canceled.error.code,commands:16,marks:1000};
+  },{preview:editingPreview,scanned});
   // Reload through the ordinary recent-document UI so real annotation cards are mounted.
   await page.locator('.recent>button').first().click();
   await expect(page.locator('[data-testid="annotation-item"]')).toHaveCount(1000, { timeout: 30000 });
@@ -62,7 +69,7 @@ try {
 } finally { await app.close(); }
 for (let i = 0; i < 3; i++) {
   const server=createServer(); await new Promise(resolve=>server.listen(0,'127.0.0.1',resolve)); const port=server.address().port; await new Promise(resolve=>server.close(resolve));
-  const start=performance.now(); const child=spawn(path.resolve(portable),[`--remote-debugging-port=${port}`,`--user-data-dir=${mkdtempSync(path.join(tmpdir(),'enlumor-start-'))}`],{ windowsHide:true,env });
+  const start=performance.now(); const child=spawn(path.resolve(portable),[...editingArgs,`--remote-debugging-port=${port}`,`--user-data-dir=${mkdtempSync(path.join(tmpdir(),'enlumor-start-'))}`],{ windowsHide:true,env });
   let browser;
   try {
     for(let j=0;j<180;j++){try{browser=await chromium.connectOverCDP(`http://127.0.0.1:${port}`,{timeout:300});break;}catch{await new Promise(resolve=>setTimeout(resolve,100));}}
@@ -70,5 +77,5 @@ for (let i = 0; i < 3; i++) {
     portableStartup.push(performance.now()-start); await page.close();
   } finally { await browser?.close(); child.kill(); }
 }
-const result={label,fixture:scanned ? '200 scanned image pages / approximately 32MB / 1000 annotations' : '200 pages / 32MiB unused PDF stream / 1000 annotations',startupMs:startup,portableStartupMs:portableStartup,scrolling,readingSave:saves};
+const result={label,fixture:scanned ? '200 scanned image pages / approximately 32MB / 1000 annotations' : '200 pages / 32MiB unused PDF stream / 1000 annotations',startupMs:startup,portableStartupMs:portableStartup,scrolling,readingSave:saves,...(editingPreview?{editing}:{} )};
 writeFileSync(`${evidence}/${label}.json`,JSON.stringify(result,null,2)); console.log(JSON.stringify(result));

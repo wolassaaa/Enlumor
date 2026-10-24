@@ -10,3 +10,14 @@ __pycache__/
 public/pdf-assets/
 .cache-audit.json
 .worktrees/
+
+# Local credentials, browser automation and isolated application profiles
+.env
+.env.*
+!.env.example
+.playwright-cli/
+evidence/**/user-data/
+evidence/**/userData/
+evidence/**/win-unpacked/
+evidence/**/MODIFIED_FILE/
+evidence/**/node_modules/
