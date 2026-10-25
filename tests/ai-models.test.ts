@@ -46,3 +46,18 @@ it('long prompts within the shared bound are no longer rejected locally',async()
  const endpoint=await server((_q,res)=>{res.setHeader('content-type','application/json');res.end(JSON.stringify({choices:[{message:{content:'ok'},finish_reason:'stop'}]}));});
  expect(await generateText(profile(endpoint),{system:'s',user:'x '.repeat(300000)},{stream:false})).toBe('ok');
 });
+import {buildAiRequest} from '../src/main/ai-client';
+const img={mediaType:'image/jpeg' as const,data:'QUJD'};
+const turns=[{role:'assistant' as const,text:'{"actions":[{"type":"view_page","pageNumber":2}]}'},{role:'user' as const,text:'第 2 页如下',images:[img]}];
+it('follow-up turns carry page images in each protocol\'s own shape',()=>{
+ const chat=buildAiRequest(profile('https://x.example/v1'),{...prompt,turns},false).body;expect(chat.messages.slice(2)).toEqual([{role:'assistant',content:turns[0].text},{role:'user',content:[{type:'text',text:'第 2 页如下'},{type:'image_url',image_url:{url:'data:image/jpeg;base64,QUJD'}}]}]);
+ const claude=buildAiRequest(profile('https://x.example/v1','anthropic-messages'),{...prompt,turns},false).body;expect(claude.messages[2].content[1]).toEqual({type:'image',source:{type:'base64',media_type:'image/jpeg',data:'QUJD'}});
+ const gemini=buildAiRequest(profile('https://x.example/v1beta','gemini'),{...prompt,turns},false).body;expect(gemini.contents[1].role).toBe('model');expect(gemini.contents[2].parts[1]).toEqual({inline_data:{mime_type:'image/jpeg',data:'QUJD'}});
+ const responses=buildAiRequest(profile('https://x.example/v1/responses','openai-responses'),{...prompt,turns},false).body;expect(responses.input[2].content[1]).toEqual({type:'input_image',image_url:'data:image/jpeg;base64,QUJD'});
+ expect(buildAiRequest(profile('https://x.example/v1'),prompt,false).body.messages).toHaveLength(2);
+});
+it('turns are bounded and shape-checked; text-only protocols refuse images',()=>{
+ expect(()=>buildAiRequest(profile('https://dashscope.example/api/v1','dashscope'),{...prompt,turns},false)).toThrow('AI_IMAGES_UNSUPPORTED');
+ for(const bad of [[{role:'system',text:'x'}],[{role:'assistant',text:'x',images:[img]}],[{role:'user',text:'x',images:[{mediaType:'image/gif',data:'QUJD'}]}],[{role:'user',text:'x',images:[{mediaType:'image/png',data:'not base64!'}]}],Array.from({length:13},()=>({role:'user',text:'x'})),[{role:'user',text:'x',images:Array(7).fill(img)}]])
+  expect(()=>buildAiRequest(profile('https://x.example/v1'),{...prompt,turns:bad as any},false)).toThrow('AI_INVALID_PROMPT');
+});

@@ -10,7 +10,7 @@ export class AiProfiles {
  list():AiProfileView[]{return this.db.prepare('SELECT * FROM ai_profiles ORDER BY rowid').all().map(row=>this.view(row));}
  save(input:AiProfileInput):AiProfileView {
   validateAiProfile(input);const{credential}=input;
-  const metadata={id:input.id,name:input.name,protocol:input.protocol,endpoint:input.endpoint,model:input.model,maxOutputTokens:input.maxOutputTokens,timeoutMs:input.timeoutMs,parameters:input.parameters,...(input.contextWindowTokens!==undefined?{contextWindowTokens:input.contextWindowTokens}:{})};
+  const metadata={id:input.id,name:input.name,protocol:input.protocol,endpoint:input.endpoint,model:input.model,maxOutputTokens:input.maxOutputTokens,timeoutMs:input.timeoutMs,parameters:input.parameters,...(input.contextWindowTokens!==undefined?{contextWindowTokens:input.contextWindowTokens}:{}),...(input.vision!==undefined?{vision:input.vision}:{})};
   const old=this.db.prepare('SELECT secret,payload FROM ai_profiles WHERE id=?').get(input.id);
   const prior=old?JSON.parse(old.payload as string):null;
   const changedOrigin=!!prior&&(new URL(prior.endpoint).origin!==new URL(input.endpoint).origin||prior.protocol!==input.protocol);

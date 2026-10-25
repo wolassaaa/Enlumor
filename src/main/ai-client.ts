@@ -1,16 +1,32 @@
 import{generateSpark}from'./spark-client';
 import{validateAiProfile}from'./ai-config';
 export{validateAiProfile}from'./ai-config';
-import {AI_MAX_PROMPT_CHARACTERS,type AiProfileInput,type AiPrompt} from '../shared/ai';
+import {AI_MAX_IMAGE_BASE64,AI_MAX_IMAGES,AI_MAX_PROMPT_CHARACTERS,AI_MAX_TURNS,type AiImage,type AiProfileInput,type AiPrompt,type AiTurn} from '../shared/ai';
 import type {AiModelInfo} from '../shared/ai-models';
 
 const MAX_RESPONSE_BYTES=4*1024*1024,MAX_EVENT_BYTES=512*1024;
 const invalid=()=>new Error('AI_INVALID_CONFIG');
 const failure=(code:string)=>new Error(code);
 
+const promptCharacters=(p:AiPrompt)=>p.system.length+p.user.length+(Array.isArray(p.turns)?p.turns.reduce((n,t)=>n+(typeof t?.text==='string'?t.text.length:0),0):0);
+/** Turns are data the app assembled; still bounded and shape-checked before anything is sent. */
+function validTurns(value:unknown):AiTurn[]{
+ if(value===undefined)return[];
+ if(!Array.isArray(value)||value.length>AI_MAX_TURNS)throw failure('AI_INVALID_PROMPT');
+ let images=0;
+ for(const t of value){
+  if(!t||typeof t!=='object'||!['assistant','user'].includes(t.role)||typeof t.text!=='string'||!t.text.trim())throw failure('AI_INVALID_PROMPT');
+  if(t.images!==undefined){if(!Array.isArray(t.images)||t.role!=='user')throw failure('AI_INVALID_PROMPT');for(const i of t.images){images++;if(!i||!['image/jpeg','image/png'].includes(i.mediaType)||typeof i.data!=='string'||!i.data||i.data.length>AI_MAX_IMAGE_BASE64||!/^[A-Za-z0-9+/]+=*$/.test(i.data))throw failure('AI_INVALID_PROMPT');}}
+ }
+ if(images>AI_MAX_IMAGES)throw failure('AI_INVALID_PROMPT');
+ return value as AiTurn[];
+}
 export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=true):{url:string;headers:Record<string,string>;body:any} {
  const url=validateAiProfile(profile);
- if(!prompt||typeof prompt.system!=='string'||typeof prompt.user!=='string'||!prompt.user.trim()||prompt.system.length+prompt.user.length>AI_MAX_PROMPT_CHARACTERS)throw failure('AI_INVALID_PROMPT');
+ if(!prompt||typeof prompt.system!=='string'||typeof prompt.user!=='string'||!prompt.user.trim()||promptCharacters(prompt)>AI_MAX_PROMPT_CHARACTERS)throw failure('AI_INVALID_PROMPT');
+ const turns=validTurns(prompt.turns),images=turns.some(t=>t.images?.length);
+ if(images&&(profile.protocol==='dashscope'||profile.protocol==='spark'))throw failure('AI_IMAGES_UNSUPPORTED');
+ const dataUrl=(i:AiImage)=>`data:${i.mediaType};base64,${i.data}`;
  const headers:Record<string,string>={'Content-Type':'application/json','Accept':stream?'text/event-stream':'application/json'};
  const key=profile.credential?.kind==='api-key'?profile.credential.apiKey:'';
  if(!key&&url.protocol==='https:')throw failure('AI_KEY_REQUIRED');
@@ -19,25 +35,25 @@ export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=tru
  switch(profile.protocol){
   case'openai-chat':
    addPath('/chat/completions','/v1');if(key)headers.Authorization='Bearer '+key;
-   body={model:profile.model,messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user}],max_tokens:profile.maxOutputTokens,stream,...profile.parameters};break;
+   body={model:profile.model,messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.images?.length?[{type:'text',text:t.text},...t.images.map(i=>({type:'image_url',image_url:{url:dataUrl(i)}}))]:t.text}))],max_tokens:profile.maxOutputTokens,stream,...profile.parameters};break;
   case'openai-responses':
    addPath('/responses','/v1');if(key)headers.Authorization='Bearer '+key;
-   body={model:profile.model,instructions:prompt.system,input:prompt.user,max_output_tokens:profile.maxOutputTokens,stream,store:false,...profile.parameters};break;
+   body={model:profile.model,instructions:prompt.system,input:turns.length?[{role:'user',content:[{type:'input_text',text:prompt.user}]},...turns.map(t=>t.role==='assistant'?{role:'assistant',content:[{type:'output_text',text:t.text}]}:{role:'user',content:[{type:'input_text',text:t.text},...(t.images||[]).map(i=>({type:'input_image',image_url:dataUrl(i)}))]})]:prompt.user,max_output_tokens:profile.maxOutputTokens,stream,store:false,...profile.parameters};break;
   case'anthropic-messages':
    addPath('/messages','/v1');if(key)headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';
-   body={model:profile.model,system:prompt.system,messages:[{role:'user',content:prompt.user}],max_tokens:profile.maxOutputTokens,stream,...profile.parameters};break;
+   body={model:profile.model,system:prompt.system,messages:[{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.images?.length?[{type:'text',text:t.text},...t.images.map(i=>({type:'image',source:{type:'base64',media_type:i.mediaType,data:i.data}}))]:t.text}))],max_tokens:profile.maxOutputTokens,stream,...profile.parameters};break;
   case'dashscope':{
    const full='/api/v1/services/aigc/text-generation/generation',base=url.pathname.replace(/\/+$/,'');
    if(!base)url.pathname=full;else if(base.endsWith('/api/v1'))url.pathname=base+'/services/aigc/text-generation/generation';else if(!base.endsWith(full))throw invalid();
    if(key)headers.Authorization='Bearer '+key;if(stream)headers['X-DashScope-SSE']='enable';
-   body={model:profile.model,input:{messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user}]},parameters:{max_tokens:profile.maxOutputTokens,result_format:'message',incremental_output:stream,...profile.parameters}};break;
+   body={model:profile.model,input:{messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.text}))]},parameters:{max_tokens:profile.maxOutputTokens,result_format:'message',incremental_output:stream,...profile.parameters}};break;
   }
   case'gemini':{
    let base=url.pathname.replace(/\/+$/,'')||'/v1beta';
    if(/:(?:streamGenerateContent|generateContent)$/.test(base))base=base.replace(/:(?:streamGenerateContent|generateContent)$/,stream?':streamGenerateContent':':generateContent');
    else base+='/models/'+encodeURIComponent(profile.model)+(stream?':streamGenerateContent':':generateContent');
    url.pathname=base;if(stream)url.searchParams.set('alt','sse');if(key)headers['x-goog-api-key']=key;
-   body={systemInstruction:{parts:[{text:prompt.system}]},contents:[{role:'user',parts:[{text:prompt.user}]}],generationConfig:{maxOutputTokens:profile.maxOutputTokens,...profile.parameters}};break;
+   body={systemInstruction:{parts:[{text:prompt.system}]},contents:[{role:'user',parts:[{text:prompt.user}]},...turns.map(t=>({role:t.role==='assistant'?'model':'user',parts:[{text:t.text},...(t.images||[]).map(i=>({inline_data:{mime_type:i.mediaType,data:i.data}}))]}))],generationConfig:{maxOutputTokens:profile.maxOutputTokens,...profile.parameters}};break;
   }
   default:throw failure('AI_PROTOCOL_NOT_READY');
  }
@@ -133,7 +149,7 @@ async function httpFailure(response:Response):Promise<Error>{
 }
 
 export async function generateText(profile:AiProfileInput,prompt:AiPrompt,options:{stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;fetch?:typeof fetch}={}):Promise<string>{
- if(profile.protocol==='spark')return generateSpark(profile,prompt,options);
+ if(profile.protocol==='spark'){if(prompt?.turns?.length)throw failure('AI_TURNS_UNSUPPORTED');return generateSpark(profile,prompt,options);}
  const stream=options.stream!==false,request=buildAiRequest(profile,prompt,stream),timer=new AbortController();
  const timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);
  const signal=options.signal?AbortSignal.any([options.signal,timer.signal]):timer.signal;

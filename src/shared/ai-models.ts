@@ -43,3 +43,20 @@ export function pickDefaultModel(models:string[]):string|null{
  for(const pattern of preferred){const hit=chat.find(id=>pattern.test(id.toLowerCase().split('/').pop()||''));if(hit)return hit;}
  return chat[0]??models[0]??null;
 }
+
+// Model families that accept images, matched like the window catalog. Unknown models are treated as text-only
+// until the reader marks them, so a page image is never sent to a model that would reject it.
+const vision:[RegExp,boolean][]=[
+ [/^(o1|o3)-mini/,false],[/^(gpt-5|gpt-4\.1|(chat)?gpt-4o|gpt-4-turbo|o[134])/,true],
+ [/^claude-(3|sonnet|opus|haiku|[4-9])/,true],[/^gemini-/,true],
+ [/(^|-)vl|^qvq|-vision|^glm-4(\.\d)?v|^grok-4|^llama-(3\.2-\d+b-vision|4)|^pixtral|^mistral-(medium|small)-3/,true],
+ [/^deepseek-(chat|reasoner|v3|r1)/,false],
+];
+/** Whether a model can look at page images; null when the catalog does not know. */
+export function knownVision(model:string):boolean|null{
+ const name=model.trim().toLowerCase().split('/').pop()||'';
+ for(const [pattern,value] of vision)if(pattern.test(name))return value;
+ return null;
+}
+/** The reader's own setting wins; otherwise the catalog; unknown models are treated as text-only. */
+export function canSeeImages(profile:{model:string;vision?:boolean}):boolean{return profile.vision??knownVision(profile.model)??false;}
