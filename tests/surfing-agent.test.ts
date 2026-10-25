@@ -29,10 +29,11 @@ describe('Surfing reading agent',()=>{
   expect(h.prompts[1].turns![1].text).toContain('this model cannot see images');expect(h.prompts[1].turns![1].images).toBeUndefined();expect(h.events.at(-1).type).toBe('answer');
  });
  it('reading and searching feed passages back; the last step must answer',async()=>{
-  const h=setup('claude-sonnet-4',[JSON.stringify({actions:[{type:'search',query:'retrieval'},{type:'read_page',pageNumber:3}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:2}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]})],'anthropic-messages');
+  const h=setup('claude-sonnet-4',[JSON.stringify({actions:[{type:'search',query:'retrieval'},{type:'read_page',pageNumber:3}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:2}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]})],'anthropic-messages');
   await h.service.ask(ask());
-  expect(h.prompts).toHaveLength(4);expect(h.prompts[1].turns![1].text).toContain('[p2] (p.3) We conclude retrieval helps.');expect(h.prompts[3].turns!.at(-1)!.text).toContain('last step');
-  expect(h.events.filter(e=>e.type==='step').map(e=>e.note)).toEqual(['搜索「retrieval」','重读第 3 页','重读第 1 页','重读第 2 页']);expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});
+  // The fourth reply still asks for actions; one correction turn says no steps are left, then the answer fails.
+  expect(h.prompts).toHaveLength(5);expect(h.prompts[4].turns!.at(-1)!.text).toContain('no steps are left');expect(h.prompts[1].turns![1].text).toContain('[p2] (p.3) We conclude retrieval helps.');expect(h.prompts[3].turns!.at(-1)!.text).toContain('last step');
+  expect(h.events.filter(e=>e.type==='step').map(e=>e.note)).toEqual(['搜索「retrieval」','重读第 3 页','重读第 1 页','重读第 2 页','修正回答格式']);expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});
  });
  it('a protocol without multi-turn support answers in one step',async()=>{
   const h=setup('lite',[final],'spark');await h.service.ask(ask());expect(h.prompts).toHaveLength(1);expect(h.prompts[0].system).not.toContain('"actions"');expect(h.events.at(-1).type).toBe('answer');

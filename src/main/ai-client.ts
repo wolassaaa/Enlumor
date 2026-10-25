@@ -2,11 +2,21 @@ import{generateSpark}from'./spark-client';
 import{validateAiProfile}from'./ai-config';
 export{validateAiProfile}from'./ai-config';
 import {AI_MAX_IMAGE_BASE64,AI_MAX_IMAGES,AI_MAX_PROMPT_CHARACTERS,AI_MAX_TURNS,type AiImage,type AiProfileInput,type AiPrompt,type AiTurn} from '../shared/ai';
-import type {AiModelInfo} from '../shared/ai-models';
+import {profileMaxOutput,type AiModelInfo} from '../shared/ai-models';
 
 const MAX_RESPONSE_BYTES=4*1024*1024,MAX_EVENT_BYTES=512*1024;
+/** A streaming reply may run long (thinking models reason before answering) as long as data keeps arriving;
+ * timeoutMs bounds silence, this bounds the whole request. */
+const MAX_REQUEST_MS=15*60_000;
 const invalid=()=>new Error('AI_INVALID_CONFIG');
 const failure=(code:string)=>new Error(code);
+
+// Output limits services stated in a 400 reply, per service and model, so later requests start within them.
+const learnedOutputLimits=new Map<string,number>();
+const limitKey=(profile:AiProfileInput)=>[profile.protocol,profile.endpoint,profile.model].join('|');
+/** The max output tokens a request asks for: the profile's limit, lowered to what the service said it allows. */
+export function requestMaxOutput(profile:AiProfileInput):number{return Math.min(profileMaxOutput(profile),learnedOutputLimits.get(limitKey(profile))??Infinity);}
+export function forgetLearnedOutputLimits(){learnedOutputLimits.clear();}
 
 const promptCharacters=(p:AiPrompt)=>p.system.length+p.user.length+(Array.isArray(p.turns)?p.turns.reduce((n,t)=>n+(typeof t?.text==='string'?t.text.length:0),0):0);
 /** Turns are data the app assembled; still bounded and shape-checked before anything is sent. */
@@ -24,7 +34,7 @@ function validTurns(value:unknown):AiTurn[]{
 export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=true):{url:string;headers:Record<string,string>;body:any} {
  const url=validateAiProfile(profile);
  if(!prompt||typeof prompt.system!=='string'||typeof prompt.user!=='string'||!prompt.user.trim()||promptCharacters(prompt)>AI_MAX_PROMPT_CHARACTERS)throw failure('AI_INVALID_PROMPT');
- const turns=validTurns(prompt.turns),images=turns.some(t=>t.images?.length);
+ const turns=validTurns(prompt.turns),images=turns.some(t=>t.images?.length),maxOutput=requestMaxOutput(profile);
  if(images&&(profile.protocol==='dashscope'||profile.protocol==='spark'))throw failure('AI_IMAGES_UNSUPPORTED');
  const dataUrl=(i:AiImage)=>`data:${i.mediaType};base64,${i.data}`;
  const headers:Record<string,string>={'Content-Type':'application/json','Accept':stream?'text/event-stream':'application/json'};
@@ -35,25 +45,25 @@ export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=tru
  switch(profile.protocol){
   case'openai-chat':
    addPath('/chat/completions','/v1');if(key)headers.Authorization='Bearer '+key;
-   body={model:profile.model,messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.images?.length?[{type:'text',text:t.text},...t.images.map(i=>({type:'image_url',image_url:{url:dataUrl(i)}}))]:t.text}))],max_tokens:profile.maxOutputTokens,stream,...profile.parameters};break;
+   body={model:profile.model,messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.images?.length?[{type:'text',text:t.text},...t.images.map(i=>({type:'image_url',image_url:{url:dataUrl(i)}}))]:t.text}))],max_tokens:maxOutput,stream,...profile.parameters};break;
   case'openai-responses':
    addPath('/responses','/v1');if(key)headers.Authorization='Bearer '+key;
-   body={model:profile.model,instructions:prompt.system,input:turns.length?[{role:'user',content:[{type:'input_text',text:prompt.user}]},...turns.map(t=>t.role==='assistant'?{role:'assistant',content:[{type:'output_text',text:t.text}]}:{role:'user',content:[{type:'input_text',text:t.text},...(t.images||[]).map(i=>({type:'input_image',image_url:dataUrl(i)}))]})]:prompt.user,max_output_tokens:profile.maxOutputTokens,stream,store:false,...profile.parameters};break;
+   body={model:profile.model,instructions:prompt.system,input:turns.length?[{role:'user',content:[{type:'input_text',text:prompt.user}]},...turns.map(t=>t.role==='assistant'?{role:'assistant',content:[{type:'output_text',text:t.text}]}:{role:'user',content:[{type:'input_text',text:t.text},...(t.images||[]).map(i=>({type:'input_image',image_url:dataUrl(i)}))]})]:prompt.user,max_output_tokens:maxOutput,stream,store:false,...profile.parameters};break;
   case'anthropic-messages':
    addPath('/messages','/v1');if(key)headers['x-api-key']=key;headers['anthropic-version']='2023-06-01';
-   body={model:profile.model,system:prompt.system,messages:[{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.images?.length?[{type:'text',text:t.text},...t.images.map(i=>({type:'image',source:{type:'base64',media_type:i.mediaType,data:i.data}}))]:t.text}))],max_tokens:profile.maxOutputTokens,stream,...profile.parameters};break;
+   body={model:profile.model,system:prompt.system,messages:[{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.images?.length?[{type:'text',text:t.text},...t.images.map(i=>({type:'image',source:{type:'base64',media_type:i.mediaType,data:i.data}}))]:t.text}))],max_tokens:maxOutput,stream,...profile.parameters};break;
   case'dashscope':{
    const full='/api/v1/services/aigc/text-generation/generation',base=url.pathname.replace(/\/+$/,'');
    if(!base)url.pathname=full;else if(base.endsWith('/api/v1'))url.pathname=base+'/services/aigc/text-generation/generation';else if(!base.endsWith(full))throw invalid();
    if(key)headers.Authorization='Bearer '+key;if(stream)headers['X-DashScope-SSE']='enable';
-   body={model:profile.model,input:{messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.text}))]},parameters:{max_tokens:profile.maxOutputTokens,result_format:'message',incremental_output:stream,...profile.parameters}};break;
+   body={model:profile.model,input:{messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.text}))]},parameters:{max_tokens:maxOutput,result_format:'message',incremental_output:stream,...profile.parameters}};break;
   }
   case'gemini':{
    let base=url.pathname.replace(/\/+$/,'')||'/v1beta';
    if(/:(?:streamGenerateContent|generateContent)$/.test(base))base=base.replace(/:(?:streamGenerateContent|generateContent)$/,stream?':streamGenerateContent':':generateContent');
    else base+='/models/'+encodeURIComponent(profile.model)+(stream?':streamGenerateContent':':generateContent');
    url.pathname=base;if(stream)url.searchParams.set('alt','sse');if(key)headers['x-goog-api-key']=key;
-   body={systemInstruction:{parts:[{text:prompt.system}]},contents:[{role:'user',parts:[{text:prompt.user}]},...turns.map(t=>({role:t.role==='assistant'?'model':'user',parts:[{text:t.text},...(t.images||[]).map(i=>({inline_data:{mime_type:i.mediaType,data:i.data}}))]}))],generationConfig:{maxOutputTokens:profile.maxOutputTokens,...profile.parameters}};break;
+   body={systemInstruction:{parts:[{text:prompt.system}]},contents:[{role:'user',parts:[{text:prompt.user}]},...turns.map(t=>({role:t.role==='assistant'?'model':'user',parts:[{text:t.text},...(t.images||[]).map(i=>({inline_data:{mime_type:i.mediaType,data:i.data}}))]}))],generationConfig:{maxOutputTokens:maxOutput,...profile.parameters}};break;
   }
   default:throw failure('AI_PROTOCOL_NOT_READY');
  }
@@ -137,29 +147,50 @@ export async function listAiModelInfo(profile:AiProfileInput,options:{signal?:Ab
 // "Context too long" in the words of OpenAI/DeepSeek, Anthropic, Gemini and common relays.
 const overflow=/context[_ ]length|context window|maximum context|prompt is too long|input is too long|too many tokens|token limit|input token count|reduce the length of the (messages|prompt)/i;
 const overflowLimit=[/maximum context length is (\d{4,8})/i,/> ?(\d{4,8}) maximum/i,/allowed \((\d{4,8})\)/i,/(?:limit|maximum)(?: of| is)? (\d{4,8}) tokens/i];
-/** Error code for a failed HTTP response. An over-long prompt becomes AI_CONTEXT_OVERFLOW, with the service's real window when it states one. */
-async function httpFailure(response:Response):Promise<Error>{
+// "Too many output tokens requested" in the words of OpenAI, DeepSeek, Anthropic, Gemini and OpenAI-compatible servers.
+const outputLimit=/max_tokens|max_output_tokens|maxOutputTokens|max_completion_tokens|output tokens|completion tokens/i;
+/** Error code for a failed HTTP response. An over-long prompt becomes AI_CONTEXT_OVERFLOW, with the service's real window when it states one;
+ * asking for more output than the model allows becomes AI_OUTPUT_LIMIT, with the largest stated limit below what was asked. */
+async function httpFailure(response:Response,requested:number):Promise<Error>{
  if(![400,413,422].includes(response.status)||!response.body){await response.body?.cancel();return failure('AI_HTTP_'+response.status);}
  const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0;
  try{while(size<16384){const chunk=await reader.read();if(chunk.done)break;size+=chunk.value.byteLength;chunks.push(chunk.value);}}catch{/* keep what arrived */}finally{await reader.cancel().catch(()=>{});}
  const text=Buffer.concat(chunks).toString('utf8');
+ if(outputLimit.test(text)){
+  const stated=[...text.matchAll(/\d{3,7}/g)].map(m=>Number(m[0])).filter(n=>n>=256&&n<requested);
+  return failure(stated.length?'AI_OUTPUT_LIMIT_'+Math.max(...stated):'AI_OUTPUT_LIMIT');
+ }
  if(!overflow.test(text))return failure('AI_HTTP_'+response.status);
  for(const pattern of overflowLimit){const n=Number(pattern.exec(text)?.[1]);if(Number.isSafeInteger(n)&&n>=1024&&n<=10_000_000)return failure('AI_CONTEXT_OVERFLOW_'+n);}
  return failure('AI_CONTEXT_OVERFLOW');
 }
 
-export async function generateText(profile:AiProfileInput,prompt:AiPrompt,options:{stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;fetch?:typeof fetch}={}):Promise<string>{
+type GenerateOptions={stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;fetch?:typeof fetch};
+export async function generateText(profile:AiProfileInput,prompt:AiPrompt,options:GenerateOptions={}):Promise<string>{
  if(profile.protocol==='spark'){if(prompt?.turns?.length)throw failure('AI_TURNS_UNSUPPORTED');return generateSpark(profile,prompt,options);}
+ const requested=requestMaxOutput(profile);
+ try{return await generateOnce(profile,prompt,options,requested);}
+ catch(error){
+  // The service named a lower output limit (or none): remember it and ask once more within it. Nothing was streamed yet.
+  const code=error instanceof Error?error.message:'';if(!code.startsWith('AI_OUTPUT_LIMIT'))throw error;
+  const limit=Number(code.slice('AI_OUTPUT_LIMIT_'.length))||Math.min(4096,Math.floor(requested/2));if(!(limit>=1&&limit<requested))throw failure('AI_HTTP_400');
+  learnedOutputLimits.set(limitKey(profile),limit);
+  try{return await generateOnce(profile,prompt,options,limit);}catch(retry){throw retry instanceof Error&&retry.message.startsWith('AI_OUTPUT_LIMIT')?failure('AI_HTTP_400'):retry;}
+ }
+}
+async function generateOnce(profile:AiProfileInput,prompt:AiPrompt,options:GenerateOptions,requested:number):Promise<string>{
  const stream=options.stream!==false,request=buildAiRequest(profile,prompt,stream),timer=new AbortController();
- const timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);
+ // timeoutMs is how long the service may stay silent; every arriving chunk (thinking included) restarts it.
+ let timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);const ceiling=setTimeout(()=>timer.abort(),Math.max(MAX_REQUEST_MS,profile.timeoutMs));
+ const alive=()=>{clearTimeout(timeout);timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);};
  const signal=options.signal?AbortSignal.any([options.signal,timer.signal]):timer.signal;
  let text='',bytes=0,reader:ReadableStreamDefaultReader<Uint8Array>|undefined;
  const emit=(delta:string)=>{if(!delta)return;text+=delta;if(text.length>MAX_RESPONSE_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');options.onDelta?.(delta);};
  try{
   const response=await(options.fetch||fetch)(request.url,{method:'POST',headers:request.headers,body:JSON.stringify(request.body),redirect:'error',signal});
-  if(!response.ok)throw await httpFailure(response);
+  if(!response.ok)throw await httpFailure(response,requested);
   if(!response.body)throw failure('AI_INVALID_RESPONSE');
-  reader=response.body.getReader();const decoder=new TextDecoder('utf-8',{fatal:true});let pending='',done=false;
+  alive();reader=response.body.getReader();const decoder=new TextDecoder('utf-8',{fatal:true});let pending='',done=false;
   const sse=stream&&!response.headers.get('content-type')?.includes('application/json');
   const frame=(raw:string)=>{
    if(new TextEncoder().encode(raw).byteLength>MAX_EVENT_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');
@@ -172,6 +203,7 @@ export async function generateText(profile:AiProfileInput,prompt:AiPrompt,option
   };
   while(!done){
    const chunk=await reader.read();if(chunk.done){pending+=decoder.decode();break;}
+   alive();
    bytes+=chunk.value.byteLength;if(bytes>MAX_RESPONSE_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');
    pending+=decoder.decode(chunk.value,{stream:true});
    if(sse){let split:RegExpExecArray|null;while((split=/\r?\n\r?\n/.exec(pending))){const raw=pending.slice(0,split.index);pending=pending.slice(split.index+split[0].length);frame(raw);if(done)break;}if(pending.length>MAX_EVENT_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');}
@@ -183,5 +215,5 @@ export async function generateText(profile:AiProfileInput,prompt:AiPrompt,option
   if(options.signal?.aborted)throw failure('AI_CANCELLED');if(timer.signal.aborted)throw failure('AI_TIMEOUT');
   if(error instanceof Error&&/^AI_[A-Z_0-9]+$/.test(error.message))throw error;
   throw failure('AI_REQUEST_FAILED');
- }finally{clearTimeout(timeout);await reader?.cancel().catch(()=>{});reader?.releaseLock();}
+ }finally{clearTimeout(timeout);clearTimeout(ceiling);await reader?.cancel().catch(()=>{});reader?.releaseLock();}
 }

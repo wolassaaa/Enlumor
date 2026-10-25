@@ -61,3 +61,40 @@ it('turns are bounded and shape-checked; text-only protocols refuse images',()=>
  for(const bad of [[{role:'system',text:'x'}],[{role:'assistant',text:'x',images:[img]}],[{role:'user',text:'x',images:[{mediaType:'image/gif',data:'QUJD'}]}],[{role:'user',text:'x',images:[{mediaType:'image/png',data:'not base64!'}]}],Array.from({length:13},()=>({role:'user',text:'x'})),[{role:'user',text:'x',images:Array(7).fill(img)}]])
   expect(()=>buildAiRequest(profile('https://x.example/v1'),{...prompt,turns:bad as any},false)).toThrow('AI_INVALID_PROMPT');
 });
+
+import {forgetLearnedOutputLimits,requestMaxOutput} from '../src/main/ai-client';
+import {knownMaxOutput,profileMaxOutput,resolveMaxOutput,canSeeImages,FALLBACK_MAX_OUTPUT} from '../src/shared/ai-models';
+it('output limits come from the catalog; the legacy 2048 default reads as the model\'s own limit',()=>{
+ expect(knownMaxOutput('deepseek-flash')).toEqual({tokens:384000,source:'catalog'});
+ expect(knownMaxOutput('gpt-4o-mini').tokens).toBe(16384);
+ expect(knownMaxOutput('claude-sonnet-4-5').tokens).toBe(64000);
+ expect(knownMaxOutput('mystery-model')).toEqual({tokens:FALLBACK_MAX_OUTPUT,source:'fallback'});
+ expect(resolveMaxOutput('gpt-4o',8000)).toEqual({tokens:8000,source:'service'});
+ expect(profileMaxOutput({model:'deepseek-flash',maxOutputTokens:2048})).toBe(384000);
+ expect(profileMaxOutput({model:'deepseek-flash',maxOutputTokens:3000})).toBe(3000);
+ expect(knownContextWindow('deepseek-flash').tokens).toBe(1048576);
+ expect(canSeeImages({model:'deepseek-flash'})).toBe(true);expect(canSeeImages({model:'deepseek-v4-pro'})).toBe(false);
+ expect(pickDefaultModel(['deepseek-v4-pro','deepseek-flash'])).toBe('deepseek-flash');
+});
+for(const [label,message,learned] of [
+ ['DeepSeek','Invalid max_tokens value, the valid range of max_tokens is [1, 8192]',8192],
+ ['OpenAI','max_tokens is too large: 384000. This model supports at most 16384 completion tokens, whereas you provided 384000.',16384],
+ ['Anthropic','max_tokens: 384000 > 64000, which is the maximum allowed number of output tokens for claude-x',64000],
+] as const)it(`${label}: a too-large output limit is learned from the 400 reply and the request is retried within it`,async()=>{
+ forgetLearnedOutputLimits();const asked:number[]=[];
+ const endpoint=await server(async(q,res)=>{let raw='';for await(const c of q)raw+=c;const max=JSON.parse(raw).max_tokens;asked.push(max);res.setHeader('content-type','application/json');if(max>learned){res.statusCode=400;res.end(JSON.stringify({error:{message}}));return;}res.end(JSON.stringify({choices:[{message:{content:'ok'},finish_reason:'stop'}]}));});
+ const p={...profile(endpoint),model:'deepseek-flash',maxOutputTokens:2048};
+ expect(await generateText(p,prompt,{stream:false})).toBe('ok');expect(asked).toEqual([384000,learned]);
+ expect(requestMaxOutput(p)).toBe(learned);expect(await generateText(p,prompt,{stream:false})).toBe('ok');expect(asked).toHaveLength(3);
+ forgetLearnedOutputLimits();
+});
+it('an output-limit 400 without a number is retried once lower; a second refusal is a plain 400',async()=>{
+ forgetLearnedOutputLimits();const asked:number[]=[];
+ const endpoint=await server(async(q,res)=>{let raw='';for await(const c of q)raw+=c;asked.push(JSON.parse(raw).max_tokens);res.statusCode=400;res.setHeader('content-type','application/json');res.end(JSON.stringify({error:{message:'max_tokens is too large'}}));});
+ await expect(generateText({...profile(endpoint),maxOutputTokens:20000},prompt,{stream:false})).rejects.toThrow(/^AI_HTTP_400$/);expect(asked).toEqual([20000,4096]);
+ forgetLearnedOutputLimits();
+});
+it('the timeout bounds silence, not a long reply that keeps streaming (thinking models)',async()=>{
+ const endpoint=await server((_q,res)=>{res.setHeader('content-type','text/event-stream');let n=0;const tick=setInterval(()=>{n++;if(n<8){res.write('data: {"choices":[{"delta":{"reasoning_content":"…","content":null}}]}\n\n');return;}clearInterval(tick);res.end('data: {"choices":[{"delta":{"content":"done"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n');},60);});
+ expect(await generateText({...profile(endpoint),timeoutMs:200},prompt)).toBe('done');
+});

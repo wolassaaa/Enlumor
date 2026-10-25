@@ -1,5 +1,6 @@
 import type {AiImage,AiTurn} from '../shared/ai';
 import type {SurfingContext} from '../shared/surfing-context';
+import {parseModelJson} from '../shared/surfing-route';
 import type {SurfingExplanation} from './surfing-requests';
 
 /** What the companion may do before answering: look at a page, read a page's passages, or search the paper.
@@ -18,23 +19,29 @@ export function surfingAgentInstructions(vision:boolean){
 }
 
 const finalKeys='passageIds,text';
+const invalid=(why:string):never=>{throw Error('SURFING_INVALID_ROUTE: '+why);};
 /** One model step: either bounded read-only actions or the final answer with sources that exist in this paper. */
 export function parseSurfingAgentStep(raw:string,snapshot:SurfingContext,allowActions:boolean,vision:boolean):SurfingAgentStep{
- let value:any;try{if(raw.length>32768)throw 0;value=JSON.parse(raw);}catch{throw Error('SURFING_INVALID_ROUTE');}
- if(!value||typeof value!=='object'||Array.isArray(value))throw Error('SURFING_INVALID_ROUTE');
+ const value:any=parseModelJson(raw);
+ if(!value||typeof value!=='object'||Array.isArray(value))invalid('expected a JSON object');
  if('actions' in value){
-  if(!allowActions||Object.keys(value).length!==1||!Array.isArray(value.actions)||!value.actions.length||value.actions.length>SURFING_AGENT_MAX_ACTIONS)throw Error('SURFING_INVALID_ROUTE');
+  if(!allowActions)invalid('no steps are left: reply with the final answer {"text":...,"passageIds":[...]} now');
+  if(Object.keys(value).length!==1||!Array.isArray(value.actions)||!value.actions.length||value.actions.length>SURFING_AGENT_MAX_ACTIONS)invalid('a step is exactly {"actions":[...]} with 1 to '+SURFING_AGENT_MAX_ACTIONS+' actions');
   const actions=value.actions.map((a:any):SurfingAgentAction=>{
-   if(!a||typeof a!=='object')throw Error('SURFING_INVALID_ROUTE');
+   if(!a||typeof a!=='object')invalid('each action must be an object');
    // A text-only model asking for a page image is answered, not failed: it is told to use the text instead.
    if((a.type==='view_page'||a.type==='read_page')&&Object.keys(a).length===2&&Number.isInteger(a.pageNumber)&&a.pageNumber>=1&&a.pageNumber<=snapshot.pageCount)return{type:a.type,pageNumber:a.pageNumber};
    if(a.type==='search'&&Object.keys(a).length===2&&typeof a.query==='string'&&a.query.trim()&&a.query.length<=200)return{type:'search',query:a.query.trim()};
-   throw Error('SURFING_INVALID_ROUTE');
+   return invalid('unusable action '+JSON.stringify(a).slice(0,120)+'; pages are numbered 1 to '+snapshot.pageCount);
   });
   return{kind:'actions',actions};
  }
  const v=value as SurfingExplanation;
- if(Object.keys(v).sort().join(',')!==finalKeys||typeof v.text!=='string'||!v.text.trim()||v.text.length>8192||!Array.isArray(v.passageIds)||!v.passageIds.length||v.passageIds.length>8||new Set(v.passageIds).size!==v.passageIds.length||v.passageIds.some(id=>typeof id!=='string'||!snapshot.passages.some(p=>p.id===id)))throw Error('SURFING_INVALID_ROUTE');
+ if(Object.keys(v).sort().join(',')!==finalKeys)invalid('the final answer is exactly {"text":"...","passageIds":["..."]}');
+ if(typeof v.text!=='string'||!v.text.trim()||v.text.length>8192)invalid('text must be non-empty and at most 8192 characters');
+ if(!Array.isArray(v.passageIds)||!v.passageIds.length||v.passageIds.length>8||new Set(v.passageIds).size!==v.passageIds.length)invalid('passageIds must list 1 to 8 distinct ids');
+ const unknown=v.passageIds.find(id=>typeof id!=='string'||!snapshot.passages.some(p=>p.id===id));
+ if(unknown!==undefined)invalid('unknown passage id '+JSON.stringify(String(unknown).slice(0,80))+'; cite only ids that appear in the supplied passages or tool results');
  return{kind:'final',explanation:{text:v.text.replace(/\[(?:block|passage):[^\]]+\]/g,'').trim(),passageIds:[...v.passageIds]}};
 }
 

@@ -72,7 +72,8 @@ async function guidedCheck(page:Page,c:Check):Promise<Omit<Result,'id'|'name'|'m
  const stops=await page.locator('.surfing-stops li').count();if(!stops)return{status:'skip',detail:'没有切入点，无法带读'};
  await page.getByLabel('每处停留秒数',{exact:true}).fill(String(c.dwell||5));if(c.depth)await page.getByLabel('解释深度',{exact:true}).selectOption(c.depth);
  await page.getByRole('button',{name:/开始带读|继续带读/}).click();
- const first=await awaitReply(page,'.surfing-stops li.is-current .surfing-answer p',0,180_000);if(first.error)return{status:'fail',detail:'第一处没有讲解',error:first.error};
+ // A real explanation carries its source buttons; the placeholder for an unexplained stop has none.
+ const first=await awaitReply(page,'.surfing-stops li.is-current .surfing-answer:has(button) p',0,180_000);if(first.error)return{status:'fail',detail:'第一处没有讲解',error:first.error};
  if(stops<2)return{status:'review',detail:'只有一个切入点，无法验证自动前进',answer:first.text};
  const title=await page.locator('.surfing-stops li.is-current button').first().innerText();
  const moved=await expect.poll(async()=>(await page.locator('.surfing-stops li.is-current button').first().innerText())!==title,{timeout:200_000}).toBe(true).then(()=>true,()=>false);
@@ -106,7 +107,7 @@ test('real model benchmark',async()=>{
  try{
   facts['接口']=new URL(endpoint).origin;facts['协议']=protocol;
   await record(page,{id:'connect',title:'连接与模型发现'},async()=>{
-   const draft={id:'acceptance',name:'验收',protocol,endpoint,model:wanted||'',maxOutputTokens:2048,timeoutMs:120000,parameters:{},...(key?{credential:{kind:'api-key' as const,apiKey:key}}:{})};
+   const draft={id:'acceptance',name:'验收',protocol,endpoint,model:wanted||'',maxOutputTokens:Number(process.env.ENLUMOR_ACCEPTANCE_MAX_OUTPUT||2048),timeoutMs:120000,parameters:{},...(key?{credential:{kind:'api-key' as const,apiKey:key}}:{})};
    let models:{id:string;contextWindow?:number}[]=[],discovery='';
    try{const r:any=await page.evaluate(d=>window.enlumor.discoverAiModels({draft:d}),draft);if(r.ok)models=r.value;else discovery=r.error?.code||'';}catch(e){discovery=String(e);}
    const model=wanted||pickDefaultModel(models.map(m=>m.id))||'';if(!model)return{status:'fail',detail:'没有读到模型列表，也没有指定模型 ID',error:discovery};
