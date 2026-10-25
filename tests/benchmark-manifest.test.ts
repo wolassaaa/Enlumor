@@ -37,3 +37,11 @@ it('entry points are graded on count and, when asked, on every title being in Ch
 it('answers are graded as text, so markdown emphasis does not hide a correct number',()=>{
  expect(gradeBenchmarkAnswer({id:'c',kind:'ask',title:'t',question:'q',expect:{all:['5\\s*个','`?d_model`? ?= ?512']}},false,'平均最后 **5** 个检查点；`d_model` = 512',1,[]).status).toBe('pass');
 });
+it('the Lumen figure check grades what the answer says is highest, not every mention next to "best"',()=>{
+ const m=validateBenchmarkManifest(JSON.parse(readFileSync('tests/acceptance/lumen-benchmark.json','utf8')));const fig=m.checks.find(c=>c.id==='figure')!;
+ const grade=(answer:string,vision:boolean)=>gradeBenchmarkAnswer(fig,vision,answer,1,vision?['查看第 2 页']:[]).status;
+ expect(grade('准确率最高的是 **Retrieval**，不是论文主推的 Lumen。这与读者预期的“Lumen（本文提出的方法）最好”不一致。',true)).toBe('pass');
+ expect(grade('准确率最高的是 Lumen。',true)).toBe('fail');
+ expect(grade('我看不到图像，只能依据图注；无法判断 Retrieval 是否最高。',false)).toBe('pass');
+ expect(grade('准确率最高的是 Retrieval。',false)).toBe('review');
+});
