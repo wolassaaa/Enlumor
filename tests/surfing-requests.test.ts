@@ -48,6 +48,12 @@ it('route, stop explanation and whole-paper answers all follow the reader langua
  await h.service.explain({...input(),requestId:'explain-lang',stopIndex:0});await h.service.ask({...input(),requestId:'ask-lang',question:'讲讲摘要',pageIndex:0});
  expect(systems).toHaveLength(3);for(const s of systems){expect(s).toContain(SURFING_READER_LANGUAGE);expect(s).not.toMatch(/language of the paper/i);}
 });
+it('explanation depth is the reader\'s choice and is validated',async()=>{
+ const h=setup();await h.service.start(input());const systems:string[]=[];h.ports.generate=async(_p,prompt)=>{systems.push(prompt.system);return JSON.stringify({text:'解释',passageIds:['p0']});};
+ await h.service.explain({...input(),requestId:'deep',stopIndex:0,depth:'detailed'});await h.service.explain({...input(),requestId:'default',stopIndex:0});
+ expect(systems[0]).toContain('2 to 4 paragraphs');expect(systems[1]).toContain('one short paragraph');
+ await expect(h.service.explain({...input(),stopIndex:0,depth:'endless'} as any)).rejects.toThrow('SURFING_INVALID_REQUEST');
+});
 it('refuses explanation before a validated route exists',async()=>{const h=setup();await expect(h.service.explain({...input(),stopIndex:0})).rejects.toThrow('SURFING_ROUTE_REQUIRED');expect(h.calls).toEqual([]);});
 it('rejects an explanation with invented evidence',async()=>{const h=setup();await h.service.start(input());h.ports.generate=async()=>JSON.stringify({text:'answer',passageIds:['fake']});await h.service.explain({...input(),requestId:'explain-one',stopIndex:0});expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});});
 it('does not reuse another profile or context route for explanation',async()=>{const h=setup();await h.service.start(input());await expect(h.service.explain({...input(),profileId:'other',stopIndex:0})).rejects.toThrow('SURFING_ROUTE_REQUIRED');});

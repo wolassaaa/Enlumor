@@ -131,3 +131,20 @@ test('a vision model can look at a rendered page before answering',async()=>{
  const image=bodies[1].messages[3].content.find((p:any)=>p.type==='image_url').image_url.url;expect(image.startsWith('data:image/jpeg;base64,/9j/')).toBe(true);expect(bodies[0].messages[0].content).toContain('view_page');
  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
 });
+
+test('guided reading explains, dwells, prefetches the next stop, advances, and stops on takeover',async()=>{
+ const asked:number[]=[];const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const body=JSON.parse(raw),data=JSON.parse(body.messages[1].content),ids=data.passages.map((p:any)=>p.id);
+  if(data.selectedStop){const i=['Stop one','Stop two','Stop three'].indexOf(data.selectedStop.title);asked.push(i);sendMock(res,{text:'Explained '+(i+1),passageIds:[ids[i%ids.length]]});return;}
+  sendMock(res,{stops:['Stop one','Stop two','Stop three'].map((title,i)=>({title,reason:'r',passageIds:[ids[i%ids.length]]}))});});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','guided');
+ try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByRole('button',{name:'Stop one',exact:true})).toBeVisible();
+ await page.getByLabel('每处停留秒数',{exact:true}).fill('5');await page.getByLabel('解释深度',{exact:true}).selectOption('concise');
+ await page.getByRole('button',{name:'开始带读',exact:true}).click();
+ await expect(page.locator('.surfing-stops li.is-current')).toContainText('Explained 1');await expect.poll(()=>asked).toEqual([0,1]);
+ await expect(page.getByRole('timer')).toContainText('秒后到下一处');
+ await expect(page.locator('.surfing-stops li.is-current')).toContainText('Explained 2',{timeout:9000});
+ const viewer=page.locator('#viewerContainer');const box=(await viewer.boundingBox())!;await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.wheel(0,120);
+ await expect(page.getByRole('button',{name:'继续带读',exact:true})).toBeVisible();await page.waitForTimeout(6500);
+ await expect(page.locator('.surfing-stops li.is-current')).toContainText('Stop two');expect(asked.length).toBeLessThanOrEqual(3);
+ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+});

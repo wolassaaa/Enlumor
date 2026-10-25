@@ -362,6 +362,15 @@ input[type=checkbox]{accent-color:var(--ink);width:14px;height:14px;vertical-ali
 .surfing-answer button{margin:0 8px 8px 0}
 .surfing-error{color:var(--danger);line-height:1.6;background:var(--danger-soft);padding:8px 10px;border-radius:var(--radius-s)}
 .surfing-actions [role=status]{color:var(--muted);font-size:12px}
+.surfing-player{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;margin:12px 0 4px;padding:10px 12px;border:1px solid var(--line);border-radius:var(--radius);background:var(--surface)}
+.surfing-player button{background:var(--ink);border-color:var(--ink);color:var(--paper)}
+.surfing-player button:hover:not(:disabled){background:#39413e;border-color:#39413e}
+.surfing-player button.is-playing{background:var(--raised);border-color:var(--line-strong);color:var(--ink)}
+.surfing-player button:disabled{opacity:1;background:#e3dfd6;border-color:#e3dfd6;color:#9a9d93}
+.surfing-player label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink-2)}
+.surfing-player input{width:58px;min-height:28px;padding:0 6px;text-align:center}
+.surfing-player select{min-height:28px;padding:0 6px}
+.surfing-countdown{font-size:12px;color:var(--accent);font-variant-numeric:tabular-nums}
 .surfing-step{font-size:12px;color:var(--accent);animation:appear .2s var(--ease)}
 .surfing-welcome{padding:16px 0 18px}
 .surfing-welcome strong{font:21px/1.4 var(--font-read);font-weight:400}

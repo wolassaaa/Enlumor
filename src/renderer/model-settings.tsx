@@ -21,7 +21,7 @@ const presets:Preset[]=[
  {key:'dashscope',label:'百炼 DashScope 原生文本',protocol:'dashscope',endpoint:'https://dashscope.aliyuncs.com/api/v1/services/aigc/text-generation/generation'},
 ];
 const formatWindow=(n:number)=>n>=1_000_000?`${+(n/1_000_000).toFixed(2)}M`:`${Math.round(n/1000)}K`;
-const empty=():AiProfileInput=>({id:crypto.randomUUID(),name:'新模型配置',protocol:'openai-chat',endpoint:presets[0].endpoint,model:'',maxOutputTokens:1024,timeoutMs:30000,parameters:{}});
+const empty=():AiProfileInput=>({id:crypto.randomUUID(),name:'新模型配置',protocol:'openai-chat',endpoint:presets[0].endpoint,model:'',maxOutputTokens:2048,timeoutMs:30000,parameters:{}});
 export function ModelSettings({close,returnFocus}:{close:()=>void;returnFocus:HTMLElement|null}){
  const dialog=useRef<HTMLDialogElement>(null);
  const[profiles,setProfiles]=useState<AiProfileView[]>([]),[draft,setDraft]=useState(empty),[key,setKey]=useState(''),[selected,setSelected]=useState(''),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[error,setError]=useState(''),[parameters,setParameters]=useState('{}');
