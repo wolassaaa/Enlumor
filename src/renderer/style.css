@@ -62,6 +62,7 @@ input[type=checkbox]{accent-color:var(--ink);width:14px;height:14px;vertical-ali
 .brand-dot{width:24px;height:24px;display:grid;place-items:center;border:1px solid var(--ink-2);border-radius:50%;font:italic 17px/1 Georgia,serif;color:var(--ink);padding-bottom:2px}
 .edition{font-size:9.5px;letter-spacing:2.2px;color:var(--faint);padding-left:16px;border-left:1px solid var(--line-strong);line-height:20px}
 .top-actions{display:flex;gap:6px;align-items:center}
+.topbar button>svg{width:16px;height:16px;flex:none;opacity:.85}
 .topbar button{background:transparent;border-color:transparent;color:var(--ink-2);font-size:12.5px;padding:0 11px}
 .topbar button:hover:not(:disabled){background:var(--hover);border-color:transparent;color:var(--ink)}
 .topbar button:active:not(:disabled){background:var(--pressed)}

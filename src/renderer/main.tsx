@@ -25,8 +25,8 @@ type Annotation=Omit<LegacyAnnotation,'author'> & {author?:'user'} & Partial<Mar
 type UiChange={documentId:string;upserts:Annotation[];deletes:string[]};
 declare global { interface Window { enlumor: Bridge } }
 
-function Glyph({ name }: { name: 'library' | 'notes' | 'open' | 'export' | 'mark' | 'close' }) {
-  const paths = { library: 'M4 4h5v16H4z M12 4h4v16h-4z M19 5l3 14', notes: 'M5 3h14v18H5z M8 8h8 M8 12h8 M8 16h5', open: 'M3 8h7l2-3h8v5 M3 8v12h16l3-10H7l-4 10', export: 'M13 3h8v8 M21 3L10 14 M9 5H4v15h15v-5', mark: 'M5 15l9-11 5 4-9 11H5z M4 22h16', close: 'M6 6l12 12 M18 6L6 18' };
+function Glyph({ name }: { name: 'library' | 'notes' | 'open' | 'export' | 'mark' | 'close' | 'layout' | 'model' }) {
+  const paths = { library: 'M4 4h5v16H4z M12 4h4v16h-4z M19 5l3 14', notes: 'M5 3h14v18H5z M8 8h8 M8 12h8 M8 16h5', open: 'M3 8h7l2-3h8v5 M3 8v12h16l3-10H7l-4 10', export: 'M13 3h8v8 M21 3L10 14 M9 5H4v15h15v-5', mark: 'M5 15l9-11 5 4-9 11H5z M4 22h16', close: 'M6 6l12 12 M18 6L6 18', layout: 'M3 5h18v14H3z M9 5v14 M15 5v14', model: 'M4 7h9 M17 7h3 M15 5v4 M4 17h4 M12 17h8 M10 15v4' };
   return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={paths[name]}/></svg>;
 }
 function OutlineTree({ items, navigate }: { items: OutlineEntry[]; navigate: (id: string) => void }) {
@@ -348,8 +348,8 @@ function App() {
   return <div className="app" style={{'--ui-spacing':layout.spacing+'px'} as CSSProperties}>
     <header className="topbar" onClickCapture={()=>notifyCruiseTakeover()}><div className="wordmark"><span className="brand-dot">e</span>enlumor</div><span className="edition">YOUR QUIET READING ROOM</span>
       <div className="panel-toggles"><button className={libraryOpen ? 'is-active' : ''} aria-label={libraryOpen ? '收起文档栏' : '展开文档栏'} aria-expanded={libraryOpen} onClick={() => { resetDrawing();setParts([]); setLibraryOpen(!libraryOpen); }}><Glyph name="library"/></button><button className={notesOpen ? 'is-active' : ''} aria-label={notesOpen ? '收起批注栏' : '展开批注栏'} aria-expanded={notesOpen} onClick={() => { resetDrawing();setParts([]); setNotesOpen(!notesOpen); }}><Glyph name="notes"/></button></div>
-      <button aria-label="布局设置" aria-expanded={layoutOpen} onClick={() => setLayoutOpen(!layoutOpen)}>布局</button><div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}><Glyph name="open"/>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <Glyph name="export"/></button></div>
-    <button aria-label="模型设置" disabled={busy||!!pending.current} onClick={event=>{resetDrawing();setParts([]);modelSettingsTrigger.current=event.currentTarget;setModelSettingsOpen(true);}}>模型设置</button></header>
+      <button aria-label="布局设置" aria-expanded={layoutOpen} onClick={() => setLayoutOpen(!layoutOpen)}><Glyph name="layout"/>布局</button><div className="top-actions"><button onClick={() => void load()} disabled={busy || !!pending.current}><Glyph name="open"/>打开 PDF</button><button className="primary" disabled={!doc || busy || !!pending.current} onClick={() => void exportPdf()}>导出批注 PDF <Glyph name="export"/></button></div>
+    <button aria-label="模型设置" disabled={busy||!!pending.current} onClick={event=>{resetDrawing();setParts([]);modelSettingsTrigger.current=event.currentTarget;setModelSettingsOpen(true);}}><Glyph name="model"/>模型设置</button></header>
     {layoutOpen && <div className="layout-popover" role="region" aria-label="布局设置"><label>阅读间距 <select aria-label="阅读间距" value={layout.spacing} onChange={event=>persistLayout({...layoutRef.current,spacing:Number(event.target.value) as 12|16|24})}><option value="12">紧凑</option><option value="16">标准</option><option value="24">宽松</option></select></label><p>拖动侧栏边缘调宽；方向键微调，双击恢复宽度。</p><button onClick={()=>persistLayout(defaultLayout)}>恢复默认布局</button><button aria-label="关闭布局设置" onClick={()=>setLayoutOpen(false)}>完成</button></div>}
     <div className="workspace" ref={workspaceElement} style={{'--library-width':panels.left+'px','--notes-width':panels.right+'px'} as CSSProperties}>
       <aside onClickCapture={()=>notifyCruiseTakeover()} className="library" hidden={!libraryOpen}>
