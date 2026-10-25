@@ -6,7 +6,7 @@
  *   ENLUMOR_ACCEPTANCE_MANIFEST  a manifest to attach to that paper (see tests/acceptance/*-benchmark.json)
  *   default                      the generated Lumen Routing fixture with its manifest
  */
-import {test,expect,_electron as electron,type Page} from '@playwright/test';
+import {test,expect,_electron as electron,type ElectronApplication,type Page} from '@playwright/test';
 import {execFileSync} from 'node:child_process';
 import {appendFileSync,existsSync,mkdirSync,mkdtempSync,readFileSync,writeFileSync} from 'node:fs';
 import {tmpdir} from 'node:os';
@@ -23,7 +23,7 @@ const tool=path.join(root,'tests/acceptance/benchmark.py');
 
 type Check=BenchmarkCheck;type Manifest=BenchmarkManifest;
 type Result={id:string;name:string;status:'pass'|'fail'|'review'|'skip';detail:string;answer?:string;error?:string;ms:number;shot?:string};
-const results:Result[]=[],facts:Record<string,string>={};
+const results:Result[]=[],facts:Record<string,string>={};let appRef:ElectronApplication|undefined;
 const CJK=/[一-鿿]/;
 
 /** The benchmark PDF to open: given as-is, built from a paper plus manifest, or the generated fixture. */
@@ -45,10 +45,10 @@ async function record(page:Page,check:{id:string;title:string},run:()=>Promise<O
 /** Waits until a new reply appears or the panel shows an error; returns the reply and what the agent did meanwhile.
  * The panel keeps only the latest few answers, so a new one may replace the oldest instead of adding to the count. */
 async function awaitReply(page:Page,selector:string,before:number,timeout:number){
- const steps=new Set<string>(),deadline=Date.now()+timeout,items=page.locator(selector);
+ const steps=new Set<string>(),deadline=Date.now()+timeout,items=page.locator(selector);const app=appRef!;await app.evaluate(()=>{(globalThis as any).surfingSteps=[];});
  const last=async()=>(await items.last().innerText().catch(()=>'')).trim(),previous=before?await last():'';
  while(Date.now()<deadline){
-  for(const t of await page.locator('.surfing-step').allInnerTexts())steps.add(t.replace(/…$/,''));
+  for(const t of await app.evaluate(()=>(globalThis as any).surfingSteps as string[]))steps.add(t);
   const count=await items.count();
   if(count>before||(before&&count===before&&await last()!==previous))return{text:await last(),steps:[...steps]};
   if(await page.locator('.surfing-panel [role=alert]').count())return{text:'',steps:[...steps],error:(await page.locator('.surfing-panel [role=alert]').innerText()).trim()};
@@ -105,7 +105,9 @@ test('real model benchmark',async()=>{
  mkdirSync(out,{recursive:true});
  const pdf=benchmarkPdf(),manifest=validateBenchmarkManifest(JSON.parse(execFileSync(python,[tool,'read',pdf],{encoding:'utf8'})));
  const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+mkdtempSync(path.join(tmpdir(),'enlumor-acceptance-'))],env:{...process.env,ENLUMOR_PYTHON:python,ENLUMOR_ACCEPTANCE_KEY:''}});
- const page=await app.firstWindow();await page.setViewportSize({width:1440,height:900});
+ const page=await app.firstWindow();await page.setViewportSize({width:1440,height:900});appRef=app;
+ // Every step note the app sends to the panel is recorded; the panel itself shows only the latest one.
+ await app.evaluate(({BrowserWindow})=>{const wc=BrowserWindow.getAllWindows()[0].webContents,send=wc.send.bind(wc);(globalThis as any).surfingSteps=[];wc.send=(channel:string,...args:any[])=>{if(channel==='surfing:text'&&args[0]?.type==='step')(globalThis as any).surfingSteps.push(args[0].note);return send(channel,...args);};});
  // Unattended runs: another window taking focus must not count as the reader leaving (the app pauses Surfing on blur).
  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].removeAllListeners('blur'));
  let vision=false;

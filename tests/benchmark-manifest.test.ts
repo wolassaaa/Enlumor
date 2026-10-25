@@ -34,3 +34,6 @@ it('entry points are graded on count and, when asked, on every title being in Ch
  // a route expectation from an untrusted manifest is validated like any other
  expect(()=>validateRouteManifest({enlumorBenchmark:1,name:'x',checks:[{id:'r',kind:'route',title:'r',expect:{all:['(a+)+']}}]})).toThrow('BENCHMARK_INVALID');
 });
+it('answers are graded as text, so markdown emphasis does not hide a correct number',()=>{
+ expect(gradeBenchmarkAnswer({id:'c',kind:'ask',title:'t',question:'q',expect:{all:['5\\s*个','`?d_model`? ?= ?512']}},false,'平均最后 **5** 个检查点；`d_model` = 512',1,[]).status).toBe('pass');
+});

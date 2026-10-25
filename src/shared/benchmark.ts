@@ -40,6 +40,8 @@ export function validateBenchmarkManifest(value:unknown):BenchmarkManifest{
 
 /** What an answer misses; empty means it meets every expectation. */
 export function benchmarkMisses(answer:string,evidence:number,e:BenchmarkExpect):string[]{
+ // Answers are read as text: markdown emphasis and code marks (**5** 个, `d_model`) do not count against a pattern.
+ answer=answer.replace(/\*\*|__|`/g,'');
  const m:string[]=[],re=(s:string)=>new RegExp(s,'i');
  for(const s of e.all||[])if(!re(s).test(answer))m.push(`缺少「${s}」`);
  if(e.any?.length&&!e.any.some(s=>re(s).test(answer)))m.push(`没有提到「${e.any.join('」或「')}」`);
