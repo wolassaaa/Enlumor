@@ -6,10 +6,11 @@ import type {AiProfileView} from '../shared/ai';
 import type {SurfingContext} from '../shared/surfing-context';
 import type {SurfingRoute} from '../shared/surfing-route';
 import type {SurfingExplanation} from '../main/surfing-requests';
-import {suggestedSurfingContextWindow,supportedSurfingTokenizer} from '../main/surfing-tokenizer-models';
-const windowKey=(id:string)=>'enlumor.surfing.window.'+id;
-function rememberedWindow(id:string){try{const v=Number(localStorage.getItem(windowKey(id)));return Number.isSafeInteger(v)&&v>0?v:null;}catch{return null;}}
-function rememberWindow(id:string,value:string){try{if(Number.isSafeInteger(Number(value))&&Number(value)>0)localStorage.setItem(windowKey(id),value);}catch{/* per-viewer convenience only */}}
+import {suggestedSurfingContextWindow} from '../main/surfing-tokenizer-models';
+// A window the reader typed for one service and model; the model settings hold the discovered value.
+const windowKey=(profile:{id:string;model:string})=>'enlumor.surfing.window.'+profile.id+'|'+profile.model;
+function rememberedWindow(profile:{id:string;model:string}){try{const v=Number(localStorage.getItem(windowKey(profile)));return Number.isSafeInteger(v)&&v>0?v:null;}catch{return null;}}
+function rememberWindow(profile:{id:string;model:string}|undefined,value:string){try{if(profile&&Number.isSafeInteger(Number(value))&&Number(value)>0)localStorage.setItem(windowKey(profile),value);}catch{/* per-viewer convenience only */}}
 import {createSurfingCommandHost} from './surfing-command-host';
 import type {PdfReader} from './pdf-reader';
 const labels:Record<string,string>={idle:'尚未准备',preparing:'准备本地文字中',prepared:'已准备文字',loading:'生成探索路线中',explaining:'解释中',ready:'等待你的选择',paused:'已暂停',error:'需要处理'};
@@ -18,10 +19,10 @@ export function SurfingPanel({document:doc,reader,takeover,takeoverRef,flushRef,
  const [question,setQuestion]=useState(''),[conversation,setConversation]=useState<{question:string;explanation:SurfingExplanation}[]>([]);
  const [saveStatus,setSaveStatus]=useState('尚未保存'),[saveError,setSaveError]=useState('');
  const routeRevision=useRef(0),pendingSave=useRef<SurfingSaveInput|null>(null),saveRunning=useRef(false),saveFlight=useRef<Promise<void>>(Promise.resolve());
- const panel=useRef<HTMLElement>(null),mounted=useRef(true),epoch=useRef(0),preparing=useRef(0),source=useRef(snapshot),profileRef=useRef(profileId),routeRef=useRef(route),answersRef=useRef(answers),lastTakeover=useRef(takeover);source.current=snapshot;profileRef.current=profileId;routeRef.current=route;answersRef.current=answers;
+ const panel=useRef<HTMLElement>(null),profilesRef=useRef(profiles),capacityRef=useRef(capacity),mounted=useRef(true),epoch=useRef(0),preparing=useRef(0),source=useRef(snapshot),profileRef=useRef(profileId),routeRef=useRef(route),answersRef=useRef(answers),lastTakeover=useRef(takeover);source.current=snapshot;profileRef.current=profileId;profilesRef.current=profiles;capacityRef.current=capacity;routeRef.current=route;answersRef.current=answers;
  const job=useRef<{id:string;profileId:string;source:SurfingContext;index?:number;question?:string}|null>(null),host=useRef<ReturnType<typeof createSurfingCommandHost>|null>(null);
  host.current??=createSurfingCommandHost(()=>reader,()=>doc,()=>source.current);
- const selectedProfile=profiles.find(p=>p.id===profileId),supported=!!selectedProfile&&supportedSurfingTokenizer(selectedProfile),busy=status==='preparing'||status==='loading'||status==='explaining';
+ const selectedProfile=profiles.find(p=>p.id===profileId),supported=!!selectedProfile,busy=status==='preparing'||status==='loading'||status==='explaining';
  function persist():Promise<void>{
   if(saveRunning.current)return saveFlight.current.then(()=>pendingSave.current?persist():undefined);if(!pendingSave.current)return Promise.resolve();saveRunning.current=true;
   const task=(async()=>{while(pendingSave.current){const request=pendingSave.current;if(mounted.current)setSaveStatus('保存中');try{unwrap(await window.enlumor.saveSurfingProgress(request));}catch(e){if(pendingSave.current!==request)continue;if(mounted.current){setSaveStatus('保存失败');setSaveError(e instanceof Error?e.message:String(e));}throw e;}if(pendingSave.current===request)pendingSave.current=null;if(mounted.current&&routeRef.current&&routeRevision.current===request.routeRevision){setSaveStatus('已保存');setSaveError('');}}})();
@@ -34,6 +35,16 @@ export function SurfingPanel({document:doc,reader,takeover,takeoverRef,flushRef,
  function pause(){epoch.current++;const active=job.current;job.current=null;host.current?.invalidate();const s=source.current;if(s&&active)void window.enlumor.cancelSurfing(s.context);if(mounted.current)setStatus('paused');}
  /** Scrolling, takeover and backgrounding pause model work only; local text preparation is allowed to finish. */
  function interrupt(){if(preparing.current&&!job.current)return;pause();}
+ /** The service says the prompt does not fit: adopt the window it states (or a smaller guess), remember it, and let the reader retry. */
+ function lowerWindow(code:string){
+  // Called from the long-lived text listener, so read current state through refs.
+  const profile=profilesRef.current.find(p=>p.id===profileRef.current),current=Number(capacityRef.current)||0,stated=Number(code.split('_').pop());
+  // A stated window below ours is the real limit; otherwise our estimate was low, so tighten the budget.
+  const next=Number.isSafeInteger(stated)&&stated>=1024&&(!current||stated<current)?stated:Math.max(1024,Math.floor((current||128000)*0.8));
+  setCapacity(String(next));rememberWindow(profile,String(next));
+  if(profile){const {hasCredential:_h,credentialStorage:_c,verification:_v,...metadata}=profile;void window.enlumor.saveAiProfile({...metadata,contextWindowTokens:next}).then(()=>window.enlumor.listAiProfiles()).then(reply=>{if(mounted.current)setProfiles(unwrap(reply));}).catch(()=>{});}
+  fail(Error(`这篇论文超出了该模型的实际上下文窗口，已将窗口调整为 ${next} tokens，请重试。`));
+ }
  function fail(value:unknown){if(mounted.current){setError(value instanceof Error?value.message:String(value));setStatus('error');}}
  async function prepare(){setConversation([]);pause();const version=++epoch.current;try{await persist();}catch{return;}if(!mounted.current||epoch.current!==version)return;setSnapshot(null);source.current=null;setRoute(null);routeRef.current=null;setAnswers({});answersRef.current={};setSelected(null);setError('');setSaveError('');setSaveStatus('尚未保存');routeRevision.current=0;setConsent(false);setStatus('preparing');preparing.current=version;
   try{const next=unwrap(await window.enlumor.prepareSurfing(doc.id).finally(()=>{if(preparing.current===version)preparing.current=0;}));if(!mounted.current||epoch.current!==version)return;source.current=next;setSnapshot(next);setStatus('prepared');
@@ -58,7 +69,7 @@ export function SurfingPanel({document:doc,reader,takeover,takeoverRef,flushRef,
   if(explain&&!answersRef.current[index])await submit(index);else setStatus('ready');
  }
  useEffect(()=>{mounted.current=true;takeoverRef.current=interrupt;const flush=async()=>{await persist();if(pendingSave.current)throw Error('SURFING_UNSAVED_PROGRESS');};flushRef.current=flush;
-  const off=window.enlumor.onSurfingText(event=>{const j=job.current;if(!mounted.current||!j||event.requestId!==j.id||source.current!==j.source||profileRef.current!==j.profileId)return;job.current=null;if(event.type==='error'){fail(Error(event.code));return;}if(event.type==='answer'){setConversation(previous=>[...previous,{question:event.question,explanation:event.explanation}].slice(-6));setQuestion(previous=>previous.trim()===event.question?'':previous);}else if(event.type==='route'){routeRevision.current=event.routeRevision;routeRef.current=event.route;setRoute(event.route);setAnswers({});answersRef.current={};setSelected(null);queueSave(null);}else if(event.type==='explanation'){const next={...answersRef.current,[event.stopIndex]:event.explanation};answersRef.current=next;setAnswers(next);queueSave(event.stopIndex);}setStatus('ready');});
+  const off=window.enlumor.onSurfingText(event=>{const j=job.current;if(!mounted.current||!j||event.requestId!==j.id||source.current!==j.source||profileRef.current!==j.profileId)return;job.current=null;if(event.type==='error'){if(event.code?.startsWith('AI_CONTEXT_OVERFLOW')){lowerWindow(event.code);return;}fail(Error(event.code));return;}if(event.type==='answer'){setConversation(previous=>[...previous,{question:event.question,explanation:event.explanation}].slice(-6));setQuestion(previous=>previous.trim()===event.question?'':previous);}else if(event.type==='route'){routeRevision.current=event.routeRevision;routeRef.current=event.route;setRoute(event.route);setAnswers({});answersRef.current={};setSelected(null);queueSave(null);}else if(event.type==='explanation'){const next={...answersRef.current,[event.stopIndex]:event.explanation};answersRef.current=next;setAnswers(next);queueSave(event.stopIndex);}setStatus('ready');});
   const background=()=>{if(window.document.hidden)interrupt();};window.document.addEventListener('visibilitychange',background);const offBackground=window.enlumor.onAppBackground(interrupt);
   return()=>{if(flushRef.current===flush)flushRef.current=null;if(takeoverRef.current===interrupt)takeoverRef.current=null;mounted.current=false;epoch.current++;job.current=null;off();offBackground();window.document.removeEventListener('visibilitychange',background);host.current?.invalidate();const s=source.current;if(s)void window.enlumor.deactivateSurfing(s.context);};
  },[doc.id,reader]);
@@ -66,7 +77,7 @@ export function SurfingPanel({document:doc,reader,takeover,takeoverRef,flushRef,
  useEffect(()=>{let active=true;if(settingsOpen){pause();setConversation([]);setConsent(false);setRoute(null);routeRef.current=null;setAnswers({});setSelected(null);}else void window.enlumor.listAiProfiles().then(reply=>{if(!mounted.current||!active)return;const p=unwrap(reply);setProfiles(p);setProfileId(p.some(x=>x.id===profileRef.current)?profileRef.current:p[0]?.id||'');}).catch(fail);return()=>{active=false;};},[settingsOpen]);
  useEffect(()=>{const frame=requestAnimationFrame(()=>reader.fit('page-width'));return()=>cancelAnimationFrame(frame);},[doc.id,reader]);
  // A recognised model starts with the reader's last value or a conservative suggestion, never overwriting a typed or restored one.
- useEffect(()=>{if(!selectedProfile)return;const value=rememberedWindow(selectedProfile.id)??suggestedSurfingContextWindow(selectedProfile);if(value)setCapacity(c=>c||String(value));},[selectedProfile?.id,selectedProfile?.model]);
+ useEffect(()=>{if(!selectedProfile)return;const value=rememberedWindow(selectedProfile)??suggestedSurfingContextWindow(selectedProfile);if(value)setCapacity(c=>c||String(value));},[selectedProfile?.id,selectedProfile?.model]);
  // Preparing the text is local and sends nothing, so it starts as soon as the panel opens.
  useEffect(()=>{void prepare();},[doc.id]);
  // Keep the stop the reader is on, and its explanation, in view instead of below the conversation.
@@ -74,8 +85,8 @@ export function SurfingPanel({document:doc,reader,takeover,takeoverRef,flushRef,
  const answer=selected===null?null:answers[selected];
  return <section ref={panel} className="surfing-panel" aria-label="Surfing 共读"><header><div><strong>Surfing</strong><span>读整篇，随时问，回到原文。</span></div><button onClick={()=>void close()} aria-label="关闭 Surfing">关闭</button></header>
  <p className="surfing-scope">{doc.name} · 只提取文字，不代表图表或公式视觉理解。准备文档不会发送网络请求。</p>
- <details className="surfing-setup" open={!route&&!consent}><summary>阅读范围与服务设置</summary><div className="surfing-controls"><button disabled={busy} onClick={()=>void prepare()}>准备本地全文</button><label>服务<select aria-label="Surfing 服务" value={profileId} disabled={busy} onChange={e=>void changeProfile(e.target.value)}>{profiles.length===0&&<option value="">尚未配置</option>}{profiles.map(p=><option key={p.id} value={p.id}>{p.name} · {p.model}</option>)}</select></label><label>模型窗口<input aria-label="Surfing 模型上下文窗口（tokens）" type="number" min="1" max="10000000" placeholder="按服务文档填写" value={capacity} disabled={busy} onChange={e=>{setCapacity(e.target.value);rememberWindow(profileRef.current,e.target.value);}}/></label><button onClick={()=>void openSettings()}>配置模型</button></div>
- <p className="surfing-help">支持已识别 OpenAI Chat 模型及 DeepSeek Chat/Reasoner；DeepSeek按保守UTF8字节预算估算，并非精确token计数。已识别的模型会预填保守的窗口值，可按服务文档修改，修改后会记住。</p>
+ <details className="surfing-setup" open={!route&&!consent}><summary>阅读范围与服务设置</summary><div className="surfing-controls"><button disabled={busy} onClick={()=>void prepare()}>准备本地全文</button><label>服务<select aria-label="Surfing 服务" value={profileId} disabled={busy} onChange={e=>void changeProfile(e.target.value)}>{profiles.length===0&&<option value="">尚未配置</option>}{profiles.map(p=><option key={p.id} value={p.id}>{p.name} · {p.model}</option>)}</select></label><label>模型窗口<input aria-label="Surfing 模型上下文窗口（tokens）" type="number" min="1" max="10000000" placeholder="按服务文档填写" value={capacity} disabled={busy} onChange={e=>{setCapacity(e.target.value);rememberWindow(selectedProfile,e.target.value);}}/></label><button onClick={()=>void openSettings()}>配置模型</button></div>
+ <p className="surfing-help">任何模型都可以使用：OpenAI 模型精确计数，其他模型按保守估算。窗口取自模型设置（服务商提供或内置资料）；若服务商提示超出上下文，会自动调低并记住。</p>
  {snapshot&&<p className="surfing-coverage">已读取 {snapshot.pageCount} 页 · {snapshot.passages.length} 段 · {snapshot.characterCount} 字符。{snapshot.emptyPages.length?`${snapshot.emptyPages.length} 页没有可提取文字；仅发送其余文字，非完整视觉内容。`:'每页均有文字，仍需核验提取顺序与原文。'}</p>}
  <label className="surfing-consent"><input type="checkbox" aria-label="确认将当前论文提取文字发送给所选服务" checked={consent} disabled={!snapshot||busy} onChange={e=>setConsent(e.target.checked)}/>我确认将《{doc.name}》的全部已提取文字发送给 {selectedProfile?.name||'所选服务'}（{selectedProfile?.endpoint||'尚未选择'}），不包含图像理解。</label></details>
  {error&&<p role="alert" className="surfing-error">{error} · 可调整配置后重新尝试；不会自动重试。</p>}

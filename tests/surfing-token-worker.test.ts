@@ -10,7 +10,7 @@ beforeAll(()=>{buildSync({entryPoints:['src/main/surfing-token-worker.ts'],outfi
 afterAll(()=>rmSync(root,{recursive:true,force:true}));
 describe('off-main-thread Surfing token counting',()=>{
  it('returns model-aware count from a real worker',async()=>{expect(await measureSurfingInputTokens(profile,{system:'You are a reader.',user:'Hello world'},new AbortController().signal,entry)).toBe(1042);});
- it('does not guess unknown model encoding',async()=>{expect(await measureSurfingInputTokens({...profile,model:'unknown'},{system:'s',user:'u'},new AbortController().signal,entry)).toBe(null);});
+ it('estimates conservatively for a model without an exact tokenizer instead of refusing it',async()=>{const prompt={system:'s',user:'some paper text '.repeat(200)};const exact=await measureSurfingInputTokens(profile,prompt,new AbortController().signal,entry),estimate=await measureSurfingInputTokens({...profile,model:'unknown'},prompt,new AbortController().signal,entry);expect(estimate).toBeGreaterThan(exact!);});
  it('honors an already canceled operation',async()=>{const c=new AbortController();c.abort();await expect(measureSurfingInputTokens(profile,{system:'s',user:'u'},c.signal,entry)).rejects.toThrow('SURFING_CANCELED');});
  it('terminates a running count on cancellation',async()=>{const c=new AbortController();const job=measureSurfingInputTokens(profile,{system:'s',user:'text '.repeat(20000)},c.signal,entry);c.abort();await expect(job).rejects.toThrow('SURFING_CANCELED');});
  it('returns unknown when worker bundle is missing instead of guessing',async()=>{expect(await measureSurfingInputTokens(profile,{system:'s',user:'u'},new AbortController().signal,join(root,'missing.cjs'))).toBe(null);});

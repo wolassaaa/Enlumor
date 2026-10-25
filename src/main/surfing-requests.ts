@@ -79,7 +79,7 @@ export class SurfingRequests{
     const route=parseSurfingRoute(raw,snapshot);this.lastRoute={context:{...input.context},profileId:input.profileId,route:structuredClone(route)};
     this.ports.emit({requestId:job.id,type:'route',route});
    }
-  }catch(error){if(current()){const prefix=error instanceof Error?error.message.split(':',1)[0]:'';const code=publicErrors.has(prefix)?prefix:'AI_FAILED';this.ports.emit({requestId:job.id,type:'error',code});}}
+  }catch(error){if(current()){const prefix=error instanceof Error?error.message.split(':',1)[0]:'';const code=publicErrors.has(prefix)||/^AI_CONTEXT_OVERFLOW(_\d{4,8})?$/.test(prefix)?prefix:'AI_FAILED';this.ports.emit({requestId:job.id,type:'error',code});}}
   finally{if(this.active===job)this.active=undefined;}
  }
 }

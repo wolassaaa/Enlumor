@@ -112,3 +112,12 @@ test('Surfing whole-paper conversation answers abstract from title, remembers fo
   mkdirSync('evidence/surfing-repair-2026-10-24',{recursive:true});await page.screenshot({path:'evidence/surfing-repair-2026-10-24/conversation.png'});
  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
 });
+
+test('Surfing works with any configured model and lowers the window when the service reports an overflow',async()=>{
+ let calls=0;const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;calls++;if(calls===1){res.statusCode=400;res.setHeader('content-type','application/json');res.end(JSON.stringify({error:{message:"This model's maximum context length is 65536 tokens.",code:'context_length_exceeded'}}));return;}const data=JSON.parse(JSON.parse(raw).messages[1].content);sendMock(res,{stops:[{title:'Relay entry',reason:'Any model works',passageIds:[data.passages[0].id]}]});});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','any-model','anthropic/claude-sonnet-4');
+ try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByRole('alert')).toContainText('已将窗口调整为 65536 tokens');
+ await expect(page.getByLabel('Surfing 模型上下文窗口（tokens）',{exact:true})).toHaveValue('65536');await expect.poll(async()=>((await page.evaluate(()=>window.enlumor.listAiProfiles())) as any).value[0].contextWindowTokens).toBe(65536);
+ await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByRole('button',{name:'Relay entry',exact:true})).toBeVisible();expect(calls).toBe(2);
+ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+});

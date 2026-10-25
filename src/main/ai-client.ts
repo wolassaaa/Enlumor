@@ -1,7 +1,8 @@
 import{generateSpark}from'./spark-client';
 import{validateAiProfile}from'./ai-config';
 export{validateAiProfile}from'./ai-config';
-import type {AiProfileInput,AiPrompt} from '../shared/ai';
+import {AI_MAX_PROMPT_CHARACTERS,type AiProfileInput,type AiPrompt} from '../shared/ai';
+import type {AiModelInfo} from '../shared/ai-models';
 
 const MAX_RESPONSE_BYTES=4*1024*1024,MAX_EVENT_BYTES=512*1024;
 const invalid=()=>new Error('AI_INVALID_CONFIG');
@@ -9,7 +10,7 @@ const failure=(code:string)=>new Error(code);
 
 export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=true):{url:string;headers:Record<string,string>;body:any} {
  const url=validateAiProfile(profile);
- if(!prompt||typeof prompt.system!=='string'||typeof prompt.user!=='string'||!prompt.user.trim()||prompt.system.length+prompt.user.length>200000)throw failure('AI_INVALID_PROMPT');
+ if(!prompt||typeof prompt.system!=='string'||typeof prompt.user!=='string'||!prompt.user.trim()||prompt.system.length+prompt.user.length>AI_MAX_PROMPT_CHARACTERS)throw failure('AI_INVALID_PROMPT');
  const headers:Record<string,string>={'Content-Type':'application/json','Accept':stream?'text/event-stream':'application/json'};
  const key=profile.credential?.kind==='api-key'?profile.credential.apiKey:'';
  if(!key&&url.protocol==='https:')throw failure('AI_KEY_REQUIRED');
@@ -88,7 +89,15 @@ function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:str
  return{text,done};
 }
 
-export async function listAiModels(profile:AiProfileInput,options:{signal?:AbortSignal;fetch?:typeof fetch}={}):Promise<string[]>{
+// Services name the context window differently (OpenRouter/Together context_length, Groq context_window, Mistral max_context_length,
+// vLLM max_model_len, Gemini inputTokenLimit); whatever is present and plausible is kept.
+const windowFields=['context_length','context_window','max_context_length','max_model_len','max_input_tokens','inputTokenLimit'];
+function reportedWindow(item:any):number|undefined{
+ for(const value of [...windowFields.map(f=>item?.[f]),item?.top_provider?.context_length]){const n=typeof value==='string'?Number(value):value;if(Number.isSafeInteger(n)&&n>=1024&&n<=10_000_000)return n;}
+ return undefined;
+}
+export async function listAiModels(profile:AiProfileInput,options:{signal?:AbortSignal;fetch?:typeof fetch}={}):Promise<string[]>{return(await listAiModelInfo(profile,options)).map(m=>m.id);}
+export async function listAiModelInfo(profile:AiProfileInput,options:{signal?:AbortSignal;fetch?:typeof fetch}={}):Promise<AiModelInfo[]>{
  if(profile.protocol==='dashscope'||profile.protocol==='spark')throw failure('AI_MODEL_DISCOVERY_UNSUPPORTED');
  const request=buildAiRequest(profile,{system:'',user:'Model discovery'},false),url=new URL(request.url);
  if(profile.protocol==='gemini')url.pathname=url.pathname.replace(/\/models\/[^/]+:generateContent$/,'/models');
@@ -102,9 +111,25 @@ export async function listAiModels(profile:AiProfileInput,options:{signal?:Abort
   while(true){const chunk=await reader.read();if(chunk.done)break;size+=chunk.value.byteLength;if(size>MAX_RESPONSE_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');chunks.push(chunk.value);}
   let value;try{value=JSON.parse(Buffer.concat(chunks).toString('utf8'));}catch{throw failure('AI_INVALID_RESPONSE');}
   const list=profile.protocol==='gemini'?value.models:value.data;if(!Array.isArray(list))throw failure('AI_INVALID_RESPONSE');
-  return[...new Set<string>(list.map(v=>profile.protocol==='gemini'?v?.name?.replace(/^models\//,''):v?.id).filter(v=>typeof v==='string'&&v.length>0&&v.length<=200))].slice(0,1000);
+  const seen=new Set<string>(),models:AiModelInfo[]=[];
+  for(const v of list){const id=profile.protocol==='gemini'?v?.name?.replace(/^models\//,''):v?.id;if(typeof id!=='string'||!id.length||id.length>200||seen.has(id))continue;seen.add(id);const contextWindow=reportedWindow(v);models.push(contextWindow?{id,contextWindow}:{id});if(models.length>=1000)break;}
+  return models;
  }catch(error){if(options.signal?.aborted)throw failure('AI_CANCELLED');if(timer.signal.aborted)throw failure('AI_TIMEOUT');if(error instanceof Error&&/^AI_[A-Z_0-9]+$/.test(error.message))throw error;throw failure('AI_REQUEST_FAILED');}
  finally{clearTimeout(timeout);await reader?.cancel().catch(()=>{});reader?.releaseLock();}
+}
+
+// "Context too long" in the words of OpenAI/DeepSeek, Anthropic, Gemini and common relays.
+const overflow=/context[_ ]length|context window|maximum context|prompt is too long|input is too long|too many tokens|token limit|input token count|reduce the length of the (messages|prompt)/i;
+const overflowLimit=[/maximum context length is (\d{4,8})/i,/> ?(\d{4,8}) maximum/i,/allowed \((\d{4,8})\)/i,/(?:limit|maximum)(?: of| is)? (\d{4,8}) tokens/i];
+/** Error code for a failed HTTP response. An over-long prompt becomes AI_CONTEXT_OVERFLOW, with the service's real window when it states one. */
+async function httpFailure(response:Response):Promise<Error>{
+ if(![400,413,422].includes(response.status)||!response.body){await response.body?.cancel();return failure('AI_HTTP_'+response.status);}
+ const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0;
+ try{while(size<16384){const chunk=await reader.read();if(chunk.done)break;size+=chunk.value.byteLength;chunks.push(chunk.value);}}catch{/* keep what arrived */}finally{await reader.cancel().catch(()=>{});}
+ const text=Buffer.concat(chunks).toString('utf8');
+ if(!overflow.test(text))return failure('AI_HTTP_'+response.status);
+ for(const pattern of overflowLimit){const n=Number(pattern.exec(text)?.[1]);if(Number.isSafeInteger(n)&&n>=1024&&n<=10_000_000)return failure('AI_CONTEXT_OVERFLOW_'+n);}
+ return failure('AI_CONTEXT_OVERFLOW');
 }
 
 export async function generateText(profile:AiProfileInput,prompt:AiPrompt,options:{stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;fetch?:typeof fetch}={}):Promise<string>{
@@ -116,7 +141,7 @@ export async function generateText(profile:AiProfileInput,prompt:AiPrompt,option
  const emit=(delta:string)=>{if(!delta)return;text+=delta;if(text.length>MAX_RESPONSE_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');options.onDelta?.(delta);};
  try{
   const response=await(options.fetch||fetch)(request.url,{method:'POST',headers:request.headers,body:JSON.stringify(request.body),redirect:'error',signal});
-  if(!response.ok){await response.body?.cancel();throw failure('AI_HTTP_'+response.status);}
+  if(!response.ok)throw await httpFailure(response);
   if(!response.body)throw failure('AI_INVALID_RESPONSE');
   reader=response.body.getReader();const decoder=new TextDecoder('utf-8',{fatal:true});let pending='',done=false;
   const sse=stream&&!response.headers.get('content-type')?.includes('application/json');

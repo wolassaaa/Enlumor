@@ -10,7 +10,7 @@ export class AiProfiles {
  list():AiProfileView[]{return this.db.prepare('SELECT * FROM ai_profiles ORDER BY rowid').all().map(row=>this.view(row));}
  save(input:AiProfileInput):AiProfileView {
   validateAiProfile(input);const{credential}=input;
-  const metadata={id:input.id,name:input.name,protocol:input.protocol,endpoint:input.endpoint,model:input.model,maxOutputTokens:input.maxOutputTokens,timeoutMs:input.timeoutMs,parameters:input.parameters};
+  const metadata={id:input.id,name:input.name,protocol:input.protocol,endpoint:input.endpoint,model:input.model,maxOutputTokens:input.maxOutputTokens,timeoutMs:input.timeoutMs,parameters:input.parameters,...(input.contextWindowTokens!==undefined?{contextWindowTokens:input.contextWindowTokens}:{})};
   const old=this.db.prepare('SELECT secret,payload FROM ai_profiles WHERE id=?').get(input.id);
   const prior=old?JSON.parse(old.payload as string):null;
   const changedOrigin=!!prior&&(new URL(prior.endpoint).origin!==new URL(input.endpoint).origin||prior.protocol!==input.protocol);
@@ -27,6 +27,13 @@ export class AiProfiles {
   const row=this.row(id),metadata=JSON.parse(row.payload as string);let credential=this.session.get(id);
   if(!credential&&row.secret){try{if(!this.box.available())throw Error();credential=JSON.parse(this.box.decrypt(row.secret as Uint8Array));}catch{throw new Error('AI_CREDENTIAL_UNAVAILABLE');}}
   const result={...metadata,credential};validateAiProfile(result);return result;
+ }
+ /** An unsaved draft ready for model discovery. A missing key reuses the saved one only for the same service origin and protocol. */
+ discoveryProfile(draft:AiProfileInput,savedId?:string):AiProfileInput {
+  const profile={...draft,model:typeof draft?.model==='string'&&draft.model.trim()?draft.model:'model-discovery'};
+  validateAiProfile(profile);
+  if(!profile.credential&&typeof savedId==='string'&&savedId){const saved=this.resolve(savedId);if(saved.protocol===profile.protocol&&new URL(saved.endpoint).origin===new URL(profile.endpoint).origin)profile.credential=saved.credential;}
+  validateAiProfile(profile);return profile;
  }
  delete(id:string){this.row(id);this.db.prepare('DELETE FROM ai_profiles WHERE id=?').run(id);this.session.delete(id);}
 }
