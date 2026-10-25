@@ -42,12 +42,15 @@ async function record(page:Page,check:{id:string;title:string},run:()=>Promise<O
  const shot=`${results.length+1}-${check.id}.png`;await page.screenshot({path:path.join(out,shot)}).catch(()=>{});
  results.push({id:check.id,name:check.title,ms:Date.now()-started,shot,...r});
 }
-/** Waits until a new reply appears or the panel shows an error; returns the reply and what the agent did meanwhile. */
+/** Waits until a new reply appears or the panel shows an error; returns the reply and what the agent did meanwhile.
+ * The panel keeps only the latest few answers, so a new one may replace the oldest instead of adding to the count. */
 async function awaitReply(page:Page,selector:string,before:number,timeout:number){
- const steps=new Set<string>(),deadline=Date.now()+timeout;
+ const steps=new Set<string>(),deadline=Date.now()+timeout,items=page.locator(selector);
+ const last=async()=>(await items.last().innerText().catch(()=>'')).trim(),previous=before?await last():'';
  while(Date.now()<deadline){
   for(const t of await page.locator('.surfing-step').allInnerTexts())steps.add(t.replace(/…$/,''));
-  if(await page.locator(selector).count()>before)return{text:(await page.locator(selector).last().innerText()).trim(),steps:[...steps]};
+  const count=await items.count();
+  if(count>before||(before&&count===before&&await last()!==previous))return{text:await last(),steps:[...steps]};
   if(await page.locator('.surfing-panel [role=alert]').count())return{text:'',steps:[...steps],error:(await page.locator('.surfing-panel [role=alert]').innerText()).trim()};
   await page.waitForTimeout(400);
  }
