@@ -17,7 +17,7 @@
 
 ```sh
 # 把任意论文做成基准（会校验二维码能解回清单）
-python tests/acceptance/benchmark.py add paper.pdf my-benchmark.json paper-benchmark.pdf
+python tests/acceptance/benchmark.py add paper.pdf my-benchmark.json paper-benchmark.pdf   # 加 --qr-only 则只印二维码，不附内嵌清单
 # 读出一份基准 PDF 里的清单
 python tests/acceptance/benchmark.py read paper-benchmark.pdf
 ```

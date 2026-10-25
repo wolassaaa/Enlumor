@@ -134,6 +134,19 @@ export class PdfReader {
     if (!pdf || !this.ready) return false;
     return drawPageThumbnail(pdf, pageNumber, canvas, signal, () => pdf === this.viewer.pdfDocument, Math.min(2, window.devicePixelRatio || 1));
   }
+  /** One page rendered on white at a given width, e.g. for scanning a QR code; null if no document is ready. */
+  async renderPageImage(pageNumber:number,width:number):Promise<ImageData|null>{
+    const pdf=this.viewer.pdfDocument;
+    if(!pdf||!this.ready||!Number.isInteger(pageNumber)||pageNumber<1||pageNumber>pdf.numPages)return null;
+    const page=await pdf.getPage(pageNumber);
+    try{
+      const base=page.getViewport({scale:1}),viewport=page.getViewport({scale:width/base.width}),canvas=document.createElement('canvas');
+      canvas.width=Math.ceil(viewport.width);canvas.height=Math.ceil(viewport.height);
+      await page.render({canvas,viewport,annotationMode:0,background:'rgb(255,255,255)'}).promise;
+      if(pdf!==this.viewer.pdfDocument)return null;
+      return canvas.getContext('2d',{willReadFrequently:true})!.getImageData(0,0,canvas.width,canvas.height);
+    }finally{page.cleanup();}
+  }
   async readPageBlocks(pageIndex:number):Promise<CruiseBlock[]>{
     const document=this.active,pdf=this.viewer.pdfDocument,generation=this.generation;
     if(!document||!pdf||!this.ready)throw new Error('CRUISE_NOT_READY');

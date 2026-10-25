@@ -54,7 +54,8 @@
     "js-tiktoken": "1.0.21",
     "pdfjs-dist": "6.4.299",
     "react": "19.3.1",
-    "react-dom": "19.3.1"
+    "react-dom": "19.3.1",
+    "zxing-wasm": "3.1.4"
   },
   "devDependencies": {
     "@playwright/test": "1.64.1",

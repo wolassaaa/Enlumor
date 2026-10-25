@@ -1,7 +1,7 @@
 """Benchmark PDFs carry their own test: a QR code on an appended last page, and the same manifest as an
 embedded file the harness reads without decoding images.
 
-  add:  benchmark.py add <paper.pdf> <manifest.json> <out.pdf>   (works for any paper)
+  add:  benchmark.py add <paper.pdf> <manifest.json> <out.pdf> [--qr-only]   (works for any paper)
   read: benchmark.py read <benchmark.pdf>                         (prints the manifest JSON)
 """
 import io, json, sys
@@ -9,7 +9,7 @@ import pymupdf as fitz
 
 NAME = 'enlumor-benchmark.json'
 
-def add(source, manifest_path, out):
+def add(source, manifest_path, out, embed=True):
     manifest = json.load(open(manifest_path, encoding='utf-8'))
     if manifest.get('enlumorBenchmark') != 1 or not isinstance(manifest.get('checks'), list): raise ValueError('not an Enlumor benchmark manifest')
     data = json.dumps(manifest, ensure_ascii=False, separators=(',', ':')).encode('utf-8')
@@ -24,7 +24,7 @@ def add(source, manifest_path, out):
     with fitz.open(stream=svg.getvalue(), filetype='svg') as qr:
         page.show_pdf_page(fitz.Rect((rect.width - side) / 2, (rect.height - side) / 2, (rect.width + side) / 2, (rect.height + side) / 2), fitz.open('pdf', qr.convert_to_pdf()), 0)
     if NAME in doc.embfile_names(): doc.embfile_del(NAME)
-    doc.embfile_add(NAME, data, filename=NAME, desc='Enlumor benchmark manifest')
+    if embed: doc.embfile_add(NAME, data, filename=NAME, desc='Enlumor benchmark manifest')
     doc.save(out)
     verify_qr(out, manifest)
 
@@ -47,7 +47,7 @@ def read(path):
         return json.loads(doc.embfile_get(NAME).decode('utf-8'))
 
 if __name__ == '__main__':
-    if sys.argv[1] == 'add': add(sys.argv[2], sys.argv[3], sys.argv[4])
+    if sys.argv[1] == 'add': add(sys.argv[2], sys.argv[3], sys.argv[4], embed='--qr-only' not in sys.argv)
     # ASCII-only output survives a GBK Windows console between Python and the Node harness.
     elif sys.argv[1] == 'read': print(json.dumps(read(sys.argv[2]), ensure_ascii=True))
     else: raise SystemExit(__doc__)

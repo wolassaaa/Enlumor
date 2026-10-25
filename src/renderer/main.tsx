@@ -3,6 +3,7 @@ import {lineAnchor} from '../shared/geometry';
 import type {VerifiedAnchor} from '../shared/editing-commands';
 import {EditingController} from './editing-controller';
 import {BenchmarkPanel} from './BenchmarkPanel';
+import {scanBenchmarkQr} from './benchmark-qr';
 import type {BenchmarkManifest} from '../shared/benchmark';
 import {projectEditingView,type MarkView} from './editing-view';
 import type {EditingView} from '../shared/editing-bridge';
@@ -349,7 +350,14 @@ function App() {
   };
   const commitPanel = (side:'left'|'right', value:number) => persistLayout({...layoutRef.current,[side]:value});
   // A benchmark PDF carries its own checks; offer test mode when one is opened.
-  useEffect(()=>{setBenchmark(null);setBenchmarkOpen(false);if(!doc)return;let live=true;void window.enlumor.getBenchmark(doc.id).then(r=>{if(live&&r.ok)setBenchmark(r.value);}).catch(()=>{});return()=>{live=false;};},[doc?.id]);
+  useEffect(()=>{setBenchmark(null);setBenchmarkOpen(false);if(!doc)return;let live=true;const pages=doc.pageCount;
+    // Scan the last page's QR code; the embedded copy of the manifest is a fallback when the code is cropped or unreadable.
+    const timer=setTimeout(()=>{void (async()=>{
+      let found=reader.current?await scanBenchmarkQr(reader.current,pages).catch(()=>null):null;
+      if(!found&&live){const r=await window.enlumor.getBenchmark(doc.id).catch(()=>null);if(r?.ok)found=r.value;}
+      if(live&&found)setBenchmark(found);
+    })();},400);
+    return()=>{live=false;clearTimeout(timer);};},[doc?.id]);
   return <div className="app" style={{'--ui-spacing':layout.spacing+'px'} as CSSProperties}>
     <header className="topbar" onClickCapture={()=>notifyCruiseTakeover()}><div className="wordmark"><span className="brand-dot">e</span>enlumor</div><span className="edition">YOUR QUIET READING ROOM</span>
       <div className="panel-toggles"><button className={libraryOpen ? 'is-active' : ''} aria-label={libraryOpen ? '收起文档栏' : '展开文档栏'} aria-expanded={libraryOpen} onClick={() => { resetDrawing();setParts([]); setLibraryOpen(!libraryOpen); }}><Glyph name="library"/></button><button className={notesOpen ? 'is-active' : ''} aria-label={notesOpen ? '收起批注栏' : '展开批注栏'} aria-expanded={notesOpen} onClick={() => { resetDrawing();setParts([]); setNotesOpen(!notesOpen); }}><Glyph name="notes"/></button></div>

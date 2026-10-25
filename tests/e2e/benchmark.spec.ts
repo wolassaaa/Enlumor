@@ -1,14 +1,16 @@
 import {test,expect,_electron as electron} from '@playwright/test';
 import {createServer} from 'node:http';
-import {mkdtempSync,readFileSync} from 'node:fs';
+import {copyFileSync,mkdtempSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {execFileSync} from 'node:child_process';
 const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-benchmark-')),python=path.join(root,'.venv/Scripts/python.exe');
-const paper=path.join(folder,'paper.pdf'),bench=path.join(folder,'Lumen benchmark.pdf'),plain=path.join(folder,'plain.pdf');
+const paper=path.join(folder,'paper.pdf'),bench=path.join(folder,'Lumen benchmark.pdf'),embedded=path.join(folder,'embedded.pdf'),plain=path.join(folder,'plain.pdf');
+// The fixture carries the manifest only as the printed QR on its last page (benchmark.py add --qr-only).
+copyFileSync(path.join(root,'tests/e2e/fixtures/lumen-qr-only.pdf'),bench);
 execFileSync(python,[path.join(root,'tests/acceptance/make-paper.py'),paper]);
-// Detection reads the embedded manifest; the printed QR (benchmark.py add) is not needed for this.
-execFileSync(python,['-c',`import pymupdf as f;d=f.open(${JSON.stringify(paper)});d.embfile_add('enlumor-benchmark.json',open(${JSON.stringify(path.join(root,'tests/acceptance/lumen-benchmark.json'))},'rb').read());d.save(${JSON.stringify(bench)})`]);
+// Without a QR, an embedded manifest file is the fallback.
+execFileSync(python,['-c',`import pymupdf as f;d=f.open(${JSON.stringify(paper)});d.embfile_add('enlumor-benchmark.json',open(${JSON.stringify(path.join(root,'tests/acceptance/lumen-benchmark.json'))},'rb').read());d.save(${JSON.stringify(embedded)})`]);
 execFileSync(python,['-c',`import pymupdf as f;d=f.open(${JSON.stringify(paper)});d.save(${JSON.stringify(plain)})`]);
 const send=(res:any,value:unknown)=>{res.setHeader('content-type','text/event-stream');res.end('data: '+JSON.stringify({choices:[{delta:{content:JSON.stringify(value)},finish_reason:'stop'}]})+'\n\ndata: [DONE]\n\n');};
 
@@ -26,6 +28,7 @@ test('a benchmark PDF is recognised on open and its checks run in test mode',asy
   await page.evaluate(async endpoint=>{await window.enlumor.saveAiProfile({id:'vision',name:'Vision mock',protocol:'openai-chat',endpoint,model:'gpt-4o',maxOutputTokens:1000,timeoutMs:10000,parameters:{}});},endpoint);
   const open=async(file:string)=>{await app.evaluate(({dialog},f)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[f]});},file);await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.document-name')).toHaveText(path.basename(file));};
   await open(plain);await page.waitForTimeout(800);await expect(page.getByLabel('测试基准',{exact:true})).toHaveCount(0);
+  await open(embedded);await expect(page.getByLabel('测试基准',{exact:true})).toContainText('Lumen Routing fixture');
   await open(bench);await expect(page.getByLabel('测试基准',{exact:true})).toContainText('Lumen Routing fixture');
   await page.getByRole('button',{name:'进入测试模式',exact:true}).click();await expect(page.getByLabel('测试模式',{exact:true})).toBeVisible();
   await expect(page.getByRole('button',{name:'开始测试',exact:true})).toBeDisabled();expect(asked).toEqual([]);
