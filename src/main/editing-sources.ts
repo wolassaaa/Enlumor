@@ -26,6 +26,7 @@ function contains(q:number[],point:[number,number]):boolean {
   for(let i=0;i<4;i++) {const a=order[i],b=order[(i+1)%4];const cross=(q[b]-q[a])*(point[1]-q[a+1])-(q[b+1]-q[a+1])*(point[0]-q[a]);if(Math.abs(cross)<1e-7)continue;const sign=Math.sign(cross);if(orientation&&sign!==orientation)return false;orientation=sign;}
   return true;
 }
+const MAX_CACHED_PAGES=48;
 /** Trusted local parsing only; caches are disposable and never replace full source identity checks. */
 export class EditingSourceService {
   private metadata=new Map<string,SourceDocument>();
@@ -45,9 +46,10 @@ export class EditingSourceService {
     this.metadata.set(context.fingerprint,structuredClone(result));return result;
   }
   async preparePage(context:CommandContext,pageIndex:number,signal:AbortSignal):Promise<void> {
-    const metadata=await this.document(context,signal);this.verified(context,signal);
+    // document() always finishes with a full source verification; repeating it immediately only re-hashes the PDF.
+    const metadata=await this.document(context,signal);
     if(!Number.isInteger(pageIndex)||pageIndex<0||pageIndex>=metadata.pageCount)noAnchor();
-    const key=`${context.fingerprint}/${pageIndex}/1`;if(this.pages.has(key))return;
+    const key=`${context.fingerprint}/${pageIndex}/1`,hit=this.pages.get(key);if(hit){this.pages.delete(key);this.pages.set(key,hit);return;}
     const doc=this.workspace.document(context.documentId);
     const result=await this.runPdfTask<SourcePage>({operation:'editing-page',source:doc.path,fingerprint:context.fingerprint,pageIndex},signal);
     this.verified(context,signal);
@@ -58,6 +60,8 @@ export class EditingSourceService {
     }
     if(count>100000)throw Error('EDIT_TOO_LARGE');
     this.pages.set(key,structuredClone(result));
+    // Per-character geometry is large; keep only recently used pages (Map iterates oldest first).
+    while(this.pages.size>MAX_CACHED_PAGES)this.pages.delete(this.pages.keys().next().value!);
   }
   async prepareAnchor(context:CommandContext,candidate:AnchorCandidate,signal:AbortSignal):Promise<VerifiedAnchor> {return this.verifyCandidate(context,candidate,signal,true);}
   private async verifyCandidate(context:CommandContext,input:AnchorCandidate,signal:AbortSignal,persist:boolean):Promise<VerifiedAnchor> {
@@ -68,7 +72,7 @@ export class EditingSourceService {
     // Copy before awaiting; the renderer can never mutate an in-flight candidate.
     const candidate=structuredClone(input);
     for(const q of candidate.quads)quadValid(q,[-1e7,-1e7,1e7,1e7]);
-    await this.preparePage(context,candidate.pageIndex,signal);this.verified(context,signal);
+    await this.preparePage(context,candidate.pageIndex,signal);
     const source=this.pages.get(`${context.fingerprint}/${candidate.pageIndex}/1`)!;
     const chosen=new Map<string,{line:SourceLine;char:SourceChar;index:number}>();let lastLine=-1;
     for(const quad of candidate.quads) {
@@ -96,7 +100,7 @@ export class EditingSourceService {
     this.verified(context,signal);if(persist)this.edits.saveAnchor(context,anchor);return anchor;
   }
   async resolveEnvironment(context:CommandContext,signal:AbortSignal):Promise<{pageBounds:readonly Bounds[];anchors:VerifiedAnchor[]}> {
-    const metadata=await this.document(context,signal);this.verified(context,signal);
+    const metadata=await this.document(context,signal);
     return {pageBounds:structuredClone(metadata.pageBounds),anchors:this.edits.anchors(context)};
   }
   private mark(context:CommandContext,input:LegacyInput,anchor:VerifiedAnchor|null,reanchor=false):EditMark {
@@ -119,7 +123,7 @@ export class EditingSourceService {
     }
   }
   async reanchorLegacy(context:CommandContext,legacyId:string,anchorId:string,expectedInputDigest:string,signal:AbortSignal):Promise<void> {
-    const environment=await this.resolveEnvironment(context,signal);this.verified(context,signal);
+    const environment=await this.resolveEnvironment(context,signal);
     const input=this.edits.legacyInputs(context.documentId).find(x=>x.legacyId===legacyId);
     if(!input||input.inputDigest!==expectedInputDigest)throw Error('LEGACY_CHANGED');
     if(!input.annotation)throw Error('LEGACY_READ_ONLY');

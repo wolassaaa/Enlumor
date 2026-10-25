@@ -4,6 +4,7 @@ import type{CruiseSession}from'./cruise';
 import type{ExplanationInput}from'../main/cruise-requests';
 import type{AiTextEvent}from'./ai';
 import type {AiProfileInput,AiProfileView} from './ai';
+import type {AiModelInfo} from './ai-models';
 export type Quad = number[];
 export type Annotation = {
   id: string; documentId: string; fingerprint: string; type: 'highlight' | 'underline' | 'strikeout' | 'line' | 'arrow' | 'ink' | 'note';
@@ -30,6 +31,7 @@ export type Bridge = EditingBridge & SurfingBridge & {
   deleteAiProfile(id:string):Promise<Reply<void>>;
   testAiProfile(id:string):Promise<Reply<void>>;
   listAiModels(id:string):Promise<Reply<string[]>>;
+  discoverAiModels(input:{draft:AiProfileInput;savedId?:string}):Promise<Reply<AiModelInfo[]>>;
   getLayout(): Promise<Reply<LayoutPreferences>>;
   saveLayout(layout: LayoutPreferences): Promise<Reply<void>>;
   getTabs(): Promise<Reply<TabSession | null>>;

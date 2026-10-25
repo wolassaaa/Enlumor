@@ -1,9 +1,12 @@
 import type{AiProfileInput}from'../shared/ai';
+import{validContextWindow}from'../shared/ai-models';
 const protocols=['openai-chat','openai-responses','anthropic-messages','gemini','dashscope','spark'];
 const invalid=()=>new Error('AI_INVALID_CONFIG');
 /** Caller supplies an explicitly selected service; no redirects or URL credentials. */
 export function validateAiProfile(profile:AiProfileInput):URL {
  if(!profile||typeof profile!=='object'||!protocols.includes(profile.protocol)||typeof profile.id!=='string'||!/^[\w-]{1,100}$/.test(profile.id)||typeof profile.name!=='string'||profile.name.length>100||!profile.name.trim()||typeof profile.model!=='string'||!profile.model.trim()||profile.model.length>200||typeof profile.endpoint!=='string'||profile.endpoint.length>2000||!Number.isInteger(profile.maxOutputTokens)||profile.maxOutputTokens<1||profile.maxOutputTokens>32768||!Number.isInteger(profile.timeoutMs)||profile.timeoutMs<100||profile.timeoutMs>120000)throw invalid();
+ if(profile.contextWindowTokens!==undefined&&!validContextWindow(profile.contextWindowTokens))throw invalid();
+ if(profile.vision!==undefined&&typeof profile.vision!=='boolean')throw invalid();
  let url:URL;try{url=new URL(profile.endpoint);}catch{throw invalid();}
  const local=['localhost','127.0.0.1','[::1]'].includes(url.hostname);
  const secure=profile.protocol==='spark'?'wss:':'https:',plain=profile.protocol==='spark'?'ws:':'http:';

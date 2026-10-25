@@ -1,5 +1,10 @@
 import type {CruiseBlock} from './cruise';
+import {AI_MAX_PROMPT_CHARACTERS} from './ai';
 import type {CommandContext} from './document-commands';
+/** Sanity bound on one assembled prompt. Extraction admits 160k quote characters in up to 5,000 passages;
+ * each passage adds ~60 characters of JSON framing, quotes may need escaping, and asks carry up to 18k of
+ * conversation. The real admission check is the measured token count against the configured context window. */
+export const SURFING_MAX_PROMPT_CHARACTERS=AI_MAX_PROMPT_CHARACTERS;
 export type SurfingContext={context:CommandContext;pageCount:number;passages:CruiseBlock[];emptyPages:number[];characterCount:number;coverage:'all-pages-have-text'|'partial-text'};
 export type SurfingContextInput={context:CommandContext;pageCount:number;readPage:(pageIndex:number)=>Promise<CruiseBlock[]>;getContext:()=>CommandContext|null;signal:AbortSignal;maxCharacters:number;maxPassages:number};
 const fail=(code:string):never=>{throw Error(code);};

@@ -58,7 +58,8 @@ export class EditingIpc {
  async cancel(input:unknown){const v=copyEditData(input);object(v,['sessionId','requestId']);this.current(v.sessionId);identifier(v.requestId);this.requests.get(v.requestId)?.abort();}
  async receipt(input:unknown){return queryEditingReceipt(copyEditData(input),this.host(null,this.abort.signal));}
  async reanchor(input:unknown){return this.request(input,['legacyId','anchorId','expectedInputDigest'],async(v,s,signal)=>{identifier(v.legacyId);identifier(v.anchorId);identifier(v.expectedInputDigest);await this.sources.reanchorLegacy(s.context,v.legacyId,v.anchorId,v.expectedInputDigest,signal);return this.view(s.sessionId);});}
- hasEditingState(documentId:string){const doc=this.workspace.verified(documentId);return this.edits.view({documentId,fingerprint:doc.fingerprint,revision:0},this.edits.actor).hasEditingState;}
+ /** Legacy export only knows legacy annotations; it is unsafe once the user has edited marks, not merely because viewing converted them. */
+ hasUserEdits(documentId:string){const doc=this.workspace.verified(documentId);return this.edits.hasUserEdits({documentId,fingerprint:doc.fingerprint});}
  close(){this.abort.abort();this.session=null;}
 }
 export function registerEditingIpc(handle:(name:string,fn:(input:any)=>unknown)=>void,service:EditingIpc|null){

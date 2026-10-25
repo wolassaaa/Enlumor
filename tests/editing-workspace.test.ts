@@ -47,7 +47,7 @@ describe('production Workspace schema5 and editing transactions',()=>{
     expect(b.edits.readSnapshot(f.context).versions[id]).toBe(1); expect(b.workspace.db.prepare('SELECT payload FROM edit_receipts').get()!.payload).toBe(receipt);
     expect(await runEditingCommand(input,editingHost(b.edits,{...f.context,revision:2}),signal())).toEqual(first);
     const undone=committed(await runEditingCommand({context:f.context,requestId:'undo',command:{type:'undo_edit',operationId:first.operationId}},editingHost(b.edits,f.context),signal()));
-    expect(undone.versions[id]).toBe(2); expect(b.edits.view(f.context,b.edits.actor).hasEditingState).toBe(true);
+    expect(undone.versions[id]).toBe(2); expect(b.edits.view(f.context,b.edits.actor).hasEditingState).toBe(true); expect(b.edits.hasUserEdits(f.context)).toBe(true);
     expect(b.edits.history(f.context,b.edits.actor)).toEqual({undoIds:[],redoIds:[first.operationId]});
     const redone=committed(await runEditingCommand({context:f.context,requestId:'redo',command:{type:'redo_edit',operationId:first.operationId}},editingHost(b.edits,f.context),signal())); expect(redone.versions[id]).toBe(3);
     b.workspace.close(); copyFileSync(a.backupPath!,f.file+'.restored'); const restored=new Workspace(f.file+'.restored'); expect(version(restored.db)).toBe(4); expect(restored.annotations(f.doc.id)).toEqual([]); restored.close(); expect(hash(a.backupPath!)).toBe(backupHash);

@@ -1,4 +1,5 @@
 """One JSON request per process; never writes the source PDF."""
+import base64
 import hashlib
 import json
 import math
@@ -57,6 +58,23 @@ def editing_page(source, fingerprint, page_index):
     if len(json.dumps(result,ensure_ascii=True).encode('utf-8'))>1024*1024-64: raise ValueError('PDF_RESPONSE_TOO_LARGE')
     return result
 
+def render_page(source, fingerprint, page_index, max_side=1280):
+    """One page as a JPEG the reading companion can look at: figures, tables and formulas the text layer loses."""
+    if type(page_index) is not int or page_index < 0 or type(max_side) is not int or not 256 <= max_side <= 2048: raise ValueError('SURFING_INVALID_INPUT')
+    editing_source(source,fingerprint)
+    with fitz.open(source) as doc:
+        if doc.needs_pass: raise ValueError('PASSWORD_REQUIRED')
+        if page_index >= len(doc): raise ValueError('SURFING_INVALID_INPUT')
+        page=doc[page_index];side=max(page.rect.width,page.rect.height)
+        # Stay well under the 1 MB worker response bound: shrink quality, then size, until the image fits.
+        for limit,quality in ((max_side,72),(max_side,55),(int(max_side*0.8),55),(int(max_side*0.65),50)):
+            scale=limit/side;data=page.get_pixmap(matrix=fitz.Matrix(scale,scale),alpha=False).tobytes('jpeg',jpg_quality=quality)
+            encoded=base64.b64encode(data).decode('ascii')
+            if len(encoded)<=900000: break
+        else: raise ValueError('PDF_RESPONSE_TOO_LARGE')
+    editing_source(source,fingerprint)
+    return {'pageIndex':page_index,'mediaType':'image/jpeg','data':encoded}
+
 def surfing_document(source, fingerprint, max_characters=160000, max_passages=5000, max_pages=2000):
     """Trusted, bounded text/anchor snapshot. No OCR or image-understanding claim."""
     for value, maximum in ((max_characters,160000),(max_passages,5000),(max_pages,2000)):
@@ -76,15 +94,17 @@ def surfing_document(source, fingerprint, max_characters=160000, max_passages=50
                 for li,line in enumerate(block['lines']):
                     quote=''.join(span['text'] for span in line['spans'])
                     if not quote.strip(): continue
-                    if len(quote)>1200: raise ValueError('SURFING_CONTEXT_TOO_LARGE')
-                    characters+=len(quote);passages+=1
-                    if characters>max_characters or passages>max_passages: raise ValueError('SURFING_CONTEXT_TOO_LARGE')
+                    # One unusable line (an arXiv side stamp, a rotated axis label, a run-on table row)
+                    # is left out of the snapshot instead of failing the whole document.
+                    if len(quote)>1200: continue
                     q=fitz.recover_line_quad(line)
-                    if not q.is_convex or q.is_empty or not page.rect.contains(q.rect): raise ValueError('SURFING_SOURCE_INVALID')
+                    if not q.is_convex or q.is_empty or not page.rect.contains(q.rect): continue
                     points=[point*inverse for point in (q.ul,q.ur,q.ll,q.lr)]
                     quad=[n for point in points for n in (point.x,point.y)]
                     # The current reader locator requires conventional horizontal quads.
-                    if any(not math.isfinite(n) or abs(n)>1e7 for n in quad) or quad[2]<=quad[0] or quad[1]<=quad[5]: raise ValueError('SURFING_UNSUPPORTED_GEOMETRY')
+                    if any(not math.isfinite(n) or abs(n)>1e7 for n in quad) or quad[2]<=quad[0] or quad[1]<=quad[5]: continue
+                    characters+=len(quote);passages+=1
+                    if characters>max_characters or passages>max_passages: raise ValueError('SURFING_CONTEXT_TOO_LARGE')
                     blocks.append({'id':f'surf-{index}-{bi}-{li}','quote':quote,'quads':[quad]})
             pages.append({'pageIndex':index,'passages':blocks})
     editing_source(source,fingerprint)
@@ -219,6 +239,7 @@ if __name__ == '__main__':
         elif request['operation'] == 'editing-page': result = editing_page(request['source'],request['fingerprint'],request['pageIndex'])
         elif request['operation'] == 'verify-block': result = verify_block(request['source'], request['fingerprint'], request['block'])
         elif request['operation'] == 'surfing-document': result = surfing_document(request['source'], request['fingerprint'])
+        elif request['operation'] == 'render-page': result = render_page(request['source'], request['fingerprint'], request['pageIndex'])
         elif request['operation'] == 'export': result = export_pdf(request['source'], request['target'], request['fingerprint'], request['annotations'])
         else: raise ValueError('INVALID_OPERATION')
         print(json.dumps({'ok': True, 'value': result}, ensure_ascii=True))

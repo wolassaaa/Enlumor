@@ -2,7 +2,7 @@ import sys,tempfile,unittest,hashlib,json,subprocess
 from pathlib import Path
 import pymupdf as fitz
 sys.path.insert(0,str(Path(__file__).resolve().parents[2]/'python'))
-from export_pdf import surfing_document,verify_block
+from export_pdf import surfing_document,verify_block,render_page
 class SurfingSourceTests(unittest.TestCase):
     def source(self,root,rotation=0,empty_second=True):
         path=Path(root)/'paper.pdf';doc=fitz.open();p=doc.new_page(width=300,height=400);p.insert_text((60,90),'A real paper passage');p.set_cropbox(fitz.Rect(20,30,280,370));p.set_rotation(rotation)
@@ -30,6 +30,17 @@ class SurfingSourceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/'two.pdf';d=fitz.open();p=d.new_page();p.insert_text((60,90),'First line');p.insert_text((60,120),'Second line');d.save(path);d.close();f=hashlib.sha256(path.read_bytes()).hexdigest()
             with self.assertRaisesRegex(ValueError,'SURFING_CONTEXT_TOO_LARGE'):surfing_document(str(path),f,max_passages=1)
+    def test_unusable_lines_are_skipped_not_fatal(self):
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'stamp.pdf';d=fitz.open();p=d.new_page();p.insert_text((60,90),'Body text');p.insert_text((20,700),'arXiv:2410.00001v1 [cs.CL]',rotate=90);d.save(path);d.close();f=hashlib.sha256(path.read_bytes()).hexdigest()
+            result=surfing_document(str(path),f);self.assertEqual([b['quote'] for b in result['pages'][0]['passages']],['Body text'])
+    def test_render_page_is_a_bounded_jpeg_of_the_unchanged_original(self):
+        import base64
+        with tempfile.TemporaryDirectory() as root:
+            p,f=self.source(root);image=render_page(str(p),f,0)
+            self.assertEqual(image['mediaType'],'image/jpeg');raw=base64.b64decode(image['data']);self.assertEqual(raw[:3],b'\xff\xd8\xff');self.assertLess(len(image['data']),900001)
+            with self.assertRaisesRegex(ValueError,'SOURCE_CHANGED'):render_page(str(p),'0'*64,0)
+            with self.assertRaisesRegex(ValueError,'SURFING_INVALID_INPUT'):render_page(str(p),f,5)
     def test_invalid_limits(self):
         with tempfile.TemporaryDirectory() as root:
             p,f=self.source(root)

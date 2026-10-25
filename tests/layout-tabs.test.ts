@@ -2,9 +2,10 @@ import { it, expect } from 'vitest';
 import { DatabaseSync } from 'node:sqlite';
 import { mkdtempSync, writeFileSync, existsSync } from 'node:fs';
 import path from 'node:path';
+import { tmpdir } from 'node:os';
 import type { LayoutPreferences } from '../src/shared/model';
 import { Workspace } from '../src/main/workspace';
-const setup=()=>{const dir=mkdtempSync(path.resolve('.cache/layout-test-'));return {dir,file:path.join(dir,'state.sqlite')};};
+const setup=()=>{const dir=mkdtempSync(path.join(tmpdir(),'enlumor-layout-test-'));return {dir,file:path.join(dir,'state.sqlite')};};
 it('layout preferences persist in SQLite and reject malformed values without changing saved state',()=>{
  const {file}=setup();const w=new Workspace(file);
  try{const layout={left:280,right:310,spacing:24 as const};w.saveLayout(layout);expect(w.layout()).toEqual(layout);

@@ -1,6 +1,7 @@
 import {describe,it,expect} from 'vitest';
 import {SurfingRequests,type SurfingRequestPorts} from '../src/main/surfing-requests';
 import type {SurfingContext} from '../src/shared/surfing-context';
+import {SURFING_READER_LANGUAGE} from '../src/shared/surfing-route';
 const context={documentId:'doc',fingerprint:'hash',revision:1};
 const snapshot:SurfingContext={context,pageCount:1,passages:[{id:'p0',documentId:'doc',fingerprint:'hash',pageIndex:0,quote:'original paper',quads:[[0,1,1,1,0,0,1,0]]}],emptyPages:[],characterCount:14,coverage:'all-pages-have-text'};
 const route={stops:[{title:'Research problem',reason:'Understand the aim',passageIds:['p0']}]};
@@ -11,6 +12,8 @@ describe('bounded Surfing route request service',()=>{
  it.each([null,{}, { ...input(),consent:false },{...input(),prompt:'arbitrary'},{...input(),requestId:'../path'}])('rejects malformed or unconfirmed input %#',async x=>{const h=setup();await expect(h.service.start(x as any)).rejects.toThrow('SURFING_INVALID_REQUEST');expect(h.calls).toEqual([]);});
  it('does not send if source context changes during loading',async()=>{const h=setup();h.ports.load=async()=>{h.stale();return structuredClone(snapshot);};await h.service.start(input());expect(h.calls).toEqual([]);expect(h.events).toEqual([]);});
  it('rejects a snapshot bound to another document',async()=>{const h=setup();h.ports.load=async()=>({...structuredClone(snapshot),context:{...context,documentId:'other'}});await h.service.start(input());expect(h.calls).toEqual([]);expect(h.events[0].code).toBe('SURFING_SOURCE_INVALID');});
+ it('a snapshot at full extraction capacity reaches the token budget instead of a fixed character cap',async()=>{const h=setup();const passages=Array.from({length:5000},(_,i)=>({...snapshot.passages[0],id:`surf-${i}-0-0`,quote:'x'.repeat(32)}));h.ports.load=async()=>({...structuredClone(snapshot),passages,characterCount:160000});h.ports.profile=()=>({profile:{id:'profile',name:'test',model:'test-model',protocol:'openai-chat',endpoint:'http://localhost/v1',maxOutputTokens:1000,timeoutMs:10000,parameters:{}},contextWindowTokens:1_000_000});await h.service.start(input());expect(h.calls).toHaveLength(1);expect(h.calls[0].prompt.user.length).toBeGreaterThan(200000);});
+ it('a service-reported context overflow reaches the panel with the stated window, not a generic failure',async()=>{const h=setup();h.ports.generate=async()=>{throw Error('AI_CONTEXT_OVERFLOW_65536');};await h.service.start(input());expect(h.events.at(-1)).toEqual({requestId:'req-one',type:'error',code:'AI_CONTEXT_OVERFLOW_65536'});});
  it('requires a known tokenizer measurement before sending',async()=>{const h=setup();h.ports.measureInputTokens=()=>null;await h.service.start(input());expect(h.calls).toEqual([]);expect(h.events[0].code).toBe('SURFING_CAPACITY_UNKNOWN');});
  it('includes configured output reserve in context budget',async()=>{const h=setup();h.ports.measureInputTokens=()=>4500;await h.service.start(input());expect(h.calls).toEqual([]);expect(h.events[0].code).toBe('SURFING_CONTEXT_TOO_LARGE');});
  it('rejects unknown configured model capacity',async()=>{const h=setup();const get=h.ports.profile;h.ports.profile=id=>({...get(id),contextWindowTokens:0});await h.service.start(input());expect(h.calls).toEqual([]);expect(h.events[0].code).toBe('SURFING_CAPACITY_UNKNOWN');});
@@ -38,6 +41,18 @@ it('cancels while token counter is pending without generating',async()=>{
 it('explains a selected validated stop with full source, never arbitrary renderer prompts',async()=>{
  const h=setup();await h.service.start(input());h.ports.generate=async(_p,prompt)=>{expect(JSON.parse(prompt.user).passages[0].text).toBe('original paper');return JSON.stringify({text:'The paper explains the problem.',passageIds:['p0']});};
  await h.service.explain({...input(),requestId:'explain-one',stopIndex:0});expect(h.events.at(-1)).toEqual({requestId:'explain-one',type:'explanation',stopIndex:0,explanation:{text:'The paper explains the problem.',passageIds:['p0']}});
+});
+it('route, stop explanation and whole-paper answers all follow the reader language, not the paper language',async()=>{
+ const h=setup();const systems:string[]=[];await h.service.start(input());systems.push(h.calls[0].prompt.system);
+ h.ports.generate=async(_p,prompt)=>{systems.push(prompt.system);return JSON.stringify({text:'解释',passageIds:['p0']});};
+ await h.service.explain({...input(),requestId:'explain-lang',stopIndex:0});await h.service.ask({...input(),requestId:'ask-lang',question:'讲讲摘要',pageIndex:0});
+ expect(systems).toHaveLength(3);for(const s of systems){expect(s).toContain(SURFING_READER_LANGUAGE);expect(s).not.toMatch(/language of the paper/i);}
+});
+it('explanation depth is the reader\'s choice and is validated',async()=>{
+ const h=setup();await h.service.start(input());const systems:string[]=[];h.ports.generate=async(_p,prompt)=>{systems.push(prompt.system);return JSON.stringify({text:'解释',passageIds:['p0']});};
+ await h.service.explain({...input(),requestId:'deep',stopIndex:0,depth:'detailed'});await h.service.explain({...input(),requestId:'default',stopIndex:0});
+ expect(systems[0]).toContain('2 to 4 paragraphs');expect(systems[1]).toContain('one short paragraph');
+ await expect(h.service.explain({...input(),stopIndex:0,depth:'endless'} as any)).rejects.toThrow('SURFING_INVALID_REQUEST');
 });
 it('refuses explanation before a validated route exists',async()=>{const h=setup();await expect(h.service.explain({...input(),stopIndex:0})).rejects.toThrow('SURFING_ROUTE_REQUIRED');expect(h.calls).toEqual([]);});
 it('rejects an explanation with invented evidence',async()=>{const h=setup();await h.service.start(input());h.ports.generate=async()=>JSON.stringify({text:'answer',passageIds:['fake']});await h.service.explain({...input(),requestId:'explain-one',stopIndex:0});expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});});

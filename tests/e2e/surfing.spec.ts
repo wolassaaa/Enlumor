@@ -47,7 +47,7 @@ for(const mode of ['cancel','failure'] as const)test(`Surfing route regeneration
 test('Surfing restores committed progress after restart without API or automatic navigation',async()=>{
  let calls=0;const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const data=JSON.parse(JSON.parse(raw).messages[1].content);calls++;const id=data.passages.find((p:any)=>p.pageNumber===2).id;sendMock(res,data.selectedStop?{text:'Persisted local explanation',passageIds:[id]}:{stops:[{title:'Saved entry',reason:'Keep the exploration',passageIds:[id]}]});});await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const endpoint='http://127.0.0.1:'+(server.address() as any).port+'/v1';let {app,page}=await launchAndPrepareSurfing(endpoint,'persistence');
  try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await page.getByRole('button',{name:'Saved entry',exact:true}).click();await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Persisted local explanation');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');expect(calls).toBe(2);await page.waitForTimeout(350);await app.evaluate(({app})=>app.exit(0));
- app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,'persistence')],env:{...process.env,ENLUMOR_PYTHON:python}});page=await app.firstWindow();await expect(page.locator('.textLayer span').first()).toBeVisible();await page.getByLabel('跳转页码',{exact:true}).fill('1');await page.getByLabel('跳转页码',{exact:true}).press('Enter');await page.getByRole('button',{name:'打开 Surfing',exact:true}).click();await page.getByRole('button',{name:'准备本地全文',exact:true}).click();await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已暂停');await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Persisted local explanation');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('1');await expect(page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true})).not.toBeChecked();await page.waitForTimeout(300);expect(calls).toBe(2);
+ app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,'persistence')],env:{...process.env,ENLUMOR_PYTHON:python}});page=await app.firstWindow();await expect(page.locator('.textLayer span').first()).toBeVisible();await page.getByLabel('跳转页码',{exact:true}).fill('1');await page.getByLabel('跳转页码',{exact:true}).press('Enter');await page.getByRole('button',{name:'打开 Surfing',exact:true}).click();/* opening prepares the local text and restores saved progress by itself */await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已暂停');await expect(page.getByLabel('Surfing 解释',{exact:true})).toContainText('Persisted local explanation');await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('1');await expect(page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true})).not.toBeChecked();await page.waitForTimeout(300);expect(calls).toBe(2);
  await page.getByRole('button',{name:'Saved entry',exact:true}).click();await expect(page.getByLabel('跳转页码',{exact:true})).toHaveValue('2');expect(calls).toBe(2);await page.locator('.surfing-setup summary').click();await page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true}).check();await page.getByRole('button',{name:'解释这个切入点',exact:true}).click();await expect.poll(()=>calls).toBe(3);await expect(page.getByLabel('Surfing 保存状态',{exact:true})).toHaveText('已保存');
  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
 });
@@ -110,5 +110,41 @@ test('Surfing whole-paper conversation answers abstract from title, remembers fo
   await page.getByLabel('Surfing 随时提问',{exact:true}).fill('它与RNN有什么不同');await page.getByRole('button',{name:'发送问题',exact:true}).click();await expect(page.getByLabel('Surfing 对话',{exact:true})).toContainText('关联上一轮摘要');expect(seen[1].conversation[0].question).toBe('给我讲讲这个abstract');expect(seen[1].pageNumber).toBe(2);
   await page.getByLabel('Surfing 随时提问',{exact:true}).fill('继续讲');await page.getByRole('button',{name:'发送问题',exact:true}).click();await expect.poll(()=>seen.length).toBe(3);await page.getByRole('button',{name:'暂停 Surfing',exact:true}).click();release();await page.waitForTimeout(200);await expect(page.getByLabel('Surfing 对话',{exact:true})).not.toContainText('迟到的解释');
   mkdirSync('evidence/surfing-repair-2026-10-24',{recursive:true});await page.screenshot({path:'evidence/surfing-repair-2026-10-24/conversation.png'});
+ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+});
+
+test('Surfing works with any configured model and lowers the window when the service reports an overflow',async()=>{
+ let calls=0;const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;calls++;if(calls===1){res.statusCode=400;res.setHeader('content-type','application/json');res.end(JSON.stringify({error:{message:"This model's maximum context length is 65536 tokens.",code:'context_length_exceeded'}}));return;}const data=JSON.parse(JSON.parse(raw).messages[1].content);sendMock(res,{stops:[{title:'Relay entry',reason:'Any model works',passageIds:[data.passages[0].id]}]});});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','any-model','anthropic/claude-sonnet-4');
+ try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByRole('alert')).toContainText('已将窗口调整为 65536 tokens');
+ await expect(page.getByLabel('Surfing 模型上下文窗口（tokens）',{exact:true})).toHaveValue('65536');await expect.poll(async()=>((await page.evaluate(()=>window.enlumor.listAiProfiles())) as any).value[0].contextWindowTokens).toBe(65536);
+ await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByRole('button',{name:'Relay entry',exact:true})).toBeVisible();expect(calls).toBe(2);
+ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+});
+
+test('a vision model can look at a rendered page before answering',async()=>{
+ const bodies:any[]=[];const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const body=JSON.parse(raw);bodies.push(body);const data=JSON.parse(body.messages[1].content);
+  sendMock(res,body.messages.length===2?{actions:[{type:'view_page',pageNumber:2}]}:{text:'Seen page two',passageIds:[data.passages.find((p:any)=>p.pageNumber===2).id]});});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','vision','gpt-4o');
+ try{await page.getByLabel('Surfing 随时提问',{exact:true}).fill('What is on page two?');await page.getByRole('button',{name:'发送问题',exact:true}).click();
+ await expect(page.locator('.surfing-response').first()).toContainText('Seen page two');expect(bodies).toHaveLength(2);
+ const image=bodies[1].messages[3].content.find((p:any)=>p.type==='image_url').image_url.url;expect(image.startsWith('data:image/jpeg;base64,/9j/')).toBe(true);expect(bodies[0].messages[0].content).toContain('view_page');
+ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+});
+
+test('guided reading explains, dwells, prefetches the next stop, advances, and stops on takeover',async()=>{
+ const asked:number[]=[];const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const body=JSON.parse(raw),data=JSON.parse(body.messages[1].content),ids=data.passages.map((p:any)=>p.id);
+  if(data.selectedStop){const i=['Stop one','Stop two','Stop three'].indexOf(data.selectedStop.title);asked.push(i);sendMock(res,{text:'Explained '+(i+1),passageIds:[ids[i%ids.length]]});return;}
+  sendMock(res,{stops:['Stop one','Stop two','Stop three'].map((title,i)=>({title,reason:'r',passageIds:[ids[i%ids.length]]}))});});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','guided');
+ try{await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByRole('button',{name:'Stop one',exact:true})).toBeVisible();
+ await page.getByLabel('每处停留秒数',{exact:true}).fill('5');await page.getByLabel('解释深度',{exact:true}).selectOption('concise');
+ await page.getByRole('button',{name:'开始带读',exact:true}).click();
+ await expect(page.locator('.surfing-stops li.is-current')).toContainText('Explained 1');await expect.poll(()=>asked).toEqual([0,1]);
+ await expect(page.getByRole('timer')).toContainText('秒后到下一处');
+ await expect(page.locator('.surfing-stops li.is-current')).toContainText('Explained 2',{timeout:9000});
+ const viewer=page.locator('#viewerContainer');const box=(await viewer.boundingBox())!;await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.wheel(0,120);
+ await expect(page.getByRole('button',{name:'继续带读',exact:true})).toBeVisible();await page.waitForTimeout(6500);
+ await expect(page.locator('.surfing-stops li.is-current')).toContainText('Stop two');expect(asked.length).toBeLessThanOrEqual(3);
  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
 });

@@ -8,7 +8,7 @@ import{CruiseSessions}from'./cruise-sessions';
 import{ExplanationRequests}from'./cruise-requests';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, safeStorage } from 'electron';
 import {AiProfiles} from './ai-profiles';
-import {generateText,listAiModels} from './ai-client';
+import {generateText,listAiModelInfo,listAiModels} from './ai-client';
 import { readFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -71,7 +71,7 @@ app.whenReady().then(async () => {
     }
   });
   registerEditingIpc(handle,editingService);
-  surfingRuntime=new SurfingRuntime({verified:id=>workspace.verified(id),extract:(request,signal)=>runPdfTask(request,signal),profile:id=>aiProfiles.resolve(id),profileView:id=>aiProfiles.list().find(p=>p.id===id)||null,sessions:new SurfingSessions(workspace),measureInputTokens:(profile,prompt,signal)=>measureSurfingInputTokens(profile,prompt,signal,path.join(__dirname,'surfing-token-worker.cjs')),generate:(profile,prompt,options)=>generateText(profile,prompt,{...options,stream:true,fetch:(input,init)=>net.fetch(String(input),init)}),emit:event=>{if(!window.isDestroyed())window.webContents.send('surfing:text',event);}});
+  surfingRuntime=new SurfingRuntime({verified:id=>workspace.verified(id),extract:(request,signal)=>runPdfTask(request,signal),renderPage:(request,signal)=>runPdfTask(request,signal),profile:id=>aiProfiles.resolve(id),profileView:id=>aiProfiles.list().find(p=>p.id===id)||null,sessions:new SurfingSessions(workspace),measureInputTokens:(profile,prompt,signal)=>measureSurfingInputTokens(profile,prompt,signal,path.join(__dirname,'surfing-token-worker.cjs')),generate:(profile,prompt,options)=>generateText(profile,prompt,{...options,stream:true,fetch:(input,init)=>net.fetch(String(input),init)}),emit:event=>{if(!window.isDestroyed())window.webContents.send('surfing:text',event);}});
   handle('surfing:progress:get',context=>surfingRuntime!.getSavedProgress(context));
   handle('surfing:progress:save',input=>surfingRuntime!.saveProgress(input));
   handle('surfing:prepare',id=>surfingRuntime!.prepare(id));
@@ -95,6 +95,7 @@ app.whenReady().then(async () => {
   handle('ai:profiles:list',()=>aiProfiles.list());
   handle('ai:profiles:save',input=>aiProfiles.save(input));
   handle('ai:profiles:delete',id=>aiProfiles.delete(id));
+  handle('ai:models:discover',input=>listAiModelInfo(aiProfiles.discoveryProfile(input?.draft,input?.savedId),{fetch:(input,init)=>net.fetch(String(input),init)}));
   handle('ai:profiles:models',id=>listAiModels(aiProfiles.resolve(id),{fetch:(input,init)=>net.fetch(String(input),init)}));
   handle('ai:profiles:test',async id=>{
     if(aiFlight)throw new Error('AI_BUSY');
@@ -118,7 +119,7 @@ app.whenReady().then(async () => {
   handle('reading:save', (state: ReadingState) => workspace.saveReading(state));
   handle('document:export', async id => {
     const doc = workspace.verified(id);
-    if(editingService?.hasEditingState(id))throw Error('EDITING_EXPORT_UNAVAILABLE: 新标识导出尚未接入');
+    if(editingService?.hasUserEdits(id))throw Error('EDITING_EXPORT_UNAVAILABLE: 新标识导出尚未接入');
     const target = await dialog.showSaveDialog(window, { title: '导出批注 PDF（原文件保持不变）', defaultPath: path.join(path.dirname(doc.path), `${path.basename(doc.path, '.pdf')}-enlumor.pdf`), filters: [{ name: 'PDF', extensions: ['pdf'] }] });
     if (target.canceled || !target.filePath) return { cancelled: true };
     const result = await runPdfTask<{ path: string; annotationCount: number }>({ operation: 'export', source: doc.path, target: target.filePath, fingerprint: doc.fingerprint, annotations: workspace.annotations(id) });
@@ -130,7 +131,16 @@ app.whenReady().then(async () => {
     if (waitingClose) return;
     waitingClose = true;
     window.webContents.send('reading:flush');
-    closeTimer = setTimeout(() => { waitingClose = false; dialog.showMessageBox(window, { type: 'error', message: '尚未确认保存，请重试保存后关闭。' }); }, 10000);
+    closeTimer = setTimeout(async () => {
+      waitingClose = false;
+      const { response } = await dialog.showMessageBox(window, { type: 'error', message: '尚未确认保存，请重试保存后关闭。', buttons: ['保持打开', '不保存并关闭'], defaultId: 0, cancelId: 0 });
+      if (response === 1) { closeReady = true; window.close(); }
+    }, 10000);
+  });
+  // A dead renderer can never acknowledge the flush; without this the window could not be closed.
+  window.webContents.on('render-process-gone', () => {
+    closeReady = true;
+    if (waitingClose) { clearTimeout(closeTimer); waitingClose = false; window.close(); }
   });
   ipcMain.on('reading:flushed', (event, success) => {
     if (event.sender !== window.webContents || event.senderFrame !== window.webContents.mainFrame || !waitingClose) return;

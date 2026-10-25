@@ -12,7 +12,7 @@ import type { VerifiedAnchor } from '../src/shared/editing-commands';
 import { editingFixture, editingHost } from './helpers/editing-fixtures';
 import { runEditingCommand } from '../src/main/editing-executor';
 const fixtures: ReturnType<typeof editingFixture>[] = [], workspaces:Workspace[]=[];
-const python=resolve('.venv/Scripts/python.exe');
+const python=process.env.ENLUMOR_PYTHON||resolve('.venv',process.platform==='win32'?'Scripts/python.exe':'bin/python');
 const signal=()=>new AbortController().signal;
 function run<T>(request:object,abort?:AbortSignal):Promise<T> {return new Promise((res,rej)=>{
   const child=spawn(python,['python/export_pdf.py'],{windowsHide:true});let out='';child.stdout.on('data',d=>out+=d);child.on('error',rej);child.on('close',()=>{try{const r=JSON.parse(out);if(!r.ok)throw Error(r.error);res(r.value);}catch(e){rej(e);}});abort?.addEventListener('abort',()=>{child.kill();rej(Error('PDF_CANCELED'));},{once:true});child.stdin.end(JSON.stringify(request));
@@ -78,7 +78,7 @@ describe('trusted source and atomic legacy conversion',()=>{
   it('converts all text/path/note types with exact old geometry and stable user without parsing free-only scanned pages',async()=>{
     const f=await fixture();for(const type of ['highlight','underline','strikeout','note'] as const)legacy(f,type,{type});
     for(const type of ['line','arrow','ink'] as const)legacy(f,type,{type,quote:'',quads:[[30,60,90,60,30,40,90,40]],points:type==='ink'?[35,45,50,55,85,45]:[35,45,85,55]});
-    await f.service.convertLegacyPage(f.context,0,signal());expect(f.edits.readSnapshot(f.context).marks).toHaveLength(7);expect(f.edits.legacy(f.doc.id)).toEqual([]);
+    await f.service.convertLegacyPage(f.context,0,signal());expect(f.edits.readSnapshot(f.context).marks).toHaveLength(7);expect(f.edits.legacy(f.doc.id)).toEqual([]);expect(f.edits.hasUserEdits(f.context)).toBe(false);
     const scan=await fixture(0,true);legacy(scan,'free-note',{type:'note',quote:'',quads:[[30,60,50,60,30,40,50,40]]});await scan.service.convertLegacyPage(scan.context,0,signal());expect(scan.edits.readSnapshot(scan.context).marks).toHaveLength(1);expect(scan.calls.filter((r:any)=>r.operation==='editing-page')).toEqual([]);
   });
   it('import mapping failure rolls back prepared source anchor, mark and version together',async()=>{
