@@ -46,7 +46,7 @@
     ],
     "win": {
       "target": "portable",
-      "icon": "build/icon.ico"
+      "icon": "public/enlumor-icon.ico"
     },
     "artifactName": "Enlumor-${version}-win.${ext}",
     "electronDist": "node_modules/electron/dist"
