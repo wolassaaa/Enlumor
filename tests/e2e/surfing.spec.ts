@@ -121,3 +121,13 @@ test('Surfing works with any configured model and lowers the window when the ser
  await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();await expect(page.getByRole('button',{name:'Relay entry',exact:true})).toBeVisible();expect(calls).toBe(2);
  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
 });
+
+test('a vision model can look at a rendered page before answering',async()=>{
+ const bodies:any[]=[];const server=createServer(async(req,res)=>{let raw='';for await(const c of req)raw+=c;const body=JSON.parse(raw);bodies.push(body);const data=JSON.parse(body.messages[1].content);
+  sendMock(res,body.messages.length===2?{actions:[{type:'view_page',pageNumber:2}]}:{text:'Seen page two',passageIds:[data.passages.find((p:any)=>p.pageNumber===2).id]});});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const {app,page}=await launchAndPrepareSurfing('http://127.0.0.1:'+(server.address() as any).port+'/v1','vision','gpt-4o');
+ try{await page.getByLabel('Surfing 随时提问',{exact:true}).fill('What is on page two?');await page.getByRole('button',{name:'发送问题',exact:true}).click();
+ await expect(page.locator('.surfing-response').first()).toContainText('Seen page two');expect(bodies).toHaveLength(2);
+ const image=bodies[1].messages[3].content.find((p:any)=>p.type==='image_url').image_url.url;expect(image.startsWith('data:image/jpeg;base64,/9j/')).toBe(true);expect(bodies[0].messages[0].content).toContain('view_page');
+ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+});

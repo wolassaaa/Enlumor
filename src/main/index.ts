@@ -71,7 +71,7 @@ app.whenReady().then(async () => {
     }
   });
   registerEditingIpc(handle,editingService);
-  surfingRuntime=new SurfingRuntime({verified:id=>workspace.verified(id),extract:(request,signal)=>runPdfTask(request,signal),profile:id=>aiProfiles.resolve(id),profileView:id=>aiProfiles.list().find(p=>p.id===id)||null,sessions:new SurfingSessions(workspace),measureInputTokens:(profile,prompt,signal)=>measureSurfingInputTokens(profile,prompt,signal,path.join(__dirname,'surfing-token-worker.cjs')),generate:(profile,prompt,options)=>generateText(profile,prompt,{...options,stream:true,fetch:(input,init)=>net.fetch(String(input),init)}),emit:event=>{if(!window.isDestroyed())window.webContents.send('surfing:text',event);}});
+  surfingRuntime=new SurfingRuntime({verified:id=>workspace.verified(id),extract:(request,signal)=>runPdfTask(request,signal),renderPage:(request,signal)=>runPdfTask(request,signal),profile:id=>aiProfiles.resolve(id),profileView:id=>aiProfiles.list().find(p=>p.id===id)||null,sessions:new SurfingSessions(workspace),measureInputTokens:(profile,prompt,signal)=>measureSurfingInputTokens(profile,prompt,signal,path.join(__dirname,'surfing-token-worker.cjs')),generate:(profile,prompt,options)=>generateText(profile,prompt,{...options,stream:true,fetch:(input,init)=>net.fetch(String(input),init)}),emit:event=>{if(!window.isDestroyed())window.webContents.send('surfing:text',event);}});
   handle('surfing:progress:get',context=>surfingRuntime!.getSavedProgress(context));
   handle('surfing:progress:save',input=>surfingRuntime!.saveProgress(input));
   handle('surfing:prepare',id=>surfingRuntime!.prepare(id));

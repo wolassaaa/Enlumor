@@ -10,7 +10,7 @@ export function measureSurfingInputTokens(profile:Model,prompt:AiPrompt,signal:A
   const abort=()=>finish(null,Error('SURFING_CANCELED'));
   signal.addEventListener('abort',abort,{once:true});
   try{
-   worker=new Worker(workerPath,{workerData:{profile:{protocol:profile.protocol,model:profile.model},prompt:{system:prompt.system,user:prompt.user}}});
+   worker=new Worker(workerPath,{workerData:{profile:{protocol:profile.protocol,model:profile.model},prompt:{system:prompt.system,user:prompt.user,turns:(prompt.turns||[]).map(t=>({role:t.role,text:t.text,images:(t.images||[]).map(()=>({mediaType:'image/jpeg',data:''}))}))}}});
    worker.once('message',value=>finish(Number.isSafeInteger(value)&&value>=0?value:null));
    worker.once('error',()=>finish(null));worker.once('exit',()=>finish(null));
    timer=setTimeout(()=>finish(null),10000);

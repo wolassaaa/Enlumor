@@ -1,3 +1,4 @@
+import {AI_MAX_IMAGE_BASE64,type AiImage} from '../shared/ai';
 import type {AiProfileInput,AiProfileView} from '../shared/ai';
 import type {CommandContext} from '../shared/document-commands';
 import type {SurfingContext} from '../shared/surfing-context';
@@ -9,13 +10,13 @@ export type SurfingSubmission<T>={request:T;contextWindowTokens:number};
 export type SurfingSaveInput={context:CommandContext;routeRevision:number;selected:number|null};
 export type SurfingRestoredProgress={session:SurfingSession;routeRevision:number};
 export type SurfingRuntimeEvent=Exclude<SurfingRouteEvent,{type:'route'}>|(Extract<SurfingRouteEvent,{type:'route'}>&{routeRevision:number});
-export type SurfingRuntimePorts=Pick<SurfingSourcePorts,'verified'|'extract'>&Pick<SurfingRequestPorts,'generate'|'measureInputTokens'>&{profile:(id:string)=>AiProfileInput;profileView?:(id:string)=>AiProfileView|AiProfileInput|null;sessions?:{get:(documentId:string)=>SurfingSession|null;save:(session:SurfingSession)=>void};emit:(event:SurfingRuntimeEvent)=>void};
+export type SurfingRuntimePorts=Pick<SurfingSourcePorts,'verified'|'extract'>&Pick<SurfingRequestPorts,'generate'|'measureInputTokens'>&{renderPage?:(request:{operation:'render-page';source:string;fingerprint:string;pageIndex:number},signal:AbortSignal)=>Promise<unknown>;profile:(id:string)=>AiProfileInput;profileView?:(id:string)=>AiProfileView|AiProfileInput|null;sessions?:{get:(documentId:string)=>SurfingSession|null;save:(session:SurfingSession)=>void};emit:(event:SurfingRuntimeEvent)=>void};
 const same=(a:CommandContext|null,b:CommandContext|null)=>!!a&&!!b&&a.documentId===b.documentId&&a.fingerprint===b.fingerprint&&a.revision===b.revision;
 export class SurfingRuntime{
  private context:CommandContext|null=null;private snapshot:SurfingContext|null=null;private revision=0;private preparation?:AbortController;private budgets=new Map<string,number>();private requests:SurfingRequests;
  private progress:SurfingSession|null=null;private routeRevision=0;private activeSource:SurfingSession['source']|null=null;
  constructor(private ports:SurfingRuntimePorts){
-  this.requests=new SurfingRequests({getContext:()=>this.getContext(),load:async context=>{if(!this.snapshot||!same(this.context,context))throw Error('SURFING_SOURCE_INVALID');const d=this.ports.verified(context.documentId);if(d.fingerprint!==context.fingerprint||d.pageCount!==this.snapshot.pageCount)throw Error('SURFING_SOURCE_INVALID');return structuredClone(this.snapshot);},profile:id=>{const p=this.ports.profile(id);this.activeSource={profileId:id,name:p.name,model:p.model,signature:surfingProfileSignature(p)};return{profile:p,contextWindowTokens:this.budgets.get(id)||0};},measureInputTokens:(profile,prompt,signal)=>this.ports.measureInputTokens(profile,prompt,signal),generate:(profile,prompt,options)=>this.ports.generate(profile,prompt,options),emit:event=>this.emit(event)});
+  this.requests=new SurfingRequests({getContext:()=>this.getContext(),load:async context=>{if(!this.snapshot||!same(this.context,context))throw Error('SURFING_SOURCE_INVALID');const d=this.ports.verified(context.documentId);if(d.fingerprint!==context.fingerprint||d.pageCount!==this.snapshot.pageCount)throw Error('SURFING_SOURCE_INVALID');return structuredClone(this.snapshot);},profile:id=>{const p=this.ports.profile(id);this.activeSource={profileId:id,name:p.name,model:p.model,signature:surfingProfileSignature(p)};return{profile:p,contextWindowTokens:this.budgets.get(id)||0};},measureInputTokens:(profile,prompt,signal)=>this.ports.measureInputTokens(profile,prompt,signal),generate:(profile,prompt,options)=>this.ports.generate(profile,prompt,options),emit:event=>this.emit(event),...(this.ports.renderPage?{renderPage:(context,pageIndex,signal)=>this.renderPage(context,pageIndex,signal)}:{})});
  }
  private emit(event:SurfingRouteEvent){
   if(event.type==='route'){
@@ -25,6 +26,14 @@ export class SurfingRuntime{
   }
   if(event.type==='explanation'&&this.progress)this.progress.answers[String(event.stopIndex)]=structuredClone(event.explanation);
   this.ports.emit(event);
+ }
+ /** One page image of the verified original; the worker's reply is shape-checked before it can reach a model. */
+ private async renderPage(context:CommandContext,pageIndex:number,signal:AbortSignal):Promise<AiImage>{
+  if(!this.snapshot||!same(this.context,context)||!Number.isInteger(pageIndex)||pageIndex<0||pageIndex>=this.snapshot.pageCount)throw Error('SURFING_SOURCE_INVALID');
+  const d=this.ports.verified(context.documentId);if(d.fingerprint!==context.fingerprint)throw Error('SURFING_SOURCE_INVALID');
+  const raw:any=await this.ports.renderPage!({operation:'render-page',source:d.path,fingerprint:d.fingerprint,pageIndex},signal);
+  if(!raw||raw.pageIndex!==pageIndex||raw.mediaType!=='image/jpeg'||typeof raw.data!=='string'||!raw.data||raw.data.length>AI_MAX_IMAGE_BASE64||!/^[A-Za-z0-9+/]+=*$/.test(raw.data))throw Error('SURFING_SOURCE_INVALID');
+  return{mediaType:'image/jpeg',data:raw.data};
  }
  getContext(){return this.context?{...this.context}:null;}
  invalidate(){this.requests.reset();this.preparation?.abort();this.preparation=undefined;this.context=null;this.snapshot=null;this.progress=null;this.activeSource=null;this.budgets.clear();}

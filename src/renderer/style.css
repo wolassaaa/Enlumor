@@ -362,6 +362,7 @@ input[type=checkbox]{accent-color:var(--ink);width:14px;height:14px;vertical-ali
 .surfing-answer button{margin:0 8px 8px 0}
 .surfing-error{color:var(--danger);line-height:1.6;background:var(--danger-soft);padding:8px 10px;border-radius:var(--radius-s)}
 .surfing-actions [role=status]{color:var(--muted);font-size:12px}
+.surfing-step{font-size:12px;color:var(--accent);animation:appear .2s var(--ease)}
 .surfing-welcome{padding:16px 0 18px}
 .surfing-welcome strong{font:21px/1.4 var(--font-read);font-weight:400}
 .surfing-welcome p{font-size:12.5px;line-height:1.85;color:var(--muted)}
