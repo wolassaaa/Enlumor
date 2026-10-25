@@ -103,6 +103,8 @@ test('real model benchmark',async()=>{
  const pdf=benchmarkPdf(),manifest=validateBenchmarkManifest(JSON.parse(execFileSync(python,[tool,'read',pdf],{encoding:'utf8'})));
  const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+mkdtempSync(path.join(tmpdir(),'enlumor-acceptance-'))],env:{...process.env,ENLUMOR_PYTHON:python,ENLUMOR_ACCEPTANCE_KEY:''}});
  const page=await app.firstWindow();await page.setViewportSize({width:1440,height:900});
+ // Unattended runs: another window taking focus must not count as the reader leaving (the app pauses Surfing on blur).
+ await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].removeAllListeners('blur'));
  let vision=false;
  try{
   facts['接口']=new URL(endpoint).origin;facts['协议']=protocol;

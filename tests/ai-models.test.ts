@@ -98,3 +98,7 @@ it('the timeout bounds silence, not a long reply that keeps streaming (thinking 
  const endpoint=await server((_q,res)=>{res.setHeader('content-type','text/event-stream');let n=0;const tick=setInterval(()=>{n++;if(n<8){res.write('data: {"choices":[{"delta":{"reasoning_content":"…","content":null}}]}\n\n');return;}clearInterval(tick);res.end('data: {"choices":[{"delta":{"content":"done"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n');},60);});
  expect(await generateText({...profile(endpoint),timeoutMs:200},prompt)).toBe('done');
 });
+it('keep-alive comments from a queued request do not count as progress',async()=>{
+ const endpoint=await server((_q,res)=>{res.setHeader('content-type','text/event-stream');const tick=setInterval(()=>{if(res.destroyed){clearInterval(tick);return;}res.write(': keep-alive\n\n');},40);res.on('close',()=>clearInterval(tick));});
+ await expect(generateText({...profile(endpoint),timeoutMs:200},prompt)).rejects.toThrow('AI_TIMEOUT');
+});

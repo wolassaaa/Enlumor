@@ -19,13 +19,20 @@ function writeHistory(name:string,runs:Run[]){try{localStorage.setItem(historyKe
 export function BenchmarkPanel({document:doc,manifest,onExit,onSettings}:{document:OpenedDocument;manifest:BenchmarkManifest;onExit:()=>void;onSettings:()=>void}){
  const [profiles,setProfiles]=useState<AiProfileView[]>([]),[profileId,setProfileId]=useState(''),[consent,setConsent]=useState(false),[running,setRunning]=useState(false);
  const [results,setResults]=useState<Result[]>(()=>manifest.checks.map(c=>({id:c.id,title:c.title,status:'waiting',detail:''}))),[copied,setCopied]=useState(''),[history,setHistory]=useState(()=>readHistory(manifest.name));
- const pending=useRef(new Map<string,{resolve:(e:SurfingRuntimeEvent)=>void;steps:string[]}>()),context=useRef<SurfingContext['context']|null>(null),stopped=useRef(false),mounted=useRef(true);
+ const pending=useRef(new Map<string,{resolve:(e:SurfingRuntimeEvent)=>void;steps:string[]}>()),context=useRef<SurfingContext['context']|null>(null),stopped=useRef(false),halted=useRef<'stopped'|'background'|null>(null),mounted=useRef(true);
  const profile=profiles.find(p=>p.id===profileId);
  useEffect(()=>{mounted.current=true;
   void window.enlumor.listAiProfiles().then(r=>{const list=unwrap(r);if(!mounted.current)return;setProfiles(list);setProfileId(id=>id||list[0]?.id||'');}).catch(()=>{});
   const off=window.enlumor.onSurfingText(event=>{const p=pending.current.get(event.requestId);if(!p)return;if(event.type==='step'){p.steps.push(event.note);return;}pending.current.delete(event.requestId);p.resolve(event);});
-  return()=>{mounted.current=false;off();stopped.current=true;const c=context.current;if(c){void window.enlumor.cancelSurfing(c);void window.enlumor.deactivateSurfing(c);}};
+  // The app cancels model requests when its window goes to the background; the run stops instead of waiting forever.
+  const offBackground=window.enlumor.onAppBackground(()=>{if(pending.current.size)halt('background');});
+  return()=>{mounted.current=false;off();offBackground();stopped.current=true;const c=context.current;if(c){void window.enlumor.cancelSurfing(c);void window.enlumor.deactivateSurfing(c);}};
  },[]);
+ /** A cancelled request sends no final event, so whatever is still waiting is answered here and the run stops. */
+ function halt(why:'stopped'|'background'){
+  stopped.current=true;halted.current=why;
+  for(const [id,p] of pending.current){pending.current.delete(id);p.resolve({requestId:id,type:'error',code:'AI_CANCELLED'});}
+ }
  const update=(id:string,patch:Partial<Result>)=>{if(mounted.current)setResults(rs=>rs.map(r=>r.id===id?{...r,...patch}:r));};
  /** Sends one request and waits for its own final event (answer, route, explanation or error). */
  function request(send:(requestId:string)=>Promise<unknown>){
@@ -57,24 +64,27 @@ export function BenchmarkPanel({document:doc,manifest,onExit,onSettings}:{docume
   return{status:texts.length>=2?'pass':'review',detail:texts.length>=2?'依次讲解了前两处切入点':'只有一个切入点',answer:texts.join('\n\n')};
  }
  async function run(){
-  if(!profile||!consent||running)return;stopped.current=false;setRunning(true);setCopied('');
+  if(!profile||!consent||running)return;stopped.current=false;halted.current=null;setRunning(true);setCopied('');
   setResults(manifest.checks.map(c=>({id:c.id,title:c.title,status:'waiting',detail:''})));
   const vision=canSeeImages(profile),contextWindowTokens=suggestedSurfingContextWindow(profile),route={stops:0};let passed=0;
   try{
    let snapshot=unwrap(await window.enlumor.prepareSurfing(doc.id));context.current=snapshot.context;
    for(const c of manifest.checks){
-    if(stopped.current){update(c.id,{status:'skip',detail:'已停止'});continue;}
+    if(stopped.current){update(c.id,{status:'skip',detail:stopNote()});continue;}
     update(c.id,{status:'running',detail:''});const started=Date.now();
     // Each question starts without earlier answers in the dialogue, so checks do not lean on one another.
     if(c.kind==='ask'){snapshot=unwrap(await window.enlumor.prepareSurfing(doc.id));context.current=snapshot.context;}
     let r:Omit<Result,'id'|'title'>;try{r=await runCheck(c,{profileId:profile.id,context:snapshot.context,contextWindowTokens},vision,route);}catch(e){r={status:'fail',detail:e instanceof Error?e.message:String(e)};}
+    if(halted.current&&r.status!=='pass')r={status:'skip',detail:stopNote()};
     if(r.status==='pass')passed++;update(c.id,{...r,seconds:Math.round((Date.now()-started)/1000)});
    }
-   const runs=[{at:new Date().toLocaleString(),model:profile.model,passed,total:manifest.checks.length},...readHistory(manifest.name)];writeHistory(manifest.name,runs);if(mounted.current)setHistory(runs.slice(0,10));
+   // A stopped run is not a score.
+   if(!halted.current){const runs=[{at:new Date().toLocaleString(),model:profile.model,passed,total:manifest.checks.length},...readHistory(manifest.name)];writeHistory(manifest.name,runs);if(mounted.current)setHistory(runs.slice(0,10));}
   }catch(e){if(mounted.current)setResults(rs=>rs.map(r=>r.status==='waiting'||r.status==='running'?{...r,status:'fail',detail:'准备全文失败：'+(e instanceof Error?e.message:String(e))}:r));}
   finally{if(mounted.current)setRunning(false);}
  }
- function stop(){stopped.current=true;const c=context.current;if(c)void window.enlumor.cancelSurfing(c);}
+ const stopNote=()=>halted.current==='background'?'窗口切到了后台，测试已停止；回到窗口后可以重新测试':'已停止';
+ function stop(){const c=context.current;if(c)void window.enlumor.cancelSurfing(c);halt('stopped');}
  async function copy(){
   const lines=[`Enlumor 测试：${manifest.name}`,`模型：${profile?.model||''} · ${profile?.endpoint?new URL(profile.endpoint).origin:''} · ${profile&&canSeeImages(profile)?'能看图':'只读文字'}`,`得分：${results.filter(r=>r.status==='pass').length} / ${results.length}`,'',...results.map(r=>`[${label[r.status]}] ${r.title}${r.seconds!==undefined?`（${r.seconds} 秒）`:''}\n  ${r.detail}${r.answer?`\n  模型原话：${r.answer.replace(/\n/g,'\n  ')}`:''}`)];
   try{await navigator.clipboard.writeText(lines.join('\n'));setCopied('已复制，可直接粘贴发送');}catch{setCopied('复制失败，请手动选择文字');}

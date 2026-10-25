@@ -180,7 +180,8 @@ export async function generateText(profile:AiProfileInput,prompt:AiPrompt,option
 }
 async function generateOnce(profile:AiProfileInput,prompt:AiPrompt,options:GenerateOptions,requested:number):Promise<string>{
  const stream=options.stream!==false,request=buildAiRequest(profile,prompt,stream),timer=new AbortController();
- // timeoutMs is how long the service may stay silent; every arriving chunk (thinking included) restarts it.
+ // timeoutMs is how long the service may go without progress: every data event (answer or thinking) restarts it, while
+ // keep-alive comments a busy service sends while the request waits in its queue do not.
  let timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);const ceiling=setTimeout(()=>timer.abort(),Math.max(MAX_REQUEST_MS,profile.timeoutMs));
  const alive=()=>{clearTimeout(timeout);timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);};
  const signal=options.signal?AbortSignal.any([options.signal,timer.signal]):timer.signal;
@@ -196,14 +197,14 @@ async function generateOnce(profile:AiProfileInput,prompt:AiPrompt,options:Gener
    if(new TextEncoder().encode(raw).byteLength>MAX_EVENT_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');
    const lines=raw.split(/\r?\n/),data=lines.filter(line=>line.startsWith('data:')).map(line=>line.slice(5).replace(/^ /,'')).join('\n');
    const event=lines.find(line=>line.startsWith('event:'))?.slice(6).trim();
-   if(event==='error')throw failure('AI_REMOTE_ERROR');if(!data)return;
+   if(event==='error')throw failure('AI_REMOTE_ERROR');if(!data)return;alive();
    if(data==='[DONE]'){if(profile.protocol!=='openai-chat')throw failure('AI_INVALID_RESPONSE');done=true;return;}
    let value;try{value=JSON.parse(data);}catch{throw failure('AI_INVALID_RESPONSE');}
    const decoded=decodeObject(profile,value,true);let delta=decoded.text;if(profile.protocol==='dashscope'&&profile.parameters.incremental_output===false){if(!delta.startsWith(text))throw failure('AI_INVALID_RESPONSE');delta=delta.slice(text.length);}emit(delta);done||=decoded.done;
   };
   while(!done){
    const chunk=await reader.read();if(chunk.done){pending+=decoder.decode();break;}
-   alive();
+   if(!sse)alive();
    bytes+=chunk.value.byteLength;if(bytes>MAX_RESPONSE_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');
    pending+=decoder.decode(chunk.value,{stream:true});
    if(sse){let split:RegExpExecArray|null;while((split=/\r?\n\r?\n/.exec(pending))){const raw=pending.slice(0,split.index);pending=pending.slice(split.index+split[0].length);frame(raw);if(done)break;}if(pending.length>MAX_EVENT_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');}

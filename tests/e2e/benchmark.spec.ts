@@ -38,3 +38,22 @@ test('a benchmark PDF is recognised on open and its checks run in test mode',asy
   expect(asked).toHaveLength(2);
  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
 });
+
+test('a cancelled test run stops instead of waiting forever: window to background, or the stop button',async()=>{
+ // The service accepts requests and never answers, like a slow thinking model.
+ const held:any[]=[];const server=createServer((req,res)=>{held.push(res);req.resume();});
+ await new Promise<void>(r=>server.listen(0,'127.0.0.1',r));const endpoint='http://127.0.0.1:'+(server.address() as any).port+'/v1';
+ const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,'profile-halt')],env:{...process.env,ENLUMOR_PYTHON:python}});
+ try{const page=await app.firstWindow();
+  await page.evaluate(async endpoint=>{await window.enlumor.saveAiProfile({id:'slow',name:'Slow mock',protocol:'openai-chat',endpoint,model:'gpt-4o',maxOutputTokens:1000,timeoutMs:60000,parameters:{}});},endpoint);
+  await app.evaluate(({dialog},f)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[f]});},bench);await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();
+  await page.getByRole('button',{name:'进入测试模式',exact:true}).click();await page.getByLabel('确认发送全文进行测试',{exact:true}).check();
+  const results=page.getByLabel('测试结果',{exact:true});
+  await page.getByRole('button',{name:'开始测试',exact:true}).click();await expect.poll(()=>held.length,{timeout:20000}).toBeGreaterThan(0);
+  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].emit('blur'));
+  await expect(page.getByRole('button',{name:'重新测试',exact:true})).toBeVisible({timeout:10000});await expect(results).toContainText('窗口切到了后台');
+  const before=held.length;await page.getByRole('button',{name:'重新测试',exact:true}).click();await expect.poll(()=>held.length,{timeout:20000}).toBeGreaterThan(before);
+  await page.getByRole('button',{name:'停止测试',exact:true}).click();
+  await expect(page.getByRole('button',{name:'重新测试',exact:true})).toBeVisible({timeout:10000});await expect(results).toContainText('已停止');
+ }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});for(const r of held)r.destroy();server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
+});
