@@ -28,6 +28,7 @@ export function validateBenchmarkManifest(value:unknown):BenchmarkManifest{
   if(!record(c)||!text(c.id,40)||!/^[\w-]+$/.test(c.id as string)||ids.has(c.id as string)||!text(c.title,120)||!['ask','route','guided'].includes(c.kind as string))fail();ids.add(c.id as string);
   keys(c,['id','kind','title','question','expect','vision','textOnly','minStops','dwell','depth']);
   if(c.kind==='ask'){if(!text(c.question,2000))fail();if(c.expect!==undefined)expectation(c.expect);if(c.expect===undefined&&c.vision===undefined&&c.textOnly===undefined)fail();}
+  else if(c.expect!==undefined)expectation(c.expect);
   if(c.vision!==undefined){if(!record(c.vision))fail();keys(c.vision as Record<string,unknown>,['mustView','expect']);const mv=(c.vision as any).mustView;if(mv!==undefined&&typeof mv!=='boolean')fail();expectation((c.vision as any).expect);}
   if(c.textOnly!==undefined){if(!record(c.textOnly))fail();keys(c.textOnly as Record<string,unknown>,['expect']);expectation((c.textOnly as any).expect);}
   if(c.minStops!==undefined&&!(Number.isInteger(c.minStops)&&(c.minStops as number)>=1&&(c.minStops as number)<=5))fail();
@@ -46,6 +47,13 @@ export function benchmarkMisses(answer:string,evidence:number,e:BenchmarkExpect)
  if(e.evidence&&!evidence)m.push('没有原文证据');
  if(e.chinese&&!/[一-鿿]/.test(answer))m.push('没有用中文回答');
  return m;
+}
+/** Grades generated entry points: enough of them, and what the manifest expects of their titles and reasons;
+ * `chinese` here means every title is written in Chinese, since the reader sees the titles first. */
+export function gradeBenchmarkRoute(check:BenchmarkCheck,stops:{title:string;reason?:string}[]):{status:BenchmarkStatus;detail:string}{
+ const min=check.minStops||1,m:string[]=stops.length>=min?[]:[`只有 ${stops.length} 个切入点（至少 ${min} 个）`];
+ if(check.expect){const {chinese,...rest}=check.expect;m.push(...benchmarkMisses(stops.map(s=>s.title+' '+(s.reason||'')).join('\n'),stops.length,rest));if(chinese&&stops.some(s=>!/[一-鿿]/.test(s.title)))m.push('有切入点标题没有用中文');}
+ return{status:m.length?'fail':'pass',detail:(m.length?m.join('；')+' · ':'')+`${stops.length} 个切入点（至少 ${min} 个）`};
 }
 /** Grades one question: vision models against the vision expectations (and whether they looked), text-only models
  * against theirs (a miss there needs a human, since a correct answer may honestly come from the text). */

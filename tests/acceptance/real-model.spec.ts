@@ -13,7 +13,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {canSeeImages,pickDefaultModel,resolveContextWindow} from '../../src/shared/ai-models';
 import type {AiProtocol} from '../../src/shared/ai';
-import {gradeBenchmarkAnswer,validateBenchmarkManifest,type BenchmarkCheck,type BenchmarkManifest} from '../../src/shared/benchmark';
+import {gradeBenchmarkAnswer,gradeBenchmarkRoute,validateBenchmarkManifest,type BenchmarkCheck,type BenchmarkManifest} from '../../src/shared/benchmark';
 
 const root=path.resolve('.'),base=path.join(root,'.cache','acceptance'),stamp=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19),out=path.join(base,stamp);
 const python=process.env.ENLUMOR_PYTHON||path.join(root,'.venv',process.platform==='win32'?'Scripts/python.exe':'bin/python');
@@ -66,7 +66,7 @@ async function routeCheck(page:Page,c:Check):Promise<Omit<Result,'id'|'name'|'ms
  const before=await page.locator('.surfing-stops li').count();await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();
  const r=await awaitReply(page,'.surfing-stops li',before,180_000);if(r.error)return{status:'fail',detail:'没有生成切入点',error:r.error};
  await page.waitForTimeout(500);const stops=await page.locator('.surfing-stops li button').allInnerTexts();
- return{status:stops.length>=(c.minStops||1)?'pass':'fail',detail:`${stops.length} 个切入点（至少 ${c.minStops||1} 个）`,answer:stops.join('\n')};
+ return{...gradeBenchmarkRoute(c,stops.map(title=>({title}))),answer:stops.join('\n')};
 }
 async function guidedCheck(page:Page,c:Check):Promise<Omit<Result,'id'|'name'|'ms'|'shot'>>{
  const stops=await page.locator('.surfing-stops li').count();if(!stops)return{status:'skip',detail:'没有切入点，无法带读'};

@@ -32,4 +32,8 @@ ENLUMOR_ACCEPTANCE_PDF=paper.pdf ENLUMOR_ACCEPTANCE_MANIFEST=tests/acceptance/at
 npm run acceptance
 ```
 
+`attention-hard-benchmark.json` 是同一篇论文的难题版：需要搜索和多处拼合的细节、表格消融数字、标签只画在图里的图 2、以及一道论文里根本没有答案的题（检查模型会不会编）。它刚好装得进一个二维码（约 2.9 KB），再加题会放不下。
+
+输出上限默认用模型自身的上限（和普通用户一样）；要比较不同上限时设 `ENLUMOR_ACCEPTANCE_MAX_OUTPUT`。
+
 每次的得分追加到 `.cache/acceptance/history.jsonl`，报告里会列出同一基准最近几次的得分，方便比较不同模型和版本。

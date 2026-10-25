@@ -6,7 +6,7 @@ import type {SurfingContext} from '../shared/surfing-context';
 import type {SurfingRuntimeEvent} from '../main/surfing-runtime';
 import {canSeeImages} from '../shared/ai-models';
 import {suggestedSurfingContextWindow} from '../main/surfing-tokenizer-models';
-import {gradeBenchmarkAnswer,type BenchmarkCheck,type BenchmarkManifest,type BenchmarkStatus} from '../shared/benchmark';
+import {gradeBenchmarkAnswer,gradeBenchmarkRoute,type BenchmarkCheck,type BenchmarkManifest,type BenchmarkStatus} from '../shared/benchmark';
 
 type Result={id:string;title:string;status:BenchmarkStatus|'running'|'waiting';detail:string;answer?:string;seconds?:number};
 type Run={at:string;model:string;passed:number;total:number};
@@ -43,8 +43,8 @@ export function BenchmarkPanel({document:doc,manifest,onExit,onSettings}:{docume
   if(c.kind==='route'){
    const {event}=await request(id=>window.enlumor.generateSurfingRoute({request:req(id),contextWindowTokens:base.contextWindowTokens}));
    if(event.type!=='route')return{status:'fail',detail:'没有生成切入点'+(event.type==='error'?'：'+event.code:'')};
-   route.stops=event.route.stops.length;const min=c.minStops||1;
-   return{status:route.stops>=min?'pass':'fail',detail:`${route.stops} 个切入点（至少 ${min} 个）`,answer:event.route.stops.map((s,i)=>`${i+1}. ${s.title}`).join('\n')};
+   route.stops=event.route.stops.length;
+   return{...gradeBenchmarkRoute(c,event.route.stops),answer:event.route.stops.map((s,i)=>`${i+1}. ${s.title}`).join('\n')};
   }
   // Guided reading in test mode: explain the first two stops in turn, at the manifest's depth.
   if(route.stops<1)return{status:'skip',detail:'没有切入点，无法带读'};

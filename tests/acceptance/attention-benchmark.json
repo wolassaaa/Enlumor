@@ -15,7 +15,7 @@
      "question": "请看论文的图 1（模型结构图）：解码器的每一层里，从下到上依次是哪几个子层？",
      "vision": {"mustView": true, "expect": {"all": ["masked|掩码|遮蔽|屏蔽"], "any": ["feed|前馈"]}},
      "textOnly": {"expect": {"any": ["看不到|无法(查看|看到|识别)|不能(查看|看到)|图像|图片|caption|图注|根据(正文|文字)"]}}},
-    {"id": "route", "kind": "route", "title": "生成探索切入点", "minStops": 2},
+    {"id": "route", "kind": "route", "title": "生成探索切入点", "minStops": 2, "expect": {"chinese": true}},
     {"id": "guided", "kind": "guided", "title": "带着读：自动讲解、前进，滚动即停", "dwell": 5, "depth": "concise"}
   ]
 }

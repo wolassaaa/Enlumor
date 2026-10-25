@@ -12,7 +12,7 @@ export const SURFING_AGENT_MAX_STEPS=4,SURFING_AGENT_MAX_ACTIONS=3,SURFING_AGENT
 export function surfingAgentInstructions(vision:boolean){
  return 'Before answering you may take up to '+(SURFING_AGENT_MAX_STEPS-1)+' steps to look closer, like a reader flipping back. A step is ONLY JSON {"actions":[...]} with 1 to '+SURFING_AGENT_MAX_ACTIONS+' of: '
   +(vision?'{"type":"view_page","pageNumber":N} to see a page image (figures, tables, formulas); ':'')
-  +'{"type":"read_page","pageNumber":N} to reread a page\'s passages; {"type":"search","query":"words"} to find passages. '
+  +'{"type":"read_page","pageNumber":N} to reread a page\'s passages; {"type":"search","query":"words"} to find passages by the exact words they contain, so search in the paper\'s own language and terms (e.g. "warmup_steps", "label smoothing"), not a translation. '
   +'The app replies with the results. When ready, reply with the final JSON answer instead of actions. '
   +(vision?'The supplied figures list names captioned figures and tables with their pages; view a page before describing what a figure shows, and cite its caption passage to point at it. ':'You cannot see images: say so if a figure matters, and rely on its caption. ')
   +'Never describe a figure you have not viewed.';

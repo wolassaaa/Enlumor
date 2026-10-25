@@ -23,3 +23,14 @@ it('grades vision models on whether they looked, and text-only models on honesty
  expect(gradeBenchmarkAnswer(method,false,'It is called Lumen Routing',2,[]).detail).toContain('没有用中文回答');
  expect(gradeBenchmarkAnswer(method,false,'方法叫 Lumen Routing',0,[]).detail).toContain('没有原文证据');
 });
+
+import {gradeBenchmarkRoute,validateBenchmarkManifest as validateRouteManifest} from '../src/shared/benchmark';
+it('entry points are graded on count and, when asked, on every title being in Chinese',()=>{
+ const check={id:'route',kind:'route' as const,title:'r',minStops:2,expect:{chinese:true}};
+ expect(gradeBenchmarkRoute(check,[{title:'研究问题'},{title:'方法骨架'}]).status).toBe('pass');
+ expect(gradeBenchmarkRoute(check,[{title:'研究问题'},{title:'Method spine'}])).toMatchObject({status:'fail',detail:expect.stringContaining('没有用中文')});
+ expect(gradeBenchmarkRoute(check,[{title:'研究问题'}])).toMatchObject({status:'fail',detail:expect.stringContaining('只有 1 个切入点')});
+ expect(gradeBenchmarkRoute({...check,expect:undefined},[{title:'A'},{title:'B'}]).status).toBe('pass');
+ // a route expectation from an untrusted manifest is validated like any other
+ expect(()=>validateRouteManifest({enlumorBenchmark:1,name:'x',checks:[{id:'r',kind:'route',title:'r',expect:{all:['(a+)+']}}]})).toThrow('BENCHMARK_INVALID');
+});
