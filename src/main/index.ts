@@ -56,7 +56,7 @@ app.whenReady().then(async () => {
     if (url.host !== 'app' || !file.startsWith(rendererRoot + path.sep)) return new Response('', { status: 403 });
     return net.fetch(pathToFileURL(file).toString());
   });
-  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 940, minHeight: 640, backgroundColor: '#f3f1ec', title: 'Enlumor',
+  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 940, minHeight: 640, backgroundColor: '#f5f2ed', title: 'Enlumor', icon: path.join(__dirname, '../renderer/enlumor-icon.png'),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true } });
   window.on('blur',()=>{surfingRuntime?.cancel();cruiseRequests?.cancel();if(!window.webContents.isDestroyed())window.webContents.send('cruise:background');});
   window.removeMenu();
