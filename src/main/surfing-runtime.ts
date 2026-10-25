@@ -29,7 +29,8 @@ export class SurfingRuntime{
  getContext(){return this.context?{...this.context}:null;}
  invalidate(){this.requests.reset();this.preparation?.abort();this.preparation=undefined;this.context=null;this.snapshot=null;this.progress=null;this.activeSource=null;this.budgets.clear();}
  deactivate(context:CommandContext|null){if(same(this.context,context))this.invalidate();}
- cancel(context?:CommandContext){if(context&&!same(this.context,context))return;this.requests.cancel();this.preparation?.abort();}
+ /** Pauses model requests. Local, network-free preparation keeps running; invalidate() abandons it. */
+ cancel(context?:CommandContext){if(context&&!same(this.context,context))return;this.requests.cancel();}
  async prepare(documentId:string):Promise<SurfingContext>{
   if(typeof documentId!=='string'||! /^[\w-]{1,100}$/.test(documentId))throw Error('SURFING_INVALID_REQUEST');
   const d=this.ports.verified(documentId);this.invalidate();const context=this.context={documentId:d.id,fingerprint:d.fingerprint,revision:++this.revision},job=this.preparation=new AbortController();

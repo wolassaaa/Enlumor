@@ -211,13 +211,13 @@ function App() {
     if (locked.current || pending.current || noteOpen.current || editingController.current?.hasDraft) return false;
     surfingCancel.current?.();
     resetDrawing();locked.current = true; setBusy(true); setError('');
-    let replacing = false;
+    let replacing = false, editingReleased = false;
     const previous = { document:activeDocument.current, marks:activeMarks.current, reading:current.current, tabs:[...tabsRef.current], activeId:activeId.current };
     const job = (async () => {
       await flush();
       const opened = unwrap(await (id ? rebind ? window.enlumor.rebindDocument(id) : window.enlumor.restoreDocument(id) : window.enlumor.openDocument()));
       if (!opened) return false;
-      if(editingEnabled.current)await editingController.current!.activate(null);
+      if(editingEnabled.current){editingReleased=true;await editingController.current!.activate(null);}
       const annotations:Annotation[] = editingEnabled.current?[]:unwrap(await window.enlumor.getAnnotations(opened.id));
       const baseTabs=replacementTabs || tabsRef.current;
       const nextTabs=baseTabs.some(tab=>tab.id===opened.id) ? baseTabs.map(tab=>tab.id===opened.id?opened:tab) : [...baseTabs,opened];
@@ -240,12 +240,17 @@ function App() {
         try {
           unwrap(await window.enlumor.saveTabs({openIds:previous.tabs.map(tab=>tab.id),activeId:previous.activeId}));
           if(previous.document) {
-            await reader.current!.open({...previous.document,reading:previous.reading});reader.current!.setMarks(previous.marks as LegacyAnnotation[]);
+            await reader.current!.open({...previous.document,reading:previous.reading});
+            // Editing marks come from the restored session's view; the legacy painter would show hidden marks.
+            if(editingEnabled.current){editingSnapshot.current=null;await editingController.current!.activate(previous.document.id);}else reader.current!.setMarks(previous.marks as LegacyAnnotation[]);
             current.current=previous.reading;activeDocument.current=previous.document;activeMarks.current=previous.marks;activeId.current=previous.activeId;
             setDoc(previous.document);setReadingLayout(previous.reading?.layout||'continuous');setMarks(previous.marks);setHistory(histories.current.get(previous.document.id)||emptyHistory());
             syncPage((previous.reading?.pageIndex||0)+1);setZoom(previous.reading?.zoom||1);
           } else clearCurrent();
         } catch(recovery) { clearCurrent();fail(new Error(`打开失败，恢复阅读视图也失败：${String(recovery)}`));return false; }
+      } else if(editingReleased&&previous.document) {
+        try { await editingController.current!.activate(previous.document.id); }
+        catch(recovery) { fail(new Error(`打开失败，恢复编辑会话也失败：${String(recovery)}`));return false; }
       }
       fail(reason); return false;
     } finally { flight.current = null; locked.current = false; setBusy(false); }

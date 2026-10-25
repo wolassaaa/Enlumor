@@ -78,7 +78,7 @@ describe('trusted source and atomic legacy conversion',()=>{
   it('converts all text/path/note types with exact old geometry and stable user without parsing free-only scanned pages',async()=>{
     const f=await fixture();for(const type of ['highlight','underline','strikeout','note'] as const)legacy(f,type,{type});
     for(const type of ['line','arrow','ink'] as const)legacy(f,type,{type,quote:'',quads:[[30,60,90,60,30,40,90,40]],points:type==='ink'?[35,45,50,55,85,45]:[35,45,85,55]});
-    await f.service.convertLegacyPage(f.context,0,signal());expect(f.edits.readSnapshot(f.context).marks).toHaveLength(7);expect(f.edits.legacy(f.doc.id)).toEqual([]);
+    await f.service.convertLegacyPage(f.context,0,signal());expect(f.edits.readSnapshot(f.context).marks).toHaveLength(7);expect(f.edits.legacy(f.doc.id)).toEqual([]);expect(f.edits.hasUserEdits(f.context)).toBe(false);
     const scan=await fixture(0,true);legacy(scan,'free-note',{type:'note',quote:'',quads:[[30,60,50,60,30,40,50,40]]});await scan.service.convertLegacyPage(scan.context,0,signal());expect(scan.edits.readSnapshot(scan.context).marks).toHaveLength(1);expect(scan.calls.filter((r:any)=>r.operation==='editing-page')).toEqual([]);
   });
   it('import mapping failure rolls back prepared source anchor, mark and version together',async()=>{

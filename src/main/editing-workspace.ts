@@ -109,21 +109,25 @@ export class WorkspaceEdits {
     const redoIds=this.db.prepare(`SELECT ${fields} FROM edit_operations WHERE documentId=? AND fingerprint=? AND redoOwnerKey=? AND action='edit' AND state='undone' ORDER BY rowid DESC`).all(c.documentId,c.fingerprint,key).map(decode).filter(o=>o.redoEligible&&applicable(o)).map(o=>o.operationId);
     return {undoIds,redoIds};
   }
-  legacyInputs(documentId:string):LegacyInput[] {
+  /** With legacyId, reads only that row so per-input imports stay linear in the document's legacy count. */
+  legacyInputs(documentId:string,legacyId?:string):LegacyInput[] {
     const d=this.workspace.document(documentId);
-    return this.db.prepare(`SELECT a.id,a.payload,i.state,i.inputDigest,i.reason FROM annotations a LEFT JOIN edit_legacy_imports i ON i.documentId=a.documentId AND i.fingerprint=? AND i.legacyId=a.id WHERE a.documentId=? AND (i.state IS NULL OR i.state!='converted') ORDER BY a.rowid`).all(d.fingerprint,documentId).map(row=>{
+    const one=legacyId===undefined?'':' AND a.id=?',params=legacyId===undefined?[d.fingerprint,documentId]:[d.fingerprint,documentId,legacyId];
+    return this.db.prepare(`SELECT a.id,a.payload,i.state,i.inputDigest,i.reason FROM annotations a LEFT JOIN edit_legacy_imports i ON i.documentId=a.documentId AND i.fingerprint=? AND i.legacyId=a.id WHERE a.documentId=?${one} AND (i.state IS NULL OR i.state!='converted') ORDER BY a.rowid`).all(...params).map(row=>{
       const raw=String(row.payload);let annotation:Annotation|null=null,reason='LEGACY_READ_ONLY';
       try {const parsed=JSON.parse(raw);validateAnnotation(parsed,d.pageCount);validateGeometry({quads:parsed.quads,...(parsed.points?{points:parsed.points}:{})},parsed.type,[-1e7,-1e7,1e7,1e7]);if(parsed.id!==row.id||parsed.documentId!==d.id||parsed.fingerprint!==d.fingerprint)throw Error();annotation=parsed;reason=String(row.reason||'LEGACY_READ_ONLY');}catch{reason='INVALID_LEGACY_PAYLOAD';}
       return {legacyId:String(row.id),inputDigest:canonicalDigest({payload:raw}),annotation,reason};
     });
   }
-  legacy(documentId:string):LegacyMarkView[] {return this.legacyInputs(documentId).filter((x):x is LegacyInput & {annotation:Annotation}=>x.annotation!==null).map(x=>({legacyId:x.legacyId,inputDigest:x.inputDigest,annotation:x.annotation,status:'readonly',reason:x.reason}));}
+  legacy(documentId:string,inputs=this.legacyInputs(documentId)):LegacyMarkView[] {return inputs.filter((x):x is LegacyInput & {annotation:Annotation}=>x.annotation!==null).map(x=>({legacyId:x.legacyId,inputDigest:x.inputDigest,annotation:x.annotation,status:'readonly',reason:x.reason}));}
+  /** Every committed user edit records an operation; automatic legacy conversion records none. */
+  hasUserEdits(c:Pick<CommandContext,'documentId'|'fingerprint'>):boolean {return !!this.db.prepare('SELECT 1 FROM edit_operations WHERE documentId=? AND fingerprint=? LIMIT 1').get(c.documentId,c.fingerprint);}
   view(c:CommandContext,actor:EditActor):EditingView {
     this.db.exec('BEGIN');try {
       const {marks,diagnostics}=this.marks(c);const inputs=this.legacyInputs(c.documentId);
       diagnostics.push(...inputs.filter(x=>!x.annotation).map(x=>({legacyId:x.legacyId,reason:x.reason})));
       const hasEditingState=!!this.db.prepare(`SELECT 1 FROM edit_versions WHERE documentId=? AND fingerprint=? UNION ALL SELECT 1 FROM edit_operations WHERE documentId=? AND fingerprint=? UNION ALL SELECT 1 FROM edit_legacy_imports WHERE documentId=? AND fingerprint=? AND state='converted' LIMIT 1`).get(c.documentId,c.fingerprint,c.documentId,c.fingerprint,c.documentId,c.fingerprint);
-      const result={context:structuredClone(c),marks,legacy:this.legacy(c.documentId),diagnostics,history:this.history(c,actor),hasEditingState};this.db.exec('COMMIT');return result;
+      const result={context:structuredClone(c),marks,legacy:this.legacy(c.documentId,inputs),diagnostics,history:this.history(c,actor),hasEditingState};this.db.exec('COMMIT');return result;
     }catch(e){this.db.exec('ROLLBACK');throw e;}
   }
   anchors(c:CommandContext):VerifiedAnchor[] {this.context(c);return this.db.prepare('SELECT payload FROM edit_anchors WHERE documentId=? AND fingerprint=? AND parserVersion=1 ORDER BY rowid').all(c.documentId,c.fingerprint).map(r=>JSON.parse(r.payload as string));}
@@ -170,7 +174,7 @@ export class WorkspaceEdits {
   /** Compatibility audit is distinct from ordinary user undo history. Source work precedes this transaction. */
   importLegacy(c:CommandContext,input:LegacyInput,mark:EditMark|null,anchor:VerifiedAnchor|null,reason:string,audit:unknown=null) {
     this.transaction(()=>{
-      const current=this.legacyInputs(c.documentId).find(x=>x.legacyId===input.legacyId);
+      const current=this.legacyInputs(c.documentId,input.legacyId)[0];
       if(!current||current.inputDigest!==input.inputDigest)throw Error('LEGACY_CHANGED');
       const existing=this.db.prepare('SELECT 1 FROM edit_versions WHERE documentId=? AND fingerprint=? AND id=?').get(c.documentId,c.fingerprint,input.legacyId);
       if(mark&&existing)return;
