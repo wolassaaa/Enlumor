@@ -31,6 +31,7 @@ const bridge: Bridge = {
   testAiProfile:id=>ipcRenderer.invoke('ai:profiles:test',id),
   listAiModels:id=>ipcRenderer.invoke('ai:profiles:models',id),
   discoverAiModels:input=>ipcRenderer.invoke('ai:models:discover',input),
+  getBenchmark:id=>ipcRenderer.invoke('benchmark:get',id),
   getLayout: () => ipcRenderer.invoke('layout:get'),
   saveLayout: layout => ipcRenderer.invoke('layout:save', layout),
   getTabs: () => ipcRenderer.invoke('tabs:get'),

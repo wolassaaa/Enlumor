@@ -13,6 +13,7 @@ import {tmpdir} from 'node:os';
 import path from 'node:path';
 import {canSeeImages,pickDefaultModel,resolveContextWindow} from '../../src/shared/ai-models';
 import type {AiProtocol} from '../../src/shared/ai';
+import {gradeBenchmarkAnswer,validateBenchmarkManifest,type BenchmarkCheck,type BenchmarkManifest} from '../../src/shared/benchmark';
 
 const root=path.resolve('.'),base=path.join(root,'.cache','acceptance'),stamp=new Date().toISOString().replace(/[:.]/g,'-').slice(0,19),out=path.join(base,stamp);
 const python=process.env.ENLUMOR_PYTHON||path.join(root,'.venv',process.platform==='win32'?'Scripts/python.exe':'bin/python');
@@ -20,9 +21,7 @@ const endpoint=(process.env.ENLUMOR_ACCEPTANCE_ENDPOINT||'').trim(),key=(process
 const protocol=(process.env.ENLUMOR_ACCEPTANCE_PROTOCOL||(/anthropic\.com/.test(endpoint)?'anthropic-messages':/googleapis\.com/.test(endpoint)?'gemini':'openai-chat')) as AiProtocol;
 const tool=path.join(root,'tests/acceptance/benchmark.py');
 
-type Expect={all?:string[];any?:string[];none?:string[];evidence?:boolean;chinese?:boolean};
-type Check={id:string;kind:'ask'|'route'|'guided';title:string;question?:string;expect?:Expect;vision?:{mustView?:boolean;expect:Expect};textOnly?:{expect:Expect};minStops?:number;dwell?:number;depth?:string};
-type Manifest={enlumorBenchmark:1;name:string;checks:Check[]};
+type Check=BenchmarkCheck;type Manifest=BenchmarkManifest;
 type Result={id:string;name:string;status:'pass'|'fail'|'review'|'skip';detail:string;answer?:string;error?:string;ms:number;shot?:string};
 const results:Result[]=[],facts:Record<string,string>={};
 const CJK=/[一-鿿]/;
@@ -35,16 +34,6 @@ function benchmarkPdf():string{
  if(!given)execFileSync(python,[path.join(root,'tests/acceptance/make-paper.py'),paper]);
  execFileSync(python,[tool,'add',paper,manifest||path.join(root,'tests/acceptance/lumen-benchmark.json'),target]);
  return target;
-}
-/** Which expectations an answer misses; empty means it meets them all. */
-function misses(text:string,chips:number,e:Expect):string[]{
- const m:string[]=[],re=(s:string)=>new RegExp(s,'i');
- for(const s of e.all||[])if(!re(s).test(text))m.push(`缺少「${s}」`);
- if(e.any?.length&&!e.any.some(s=>re(s).test(text)))m.push(`没有提到「${e.any.join('」或「')}」`);
- for(const s of e.none||[])if(re(s).test(text))m.push(`不应出现「${s}」`);
- if(e.evidence&&!chips)m.push('没有原文证据');
- if(e.chinese&&!CJK.test(text))m.push('没有用中文回答');
- return m;
 }
 async function record(page:Page,check:{id:string;title:string},run:()=>Promise<Omit<Result,'id'|'name'|'ms'|'shot'>>){
  const started=Date.now();let r:Omit<Result,'id'|'name'|'ms'|'shot'>;
@@ -70,18 +59,8 @@ async function askCheck(page:Page,c:Check,vision:boolean):Promise<Omit<Result,'i
  await page.getByLabel('Surfing 随时提问',{exact:true}).fill(c.question!);await page.getByRole('button',{name:'发送问题',exact:true}).click();
  const r=await awaitReply(page,'.surfing-response',before,180_000);if(r.error)return{status:'fail',detail:'没有得到回答',error:r.error};
  const chips=await page.locator('.surfing-conversation article').last().locator('.surfing-evidence button').count();
- const looked=r.steps.filter(s=>s.includes('查看第'));
- const did=r.steps.length?`过程：${r.steps.join('、')} · `:'';
- if(vision&&c.vision){
-  const m=misses(r.text,chips,c.vision.expect),viewed=looked.length>0;
-  return{status:m.length?'fail':c.vision.mustView&&!viewed?'review':'pass',detail:did+(m.length?m.join('；'):'答案符合预期')+(c.vision.mustView&&!viewed?' · 但没有先查看页面':''),answer:r.text};
- }
- if(!vision&&c.textOnly){
-  const m=misses(r.text,chips,c.textOnly.expect);
-  return{status:m.length?'review':'pass',detail:did+(m.length?'只读文字的模型没有说明看不到图，请人工确认答案是否来自正文':'说明了看不到图'),answer:r.text};
- }
- const m=misses(r.text,chips,c.expect||{});
- return{status:m.length?'fail':'pass',detail:did+(m.length?m.join('；'):`答案符合预期 · 原文证据 ${chips} 处`),answer:r.text};
+ // Same grading as the in-app test mode.
+ return{...gradeBenchmarkAnswer(c,vision,r.text,chips,r.steps),answer:r.text};
 }
 async function routeCheck(page:Page,c:Check):Promise<Omit<Result,'id'|'name'|'ms'|'shot'>>{
  const before=await page.locator('.surfing-stops li').count();await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();
@@ -120,7 +99,7 @@ test('real model benchmark',async()=>{
  test.setTimeout(30*60_000);
  if(!endpoint)throw Error('请设置 ENLUMOR_ACCEPTANCE_ENDPOINT（接口地址）');
  mkdirSync(out,{recursive:true});
- const pdf=benchmarkPdf(),manifest=JSON.parse(execFileSync(python,[tool,'read',pdf],{encoding:'utf8'})) as Manifest;
+ const pdf=benchmarkPdf(),manifest=validateBenchmarkManifest(JSON.parse(execFileSync(python,[tool,'read',pdf],{encoding:'utf8'})));
  const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+mkdtempSync(path.join(tmpdir(),'enlumor-acceptance-'))],env:{...process.env,ENLUMOR_PYTHON:python,ENLUMOR_ACCEPTANCE_KEY:''}});
  const page=await app.firstWindow();await page.setViewportSize({width:1440,height:900});
  let vision=false;
