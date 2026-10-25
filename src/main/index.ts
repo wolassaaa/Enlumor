@@ -10,7 +10,7 @@ import { app, BrowserWindow, dialog, ipcMain, protocol, net, safeStorage } from 
 import {AiProfiles} from './ai-profiles';
 import {validateBenchmarkManifest} from '../shared/benchmark';
 import {generateText,listAiModelInfo,listAiModels} from './ai-client';
-import { readFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, mkdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Workspace } from './workspace';
@@ -56,7 +56,11 @@ app.whenReady().then(async () => {
     if (url.host !== 'app' || !file.startsWith(rendererRoot + path.sep)) return new Response('', { status: 403 });
     return net.fetch(pathToFileURL(file).toString());
   });
-  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 940, minHeight: 640, backgroundColor: '#f3f1ec', title: 'Enlumor',
+  // The brand mark for the window and taskbar: the renderer output in a build, public/ when running from source.
+  if (process.platform === 'win32') app.setAppUserModelId('local.enlumor.reader');
+  const iconFile = process.platform === 'win32' ? 'enlumor-icon.ico' : 'enlumor-icon.png';
+  const windowIcon = [path.join(__dirname, '../renderer', iconFile), path.join(__dirname, '../../public', iconFile)].find(file => existsSync(file));
+  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 940, minHeight: 640, backgroundColor: '#f5f2ed', title: 'Enlumor', ...(windowIcon ? { icon: windowIcon } : {}),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true } });
   window.on('blur',()=>{surfingRuntime?.cancel();cruiseRequests?.cancel();if(!window.webContents.isDestroyed())window.webContents.send('cruise:background');});
   window.removeMenu();
