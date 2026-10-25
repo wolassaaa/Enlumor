@@ -22,9 +22,11 @@ describe('Surfing reading agent',()=>{
   expect(h.prompts[1].turns![0]).toEqual({role:'assistant',text:JSON.stringify({actions:[{type:'view_page',pageNumber:2}]})});expect(h.prompts[1].turns![1].images).toEqual([{mediaType:'image/jpeg',data:'QUJD'}]);
   expect(h.events).toEqual([{requestId:'ask',type:'step',note:'查看第 2 页'},{requestId:'ask',type:'answer',question:'图 2 说明了什么？',explanation:{text:'图 2 显示准确率随上下文变长而下降。',passageIds:['p1']}}]);
  });
- it('a text-only model is told it cannot see images and cannot ask for a page image',async()=>{
-  const h=setup('deepseek-chat',[JSON.stringify({actions:[{type:'view_page',pageNumber:2}]})]);await h.service.ask(ask());
-  expect(h.prompts[0].system).toContain('You cannot see images');expect(h.prompts[0].system).not.toContain('"view_page"');expect(h.rendered).toEqual([]);expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});
+ it('a text-only model is told it cannot see images; asking anyway gets a refusal, not a failed answer',async()=>{
+  const h=setup('deepseek-chat',[JSON.stringify({actions:[{type:'view_page',pageNumber:2}]}),final]);await h.service.ask(ask());
+  expect(h.prompts[0].system).toContain('You cannot see images');expect(h.prompts[0].system).not.toContain('"view_page"');expect(h.rendered).toEqual([]);
+  // asking anyway is answered with a refusal, and the model still gets to answer from the text
+  expect(h.prompts[1].turns![1].text).toContain('this model cannot see images');expect(h.prompts[1].turns![1].images).toBeUndefined();expect(h.events.at(-1).type).toBe('answer');
  });
  it('reading and searching feed passages back; the last step must answer',async()=>{
   const h=setup('claude-sonnet-4',[JSON.stringify({actions:[{type:'search',query:'retrieval'},{type:'read_page',pageNumber:3}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:2}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]})],'anthropic-messages');
@@ -36,7 +38,7 @@ describe('Surfing reading agent',()=>{
   const h=setup('lite',[final],'spark');await h.service.ask(ask());expect(h.prompts).toHaveLength(1);expect(h.prompts[0].system).not.toContain('"actions"');expect(h.events.at(-1).type).toBe('answer');
  });
  it('rejects invented pages, unknown action types and invented sources',()=>{
-  for(const raw of [{actions:[{type:'view_page',pageNumber:9}]},{actions:[{type:'go_to_page',pageNumber:1}]},{actions:[]},{actions:[{type:'read_page',pageNumber:1,extra:1}]},{text:'x',passageIds:['made-up']}])
+  for(const raw of [{actions:[{type:'view_page',pageNumber:9}]},{actions:[{type:'read_page',pageNumber:0}]},{actions:[{type:'go_to_page',pageNumber:1}]},{actions:[]},{actions:[{type:'read_page',pageNumber:1,extra:1}]},{text:'x',passageIds:['made-up']}])
    expect(()=>parseSurfingAgentStep(JSON.stringify(raw),snapshot,true,true)).toThrow('SURFING_INVALID_ROUTE');
   expect(parseSurfingAgentStep(final,snapshot,false,true).kind).toBe('final');
  });

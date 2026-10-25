@@ -13,6 +13,7 @@
     "test": "vitest run",
     "test:python": "node scripts/python.mjs -m unittest discover -s tests/python -v",
     "test:e2e": "npm run build && playwright test",
+    "acceptance": "npm run build && playwright test -c playwright.acceptance.config.ts",
     "start": "electron .",
     "build:worker": "node scripts/build-worker.mjs",
     "pack": "npm run build && npm run build:worker && electron-builder --win dir",

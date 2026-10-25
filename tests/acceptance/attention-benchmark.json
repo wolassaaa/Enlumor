@@ -1,0 +1,21 @@
+{
+  "enlumorBenchmark": 1,
+  "name": "Attention Is All You Need (arXiv 1706.03762)",
+  "checks": [
+    {"id": "core", "kind": "ask", "title": "整篇提问：模型名称与核心思想",
+     "question": "这篇论文提出的模型叫什么？它完全依靠什么机制，又去掉了哪些结构？",
+     "expect": {"all": ["transformer", "注意力|attention"], "any": ["循环|递归|recurren|rnn|卷积|convolution"], "evidence": true, "chinese": true}},
+    {"id": "bleu", "kind": "ask", "title": "表格数字：Transformer (big) 的 BLEU",
+     "question": "Transformer (big) 在 WMT 2014 英德翻译和英法翻译上的 BLEU 分数分别是多少？",
+     "expect": {"all": ["28\\.4", "41\\.8|41\\.0"], "evidence": true}},
+    {"id": "base", "kind": "ask", "title": "细节：基础模型的层数、注意力头数和 d_model",
+     "question": "基础模型（base）的编码器有几层？用了几个注意力头？d_model 是多少？",
+     "expect": {"all": ["6", "8", "512"], "evidence": true}},
+    {"id": "figure", "kind": "ask", "title": "看图：图 1 中解码器每一层的子层",
+     "question": "请看论文的图 1（模型结构图）：解码器的每一层里，从下到上依次是哪几个子层？",
+     "vision": {"mustView": true, "expect": {"all": ["masked|掩码|遮蔽|屏蔽"], "any": ["feed|前馈"]}},
+     "textOnly": {"expect": {"any": ["看不到|无法(查看|看到|识别)|不能(查看|看到)|图像|图片|caption|图注|根据(正文|文字)"]}}},
+    {"id": "route", "kind": "route", "title": "生成探索切入点", "minStops": 2},
+    {"id": "guided", "kind": "guided", "title": "带着读：自动讲解、前进，滚动即停", "dwell": 5, "depth": "concise"}
+  ]
+}
