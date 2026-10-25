@@ -76,15 +76,17 @@ def surfing_document(source, fingerprint, max_characters=160000, max_passages=50
                 for li,line in enumerate(block['lines']):
                     quote=''.join(span['text'] for span in line['spans'])
                     if not quote.strip(): continue
-                    if len(quote)>1200: raise ValueError('SURFING_CONTEXT_TOO_LARGE')
-                    characters+=len(quote);passages+=1
-                    if characters>max_characters or passages>max_passages: raise ValueError('SURFING_CONTEXT_TOO_LARGE')
+                    # One unusable line (an arXiv side stamp, a rotated axis label, a run-on table row)
+                    # is left out of the snapshot instead of failing the whole document.
+                    if len(quote)>1200: continue
                     q=fitz.recover_line_quad(line)
-                    if not q.is_convex or q.is_empty or not page.rect.contains(q.rect): raise ValueError('SURFING_SOURCE_INVALID')
+                    if not q.is_convex or q.is_empty or not page.rect.contains(q.rect): continue
                     points=[point*inverse for point in (q.ul,q.ur,q.ll,q.lr)]
                     quad=[n for point in points for n in (point.x,point.y)]
                     # The current reader locator requires conventional horizontal quads.
-                    if any(not math.isfinite(n) or abs(n)>1e7 for n in quad) or quad[2]<=quad[0] or quad[1]<=quad[5]: raise ValueError('SURFING_UNSUPPORTED_GEOMETRY')
+                    if any(not math.isfinite(n) or abs(n)>1e7 for n in quad) or quad[2]<=quad[0] or quad[1]<=quad[5]: continue
+                    characters+=len(quote);passages+=1
+                    if characters>max_characters or passages>max_passages: raise ValueError('SURFING_CONTEXT_TOO_LARGE')
                     blocks.append({'id':f'surf-{index}-{bi}-{li}','quote':quote,'quads':[quad]})
             pages.append({'pageIndex':index,'passages':blocks})
     editing_source(source,fingerprint)

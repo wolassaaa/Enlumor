@@ -12,7 +12,7 @@ import type { VerifiedAnchor } from '../src/shared/editing-commands';
 import { editingFixture, editingHost } from './helpers/editing-fixtures';
 import { runEditingCommand } from '../src/main/editing-executor';
 const fixtures: ReturnType<typeof editingFixture>[] = [], workspaces:Workspace[]=[];
-const python=resolve('.venv/Scripts/python.exe');
+const python=process.env.ENLUMOR_PYTHON||resolve('.venv',process.platform==='win32'?'Scripts/python.exe':'bin/python');
 const signal=()=>new AbortController().signal;
 function run<T>(request:object,abort?:AbortSignal):Promise<T> {return new Promise((res,rej)=>{
   const child=spawn(python,['python/export_pdf.py'],{windowsHide:true});let out='';child.stdout.on('data',d=>out+=d);child.on('error',rej);child.on('close',()=>{try{const r=JSON.parse(out);if(!r.ok)throw Error(r.error);res(r.value);}catch(e){rej(e);}});abort?.addEventListener('abort',()=>{child.kill();rej(Error('PDF_CANCELED'));},{once:true});child.stdin.end(JSON.stringify(request));

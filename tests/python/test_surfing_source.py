@@ -30,6 +30,10 @@ class SurfingSourceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             path=Path(root)/'two.pdf';d=fitz.open();p=d.new_page();p.insert_text((60,90),'First line');p.insert_text((60,120),'Second line');d.save(path);d.close();f=hashlib.sha256(path.read_bytes()).hexdigest()
             with self.assertRaisesRegex(ValueError,'SURFING_CONTEXT_TOO_LARGE'):surfing_document(str(path),f,max_passages=1)
+    def test_unusable_lines_are_skipped_not_fatal(self):
+        with tempfile.TemporaryDirectory() as root:
+            path=Path(root)/'stamp.pdf';d=fitz.open();p=d.new_page();p.insert_text((60,90),'Body text');p.insert_text((20,700),'arXiv:2410.00001v1 [cs.CL]',rotate=90);d.save(path);d.close();f=hashlib.sha256(path.read_bytes()).hexdigest()
+            result=surfing_document(str(path),f);self.assertEqual([b['quote'] for b in result['pages'][0]['passages']],['Body text'])
     def test_invalid_limits(self):
         with tempfile.TemporaryDirectory() as root:
             p,f=self.source(root)

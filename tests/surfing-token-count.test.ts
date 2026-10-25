@@ -1,5 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {countSurfingPromptTokens,supportedSurfingTokenizer} from '../src/main/surfing-token-count';
+import {SURFING_MAX_PROMPT_CHARACTERS} from '../src/shared/surfing-context';
 const profile={protocol:'openai-chat' as const,model:'gpt-4o-mini'};
 const prompt={system:'You are a reader.',user:'Hello world'};
 describe('explicit model-aware Surfing token budget',()=>{
@@ -8,7 +9,7 @@ describe('explicit model-aware Surfing token budget',()=>{
  it('accepts an exact recognized model, not a lookalike display name',()=>{expect(supportedSurfingTokenizer(profile)).toBe(true);expect(supportedSurfingTokenizer({...profile,model:'gpt-4o-mini-random'})).toBe(false);});
  it('counts literal special-token-like paper text as data',()=>{expect(countSurfingPromptTokens(profile,{system:'test',user:'<|endoftext|>'})).toBeGreaterThan(1024);});
  it('counts non-ASCII text through the tokenizer rather than character division',()=>{const short=countSurfingPromptTokens(profile,{system:'',user:'论文'});expect(short).toBeGreaterThan(1024);expect(short).toBeLessThan(1100);});
- it('fails closed on an oversized prompt before tokenization',()=>{expect(countSurfingPromptTokens(profile,{system:'',user:'x'.repeat(200001)})).toBe(null);});
+ it('fails closed on an oversized prompt before tokenization',()=>{expect(countSurfingPromptTokens(profile,{system:'',user:'x'.repeat(SURFING_MAX_PROMPT_CHARACTERS+1)})).toBe(null);});
 });
 
 
