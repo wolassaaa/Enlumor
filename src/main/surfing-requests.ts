@@ -11,7 +11,7 @@ export type SurfingExplainRequest=SurfingRouteRequest&{stopIndex:number;depth?:S
 const depthGuide:Record<SurfingDepth,string>={concise:'Keep the explanation to 2 or 3 sentences.',standard:'Write one short paragraph.',detailed:'Explain in depth in 2 to 4 paragraphs: the idea, how it works and why it matters, grounded in the cited passages.'};
 export type SurfingAskRequest=SurfingRouteRequest&{question:string;pageIndex:number};
 export type SurfingExplanation={text:string;passageIds:string[]};
-export type SurfingRouteEvent={requestId:string;type:'answer';question:string;explanation:SurfingExplanation}|{requestId:string;type:'route';route:SurfingRoute}|{requestId:string;type:'explanation';stopIndex:number;explanation:SurfingExplanation}|{requestId:string;type:'error';code:string}|{requestId:string;type:'step';note:string};
+export type SurfingRouteEvent={requestId:string;type:'answer';question:string;explanation:SurfingExplanation}|{requestId:string;type:'route';route:SurfingRoute}|{requestId:string;type:'explanation';stopIndex:number;explanation:SurfingExplanation}|{requestId:string;type:'error';code:string}|{requestId:string;type:'step';note:string}|{requestId:string;type:'thinking'};
 export type SurfingRequestPorts={
  getContext:()=>CommandContext|null;
  /** Host loads trusted PDF text, never accepts renderer-supplied passages or paths. */
@@ -19,7 +19,7 @@ export type SurfingRequestPorts={
  profile:(id:string)=>{profile:AiProfileInput;contextWindowTokens:number};
  /** Includes protocol message framing; null means tokenizer/capacity is not established. */
  measureInputTokens:(profile:AiProfileInput,prompt:AiPrompt,signal:AbortSignal)=>number|null|Promise<number|null>;
- generate:(profile:AiProfileInput,prompt:AiPrompt,options:{signal:AbortSignal;onDelta:(text:string)=>void})=>Promise<string>;
+ generate:(profile:AiProfileInput,prompt:AiPrompt,options:{signal:AbortSignal;onDelta:(text:string)=>void;onThinking?:()=>void})=>Promise<string>;
  emit:(event:SurfingRouteEvent)=>void;
  /** Renders one page of the verified original for a model that can see images. */
  renderPage?:(context:CommandContext,pageIndex:number,signal:AbortSignal)=>Promise<AiImage>;
@@ -77,8 +77,9 @@ export class SurfingRequests{
     if(!current())return;
     if(tokens===null||!Number.isSafeInteger(tokens)||tokens<0)throw Error('SURFING_CAPACITY_UNKNOWN');
     const maxOutput=Math.min(limit,contextWindowTokens-tokens);if(maxOutput<floor)throw Error('SURFING_CONTEXT_TOO_LARGE');
-    if(!current())return;let outputSize=0;
-    raw=await this.ports.generate(withMaxOutput(profile,maxOutput),prompt,{signal:job.controller.signal,onDelta:text=>{if(!current())return;outputSize+=text.length;if(outputSize>32768)throw Error('AI_RESPONSE_TOO_LARGE');}});
+    if(!current())return;let outputSize=0,thinking=false;
+    // The panel says the model is thinking (once per request); what it thinks is never shown or kept.
+    raw=await this.ports.generate(withMaxOutput(profile,maxOutput),prompt,{signal:job.controller.signal,onDelta:text=>{if(!current())return;outputSize+=text.length;if(outputSize>32768)throw Error('AI_RESPONSE_TOO_LARGE');},onThinking:()=>{if(thinking||!current())return;thinking=true;this.ports.emit({requestId:job.id,type:'thinking'});}});
     if(!current())return;
     let parsed:ReturnType<typeof parseSurfingAgentStep>;
     try{

@@ -107,7 +107,7 @@ test('real model benchmark',async()=>{
  const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+mkdtempSync(path.join(tmpdir(),'enlumor-acceptance-'))],env:{...process.env,ENLUMOR_PYTHON:python,ENLUMOR_ACCEPTANCE_KEY:''}});
  const page=await app.firstWindow();await page.setViewportSize({width:1440,height:900});appRef=app;
  // Every step note the app sends to the panel is recorded; the panel itself shows only the latest one.
- await app.evaluate(({BrowserWindow})=>{const wc=BrowserWindow.getAllWindows()[0].webContents,send=wc.send.bind(wc);(globalThis as any).surfingSteps=[];wc.send=(channel:string,...args:any[])=>{if(channel==='surfing:text'&&args[0]?.type==='step')(globalThis as any).surfingSteps.push(args[0].note);return send(channel,...args);};});
+ await app.evaluate(({BrowserWindow})=>{const wc=BrowserWindow.getAllWindows()[0].webContents,send=wc.send.bind(wc);(globalThis as any).surfingSteps=[];wc.send=(channel:string,...args:any[])=>{if(channel==='surfing:text'&&args[0]?.type==='step')(globalThis as any).surfingSteps.push(args[0].note);if(channel==='surfing:text'&&args[0]?.type==='thinking')(globalThis as any).surfingThinking=((globalThis as any).surfingThinking||0)+1;return send(channel,...args);};});
  // Unattended runs: another window taking focus must not count as the reader leaving (the app pauses Surfing on blur).
  await app.evaluate(({BrowserWindow})=>BrowserWindow.getAllWindows()[0].removeAllListeners('blur'));
  let vision=false;
@@ -134,5 +134,5 @@ test('real model benchmark',async()=>{
   });
   if(results[1].status==='fail')return;
   for(const c of manifest.checks)await record(page,c,()=>c.kind==='ask'?askCheck(page,c,vision):c.kind==='route'?routeCheck(page,c):guidedCheck(page,c));
- }finally{report(manifest);await app.evaluate(({app})=>app.exit(0)).catch(()=>{});console.log('ACCEPTANCE REPORT '+path.join(out,'report.html'));}
+ }finally{facts['思考提示']=String(await app.evaluate(()=>(globalThis as any).surfingThinking||0).catch(()=>0))+' 次';report(manifest);await app.evaluate(({app})=>app.exit(0)).catch(()=>{});console.log('ACCEPTANCE REPORT '+path.join(out,'report.html'));}
 });

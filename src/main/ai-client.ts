@@ -70,16 +70,19 @@ export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=tru
  return{url:url.toString(),headers,body};
 }
 
-function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:string;done:boolean} {
+/** One response object or stream event: its answer text, whether the reply is complete, and whether the model is thinking
+ * (reasoning the services stream separately from the answer; it is never shown or kept, only noticed). */
+function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:string;done:boolean;thinking:boolean} {
  if(!value||typeof value!=='object'||Array.isArray(value))throw failure('AI_INVALID_RESPONSE');
  if(value.error||value.type==='error'||value.type==='response.failed')throw failure('AI_REMOTE_ERROR');
- let text='',done=false;
+ let text='',done=false,thinking=false;
  switch(profile.protocol){
   case'openai-chat':{
    const choices=value.choices;if(!Array.isArray(choices))throw failure('AI_INVALID_RESPONSE');
-   const c=choices[0];if(!c)return{text:'',done:false};const finish=c.finish_reason;
+   const c=choices[0];if(!c)return{text:'',done:false,thinking:false};const finish=c.finish_reason;
    if(finish==='length'||finish==='content_filter')throw failure('AI_INCOMPLETE');
-   const content=stream?c.delta?.content:c.message?.content;
+   const part=stream?c.delta:c.message;thinking=!!(part?.reasoning_content||part?.reasoning);
+   const content=part?.content;
    if(typeof content==='string')text=content;
    else if(Array.isArray(content))text=content.filter(p=>p.type==='text'&&typeof p.text==='string').map(p=>p.text).join('');
    else if(content!==undefined&&content!==null)throw failure('AI_INVALID_RESPONSE');
@@ -88,6 +91,7 @@ function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:str
   case'openai-responses':
    if(!stream){if(value.status&&value.status!=='completed')throw failure('AI_INCOMPLETE');if(!Array.isArray(value.output))throw failure('AI_INVALID_RESPONSE');text=value.output.flatMap((v:any)=>v.type==='message'&&Array.isArray(v.content)?v.content:[]).filter((v:any)=>v.type==='output_text'&&typeof v.text==='string').map((v:any)=>v.text).join('');done=true;}
    else if(value.type==='response.output_text.delta'){if(typeof value.delta!=='string')throw failure('AI_INVALID_RESPONSE');text=value.delta;}
+   else if(typeof value.type==='string'&&value.type.startsWith('response.reasoning'))thinking=true;
    else if(value.type==='response.completed'){if(value.response?.status&&value.response.status!=='completed')throw failure('AI_INCOMPLETE');done=true;}
    else if(value.type==='response.incomplete')throw failure('AI_INCOMPLETE');
    break;
@@ -95,24 +99,25 @@ function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:str
    if(!stream){if(value.stop_reason==='max_tokens')throw failure('AI_INCOMPLETE');if(!Array.isArray(value.content))throw failure('AI_INVALID_RESPONSE');text=value.content.filter((v:any)=>v.type==='text'&&typeof v.text==='string').map((v:any)=>v.text).join('');done=true;}
    else if(value.type==='content_block_start'&&value.content_block?.type==='text'){if(typeof value.content_block.text!=='string')throw failure('AI_INVALID_RESPONSE');text=value.content_block.text;}
    else if(value.type==='content_block_delta'&&value.delta?.type==='text_delta'){if(typeof value.delta.text!=='string')throw failure('AI_INVALID_RESPONSE');text=value.delta.text;}
+   else if(value.type==='content_block_delta'&&value.delta?.type==='thinking_delta')thinking=true;
    else if(value.type==='message_delta'&&value.delta?.stop_reason==='max_tokens')throw failure('AI_INCOMPLETE');
    else if(value.type==='message_stop')done=true;
    break;
   case'dashscope':{
    if(value.code||(typeof value.status_code==='number'&&value.status_code>=400))throw failure('AI_REMOTE_ERROR');
    const output=value.output,c=output?.choices?.[0],content=c?.message?.content??output?.text,finish=c?.finish_reason??output?.finish_reason;
-   if(typeof content!=='string')throw failure('AI_INVALID_RESPONSE');
+   if(typeof content!=='string')throw failure('AI_INVALID_RESPONSE');thinking=!!c?.message?.reasoning_content;
    if(finish&&finish!=='stop'&&finish!=='null')throw failure('AI_INCOMPLETE');text=content;done=finish==='stop';if(!stream&&!done)throw failure('AI_INCOMPLETE');break;
   }
   case'gemini':{
-   const c=value.candidates?.[0];if(!c){if(value.promptFeedback?.blockReason)throw failure('AI_REMOTE_ERROR');if(!Array.isArray(value.candidates))throw failure('AI_INVALID_RESPONSE');return{text:'',done:false};}
+   const c=value.candidates?.[0];if(!c){if(value.promptFeedback?.blockReason)throw failure('AI_REMOTE_ERROR');if(!Array.isArray(value.candidates))throw failure('AI_INVALID_RESPONSE');return{text:'',done:false,thinking:false};}
    if(c.finishReason&&c.finishReason!=='STOP')throw failure('AI_INCOMPLETE');
    if(c.content?.parts&&!Array.isArray(c.content.parts))throw failure('AI_INVALID_RESPONSE');
-   text=(c.content?.parts||[]).filter((p:any)=>typeof p.text==='string'&&!p.thought).map((p:any)=>p.text).join('');done=c.finishReason==='STOP'||!stream;break;
+   text=(c.content?.parts||[]).filter((p:any)=>typeof p.text==='string'&&!p.thought).map((p:any)=>p.text).join('');thinking=(c.content?.parts||[]).some((p:any)=>p?.thought);done=c.finishReason==='STOP'||!stream;break;
   }
   default:throw failure('AI_PROTOCOL_NOT_READY');
  }
- return{text,done};
+ return{text,done,thinking};
 }
 
 // Services name the context window differently (OpenRouter/Together context_length, Groq context_window, Mistral max_context_length,
@@ -165,7 +170,7 @@ async function httpFailure(response:Response,requested:number):Promise<Error>{
  return failure('AI_CONTEXT_OVERFLOW');
 }
 
-type GenerateOptions={stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;fetch?:typeof fetch};
+type GenerateOptions={stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;onThinking?:()=>void;fetch?:typeof fetch};
 export async function generateText(profile:AiProfileInput,prompt:AiPrompt,options:GenerateOptions={}):Promise<string>{
  if(profile.protocol==='spark'){if(prompt?.turns?.length)throw failure('AI_TURNS_UNSUPPORTED');return generateSpark(profile,prompt,options);}
  const requested=requestMaxOutput(profile);
@@ -200,7 +205,7 @@ async function generateOnce(profile:AiProfileInput,prompt:AiPrompt,options:Gener
    if(event==='error')throw failure('AI_REMOTE_ERROR');if(!data)return;alive();
    if(data==='[DONE]'){if(profile.protocol!=='openai-chat')throw failure('AI_INVALID_RESPONSE');done=true;return;}
    let value;try{value=JSON.parse(data);}catch{throw failure('AI_INVALID_RESPONSE');}
-   const decoded=decodeObject(profile,value,true);let delta=decoded.text;if(profile.protocol==='dashscope'&&profile.parameters.incremental_output===false){if(!delta.startsWith(text))throw failure('AI_INVALID_RESPONSE');delta=delta.slice(text.length);}emit(delta);done||=decoded.done;
+   const decoded=decodeObject(profile,value,true);if(decoded.thinking)options.onThinking?.();let delta=decoded.text;if(profile.protocol==='dashscope'&&profile.parameters.incremental_output===false){if(!delta.startsWith(text))throw failure('AI_INVALID_RESPONSE');delta=delta.slice(text.length);}emit(delta);done||=decoded.done;
   };
   while(!done){
    const chunk=await reader.read();if(chunk.done){pending+=decoder.decode();break;}

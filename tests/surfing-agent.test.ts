@@ -45,3 +45,9 @@ describe('Surfing reading agent',()=>{
  });
  it('search ranks passages by matched words',()=>{expect(searchSurfingPassages(snapshot,'context length accuracy').map(p=>p.id)).toEqual(['p1']);expect(searchSurfingPassages(snapshot,'nothing here')).toEqual([]);});
 });
+it('the panel hears once per request that the model is thinking, and test mode keeps waiting for the answer',async()=>{
+ const events:any[]=[];const ports:SurfingRequestPorts={getContext:()=>context,load:async()=>structuredClone(snapshot),profile:()=>({profile:{id:'profile',name:'t',model:'deepseek-flash',protocol:'openai-chat',endpoint:'http://localhost/v1',maxOutputTokens:1000,timeoutMs:10000,parameters:{}},contextWindowTokens:100000}),measureInputTokens:()=>2000,
+  generate:async(_p,_prompt,o)=>{o.onThinking?.();o.onThinking?.();return final;},emit:e=>events.push(e)};
+ await new SurfingRequests(ports).ask(ask());
+ expect(events.map(e=>e.type)).toEqual(['thinking','answer']);
+});

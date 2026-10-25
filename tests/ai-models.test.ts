@@ -102,3 +102,13 @@ it('keep-alive comments from a queued request do not count as progress',async()=
  const endpoint=await server((_q,res)=>{res.setHeader('content-type','text/event-stream');const tick=setInterval(()=>{if(res.destroyed){clearInterval(tick);return;}res.write(': keep-alive\n\n');},40);res.on('close',()=>clearInterval(tick));});
  await expect(generateText({...profile(endpoint),timeoutMs:200},prompt)).rejects.toThrow('AI_TIMEOUT');
 });
+it('thinking streamed apart from the answer is noticed, never added to the answer',async()=>{
+ const cases:[AiProtocol,string,string][]=[
+  ['openai-chat','data: {"choices":[{"delta":{"reasoning_content":"hmm","content":null}}]}\n\ndata: {"choices":[{"delta":{"content":"ok"},"finish_reason":"stop"}]}\n\ndata: [DONE]\n\n','/v1'],
+  ['anthropic-messages','event: content_block_delta\ndata: {"type":"content_block_delta","delta":{"type":"thinking_delta","thinking":"hmm"}}\n\nevent: content_block_delta\ndata: {"type":"content_block_delta","delta":{"type":"text_delta","text":"ok"}}\n\nevent: message_stop\ndata: {"type":"message_stop"}\n\n','/v1'],
+ ];
+ for(const [protocol,body] of cases){
+  const endpoint=await server((_q,res)=>{res.setHeader('content-type','text/event-stream');res.end(body);});let thought=0;
+  expect(await generateText({...profile(endpoint,protocol)},prompt,{onThinking:()=>thought++})).toBe('ok');expect(thought).toBeGreaterThan(0);
+ }
+});

@@ -23,7 +23,7 @@ export function BenchmarkPanel({document:doc,manifest,onExit,onSettings}:{docume
  const profile=profiles.find(p=>p.id===profileId);
  useEffect(()=>{mounted.current=true;
   void window.enlumor.listAiProfiles().then(r=>{const list=unwrap(r);if(!mounted.current)return;setProfiles(list);setProfileId(id=>id||list[0]?.id||'');}).catch(()=>{});
-  const off=window.enlumor.onSurfingText(event=>{const p=pending.current.get(event.requestId);if(!p)return;if(event.type==='step'){p.steps.push(event.note);return;}pending.current.delete(event.requestId);p.resolve(event);});
+  const off=window.enlumor.onSurfingText(event=>{const p=pending.current.get(event.requestId);if(!p||event.type==='thinking')return;if(event.type==='step'){p.steps.push(event.note);return;}pending.current.delete(event.requestId);p.resolve(event);});
   // The app cancels model requests when its window goes to the background; the run stops instead of waiting forever.
   const offBackground=window.enlumor.onAppBackground(()=>{if(pending.current.size)halt('background');});
   return()=>{mounted.current=false;off();offBackground();stopped.current=true;const c=context.current;if(c){void window.enlumor.cancelSurfing(c);void window.enlumor.deactivateSurfing(c);}};

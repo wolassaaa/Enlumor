@@ -245,10 +245,11 @@ summary{cursor:pointer}
 .annotation-tools{display:flex;flex-direction:column;gap:14px}
 .tool-group{display:grid;grid-template-columns:1fr 1fr;gap:2px 4px}
 .tool-caption{grid-column:1/-1;font-size:var(--fs-xs);font-weight:600;color:var(--muted);margin:0 2px 4px}
-.tool-group button{justify-content:flex-start;border:0;background:transparent;min-height:30px;padding:0 8px;font-size:var(--fs-s);color:var(--ink);border-radius:var(--radius-s);text-decoration-skip-ink:none}
-.tool-group button:hover:not(:disabled){background:var(--hover)}
+/* Tools sit on a light surface so they read as buttons, not labels; unavailable ones lose the surface. */
+.tool-group button{justify-content:flex-start;border:1px solid var(--line);background:var(--raised);min-height:30px;padding:0 8px;font-size:var(--fs-s);color:var(--ink);border-radius:var(--radius-s);text-decoration-skip-ink:none;transition:background-color .16s,border-color .16s}
+.tool-group button:hover:not(:disabled){background:var(--hover);border-color:var(--line-hover)}
 .tool-group button:active:not(:disabled){background:var(--pressed)}
-.tool-group button:disabled{opacity:1;color:var(--faint)}
+.tool-group button:disabled{opacity:1;color:var(--faint);background:transparent;border-color:transparent}
 .tool-group button[aria-pressed="true"]{background:var(--blue-soft);color:var(--blue-ink);box-shadow:inset 0 0 0 1px var(--blue-line)}
 /* Each selection tool previews its own mark in the chosen colour. */
 .tool-highlight{text-decoration-line:underline;text-decoration-thickness:.62em;text-underline-offset:-.42em;text-decoration-color:color-mix(in srgb,var(--mark) 55%,transparent)}
