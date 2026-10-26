@@ -67,6 +67,7 @@ export class PdfReader {
     }, { passive: false });
   }
   async open(doc: OpenedDocument) {
+    this.glide?.();
     this.blockCache.clear();
     this.setDrawingTool(null);
     const generation = ++this.generation;
@@ -161,18 +162,20 @@ export class PdfReader {
     this.blockCache.set(pageIndex,blocks);if(this.blockCache.size>6)this.blockCache.delete(this.blockCache.keys().next().value!);
     return structuredClone(blocks);
   }
-  clearCruiseFocus(){this.focusEpoch=(this.focusEpoch||0)+1;clearTimeout(this.flashTimer);const hadFlash=!!this.flash;this.flash=undefined;if(hadFlash)this.paint();}
-  locateCruiseBlock(block:CruiseBlock,isCurrent:()=>boolean=()=>true){
+  clearCruiseFocus(){this.glide?.();this.focusEpoch=(this.focusEpoch||0)+1;clearTimeout(this.flashTimer);const hadFlash=!!this.flash;this.flash=undefined;if(hadFlash)this.paint();}
+  /** smooth: glide there (Surfing taking the reader somewhere); otherwise the jump is immediate, as reader-initiated jumps are. */
+  locateCruiseBlock(block:CruiseBlock,isCurrent:()=>boolean=()=>true,smooth=false){
     if(!isCurrent())return Promise.resolve();
     if(!this.active||!this.ready||!this.viewer.pdfDocument||block.documentId!==this.active.id||block.fingerprint!==this.active.fingerprint)throw new Error('CRUISE_SOURCE_CHANGED');
     const mark={...block,type:'highlight',author:'user',color:'#f4cf58',note:''};
-    validateAnnotation(mark,this.active.pageCount);return this.focus(mark,isCurrent);
+    validateAnnotation(mark,this.active.pageCount);return this.focus(mark,isCurrent,smooth);
   }
   setEditingMarks(marks:(MarkView & {documentId:string;fingerprint:string})[],changedIds?:string[]){this.marks=marks.filter(m=>m.visible);this.paint(undefined,changedIds?new Set(changedIds):undefined);}
   setMarks(marks: Annotation[], changedIds?: string[]) { this.marks = marks; this.paint(undefined,changedIds?new Set(changedIds):undefined); }
   setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
   setLineEnabled(enabled:boolean) { this.setDrawingTool(enabled?'line':null); }
   clear() {
+    this.glide?.();
     this.blockCache.clear();
     this.setDrawingTool(null);
     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
@@ -223,8 +226,9 @@ export class PdfReader {
     return parts;
   }
   /** Scrolls the reading area to `top` with an eased glide (longer for longer distances). Any reader input stops it where
-   * it is, a newer glide replaces it, and with reduced motion it goes straight there. Resolves when it arrives or stops. */
-  private glideTo(top:number):Promise<void>{
+   * it is, as does the request no longer being current (pause, another document); a newer glide replaces it, and with
+   * reduced motion it goes straight there. Resolves when it arrives or stops. */
+  private glideTo(top:number,isCurrent:()=>boolean=()=>true):Promise<void>{
     this.glide?.();
     const el=this.container,from=el.scrollTop,to=Math.max(0,Math.min(top,el.scrollHeight-el.clientHeight)),distance=to-from;
     if(Math.abs(distance)<2||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){el.scrollTop=to;return Promise.resolve();}
@@ -235,7 +239,7 @@ export class PdfReader {
       for(const type of inputs)el.addEventListener(type,stop,{passive:true});
       this.glide=stop;
       const frame=(now:number)=>{
-        if(done)return;const t=Math.min(1,(now-start)/duration),eased=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+        if(done)return;if(!isCurrent()){stop();return;}const t=Math.min(1,(now-start)/duration),eased=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
         el.scrollTop=from+distance*eased;if(t<1)requestAnimationFrame(frame);else stop();
       };
       requestAnimationFrame(frame);
@@ -273,15 +277,15 @@ export class PdfReader {
     const nx=again?scaled.div.offsetLeft+(again[0]+again[2])/2:ax*this.viewer.currentScale/from,ny=again?scaled.div.offsetTop+(again[1]+again[3])/2:ay*this.viewer.currentScale/from;
     el.scrollLeft=Math.max(0,nx-screenX);el.scrollTop=Math.max(0,ny-(this.viewer.scrollMode===ScrollMode.PAGE?0:screenY));
   }
-  focus(mark: DisplayMark, isCurrent:()=>boolean=()=>true):Promise<void> {
+  focus(mark: DisplayMark, isCurrent:()=>boolean=()=>true,smooth=false):Promise<void> {
     const generation=this.generation,epoch=this.focusEpoch=(this.focusEpoch||0)+1;
     const current=()=>epoch===this.focusEpoch&&generation===this.generation&&this.ready&&mark.documentId===this.active?.id&&mark.fingerprint===this.active?.fingerprint&&isCurrent();
     if(!current())return Promise.resolve();
-    // In continuous reading the passage is reached with a glide; the highlight stays a little longer to cover it.
-    const target=this.viewer.scrollMode===ScrollMode.PAGE?null:this.focusTop(mark);
+    // A smooth focus in continuous reading glides to the passage; the highlight stays a little longer to cover it.
+    const target=!smooth||this.viewer.scrollMode===ScrollMode.PAGE?null:this.focusTop(mark);
     this.flash = mark; this.paint();
     clearTimeout(this.flashTimer); this.flashTimer = setTimeout(() => { if(epoch===this.focusEpoch&&generation===this.generation){this.flash = undefined; this.paint();} }, target===null?1800:2400);
-    if(target!==null)return this.glideTo(target);
+    if(target!==null)return this.glideTo(target,current);
     this.go(mark.pageIndex + 1);
     return new Promise(resolve=>requestAnimationFrame(() => {
       if(!current()){
