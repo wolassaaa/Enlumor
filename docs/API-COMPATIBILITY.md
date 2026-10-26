@@ -25,6 +25,20 @@ Spark预设使用Lite地址wss://spark-api.xf-yun.com/v1.1/chat，domain填写li
 
 DeepSeek（2026-10-26 实测，用户真实密钥）：官方接口只接受 `deepseek-flash`（V4.1 Flash 1017）与 `deepseek-v4-pro`，`deepseek-chat`/`deepseek-reasoner` 是 Flash 的别名；窗口 1M。V4.1 Flash 能看页面图片（柱状图、结构图都读对了），V4 Pro 接受图片但看不到。预设默认 `deepseek-flash`。验收记录见 `tests/acceptance/README.md`。
 
+## 思考程度（2026-10-26）
+
+Surfing 输入框旁边可以选思考程度，选择会作用于之后的提问、生成切入点和讲解。档位用模型自己的名字，只在验证过的服务上开放：
+
+- **DeepSeek 官方接口**：
+  - 不思考：`thinking:{type:"disabled"}`。
+  - `reasoning_effort` 可选 low、high（默认）、max。
+  - 已用真实 key 验证：传不认识的值，服务会返回 422。
+  - 实测"不思考"能明显缩短回答；low、high、max 在简单题上的思考量差别不大。
+- **OpenAI 官方的推理模型**（o 系列、gpt-5）：`reasoning_effort` 可选 low、medium（默认）、high。按文档实现，没有用真实 key 实测。
+- **其他服务**：选择框置灰，不发送任何思考参数。
+
+档位随请求单独传递，不写进模型配置，所以已保存的 Surfing 进度和配置签名都不受影响。
+
 ## 凭据与网络
 
 Spark三项凭据一次完整填写，或编辑时全部留空保留；保存后不回显。变更服务origin或协议且未重填凭据时清除旧凭据，避免错误复用。系统加密不可用时仅保留本次会话，不落明文。
