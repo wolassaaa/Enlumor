@@ -7,7 +7,7 @@ import type { EditActor, EditDelta, EditMark, EditSnapshot, VerifiedAnchor } fro
 import type { EditConfirmation, EditOperation, EditReceipt, EditTransaction, HistoryWrite } from './editing-executor';
 import type { EditingView, LegacyMarkView } from '../shared/editing-bridge';
 import { canonicalDigest } from '../shared/editing-planner';
-import { validateGeometry, validateMark, version as validateVersion } from '../shared/editing-marks';
+import { trustEditData, validateGeometry, validateMark, version as validateVersion } from '../shared/editing-marks';
 import { validateAnnotation } from '../shared/geometry';
 
 const schema = `
@@ -80,13 +80,26 @@ export class WorkspaceEdits {
     this.actor=Object.freeze({kind:'user',id});
   }
   private get db(){return this.workspace.db;}
+  /** Parsed and validated marks by document, fingerprint and id. This connection's own writes (writeDeltas) forget the marks
+   * they change; a commit from any other connection changes data_version and empties the cache, so a stored row is read,
+   * parsed and validated again whenever it may differ from what was cached. */
+  private parsed=new Map<string,EditMark>();
+  private parsedAt=-1;
+  /** Undo/redo metadata by operation id, kept like parsed marks (see history). */
+  private operationMeta=new Map<string,{operationId:string;currentVersions:Record<string,number>;redoEligible:boolean}>();
+  private operationsAt=-1;
+  private forget(c:Pick<CommandContext,'documentId'|'fingerprint'>,id:string){this.parsed.delete(c.documentId+'\u0000'+c.fingerprint+'\u0000'+id);}
   private context(c:CommandContext) {const d=this.workspace.document(c.documentId);if(d.fingerprint!==c.fingerprint)throw Error('SOURCE_CHANGED');return d;}
   private marks(c:CommandContext):{marks:EditMark[];diagnostics:{legacyId:string;reason:string}[]} {
     const doc=this.context(c); const bounds=Array.from({length:doc.pageCount},()=>[-1e7,-1e7,1e7,1e7] as [number,number,number,number]);
     const marks:EditMark[]=[],diagnostics:{legacyId:string;reason:string}[]=[];
-    for(const row of this.db.prepare('SELECT id,version,payload FROM edit_marks WHERE documentId=? AND fingerprint=? ORDER BY rowid').all(c.documentId,c.fingerprint)) {
-      try {const m=JSON.parse(row.payload as string);validateMark(m,c,bounds);if(m.id!==row.id||m.version!==row.version)throw Error('version mismatch'); marks.push(m);}
-      catch {diagnostics.push({legacyId:String(row.id),reason:'INVALID_EDIT_MARK'});}
+    const now=dataVersion(this.db);if(now!==this.parsedAt||this.parsed.size>50000){this.parsed.clear();this.parsedAt=now;}
+    const payloadOf=this.db.prepare('SELECT payload FROM edit_marks WHERE documentId=? AND fingerprint=? AND id=?');
+    for(const row of this.db.prepare('SELECT id,version FROM edit_marks WHERE documentId=? AND fingerprint=? ORDER BY rowid').all(c.documentId,c.fingerprint)) {
+      const key=c.documentId+'\u0000'+c.fingerprint+'\u0000'+String(row.id),cached=this.parsed.get(key);
+      if(cached&&cached.version===row.version){marks.push(cached);continue;}
+      try {const m=JSON.parse(payloadOf.get(c.documentId,c.fingerprint,row.id)!.payload as string);validateMark(m,c,bounds);if(m.id!==row.id||m.version!==row.version)throw Error('version mismatch');const mark=trustEditData(m as EditMark);this.parsed.set(key,mark);marks.push(mark);}
+      catch {this.parsed.delete(key);diagnostics.push({legacyId:String(row.id),reason:'INVALID_EDIT_MARK'});}
     }
     return {marks,diagnostics};
   }
@@ -103,10 +116,13 @@ export class WorkspaceEdits {
     const applicable=(o:{currentVersions:Record<string,number>})=>Object.entries(o.currentVersions).every(([id,v])=>v<Number.MAX_SAFE_INTEGER&&Number(current.get(c.documentId,c.fingerprint,id)?.version??0)===v);
     // History buttons need metadata, not megabytes of stroke deltas/inverses.
     // SQLite projects from the same authoritative rows/read transaction; no cache.
-    const fields="json_extract(payload,'$.operationId','$.currentVersions','$.redoEligible') AS metadata";
-    const decode=(r:Record<string,unknown>)=>{const [operationId,currentVersions,redoEligible]=JSON.parse(r.metadata as string);return{operationId:operationId as string,currentVersions:currentVersions as Record<string,number>,redoEligible:!!redoEligible};};
-    const undoIds=this.db.prepare(`SELECT ${fields} FROM edit_operations WHERE documentId=? AND fingerprint=? AND actorKey=? AND action='edit' AND state='applied' ORDER BY rowid DESC`).all(c.documentId,c.fingerprint,key).map(decode).filter(applicable).map(o=>o.operationId);
-    const redoIds=this.db.prepare(`SELECT ${fields} FROM edit_operations WHERE documentId=? AND fingerprint=? AND redoOwnerKey=? AND action='edit' AND state='undone' ORDER BY rowid DESC`).all(c.documentId,c.fingerprint,key).map(decode).filter(o=>o.redoEligible&&applicable(o)).map(o=>o.operationId);
+    // Operations carry every mark they changed, so their metadata is extracted once per operation and kept until this
+    // connection rewrites that operation or another connection commits (data_version), as with parsed marks.
+    const now=dataVersion(this.db);if(now!==this.operationsAt||this.operationMeta.size>20000){this.operationMeta.clear();this.operationsAt=now;}
+    const extract=this.db.prepare("SELECT json_extract(payload,'$.operationId','$.currentVersions','$.redoEligible') AS metadata FROM edit_operations WHERE operationId=?");
+    const decode=(r:Record<string,unknown>)=>{const id=String(r.operationId),cached=this.operationMeta.get(id);if(cached)return cached;const [operationId,currentVersions,redoEligible]=JSON.parse(extract.get(id)!.metadata as string);const meta={operationId:operationId as string,currentVersions:currentVersions as Record<string,number>,redoEligible:!!redoEligible};this.operationMeta.set(id,meta);return meta;};
+    const undoIds=this.db.prepare(`SELECT operationId FROM edit_operations WHERE documentId=? AND fingerprint=? AND actorKey=? AND action='edit' AND state='applied' ORDER BY rowid DESC`).all(c.documentId,c.fingerprint,key).map(decode).filter(applicable).map(o=>o.operationId);
+    const redoIds=this.db.prepare(`SELECT operationId FROM edit_operations WHERE documentId=? AND fingerprint=? AND redoOwnerKey=? AND action='edit' AND state='undone' ORDER BY rowid DESC`).all(c.documentId,c.fingerprint,key).map(decode).filter(o=>o.redoEligible&&applicable(o)).map(o=>o.operationId);
     return {undoIds,redoIds};
   }
   /** With legacyId, reads only that row so per-input imports stay linear in the document's legacy count. */
@@ -166,7 +182,7 @@ export class WorkspaceEdits {
   private writeDeltas(c:CommandContext,deltas:EditDelta[]) {
     this.context(c);
     for(const d of deltas) {
-      validateVersion(d.expectedVersion);validateVersion(d.expectedVersion+1);
+      validateVersion(d.expectedVersion);validateVersion(d.expectedVersion+1);this.forget(c,d.id);
       const row=this.db.prepare('SELECT version FROM edit_versions WHERE documentId=? AND fingerprint=? AND id=?').get(c.documentId,c.fingerprint,d.id);
       if(Number(row?.version??0)!==d.expectedVersion)throw Error('VERSION_CONFLICT');
       this.db.prepare('DELETE FROM edit_marks WHERE documentId=? AND fingerprint=? AND id=?').run(c.documentId,c.fingerprint,d.id);
@@ -178,9 +194,9 @@ export class WorkspaceEdits {
     const c=w.operation.context;
     if(w.clearRedoFor)for(const r of this.db.prepare("SELECT payload FROM edit_operations WHERE documentId=? AND fingerprint=? AND redoOwnerKey=? AND action='edit' AND state='undone'").all(c.documentId,c.fingerprint,actorKey(w.clearRedoFor))) {const o=JSON.parse(r.payload as string) as EditOperation;o.redoEligible=false;this.updateOperation(o);}
     if(w.target)this.updateOperation(w.target);
-    const o=w.operation;this.db.prepare('INSERT INTO edit_operations VALUES(?,?,?,?,?,?,?,?)').run(o.operationId,c.documentId,c.fingerprint,actorKey(o.actor),o.redoActor?actorKey(o.redoActor):null,o.action,o.state,JSON.stringify(o));
+    const o=w.operation;this.operationMeta.delete(o.operationId);this.db.prepare('INSERT INTO edit_operations VALUES(?,?,?,?,?,?,?,?)').run(o.operationId,c.documentId,c.fingerprint,actorKey(o.actor),o.redoActor?actorKey(o.redoActor):null,o.action,o.state,JSON.stringify(o));
   }
-  private updateOperation(o:EditOperation){this.db.prepare('UPDATE edit_operations SET redoOwnerKey=?,state=?,payload=? WHERE operationId=? AND documentId=? AND fingerprint=?').run(o.redoActor?actorKey(o.redoActor):null,o.state,JSON.stringify(o),o.operationId,o.context.documentId,o.context.fingerprint);}
+  private updateOperation(o:EditOperation){this.operationMeta.delete(o.operationId);this.db.prepare('UPDATE edit_operations SET redoOwnerKey=?,state=?,payload=? WHERE operationId=? AND documentId=? AND fingerprint=?').run(o.redoActor?actorKey(o.redoActor):null,o.state,JSON.stringify(o),o.operationId,o.context.documentId,o.context.fingerprint);}
   /** Compatibility audit is distinct from ordinary user undo history. Source work precedes this transaction. */
   importLegacy(c:CommandContext,input:LegacyInput,mark:EditMark|null,anchor:VerifiedAnchor|null,reason:string,audit:unknown=null) {
     this.transaction(()=>{

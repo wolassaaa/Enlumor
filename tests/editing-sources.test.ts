@@ -28,7 +28,8 @@ async function fixture(rotation=0,scan=false) {
 const selected:AnchorCandidate={pageIndex:0,quote:'Repeated sentence',quads:[[60,423,160,423,60,406,160,406]]};
 function legacy(f:Awaited<ReturnType<typeof fixture>>,id='old',patch:Partial<Annotation>={}):Annotation {const a:Annotation={id,documentId:f.doc.id,fingerprint:f.doc.fingerprint,author:'user',type:'highlight',pageIndex:0,color:'#123456',note:'original note',quote:selected.quote,quads:selected.quads,...patch};f.workspace.db.prepare('INSERT INTO annotations VALUES(?,?,?)').run(id,f.doc.id,JSON.stringify(a));return a;}
 afterEach(()=>{for(const w of workspaces.splice(0))w.close();for(const f of fixtures.splice(0))f.cleanup();});
-describe('trusted source and atomic legacy conversion',()=>{
+// Every test here spawns Python on a real PDF; under a busy machine 5 s is too tight.
+describe('trusted source and atomic legacy conversion',{timeout:20000},()=>{
   it.each([0,90,180,270])('locates actual repeated sentence by native position at rotation %i; caches page without reparse',async rotation=>{
     const f=await fixture(rotation);const before=readFileSync(f.source);const a=await f.service.prepareAnchor(f.context,selected,signal());
     expect(a.quote).toBe(selected.quote);expect(a.quads).not.toEqual(selected.quads);expect(a.quads[0][0]).toBeCloseTo(60);
@@ -123,4 +124,4 @@ it('export writes the marks as the reader sees them plus legacy annotations not 
  expect(result.annotationCount).toBe(3);
  const written=JSON.parse(execFileSync(python,['-c','import pymupdf as f,sys,json;d=f.open(sys.argv[1]);print(json.dumps(sorted([[a.type[1],a.info["subject"],"#%02x%02x%02x"%tuple(round(c*255) for c in a.colors["stroke"])] for a in d[0].annots()])))',target],{encoding:'utf8'}));
  expect(written).toEqual([['Highlight','old','#cc2200'],['Text','later','#123456'],['Text',noteId,'#2255aa']].sort());
-});
+},30000);

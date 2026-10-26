@@ -13,11 +13,20 @@ export class EditValidationError extends Error {
 export function invalid(code: EditErrorCode = 'EDIT_INVALID'): never { throw new EditValidationError(code); }
 
 /** Only own data properties are inspected. No external getter is evaluated, even on arrays. */
+// Edit data the host parsed with JSON.parse from its own storage and validated, then deeply froze. It cannot carry accessors,
+// holes, symbols or cycles and cannot change, so copying it returns it as it is; dense ink snapshots are mostly this.
+const trustedEditData = new WeakSet<object>();
+/** Deeply freezes host-parsed, already validated edit data and lets copyEditData return it without copying. */
+export function trustEditData<T extends object>(value: T): T {
+  const freeze = (v: unknown) => { if (v && typeof v === 'object' && !Object.isFrozen(v)) { for (const key of Object.keys(v)) freeze((v as Record<string, unknown>)[key]); Object.freeze(v); } };
+  freeze(value); trustedEditData.add(value); return value;
+}
 export function copyEditData<T>(input: T): T {
   const seen = new Set<object>();
   function visit(value: unknown, depth: number): unknown {
     if (depth > 32) invalid('EDIT_TOO_LARGE');
     if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
+    if (typeof value === 'object' && trustedEditData.has(value)) return value;
     if (typeof value === 'number') { if (!Number.isFinite(value)) invalid(); return Object.is(value, -0) ? 0 : value; }
     if (typeof value !== 'object' || seen.has(value)) invalid();
     seen.add(value);
@@ -144,10 +153,15 @@ export function validateEnvironment(env: unknown, context: CommandContext): asse
   }
   for (const id of env.newIds) { identifier(id); if (ids.has(id)) invalid(); ids.add(id); }
 }
+// A trusted (frozen, host-parsed) mark already validated for this document and these page bounds is not validated again.
+const validatedFor = new WeakMap<object, string>();
 export function validateSnapshot(snapshot: unknown, env: EditEnvironment): asserts snapshot is EditSnapshot {
   object(snapshot, ['context', 'marks', 'versions']); validateContext(snapshot.context);
   if (!Array.isArray(snapshot.marks)) invalid(); object(snapshot.versions, [], Object.keys(snapshot.versions ?? {}));
   for (const [id, v] of Object.entries(snapshot.versions)) { identifier(id); version(v); }
-  const ids = new Set<string>();
-  for (const m of snapshot.marks) { validateMark(m, snapshot.context, env.pageBounds); if (ids.has(m.id) || snapshot.versions[m.id] !== m.version) invalid(); ids.add(m.id); }
+  const ids = new Set<string>(), key = snapshot.context.documentId + '\u0000' + snapshot.context.fingerprint + '\u0000' + JSON.stringify(env.pageBounds);
+  for (const m of snapshot.marks) {
+    if (!(trustedEditData.has(m) && validatedFor.get(m) === key)) { validateMark(m, snapshot.context, env.pageBounds); if (trustedEditData.has(m)) validatedFor.set(m, key); }
+    if (ids.has(m.id) || snapshot.versions[m.id] !== m.version) invalid(); ids.add(m.id);
+  }
 }
