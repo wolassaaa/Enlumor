@@ -61,9 +61,11 @@ async function askCheck(page:Page,c:Check,vision:boolean):Promise<Omit<Result,'i
  const before=await page.locator('.surfing-response').count();
  await page.getByLabel('Surfing 随时提问',{exact:true}).fill(c.question!);await page.getByRole('button',{name:'发送问题',exact:true}).click();
  const r=await awaitReply(page,'.surfing-response',before,180_000);if(r.error)return{status:'fail',detail:'没有得到回答',error:r.error};
- const chips=await page.locator('.surfing-conversation article').last().locator('.surfing-evidence button').count();
- // Same grading as the in-app test mode.
- return{...gradeBenchmarkAnswer(c,vision,r.text,chips,r.steps),answer:r.text};
+ const article=page.locator('.surfing-conversation article').last(),chips=await article.locator('.surfing-evidence button').count();
+ // The answer is its conclusion and every step of the path to it, graded the same way as the in-app test mode.
+ const tour=await article.locator('.surfing-tour .tour-text').allInnerTexts(),text=[r.text,...tour].join('\n');
+ const graded=gradeBenchmarkAnswer(c,vision,text,chips,r.steps);
+ return{...graded,detail:graded.detail+(tour.length?` · 带路 ${tour.length} 步`:''),answer:text};
 }
 async function routeCheck(page:Page,c:Check):Promise<Omit<Result,'id'|'name'|'ms'|'shot'>>{
  const before=await page.locator('.surfing-stops li').count();await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();
@@ -130,6 +132,8 @@ test('real model benchmark',async()=>{
    await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible({timeout:60_000});
    await page.getByRole('button',{name:'打开 Surfing',exact:true}).click();await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已准备文字',{timeout:90_000});
    await page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true}).check();
+   // ENLUMOR_ACCEPTANCE_THINKING picks one of the model's own thinking levels (e.g. off, low, high, max for DeepSeek).
+   const level=(process.env.ENLUMOR_ACCEPTANCE_THINKING||'').trim();if(level){await page.getByLabel('思考程度',{exact:true}).selectOption(level);facts['思考程度']=level;}
    return{status:'pass',detail:(await page.locator('.surfing-coverage').innerText().catch(()=>'')).trim()||'已准备'};
   });
   if(results[1].status==='fail')return;
