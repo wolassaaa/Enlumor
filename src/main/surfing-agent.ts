@@ -1,7 +1,7 @@
 import type {AiImage,AiTurn} from '../shared/ai';
 import type {SurfingContext} from '../shared/surfing-context';
 import {parseModelJson} from '../shared/surfing-route';
-import type {SurfingExplanation} from './surfing-requests';
+import type {SurfingExplanation,SurfingTourStep} from './surfing-requests';
 
 /** What the companion may do before answering: look at a page, read a page's passages, or search the paper.
  * These only read; moving the reader's view stays with the app, which validates the final answer's sources. */
@@ -21,7 +21,7 @@ export function surfingAgentInstructions(vision:boolean){
 const finalKeys='passageIds,text';
 const invalid=(why:string):never=>{throw Error('SURFING_INVALID_ROUTE: '+why);};
 /** One model step: either bounded read-only actions or the final answer with sources that exist in this paper. */
-export function parseSurfingAgentStep(raw:string,snapshot:SurfingContext,allowActions:boolean,vision:boolean):SurfingAgentStep{
+export function parseSurfingAgentStep(raw:string,snapshot:SurfingContext,allowActions:boolean,vision:boolean,allowSteps=false):SurfingAgentStep{
  const value:any=parseModelJson(raw);
  if(!value||typeof value!=='object'||Array.isArray(value))invalid('expected a JSON object');
  if('actions' in value){
@@ -37,12 +37,29 @@ export function parseSurfingAgentStep(raw:string,snapshot:SurfingContext,allowAc
   return{kind:'actions',actions};
  }
  const v=value as SurfingExplanation;
- if(Object.keys(v).sort().join(',')!==finalKeys)invalid('the final answer is exactly {"text":"...","passageIds":["..."]}');
+ const keys=Object.keys(v).sort().join(',');
+ if(keys!==finalKeys&&!(allowSteps&&keys==='passageIds,steps,text'))invalid('the final answer is exactly {"text":"...","passageIds":["..."]'+(allowSteps?', optionally with "steps"':'')+'}');
  if(typeof v.text!=='string'||!v.text.trim()||v.text.length>8192)invalid('text must be non-empty and at most 8192 characters');
  if(!Array.isArray(v.passageIds)||!v.passageIds.length||v.passageIds.length>8||new Set(v.passageIds).size!==v.passageIds.length)invalid('passageIds must list 1 to 8 distinct ids');
  const unknown=v.passageIds.find(id=>typeof id!=='string'||!snapshot.passages.some(p=>p.id===id));
  if(unknown!==undefined)invalid('unknown passage id '+JSON.stringify(String(unknown).slice(0,80))+'; cite only ids that appear in the supplied passages or tool results');
- return{kind:'final',explanation:{text:v.text.replace(/\[(?:block|passage):[^\]]+\]/g,'').trim(),passageIds:[...v.passageIds]}};
+ const clean=(text:string)=>text.replace(/\[(?:block|passage):[^\]]+\]/g,'').trim();
+ return{kind:'final',explanation:{text:clean(v.text),passageIds:[...v.passageIds],...(()=>{const steps=v.steps===undefined?[]:tourSteps(v.steps,snapshot);return steps.length?{steps:steps.map(s=>({...s,text:clean(s.text)}))}:{};})()}};
+}
+
+/** A path to the answer: 1 to 6 steps, each a short text at a passage that exists in this paper, optionally looking closer. */
+function tourSteps(value:unknown,snapshot:SurfingContext):SurfingTourStep[]{
+ // A path is extra to the answer: a step that does not check out is left out (the reader is never taken to a place that
+ // is not in this paper), a bad zoom is ignored, and only the first 6 steps are walked.
+ if(!Array.isArray(value))return[];
+ const known=new Set(snapshot.passages.map(p=>p.id)),steps:SurfingTourStep[]=[];
+ for(const step of value){
+  const s=step as Record<string,unknown>;
+  if(!s||typeof s!=='object'||Array.isArray(s)||typeof s.text!=='string'||!s.text.trim()||s.text.length>800||typeof s.passageId!=='string'||!known.has(s.passageId))continue;
+  steps.push({text:s.text.trim(),passageId:s.passageId,...(['width','page','in'].includes(s.zoom as string)?{zoom:s.zoom as SurfingTourStep['zoom']}:{})});
+  if(steps.length===6)break;
+ }
+ return steps;
 }
 
 /** Passages ranked by how many query words they contain; CJK queries also match as a whole phrase. */

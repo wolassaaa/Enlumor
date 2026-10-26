@@ -27,6 +27,11 @@ export class PdfReader {
   private flash?: DisplayMark;
   private focusEpoch = 0;
   private flashTimer?: ReturnType<typeof setTimeout>;
+  /** Stops the glide in progress, if any. */
+  private glide?: () => void;
+  /** Bumped to abandon a zoom still animating; its transform is undone at once. */
+  private zoomEpoch = 0;
+  private cancelZoom(){this.zoomEpoch++;const pages=this.viewer?.viewer as HTMLElement|undefined;if(pages?.style.transform){pages.style.transition='';pages.style.transform='';}}
   private ready = false;
   private lineTool: LineTool;
   private eraser: EraserTool;
@@ -65,6 +70,7 @@ export class PdfReader {
     }, { passive: false });
   }
   async open(doc: OpenedDocument) {
+    this.glide?.();this.cancelZoom();
     this.blockCache.clear();
     this.setDrawingTool(null);
     const generation = ++this.generation;
@@ -159,18 +165,20 @@ export class PdfReader {
     this.blockCache.set(pageIndex,blocks);if(this.blockCache.size>6)this.blockCache.delete(this.blockCache.keys().next().value!);
     return structuredClone(blocks);
   }
-  clearCruiseFocus(){this.focusEpoch=(this.focusEpoch||0)+1;clearTimeout(this.flashTimer);const hadFlash=!!this.flash;this.flash=undefined;if(hadFlash)this.paint();}
-  locateCruiseBlock(block:CruiseBlock,isCurrent:()=>boolean=()=>true){
+  clearCruiseFocus(){this.glide?.();this.cancelZoom();this.focusEpoch=(this.focusEpoch||0)+1;clearTimeout(this.flashTimer);const hadFlash=!!this.flash;this.flash=undefined;if(hadFlash)this.paint();}
+  /** smooth: glide there (Surfing taking the reader somewhere); otherwise the jump is immediate, as reader-initiated jumps are. */
+  locateCruiseBlock(block:CruiseBlock,isCurrent:()=>boolean=()=>true,smooth=false){
     if(!isCurrent())return Promise.resolve();
     if(!this.active||!this.ready||!this.viewer.pdfDocument||block.documentId!==this.active.id||block.fingerprint!==this.active.fingerprint)throw new Error('CRUISE_SOURCE_CHANGED');
     const mark={...block,type:'highlight',author:'user',color:'#f4cf58',note:''};
-    validateAnnotation(mark,this.active.pageCount);return this.focus(mark,isCurrent);
+    validateAnnotation(mark,this.active.pageCount);return this.focus(mark,isCurrent,smooth);
   }
   setEditingMarks(marks:(MarkView & {documentId:string;fingerprint:string})[],changedIds?:string[]){this.marks=marks.filter(m=>m.visible);this.paint(undefined,changedIds?new Set(changedIds):undefined);}
   setMarks(marks: Annotation[], changedIds?: string[]) { this.marks = marks; this.paint(undefined,changedIds?new Set(changedIds):undefined); }
   setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
   setLineEnabled(enabled:boolean) { this.setDrawingTool(enabled?'line':null); }
   clear() {
+    this.glide?.();this.cancelZoom();
     this.blockCache.clear();
     this.setDrawingTool(null);
     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
@@ -220,12 +228,70 @@ export class PdfReader {
     }
     return parts;
   }
-  focus(mark: DisplayMark, isCurrent:()=>boolean=()=>true):Promise<void> {
+  /** Scrolls the reading area to `top` with an eased glide (longer for longer distances). Any reader input stops it where
+   * it is, as does the request no longer being current (pause, another document); a newer glide replaces it, and with
+   * reduced motion it goes straight there. Resolves when it arrives or stops. */
+  private glideTo(top:number,isCurrent:()=>boolean=()=>true):Promise<void>{
+    this.glide?.();this.cancelZoom();
+    const el=this.container,from=el.scrollTop,to=Math.max(0,Math.min(top,el.scrollHeight-el.clientHeight)),distance=to-from;
+    if(Math.abs(distance)<2||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){el.scrollTop=to;return Promise.resolve();}
+    const duration=Math.min(700,280+Math.sqrt(Math.abs(distance))*6),start=performance.now(),inputs=['wheel','pointerdown','keydown'] as const;
+    return new Promise(resolve=>{
+      let done=false;
+      const stop=()=>{if(done)return;done=true;for(const type of inputs)el.removeEventListener(type,stop);if(this.glide===stop)this.glide=undefined;resolve();};
+      for(const type of inputs)el.addEventListener(type,stop,{passive:true});
+      this.glide=stop;
+      const frame=(now:number)=>{
+        if(done)return;if(!isCurrent()){stop();return;}const t=Math.min(1,(now-start)/duration),eased=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2;
+        el.scrollTop=from+distance*eased;if(t<1)requestAnimationFrame(frame);else stop();
+      };
+      requestAnimationFrame(frame);
+    });
+  }
+  /** Where a mark sits when it is focused: a third of the way down the reading area. */
+  private focusTop(mark:Pick<DisplayMark,'pageIndex'|'quads'>):number|null{
+    const view=this.viewer.getPageView(mark.pageIndex);if(!view)return null;
+    const rect=quadToScreen(mark.quads[0],view.viewport.transform);
+    return Math.max(0,view.div.offsetTop+rect[1]-this.container.clientHeight/3);
+  }
+  /** Zooms to a fit or 1.6 times closer, as one smooth motion around a passage (or the middle of the view): the pages are
+   * scaled with a short transform, then the real scale is applied and the passage kept where it was, in the same frame. */
+  async zoomTo(mode:'width'|'page'|'in',anchor?:Pick<DisplayMark,'pageIndex'|'quads'>,isCurrent:()=>boolean=()=>true):Promise<void>{
+    this.cancelZoom();const epoch=this.zoomEpoch;
+    if(!this.ready||!isCurrent())return;
+    const view=this.viewer.getPageView(anchor?.pageIndex??this.viewer.currentPageNumber-1);if(!view)return;
+    const from=this.viewer.currentScale,base={width:view.viewport.width/from,height:view.viewport.height/from};
+    // PDF.js leaves room for the scrollbar and page borders when it fits a page; the same margins are used here.
+    const width=(this.container.clientWidth-40)/base.width,page=Math.min(width,(this.container.clientHeight-10)/base.height);
+    const to=Math.max(.25,Math.min(4,mode==='width'?width:mode==='page'?page:from*1.6));
+    if(Math.abs(to-from)/from<.02)return;
+    const el=this.container,pages=this.viewer.viewer as HTMLElement;
+    const point=anchor?quadToScreen(anchor.quads[0],view.viewport.transform):null;
+    // The anchor in page-container coordinates, and where it is on screen now.
+    const ax=point?view.div.offsetLeft+(point[0]+point[2])/2:el.scrollLeft+el.clientWidth/2,ay=point?view.div.offsetTop+(point[1]+point[3])/2:el.scrollTop+el.clientHeight/2;
+    const screenY=Math.max(el.clientHeight/3,Math.min(el.clientHeight*2/3,ay-el.scrollTop)),screenX=ax-el.scrollLeft;
+    if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+      pages.style.transformOrigin=`${ax}px ${ay}px`;pages.style.transition='transform 220ms cubic-bezier(.4,0,.2,1)';pages.style.transform=`scale(${to/from})`;
+      await new Promise<void>(resolve=>{const end=()=>{pages.removeEventListener('transitionend',end);resolve();};pages.addEventListener('transitionend',end);setTimeout(end,280);});
+      // A newer step, a glide or a pause took over during the animation: leave the scale as it was.
+      if(epoch!==this.zoomEpoch||!isCurrent()||!this.ready||view!==this.viewer.getPageView(view.id-1)){if(epoch===this.zoomEpoch){pages.style.transition='';pages.style.transform='';}return;}
+    }
+    pages.style.transition='';pages.style.transform='';
+    if(mode==='width')this.viewer.currentScaleValue='page-width';else if(mode==='page')this.viewer.currentScaleValue='page-fit';else this.viewer.currentScale=to;
+    const scaled=this.viewer.getPageView(view.id-1)!,again=point?quadToScreen(anchor!.quads[0],scaled.viewport.transform):null;
+    const nx=again?scaled.div.offsetLeft+(again[0]+again[2])/2:ax*this.viewer.currentScale/from,ny=again?scaled.div.offsetTop+(again[1]+again[3])/2:ay*this.viewer.currentScale/from;
+    el.scrollLeft=Math.max(0,nx-screenX);el.scrollTop=Math.max(0,ny-(this.viewer.scrollMode===ScrollMode.PAGE?0:screenY));
+  }
+  focus(mark: DisplayMark, isCurrent:()=>boolean=()=>true,smooth=false):Promise<void> {
     const generation=this.generation,epoch=this.focusEpoch=(this.focusEpoch||0)+1;
     const current=()=>epoch===this.focusEpoch&&generation===this.generation&&this.ready&&mark.documentId===this.active?.id&&mark.fingerprint===this.active?.fingerprint&&isCurrent();
     if(!current())return Promise.resolve();
-    this.go(mark.pageIndex + 1); this.flash = mark; this.paint();
-    clearTimeout(this.flashTimer); this.flashTimer = setTimeout(() => { if(epoch===this.focusEpoch&&generation===this.generation){this.flash = undefined; this.paint();} }, 1800);
+    // A smooth focus in continuous reading glides to the passage; the highlight stays a little longer to cover it.
+    const target=!smooth||this.viewer.scrollMode===ScrollMode.PAGE?null:this.focusTop(mark);
+    this.flash = mark; this.paint();
+    clearTimeout(this.flashTimer); this.flashTimer = setTimeout(() => { if(epoch===this.focusEpoch&&generation===this.generation){this.flash = undefined; this.paint();} }, target===null?1800:2400);
+    if(target!==null)return this.glideTo(target,current);
+    this.go(mark.pageIndex + 1);
     return new Promise(resolve=>requestAnimationFrame(() => {
       if(!current()){
         // An obsolete frame may clear only its own flash, never a newer focus.

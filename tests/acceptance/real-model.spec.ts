@@ -23,7 +23,7 @@ const tool=path.join(root,'tests/acceptance/benchmark.py');
 
 type Check=BenchmarkCheck;type Manifest=BenchmarkManifest;
 type Result={id:string;name:string;status:'pass'|'fail'|'review'|'skip';detail:string;answer?:string;error?:string;ms:number;shot?:string};
-const results:Result[]=[],facts:Record<string,string>={};let appRef:ElectronApplication|undefined;
+const results:Result[]=[],facts:Record<string,string>={};let appRef:ElectronApplication|undefined;const rejected:string[]=[];
 const CJK=/[一-鿿]/;
 
 /** The benchmark PDF to open: given as-is, built from a paper plus manifest, or the generated fixture. */
@@ -36,8 +36,10 @@ function benchmarkPdf():string{
  return target;
 }
 async function record(page:Page,check:{id:string;title:string},run:()=>Promise<Omit<Result,'id'|'name'|'ms'|'shot'>>){
- const started=Date.now();let r:Omit<Result,'id'|'name'|'ms'|'shot'>;
+ const started=Date.now(),seen=rejected.length;let r:Omit<Result,'id'|'name'|'ms'|'shot'>;
  try{r=await run();}catch(e){r={status:'fail',detail:'检查未完成',error:(e instanceof Error?e.message:String(e)).split('\n')[0].slice(0,300)};}
+ // Why the app sent a reply back to the model (or gave up on it), from the main process's diagnostics.
+ const why=rejected.slice(seen);if(why.length)r={...r,detail:r.detail+' · 纠错原因：'+why.join(' / ').slice(0,300)};
  const alert=await page.locator('.surfing-panel [role=alert]').allInnerTexts().catch(()=>[] as string[]);if(alert.length&&!r.error&&r.status!=='pass')r.error=alert.join(' ').slice(0,300);
  const shot=`${results.length+1}-${check.id}.png`;await page.screenshot({path:path.join(out,shot)}).catch(()=>{});
  results.push({id:check.id,name:check.title,ms:Date.now()-started,shot,...r});
@@ -63,9 +65,11 @@ async function askCheck(page:Page,c:Check,vision:boolean):Promise<Omit<Result,'i
  const before=await page.locator('.surfing-response').count(),previous=await lastReply(page,'.surfing-response');
  await page.getByLabel('Surfing 随时提问',{exact:true}).fill(c.question!);await page.getByRole('button',{name:'发送问题',exact:true}).click();
  const r=await awaitReply(page,'.surfing-response',before,180_000,previous);if(r.error)return{status:'fail',detail:'没有得到回答',error:r.error};
- const chips=await page.locator('.surfing-conversation article').last().locator('.surfing-evidence button').count();
- // Same grading as the in-app test mode.
- return{...gradeBenchmarkAnswer(c,vision,r.text,chips,r.steps),answer:r.text};
+ const article=page.locator('.surfing-conversation article').last(),chips=await article.locator('.surfing-evidence button').count();
+ // The answer is its conclusion and every step of the path to it, graded the same way as the in-app test mode.
+ const tour=await article.locator('.surfing-tour .tour-text').allInnerTexts(),text=[r.text,...tour].join('\n');
+ const graded=gradeBenchmarkAnswer(c,vision,text,chips,r.steps);
+ return{...graded,detail:graded.detail+(tour.length?` · 带路 ${tour.length} 步`:''),answer:text};
 }
 async function routeCheck(page:Page,c:Check):Promise<Omit<Result,'id'|'name'|'ms'|'shot'>>{
  const before=await page.locator('.surfing-stops li').count(),previous=await lastReply(page,'.surfing-stops li');await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();
@@ -108,6 +112,7 @@ test('real model benchmark',async()=>{
  const pdf=benchmarkPdf(),manifest=validateBenchmarkManifest(JSON.parse(execFileSync(python,[tool,'read',pdf],{encoding:'utf8'})));
  const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+mkdtempSync(path.join(tmpdir(),'enlumor-acceptance-'))],env:{...process.env,ENLUMOR_PYTHON:python,ENLUMOR_ACCEPTANCE_KEY:''}});
  const page=await app.firstWindow();await page.setViewportSize({width:1440,height:900});appRef=app;
+ const take=(chunk:Buffer)=>{for(const line of chunk.toString().split(/\r?\n/))if(line.includes('Surfing reply rejected'))rejected.push(line.slice(line.indexOf('Surfing reply rejected')+22).replace(/^[: ]+/,'').trim());};app.process().stdout?.on('data',take);app.process().stderr?.on('data',take);
  // Every step note the app sends to the panel is recorded; the panel itself shows only the latest one.
  await app.evaluate(({BrowserWindow})=>{const wc=BrowserWindow.getAllWindows()[0].webContents,send=wc.send.bind(wc);(globalThis as any).surfingSteps=[];wc.send=(channel:string,...args:any[])=>{if(channel==='surfing:text'&&args[0]?.type==='step')(globalThis as any).surfingSteps.push(args[0].note);if(channel==='surfing:text'&&args[0]?.type==='thinking')(globalThis as any).surfingThinking=((globalThis as any).surfingThinking||0)+1;return send(channel,...args);};});
  // Unattended runs: another window taking focus must not count as the reader leaving (the app pauses Surfing on blur).
@@ -132,6 +137,8 @@ test('real model benchmark',async()=>{
    await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible({timeout:60_000});
    await page.getByRole('button',{name:'打开 Surfing',exact:true}).click();await expect(page.getByLabel('Surfing 状态',{exact:true})).toHaveText('已准备文字',{timeout:90_000});
    await page.getByLabel('确认将当前论文提取文字发送给所选服务',{exact:true}).check();
+   // ENLUMOR_ACCEPTANCE_THINKING picks one of the model's own thinking levels (e.g. off, low, high, max for DeepSeek).
+   const level=(process.env.ENLUMOR_ACCEPTANCE_THINKING||'').trim();if(level){await page.getByLabel('思考程度',{exact:true}).selectOption(level);facts['思考程度']=level;}
    return{status:'pass',detail:(await page.locator('.surfing-coverage').innerText().catch(()=>'')).trim()||'已准备'};
   });
   if(results[1].status==='fail')return;

@@ -33,3 +33,31 @@ it('edited configuration of the same profile is rejected until a fresh preparati
  const h=setup();h.ports.profileView=id=>h.ports.profile(id);const s=await h.runtime.prepare('doc');h.ports.generate=async()=>JSON.stringify({text:'reply',passageIds:['surf-0-0-0']});
  const q={request:{requestId:'q',profileId:'first',context:s.context,consent:true as const,question:'摘要',pageIndex:0},contextWindowTokens:10000};await h.runtime.ask(q);h.ports.profileView=id=>({...h.ports.profile(id),model:'changed'});await expect(h.runtime.ask(q)).rejects.toThrow('SURFING_PROFILE_CHANGED');
 });
+
+import {thinkingOptions,withThinking} from '../src/shared/ai-thinking';
+import {validateAiProfile} from '../src/main/ai-config';
+it('offers each model its own thinking levels, only where the service is known to accept them',()=>{
+ const deepseek={protocol:'openai-chat' as const,endpoint:'https://api.deepseek.com/v1',model:'deepseek-flash'};
+ expect(thinkingOptions(deepseek)?.choices.map(c=>c.label)).toEqual(['不思考','low','high（默认）','max']);
+ expect(thinkingOptions({...deepseek,endpoint:'https://relay.example/v1'})).toBe(null);
+ expect(thinkingOptions({protocol:'openai-chat',endpoint:'https://api.openai.com/v1',model:'gpt-4o'})).toBe(null);
+ expect(thinkingOptions({protocol:'openai-chat',endpoint:'https://api.openai.com/v1',model:'o3-mini'})?.defaultId).toBe('medium');
+ const profile={id:'p',name:'n',protocol:'openai-chat' as const,endpoint:'https://api.deepseek.com/v1',model:'deepseek-flash',maxOutputTokens:100,timeoutMs:1000,credential:{kind:'api-key' as const,apiKey:'k'}};
+ for(const parameters of [{thinking:{type:'disabled'}},{reasoning_effort:'max'}])expect(()=>validateAiProfile({...profile,parameters})).not.toThrow();
+ for(const parameters of [{thinking:{type:'off'}},{thinking:{type:'disabled',budget:1}},{thinking:'disabled'}])expect(()=>validateAiProfile({...profile,parameters} as any)).toThrow('AI_INVALID_CONFIG');
+});
+it('a chosen thinking level reaches the request but not the profile signature; unknown levels are refused',async()=>{
+ const h=setup();const sent:any[]=[];h.ports.profile=id=>({id,name:'DeepSeek',protocol:'openai-chat',endpoint:'https://api.deepseek.com/v1',model:'deepseek-flash',maxOutputTokens:100,timeoutMs:1000,parameters:{}});
+ h.ports.generate=async(p)=>{sent.push(p.parameters);return JSON.stringify({stops:[{title:'问题',reason:'从这里开始',passageIds:['surf-0-0-0']}]});};
+ const s=await h.runtime.prepare('doc');const request=(id:string)=>({requestId:id,profileId:'ds',context:s.context,consent:true as const});
+ await h.runtime.route({request:request('a'),contextWindowTokens:10000,thinking:'off'});
+ await h.runtime.route({request:request('b'),contextWindowTokens:10000});
+ expect(sent).toEqual([{thinking:{type:'disabled'}},{}]);
+ await expect(h.runtime.route({request:request('c'),contextWindowTokens:10000,thinking:'ultra'})).rejects.toThrow('SURFING_INVALID_REQUEST');
+});
+it('a chosen thinking level replaces thinking controls set by hand in the profile instead of being combined with them',()=>{
+ const profile={protocol:'openai-chat' as const,endpoint:'https://api.deepseek.com/v1',model:'deepseek-flash',parameters:{thinking:{type:'disabled'},temperature:0.3}};
+ expect(withThinking(profile,'max')).toEqual({temperature:0.3,reasoning_effort:'max'});
+ expect(withThinking(profile,'high')).toEqual({temperature:0.3});
+ expect(withThinking(profile)).toEqual(profile.parameters);
+});

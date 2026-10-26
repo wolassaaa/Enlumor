@@ -6,7 +6,7 @@ import type {SurfingContext} from '../shared/surfing-context';
 import type {SurfingRuntimeEvent} from '../main/surfing-runtime';
 import {canSeeImages} from '../shared/ai-models';
 import {suggestedSurfingContextWindow} from '../main/surfing-tokenizer-models';
-import {gradeBenchmarkAnswer,gradeBenchmarkRoute,type BenchmarkCheck,type BenchmarkManifest,type BenchmarkStatus} from '../shared/benchmark';
+import {answerText,gradeBenchmarkAnswer,gradeBenchmarkRoute,type BenchmarkCheck,type BenchmarkManifest,type BenchmarkStatus} from '../shared/benchmark';
 
 type Result={id:string;title:string;status:BenchmarkStatus|'running'|'waiting';detail:string;answer?:string;seconds?:number};
 type Run={at:string;model:string;passed:number;total:number};
@@ -47,7 +47,8 @@ export function BenchmarkPanel({document:doc,manifest,settingsOpen=false,onExit,
    const {event,steps}=await request(id=>window.enlumor.askSurfing({request:{...req(id),question:c.question!,pageIndex:0},contextWindowTokens:base.contextWindowTokens}));
    if(event.type==='error')return{status:'fail',detail:'没有得到回答：'+event.code};
    if(event.type!=='answer')return{status:'fail',detail:'意外的结果'};
-   return{...gradeBenchmarkAnswer(c,vision,event.explanation.text,event.explanation.passageIds.length,steps),answer:event.explanation.text};
+   const said=answerText(event.explanation);
+   return{...gradeBenchmarkAnswer(c,vision,said,event.explanation.passageIds.length,steps),answer:said};
   }
   if(c.kind==='route'){
    const {event}=await request(id=>window.enlumor.generateSurfingRoute({request:req(id),contextWindowTokens:base.contextWindowTokens}));
