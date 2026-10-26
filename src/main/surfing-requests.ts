@@ -91,7 +91,9 @@ export class SurfingRequests{
     }catch(error){
      // One correction turn: the model sees exactly why its reply could not be used and answers again.
      const message=error instanceof Error?error.message:'';
-     if(repaired||profile.protocol==='spark'||!message.startsWith('SURFING_INVALID_ROUTE')||!raw.trim()||raw.length>32768)throw error;
+     if(repaired||profile.protocol==='spark'||!message.startsWith('SURFING_INVALID_ROUTE')||!raw.trim()||raw.length>32768){if(message.startsWith('SURFING_INVALID_ROUTE'))console.warn('Surfing reply rejected after correction: '+message.slice(0,300));throw error;}
+     // The reason is logged for diagnosis (it names at most a passage id from the reply, never paper text or credentials).
+     console.warn('Surfing reply rejected: '+message.slice(0,300));
      repaired=true;this.ports.emit({requestId:job.id,type:'step',note:'修正回答格式'});
      turns=[...turns,{role:'assistant',text:raw},{role:'user',text:'The app could not use that reply: '+(message.split(': ').slice(1).join(': ')||'it did not match the required JSON')+'. Reply again with ONLY the JSON the instructions describe.'}];
      continue;

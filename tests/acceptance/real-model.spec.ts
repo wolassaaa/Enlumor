@@ -23,7 +23,7 @@ const tool=path.join(root,'tests/acceptance/benchmark.py');
 
 type Check=BenchmarkCheck;type Manifest=BenchmarkManifest;
 type Result={id:string;name:string;status:'pass'|'fail'|'review'|'skip';detail:string;answer?:string;error?:string;ms:number;shot?:string};
-const results:Result[]=[],facts:Record<string,string>={};let appRef:ElectronApplication|undefined;
+const results:Result[]=[],facts:Record<string,string>={};let appRef:ElectronApplication|undefined;const rejected:string[]=[];
 const CJK=/[一-鿿]/;
 
 /** The benchmark PDF to open: given as-is, built from a paper plus manifest, or the generated fixture. */
@@ -36,8 +36,10 @@ function benchmarkPdf():string{
  return target;
 }
 async function record(page:Page,check:{id:string;title:string},run:()=>Promise<Omit<Result,'id'|'name'|'ms'|'shot'>>){
- const started=Date.now();let r:Omit<Result,'id'|'name'|'ms'|'shot'>;
+ const started=Date.now(),seen=rejected.length;let r:Omit<Result,'id'|'name'|'ms'|'shot'>;
  try{r=await run();}catch(e){r={status:'fail',detail:'检查未完成',error:(e instanceof Error?e.message:String(e)).split('\n')[0].slice(0,300)};}
+ // Why the app sent a reply back to the model (or gave up on it), from the main process's diagnostics.
+ const why=rejected.slice(seen);if(why.length)r={...r,detail:r.detail+' · 纠错原因：'+why.join(' / ').slice(0,300)};
  const alert=await page.locator('.surfing-panel [role=alert]').allInnerTexts().catch(()=>[] as string[]);if(alert.length&&!r.error&&r.status!=='pass')r.error=alert.join(' ').slice(0,300);
  const shot=`${results.length+1}-${check.id}.png`;await page.screenshot({path:path.join(out,shot)}).catch(()=>{});
  results.push({id:check.id,name:check.title,ms:Date.now()-started,shot,...r});
@@ -108,6 +110,7 @@ test('real model benchmark',async()=>{
  const pdf=benchmarkPdf(),manifest=validateBenchmarkManifest(JSON.parse(execFileSync(python,[tool,'read',pdf],{encoding:'utf8'})));
  const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+mkdtempSync(path.join(tmpdir(),'enlumor-acceptance-'))],env:{...process.env,ENLUMOR_PYTHON:python,ENLUMOR_ACCEPTANCE_KEY:''}});
  const page=await app.firstWindow();await page.setViewportSize({width:1440,height:900});appRef=app;
+ const take=(chunk:Buffer)=>{for(const line of chunk.toString().split(/\r?\n/))if(line.includes('Surfing reply rejected'))rejected.push(line.slice(line.indexOf('Surfing reply rejected')+22).replace(/^[: ]+/,'').trim());};app.process().stdout?.on('data',take);app.process().stderr?.on('data',take);
  // Every step note the app sends to the panel is recorded; the panel itself shows only the latest one.
  await app.evaluate(({BrowserWindow})=>{const wc=BrowserWindow.getAllWindows()[0].webContents,send=wc.send.bind(wc);(globalThis as any).surfingSteps=[];wc.send=(channel:string,...args:any[])=>{if(channel==='surfing:text'&&args[0]?.type==='step')(globalThis as any).surfingSteps.push(args[0].note);if(channel==='surfing:text'&&args[0]?.type==='thinking')(globalThis as any).surfingThinking=((globalThis as any).surfingThinking||0)+1;return send(channel,...args);};});
  // Unattended runs: another window taking focus must not count as the reader leaving (the app pauses Surfing on blur).

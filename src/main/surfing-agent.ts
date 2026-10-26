@@ -44,20 +44,22 @@ export function parseSurfingAgentStep(raw:string,snapshot:SurfingContext,allowAc
  const unknown=v.passageIds.find(id=>typeof id!=='string'||!snapshot.passages.some(p=>p.id===id));
  if(unknown!==undefined)invalid('unknown passage id '+JSON.stringify(String(unknown).slice(0,80))+'; cite only ids that appear in the supplied passages or tool results');
  const clean=(text:string)=>text.replace(/\[(?:block|passage):[^\]]+\]/g,'').trim();
- return{kind:'final',explanation:{text:clean(v.text),passageIds:[...v.passageIds],...(v.steps!==undefined?{steps:tourSteps(v.steps,snapshot).map(s=>({...s,text:clean(s.text)}))}:{})}};
+ return{kind:'final',explanation:{text:clean(v.text),passageIds:[...v.passageIds],...(()=>{const steps=v.steps===undefined?[]:tourSteps(v.steps,snapshot);return steps.length?{steps:steps.map(s=>({...s,text:clean(s.text)}))}:{};})()}};
 }
 
 /** A path to the answer: 1 to 6 steps, each a short text at a passage that exists in this paper, optionally looking closer. */
 function tourSteps(value:unknown,snapshot:SurfingContext):SurfingTourStep[]{
- if(!Array.isArray(value)||!value.length||value.length>6)invalid('steps must list 1 to 6 places');
- return(value as unknown[]).map(step=>{
+ // A path is extra to the answer: a step that does not check out is left out (the reader is never taken to a place that
+ // is not in this paper), a bad zoom is ignored, and only the first 6 steps are walked.
+ if(!Array.isArray(value))return[];
+ const known=new Set(snapshot.passages.map(p=>p.id)),steps:SurfingTourStep[]=[];
+ for(const step of value){
   const s=step as Record<string,unknown>;
-  if(!s||typeof s!=='object'||Array.isArray(s)||Object.keys(s).some(k=>!['text','passageId','zoom'].includes(k)))invalid('each step is {"text":"...","passageId":"..."} with an optional "zoom"');
-  if(typeof s.text!=='string'||!s.text.trim()||s.text.length>800)invalid('each step needs a short text (at most 800 characters)');
-  if(typeof s.passageId!=='string'||!snapshot.passages.some(p=>p.id===s.passageId))invalid('step passage '+JSON.stringify(String(s.passageId).slice(0,80))+' is not in the supplied passages');
-  if(s.zoom!==undefined&&!['width','page','in'].includes(s.zoom as string))invalid('zoom is "in", "width" or "page"');
-  return{text:(s.text as string).trim(),passageId:s.passageId as string,...(s.zoom!==undefined?{zoom:s.zoom as SurfingTourStep['zoom']}:{})};
- });
+  if(!s||typeof s!=='object'||Array.isArray(s)||typeof s.text!=='string'||!s.text.trim()||s.text.length>800||typeof s.passageId!=='string'||!known.has(s.passageId))continue;
+  steps.push({text:s.text.trim(),passageId:s.passageId,...(['width','page','in'].includes(s.zoom as string)?{zoom:s.zoom as SurfingTourStep['zoom']}:{})});
+  if(steps.length===6)break;
+ }
+ return steps;
 }
 
 /** Passages ranked by how many query words they contain; CJK queries also match as a whole phrase. */
