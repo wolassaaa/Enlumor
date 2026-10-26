@@ -52,8 +52,9 @@ test('reading layout collapses panels and keeps selection tools near the text', 
   } finally { await app.close(); }
 });
 
-async function launch(data: string, scale = 1) {
-  const app = await electron.launch({ executablePath: process.env.ENLUMOR_TEST_APP, args: [...(process.env.ENLUMOR_TEST_APP ? [] : [root]), `--user-data-dir=${data}`, `--force-device-scale-factor=${scale}`], env: { ...process.env, ENLUMOR_PYTHON: python, ELECTRON_DISABLE_SECURITY_WARNINGS: 'true' } });
+/** legacy: the test inspects the legacy annotation table or API directly, so it runs on that path (--legacy-editing). */
+async function launch(data: string, scale = 1, legacy = false) {
+  const app = await electron.launch({ executablePath: process.env.ENLUMOR_TEST_APP, args: [...(process.env.ENLUMOR_TEST_APP ? [] : [root]), ...(legacy ? ['--legacy-editing'] : []), `--user-data-dir=${data}`, `--force-device-scale-factor=${scale}`], env: { ...process.env, ENLUMOR_PYTHON: python, ELECTRON_DISABLE_SECURITY_WARNINGS: 'true' } });
   await app.evaluate(({ dialog }, files) => {
     dialog.showOpenDialog = async () => ({ canceled: false, filePaths: [files.source] });
     dialog.showSaveDialog = async () => ({ canceled: false, filePath: files.output });
@@ -143,7 +144,7 @@ test('PDF thumbnail jobs cancel on rapid scroll and document replacement', async
 });
 
 for (const scale of [1, 1.5, 2]) test(`selection stays anchored across view rotation and zoom at Windows scale ${scale}`, async () => {
-  const app = await launch(path.join(folder, `scale-${scale}`), scale);
+  const app = await launch(path.join(folder, `scale-${scale}`), scale, true);
   try {
     const page = await app.firstWindow();
     await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
@@ -161,7 +162,7 @@ for (const scale of [1, 1.5, 2]) test(`selection stays anchored across view rota
 });
 
 test('failed undo retries as undo and preserves the redo action', async () => {
-  const data = path.join(folder, 'undo-retry'); const app = await launch(data);
+  const data = path.join(folder, 'undo-retry'); const app = await launch(data, 1, true);
   const db = new DatabaseSync(path.join(data, 'workspace.sqlite'));
   try {
     const page = await app.firstWindow();
@@ -181,7 +182,7 @@ test('failed undo retries as undo and preserves the redo action', async () => {
 });
 
 test('search markup does not duplicate selected text or quads', async () => {
-  const app = await launch(path.join(folder, 'search-selection'));
+  const app = await launch(path.join(folder, 'search-selection'), 1, true);
   try {
     const page = await app.firstWindow();
     await page.getByRole('button', { name: '打开 PDF', exact: true }).first().click();
@@ -298,7 +299,7 @@ test('offline reading, selected highlight, note, undo/redo, export and crash rec
 });
 
 test('rejects replaced source and permits same-content relocation', async () => {
-  const app = await launch(path.join(folder, 'identity'));
+  const app = await launch(path.join(folder, 'identity'), 1, true);
   const moved = path.join(folder, 'relocated same content.pdf');
   try {
     const page = await app.firstWindow();
