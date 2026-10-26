@@ -462,17 +462,29 @@ summary{cursor:pointer}
 .surfing-response{white-space:pre-wrap;font-size:var(--fs-read);line-height:1.9;overflow-wrap:anywhere;color:var(--ink);margin:0}
 .surfing-response::before{content:'';display:block;width:11px;height:14px;margin-bottom:8px;background:var(--peach);-webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='224 8 200 255'%3E%3Cpath d='M227 259C242 216 250 169 239 129C254 96 278 66 313 45C347 23.5 384 13 415 11.5C419 11.1 422 11.2 421.7 17.3C419.5 74 409.5 119.5 382 150C355 181 319 191 283 208C259 219.5 242 239.5 227 259Z'/%3E%3C/svg%3E") center/contain no-repeat;mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='224 8 200 255'%3E%3Cpath d='M227 259C242 216 250 169 239 129C254 96 278 66 313 45C347 23.5 384 13 415 11.5C419 11.1 422 11.2 421.7 17.3C419.5 74 409.5 119.5 382 150C355 181 319 191 283 208C259 219.5 242 239.5 227 259Z'/%3E%3C/svg%3E") center/contain no-repeat}
 .surfing-evidence{display:flex;flex-wrap:wrap;gap:6px;margin-top:12px}
+/* The path to an answer: numbered places in the paper; the one being shown carries the warm Surfing page. */
+.surfing-tour{list-style:none;margin:14px 0 0;padding:0;display:flex;flex-direction:column;gap:2px;counter-reset:none}
+.surfing-tour button{display:flex;align-items:flex-start;justify-content:flex-start;gap:10px;width:100%;text-align:left;border:0;background:transparent;padding:8px 10px;border-radius:var(--radius);font-size:var(--fs-read);line-height:1.75;color:var(--ink-2);cursor:pointer;transition:background-color .16s,color .16s}
+.surfing-tour button:hover{background:var(--hover);color:var(--ink)}
+.surfing-tour .tour-index{flex:none;display:inline-grid;place-items:center;width:20px;height:20px;margin-top:4px;border-radius:50%;font-size:11px;font-variant-numeric:tabular-nums;color:var(--ink-2);background:var(--surface-2);transition:background-color .2s,color .2s}
+.surfing-tour li.is-current button{background:var(--peach-soft);color:var(--ink)}
+.surfing-tour li.is-current .tour-index{background:var(--peach);color:#fff}
+.surfing-tour-controls{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px}
+.surfing-tour-controls [role=status]{font-size:var(--fs-xs);color:var(--muted);font-variant-numeric:tabular-nums;margin-left:4px}
+.surfing-tour-controls .tour-hint{flex-basis:100%;font-size:var(--fs-xs);color:var(--muted)}
+.surfing-tour-start{margin-top:10px}
+@media (prefers-reduced-motion:reduce){.surfing-tour button,.surfing-tour .tour-index{transition:none}}
 .surfing-evidence button{font-size:var(--fs-xs);min-height:24px;padding:0 10px;border-radius:20px;background:var(--raised);border-color:var(--line);color:var(--ink-2)}
 .surfing-evidence button:hover:not(:disabled){background:var(--blue-soft);border-color:var(--blue-line);color:var(--blue-ink)}
 /* Composer: one box holding the question and its send button, kept in reach while reading answers. */
-.surfing-composer{display:grid;grid-template-columns:1fr auto auto;grid-template-areas:"label label label" "text text text" "hint think send";align-items:center;column-gap:12px;margin:8px 0 0;padding:10px 0 14px;border-bottom:1px solid var(--line)}
+.surfing-composer{display:grid;grid-template-columns:auto 1fr auto;grid-template-areas:"label label label" "text text text" "think . send" "hint hint hint";align-items:center;column-gap:12px;margin:8px 0 0;padding:10px 0 14px;border-bottom:1px solid var(--line)}
 .reader-stage>.surfing-panel:has(.surfing-conversation article) .surfing-composer{position:sticky;bottom:-20px;z-index:2;margin:8px -20px 0;padding:12px 20px 14px;background:var(--paper);border-top:1px solid var(--line);border-bottom:0}
 .reader-stage>.surfing-panel:has(.surfing-conversation article) .surfing-composer textarea{min-height:48px;height:58px}
 .surfing-composer label{grid-area:label;display:block;color:var(--muted);font-size:12px}
 .surfing-composer textarea{grid-area:text;box-sizing:border-box;width:100%;margin:8px 0;padding:10px 12px;border-radius:10px;resize:vertical;min-height:60px;max-height:180px;line-height:1.65;background:var(--raised)}
-.surfing-composer small{grid-area:hint;display:block;margin:0;font-size:var(--fs-xs);line-height:1.55;color:var(--muted)}
+.surfing-composer small{grid-area:hint;display:block;margin:8px 0 0;font-size:var(--fs-xs);line-height:1.55;color:var(--muted)}
 /* The model's own thinking levels, chosen per question beside the send button. */
-.surfing-thinking{grid-area:think;display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
+.surfing-composer .surfing-thinking{grid-area:think;display:flex;align-items:center;gap:6px;font-size:var(--fs-xs);color:var(--muted);white-space:nowrap}
 .surfing-thinking select{font-size:var(--fs-xs);min-height:30px;padding:0 6px;border:1px solid var(--line-strong);border-radius:var(--radius-s);background:var(--raised);color:var(--ink-2);cursor:pointer}
 .surfing-thinking select:hover:not(:disabled){border-color:var(--line-hover)}
 .surfing-thinking select:disabled{cursor:default;color:var(--disabled-ink);background:transparent}

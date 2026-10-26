@@ -51,3 +51,16 @@ it('the panel hears once per request that the model is thinking, and test mode k
  await new SurfingRequests(ports).ask(ask());
  expect(events.map(e=>e.type)).toEqual(['thinking','answer']);
 });
+it('an answer may carry the path to it; each step is checked against the paper',()=>{
+ const steps=[{text:'先看图 2 的图注',passageId:'p1',zoom:'in'},{text:'再看结论',passageId:'p2'}];
+ const ok=parseSurfingAgentStep(JSON.stringify({text:'准确率随上下文变长而下降。',passageIds:['p1'],steps}),snapshot,false,true,true);
+ expect(ok).toEqual({kind:'final',explanation:{text:'准确率随上下文变长而下降。',passageIds:['p1'],steps}});
+ // Explanations of route stops are saved with the route and never carry steps.
+ expect(()=>parseSurfingAgentStep(JSON.stringify({text:'x',passageIds:['p1'],steps}),snapshot,false,true,false)).toThrow('SURFING_INVALID_ROUTE');
+ for(const [bad,why] of [[[{text:'x',passageId:'nope'}],'is not in the supplied passages'],[[{text:'x',passageId:'p1',zoom:'huge'}],'zoom is'],[[],'1 to 6'],[[{text:'',passageId:'p1'}],'short text']] as const)
+  expect(()=>parseSurfingAgentStep(JSON.stringify({text:'x',passageIds:['p1'],steps:bad}),snapshot,false,true,true)).toThrow(why);
+});
+it('the question prompt asks for the path only when the answer draws on several places',async()=>{
+ const h=setup('deepseek-flash',[final]);await h.service.ask(ask());
+ expect(h.prompts[0].system).toContain('"steps"');expect(h.prompts[0].system).toContain('With one place, leave steps out');
+});

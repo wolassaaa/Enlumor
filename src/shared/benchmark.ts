@@ -38,6 +38,8 @@ export function validateBenchmarkManifest(value:unknown):BenchmarkManifest{
  return structuredClone(m) as BenchmarkManifest;
 }
 
+/** Everything an answer says: its conclusion and each step of the path to it. */
+export function answerText(explanation:{text:string;steps?:{text:string}[]}):string{return[explanation.text,...(explanation.steps||[]).map(s=>s.text)].join('\n');}
 /** What an answer misses; empty means it meets every expectation. */
 export function benchmarkMisses(answer:string,evidence:number,e:BenchmarkExpect):string[]{
  // Answers are read as text: markdown emphasis and code marks (**5** 个, `d_model`) do not count against a pattern.
