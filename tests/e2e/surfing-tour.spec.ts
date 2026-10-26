@@ -38,5 +38,8 @@ test('an answer walks the reader through its steps: smooth glides, by itself or 
   // The reader scrolling the page pauses it where it is.
   const viewer=page.locator('#viewerContainer'),box=(await viewer.boundingBox())!;await page.mouse.move(box.x+box.width/2,box.y+box.height/2);await page.mouse.wheel(0,200);
   await expect(page.getByRole('button',{name:'继续带路',exact:true})).toBeVisible();
+  // Opening model settings clears the conversation, and the walk (with its keys) goes with it.
+  await page.getByRole('button',{name:'模型设置',exact:true}).click();await page.getByRole('button',{name:'关闭设置',exact:true}).click();
+  await expect(page.getByLabel('带路步骤',{exact:true})).toHaveCount(0);await expect(page.getByLabel('带路控制',{exact:true})).toHaveCount(0);
  }finally{await app.evaluate(({app})=>app.exit(0)).catch(()=>{});server.closeAllConnections();await new Promise<void>(r=>server.close(()=>r()));}
 });

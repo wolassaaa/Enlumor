@@ -46,7 +46,7 @@ export function SurfingPanel({document:doc,reader,takeover,takeoverRef,flushRef,
  function queueSave(index:number|null){const current=source.current;if(!current||!routeRef.current||routeRevision.current<1)return;pendingSave.current={context:{...current.context},routeRevision:routeRevision.current,selected:index};setSaveStatus('保存中');void persist().catch(()=>{});}
  async function close(){pause();try{await persist();onExit();}catch{/* saved error and visible progress remain */}}
  async function openSettings(){pause();try{await persist();onSettings();}catch{/* keep progress visible */}}
- async function changeProfile(id:string){pause();const version=++epoch.current;try{await persist();}catch{return;}if(!mounted.current||version!==epoch.current)return;setProfileId(id);profileRef.current=id;setConversation([]);setConsent(false);setRoute(null);routeRef.current=null;setAnswers({});answersRef.current={};setSelected(null);routeRevision.current=0;setSaveStatus('尚未保存');}
+ async function changeProfile(id:string){pause();const version=++epoch.current;try{await persist();}catch{return;}if(!mounted.current||version!==epoch.current)return;setProfileId(id);profileRef.current=id;setConversation([]);stopTour(true);setConsent(false);setRoute(null);routeRef.current=null;setAnswers({});answersRef.current={};setSelected(null);routeRevision.current=0;setSaveStatus('尚未保存');}
  function stopPlaying(){playingRef.current=false;waitingAdvance.current=false;if(dwellTimer.current)clearInterval(dwellTimer.current);dwellTimer.current=null;if(mounted.current){setPlaying(false);setRemaining(null);}}
  function stopTour(clear=false){if(tourTimer.current)clearInterval(tourTimer.current);tourTimer.current=null;tourEpoch.current++;const t=tourRef.current;if(!t)return;const next=clear?null:{...t,playing:false,remaining:null};tourRef.current=next;if(mounted.current)setTour(next);}
  /** Takes the reader to one step: a glide to its passage, a closer look if the step asks for it, then (when playing) a
@@ -58,7 +58,7 @@ export function SurfingPanel({document:doc,reader,takeover,takeoverRef,flushRef,
   const block=s.passages.find(p=>p.id===target.passageId);if(!block)return;
   const result=await host.current!.run({type:'show_evidence',pageIndex:block.pageIndex,passageId:block.id});
   if(!mounted.current||version!==tourEpoch.current)return;
-  if(result.ok&&target.zoom)await reader.zoomTo(target.zoom,block);
+  if(result.ok&&target.zoom)await reader.zoomTo(target.zoom,block,()=>version===tourEpoch.current);
   if(!mounted.current||version!==tourEpoch.current||!play)return;
   if(step+1>=steps.length){const done={...at,playing:false};tourRef.current=done;setTour(done);return;}
   const seconds=Math.min(dwell,Math.max(5,Math.round(4+target.text.length/8))),end=Date.now()+seconds*1000;setTour(t=>t&&t.id===id?{...t,remaining:seconds}:t);
@@ -78,7 +78,7 @@ export function SurfingPanel({document:doc,reader,takeover,takeoverRef,flushRef,
   fail(Error(`这篇论文超出了该模型的实际上下文窗口，已将窗口调整为 ${next} tokens，请重试。`));
  }
  function fail(value:unknown){stopPlaying();if(mounted.current){setError(value instanceof Error?value.message:String(value));setStatus('error');}}
- async function prepare(){setConversation([]);pause();const version=++epoch.current;try{await persist();}catch{return;}if(!mounted.current||epoch.current!==version)return;setSnapshot(null);source.current=null;setRoute(null);routeRef.current=null;setAnswers({});answersRef.current={};setSelected(null);setError('');setSaveError('');setSaveStatus('尚未保存');routeRevision.current=0;setConsent(false);setStatus('preparing');preparing.current=version;
+ async function prepare(){setConversation([]);stopTour(true);pause();const version=++epoch.current;try{await persist();}catch{return;}if(!mounted.current||epoch.current!==version)return;setSnapshot(null);source.current=null;setRoute(null);routeRef.current=null;setAnswers({});answersRef.current={};setSelected(null);setError('');setSaveError('');setSaveStatus('尚未保存');routeRevision.current=0;setConsent(false);setStatus('preparing');preparing.current=version;
   try{const next=unwrap(await window.enlumor.prepareSurfing(doc.id).finally(()=>{if(preparing.current===version)preparing.current=0;}));if(!mounted.current||epoch.current!==version)return;source.current=next;setSnapshot(next);setStatus('prepared');
    try{const restored=unwrap(await window.enlumor.getSavedSurfingProgress(next.context));if(!mounted.current||epoch.current!==version)return;if(restored){const saved=restored.session;routeRef.current=saved.route;setRoute(saved.route);routeRevision.current=restored.routeRevision;setSelected(saved.selected);answersRef.current=saved.answers;setAnswers(saved.answers);profileRef.current=saved.source.profileId;setProfileId(saved.source.profileId);setCapacity(String(saved.contextWindowTokens));setConsent(false);setSaveStatus('已保存');setStatus('paused');}}
    catch(e){if(mounted.current&&epoch.current===version){setSaveStatus('未恢复');setSaveError('保存的进度未恢复：'+(e instanceof Error?e.message:String(e)));}}
@@ -107,7 +107,7 @@ export function SurfingPanel({document:doc,reader,takeover,takeoverRef,flushRef,
   return()=>{if(flushRef.current===flush)flushRef.current=null;if(takeoverRef.current===interrupt)takeoverRef.current=null;mounted.current=false;epoch.current++;job.current=null;off();offBackground();window.document.removeEventListener('visibilitychange',background);host.current?.invalidate();const s=source.current;if(s)void window.enlumor.deactivateSurfing(s.context);};
  },[doc.id,reader]);
  useEffect(()=>{if(takeover!==lastTakeover.current){lastTakeover.current=takeover;interrupt();}},[takeover]);
- useEffect(()=>{let active=true;if(settingsOpen){pause();setConversation([]);setConsent(false);setRoute(null);routeRef.current=null;setAnswers({});setSelected(null);}else void window.enlumor.listAiProfiles().then(reply=>{if(!mounted.current||!active)return;const p=unwrap(reply);setProfiles(p);setProfileId(p.some(x=>x.id===profileRef.current)?profileRef.current:p[0]?.id||'');}).catch(fail);return()=>{active=false;};},[settingsOpen]);
+ useEffect(()=>{let active=true;if(settingsOpen){pause();setConversation([]);stopTour(true);setConsent(false);setRoute(null);routeRef.current=null;setAnswers({});setSelected(null);}else void window.enlumor.listAiProfiles().then(reply=>{if(!mounted.current||!active)return;const p=unwrap(reply);setProfiles(p);setProfileId(p.some(x=>x.id===profileRef.current)?profileRef.current:p[0]?.id||'');}).catch(fail);return()=>{active=false;};},[settingsOpen]);
  useEffect(()=>{const frame=requestAnimationFrame(()=>reader.fit('page-width'));return()=>cancelAnimationFrame(frame);},[doc.id,reader]);
  // A recognised model starts with the reader's last value or a conservative suggestion, never overwriting a typed or restored one.
  useEffect(()=>{if(!selectedProfile)return;const value=rememberedWindow(selectedProfile)??suggestedSurfingContextWindow(selectedProfile);if(value)setCapacity(c=>c||String(value));},[selectedProfile?.id,selectedProfile?.model]);

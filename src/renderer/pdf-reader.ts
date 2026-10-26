@@ -29,6 +29,9 @@ export class PdfReader {
   private flashTimer?: ReturnType<typeof setTimeout>;
   /** Stops the glide in progress, if any. */
   private glide?: () => void;
+  /** Bumped to abandon a zoom still animating; its transform is undone at once. */
+  private zoomEpoch = 0;
+  private cancelZoom(){this.zoomEpoch++;const pages=this.viewer?.viewer as HTMLElement|undefined;if(pages?.style.transform){pages.style.transition='';pages.style.transform='';}}
   private ready = false;
   private lineTool: LineTool;
   private eraser: EraserTool;
@@ -67,7 +70,7 @@ export class PdfReader {
     }, { passive: false });
   }
   async open(doc: OpenedDocument) {
-    this.glide?.();
+    this.glide?.();this.cancelZoom();
     this.blockCache.clear();
     this.setDrawingTool(null);
     const generation = ++this.generation;
@@ -162,7 +165,7 @@ export class PdfReader {
     this.blockCache.set(pageIndex,blocks);if(this.blockCache.size>6)this.blockCache.delete(this.blockCache.keys().next().value!);
     return structuredClone(blocks);
   }
-  clearCruiseFocus(){this.glide?.();this.focusEpoch=(this.focusEpoch||0)+1;clearTimeout(this.flashTimer);const hadFlash=!!this.flash;this.flash=undefined;if(hadFlash)this.paint();}
+  clearCruiseFocus(){this.glide?.();this.cancelZoom();this.focusEpoch=(this.focusEpoch||0)+1;clearTimeout(this.flashTimer);const hadFlash=!!this.flash;this.flash=undefined;if(hadFlash)this.paint();}
   /** smooth: glide there (Surfing taking the reader somewhere); otherwise the jump is immediate, as reader-initiated jumps are. */
   locateCruiseBlock(block:CruiseBlock,isCurrent:()=>boolean=()=>true,smooth=false){
     if(!isCurrent())return Promise.resolve();
@@ -175,7 +178,7 @@ export class PdfReader {
   setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
   setLineEnabled(enabled:boolean) { this.setDrawingTool(enabled?'line':null); }
   clear() {
-    this.glide?.();
+    this.glide?.();this.cancelZoom();
     this.blockCache.clear();
     this.setDrawingTool(null);
     ++this.generation; this.ready = false; this.active = undefined; this.marks = []; this.flash = undefined;
@@ -229,7 +232,7 @@ export class PdfReader {
    * it is, as does the request no longer being current (pause, another document); a newer glide replaces it, and with
    * reduced motion it goes straight there. Resolves when it arrives or stops. */
   private glideTo(top:number,isCurrent:()=>boolean=()=>true):Promise<void>{
-    this.glide?.();
+    this.glide?.();this.cancelZoom();
     const el=this.container,from=el.scrollTop,to=Math.max(0,Math.min(top,el.scrollHeight-el.clientHeight)),distance=to-from;
     if(Math.abs(distance)<2||window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){el.scrollTop=to;return Promise.resolve();}
     const duration=Math.min(700,280+Math.sqrt(Math.abs(distance))*6),start=performance.now(),inputs=['wheel','pointerdown','keydown'] as const;
@@ -253,8 +256,9 @@ export class PdfReader {
   }
   /** Zooms to a fit or 1.6 times closer, as one smooth motion around a passage (or the middle of the view): the pages are
    * scaled with a short transform, then the real scale is applied and the passage kept where it was, in the same frame. */
-  async zoomTo(mode:'width'|'page'|'in',anchor?:Pick<DisplayMark,'pageIndex'|'quads'>):Promise<void>{
-    if(!this.ready)return;
+  async zoomTo(mode:'width'|'page'|'in',anchor?:Pick<DisplayMark,'pageIndex'|'quads'>,isCurrent:()=>boolean=()=>true):Promise<void>{
+    this.cancelZoom();const epoch=this.zoomEpoch;
+    if(!this.ready||!isCurrent())return;
     const view=this.viewer.getPageView(anchor?.pageIndex??this.viewer.currentPageNumber-1);if(!view)return;
     const from=this.viewer.currentScale,base={width:view.viewport.width/from,height:view.viewport.height/from};
     // PDF.js leaves room for the scrollbar and page borders when it fits a page; the same margins are used here.
@@ -269,7 +273,8 @@ export class PdfReader {
     if(!window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
       pages.style.transformOrigin=`${ax}px ${ay}px`;pages.style.transition='transform 220ms cubic-bezier(.4,0,.2,1)';pages.style.transform=`scale(${to/from})`;
       await new Promise<void>(resolve=>{const end=()=>{pages.removeEventListener('transitionend',end);resolve();};pages.addEventListener('transitionend',end);setTimeout(end,280);});
-      if(!this.ready||view!==this.viewer.getPageView(view.id-1)){pages.style.transition='';pages.style.transform='';return;}
+      // A newer step, a glide or a pause took over during the animation: leave the scale as it was.
+      if(epoch!==this.zoomEpoch||!isCurrent()||!this.ready||view!==this.viewer.getPageView(view.id-1)){if(epoch===this.zoomEpoch){pages.style.transition='';pages.style.transform='';}return;}
     }
     pages.style.transition='';pages.style.transform='';
     if(mode==='width')this.viewer.currentScaleValue='page-width';else if(mode==='page')this.viewer.currentScaleValue='page-fit';else this.viewer.currentScale=to;

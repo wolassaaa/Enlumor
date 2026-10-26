@@ -28,6 +28,13 @@ export function thinkingOptions(profile:Model):ThinkingOptions|null{
  return null;
 }
 
+/** A profile's parameters with a chosen level applied. The profile's own thinking controls (set by hand in its parameters)
+ * are replaced, not combined, so the chosen level is the one the service sees; no level leaves the profile as it is. */
+export function withThinking(profile:Model&{parameters:Record<string,unknown>},id?:string):Record<string,unknown>{
+ if(id===undefined)return profile.parameters;
+ const {thinking:_t,reasoning_effort:_r,enable_thinking:_e,...rest}=profile.parameters;
+ return{...rest,...thinkingParameters(profile,id)};
+}
 /** The request parameters for a chosen level; no level (or the default) changes nothing. An unknown level is refused. */
 export function thinkingParameters(profile:Model,id?:string):Record<string,unknown>{
  if(id===undefined)return{};

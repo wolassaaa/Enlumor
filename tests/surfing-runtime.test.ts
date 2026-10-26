@@ -34,7 +34,7 @@ it('edited configuration of the same profile is rejected until a fresh preparati
  const q={request:{requestId:'q',profileId:'first',context:s.context,consent:true as const,question:'摘要',pageIndex:0},contextWindowTokens:10000};await h.runtime.ask(q);h.ports.profileView=id=>({...h.ports.profile(id),model:'changed'});await expect(h.runtime.ask(q)).rejects.toThrow('SURFING_PROFILE_CHANGED');
 });
 
-import {thinkingOptions} from '../src/shared/ai-thinking';
+import {thinkingOptions,withThinking} from '../src/shared/ai-thinking';
 import {validateAiProfile} from '../src/main/ai-config';
 it('offers each model its own thinking levels, only where the service is known to accept them',()=>{
  const deepseek={protocol:'openai-chat' as const,endpoint:'https://api.deepseek.com/v1',model:'deepseek-flash'};
@@ -54,4 +54,10 @@ it('a chosen thinking level reaches the request but not the profile signature; u
  await h.runtime.route({request:request('b'),contextWindowTokens:10000});
  expect(sent).toEqual([{thinking:{type:'disabled'}},{}]);
  await expect(h.runtime.route({request:request('c'),contextWindowTokens:10000,thinking:'ultra'})).rejects.toThrow('SURFING_INVALID_REQUEST');
+});
+it('a chosen thinking level replaces thinking controls set by hand in the profile instead of being combined with them',()=>{
+ const profile={protocol:'openai-chat' as const,endpoint:'https://api.deepseek.com/v1',model:'deepseek-flash',parameters:{thinking:{type:'disabled'},temperature:0.3}};
+ expect(withThinking(profile,'max')).toEqual({temperature:0.3,reasoning_effort:'max'});
+ expect(withThinking(profile,'high')).toEqual({temperature:0.3});
+ expect(withThinking(profile)).toEqual(profile.parameters);
 });

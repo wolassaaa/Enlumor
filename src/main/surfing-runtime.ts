@@ -6,7 +6,7 @@ import type {SurfingSession} from '../shared/surfing-session';
 import {createSurfingSourceLoader,type SurfingSourcePorts} from './surfing-source';
 import {SurfingRequests,type SurfingRouteRequest,type SurfingAskRequest,type SurfingExplainRequest,type SurfingRequestPorts,type SurfingRouteEvent} from './surfing-requests';
 import {surfingProfileSignature,validateSurfingSession} from './surfing-sessions';
-import {thinkingParameters} from '../shared/ai-thinking';
+import {thinkingParameters,withThinking} from '../shared/ai-thinking';
 /** thinking: one of the configured model's own thinking levels (see ai-thinking); absent means the model's default. */
 export type SurfingSubmission<T>={request:T;contextWindowTokens:number;thinking?:string};
 export type SurfingSaveInput={context:CommandContext;routeRevision:number;selected:number|null};
@@ -18,7 +18,7 @@ export class SurfingRuntime{
  private context:CommandContext|null=null;private snapshot:SurfingContext|null=null;private revision=0;private preparation?:AbortController;private budgets=new Map<string,number>();private thinking=new Map<string,string|undefined>();private requests:SurfingRequests;
  private progress:SurfingSession|null=null;private routeRevision=0;private activeSource:SurfingSession['source']|null=null;
  constructor(private ports:SurfingRuntimePorts){
-  this.requests=new SurfingRequests({getContext:()=>this.getContext(),load:async context=>{if(!this.snapshot||!same(this.context,context))throw Error('SURFING_SOURCE_INVALID');const d=this.ports.verified(context.documentId);if(d.fingerprint!==context.fingerprint||d.pageCount!==this.snapshot.pageCount)throw Error('SURFING_SOURCE_INVALID');return structuredClone(this.snapshot);},profile:id=>{const p=this.ports.profile(id);this.activeSource={profileId:id,name:p.name,model:p.model,signature:surfingProfileSignature(p)};return{profile:{...p,parameters:{...p.parameters,...thinkingParameters(p,this.thinking.get(id))}},contextWindowTokens:this.budgets.get(id)||0};},measureInputTokens:(profile,prompt,signal)=>this.ports.measureInputTokens(profile,prompt,signal),generate:(profile,prompt,options)=>this.ports.generate(profile,prompt,options),emit:event=>this.emit(event),...(this.ports.renderPage?{renderPage:(context,pageIndex,signal)=>this.renderPage(context,pageIndex,signal)}:{})});
+  this.requests=new SurfingRequests({getContext:()=>this.getContext(),load:async context=>{if(!this.snapshot||!same(this.context,context))throw Error('SURFING_SOURCE_INVALID');const d=this.ports.verified(context.documentId);if(d.fingerprint!==context.fingerprint||d.pageCount!==this.snapshot.pageCount)throw Error('SURFING_SOURCE_INVALID');return structuredClone(this.snapshot);},profile:id=>{const p=this.ports.profile(id);this.activeSource={profileId:id,name:p.name,model:p.model,signature:surfingProfileSignature(p)};return{profile:{...p,parameters:withThinking(p,this.thinking.get(id))},contextWindowTokens:this.budgets.get(id)||0};},measureInputTokens:(profile,prompt,signal)=>this.ports.measureInputTokens(profile,prompt,signal),generate:(profile,prompt,options)=>this.ports.generate(profile,prompt,options),emit:event=>this.emit(event),...(this.ports.renderPage?{renderPage:(context,pageIndex,signal)=>this.renderPage(context,pageIndex,signal)}:{})});
  }
  private emit(event:SurfingRouteEvent){
   if(event.type==='route'){
