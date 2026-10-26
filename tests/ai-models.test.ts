@@ -112,3 +112,8 @@ it('thinking streamed apart from the answer is noticed, never added to the answe
   expect(await generateText({...profile(endpoint,protocol)},prompt,{onThinking:()=>thought++})).toBe('ok');expect(thought).toBeGreaterThan(0);
  }
 });
+it('an over-long prompt is reported as a context overflow even when the reply also mentions max_tokens',async()=>{
+ forgetLearnedOutputLimits();
+ const endpoint=await server((_q,res)=>{res.statusCode=400;res.setHeader('content-type','application/json');res.end(JSON.stringify({error:{message:"This model's maximum context length is 32768 tokens. However, you requested 40000 tokens. Please reduce the length of the messages or max_tokens."}}));});
+ await expect(generateText(profile(endpoint),prompt,{stream:false})).rejects.toThrow(/^AI_CONTEXT_OVERFLOW_32768$/);
+});

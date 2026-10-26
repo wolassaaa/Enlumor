@@ -152,7 +152,9 @@ export async function listAiModelInfo(profile:AiProfileInput,options:{signal?:Ab
 // "Context too long" in the words of OpenAI/DeepSeek, Anthropic, Gemini and common relays.
 const overflow=/context[_ ]length|context window|maximum context|prompt is too long|input is too long|too many tokens|token limit|input token count|reduce the length of the (messages|prompt)/i;
 const overflowLimit=[/maximum context length is (\d{4,8})/i,/> ?(\d{4,8}) maximum/i,/allowed \((\d{4,8})\)/i,/(?:limit|maximum)(?: of| is)? (\d{4,8}) tokens/i];
-// "Too many output tokens requested" in the words of OpenAI, DeepSeek, Anthropic, Gemini and OpenAI-compatible servers.
+// "Too many output tokens requested" in the words of OpenAI, DeepSeek, Anthropic, Gemini and OpenAI-compatible servers: first
+// the unmistakable phrasings, then (only when nothing says the context is too long) any mention of the output limit.
+const outputLimitStated=/max_tokens is too large|valid range of max_tokens|maximum allowed number of output tokens|at most \d+ (completion|output) tokens|max_tokens: ?\d+ ?>/i;
 const outputLimit=/max_tokens|max_output_tokens|maxOutputTokens|max_completion_tokens|output tokens|completion tokens/i;
 /** Error code for a failed HTTP response. An over-long prompt becomes AI_CONTEXT_OVERFLOW, with the service's real window when it states one;
  * asking for more output than the model allows becomes AI_OUTPUT_LIMIT, with the largest stated limit below what was asked. */
@@ -161,7 +163,7 @@ async function httpFailure(response:Response,requested:number):Promise<Error>{
  const reader=response.body.getReader(),chunks:Uint8Array[]=[];let size=0;
  try{while(size<16384){const chunk=await reader.read();if(chunk.done)break;size+=chunk.value.byteLength;chunks.push(chunk.value);}}catch{/* keep what arrived */}finally{await reader.cancel().catch(()=>{});}
  const text=Buffer.concat(chunks).toString('utf8');
- if(outputLimit.test(text)){
+ if(outputLimitStated.test(text)||(outputLimit.test(text)&&!overflow.test(text))){
   const stated=[...text.matchAll(/\d{3,7}/g)].map(m=>Number(m[0])).filter(n=>n>=256&&n<requested);
   return failure(stated.length?'AI_OUTPUT_LIMIT_'+Math.max(...stated):'AI_OUTPUT_LIMIT');
  }

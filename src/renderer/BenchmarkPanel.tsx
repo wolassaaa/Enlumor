@@ -16,7 +16,7 @@ function readHistory(name:string):Run[]{try{const v=JSON.parse(localStorage.getI
 function writeHistory(name:string,runs:Run[]){try{localStorage.setItem(historyKey(name),JSON.stringify(runs.slice(0,10)));}catch{/* per-viewer convenience only */}}
 
 /** Test mode for a benchmark PDF: runs the manifest's checks through the same Surfing services readers use. */
-export function BenchmarkPanel({document:doc,manifest,onExit,onSettings}:{document:OpenedDocument;manifest:BenchmarkManifest;onExit:()=>void;onSettings:()=>void}){
+export function BenchmarkPanel({document:doc,manifest,settingsOpen=false,onExit,onSettings}:{document:OpenedDocument;manifest:BenchmarkManifest;settingsOpen?:boolean;onExit:()=>void;onSettings:()=>void}){
  const [profiles,setProfiles]=useState<AiProfileView[]>([]),[profileId,setProfileId]=useState(''),[consent,setConsent]=useState(false),[running,setRunning]=useState(false);
  const [results,setResults]=useState<Result[]>(()=>manifest.checks.map(c=>({id:c.id,title:c.title,status:'waiting',detail:''}))),[copied,setCopied]=useState(''),[history,setHistory]=useState(()=>readHistory(manifest.name));
  const pending=useRef(new Map<string,{resolve:(e:SurfingRuntimeEvent)=>void;steps:string[]}>()),context=useRef<SurfingContext['context']|null>(null),stopped=useRef(false),halted=useRef<'stopped'|'background'|null>(null),mounted=useRef(true);
@@ -33,6 +33,8 @@ export function BenchmarkPanel({document:doc,manifest,onExit,onSettings}:{docume
   stopped.current=true;halted.current=why;
   for(const [id,p] of pending.current){pending.current.delete(id);p.resolve({requestId:id,type:'error',code:'AI_CANCELLED'});}
  }
+ // Profiles saved in model settings (opened from here with 配置模型) are offered as soon as the dialog closes.
+ useEffect(()=>{if(settingsOpen)return;let active=true;void window.enlumor.listAiProfiles().then(r=>{const list=unwrap(r);if(!active||!mounted.current)return;setProfiles(list);setProfileId(id=>list.some(p=>p.id===id)?id:list[0]?.id||'');}).catch(()=>{});return()=>{active=false;};},[settingsOpen]);
  const update=(id:string,patch:Partial<Result>)=>{if(mounted.current)setResults(rs=>rs.map(r=>r.id===id?{...r,...patch}:r));};
  /** Sends one request and waits for its own final event (answer, route, explanation or error). */
  function request(send:(requestId:string)=>Promise<unknown>){
@@ -62,7 +64,7 @@ export function BenchmarkPanel({document:doc,manifest,onExit,onSettings}:{docume
    if(event.type!=='explanation')return{status:'fail',detail:`第 ${i+1} 处没有讲解`+(event.type==='error'?'：'+event.code:''),answer:texts.join('\n\n')};
    texts.push(`${i+1}. ${event.explanation.text}`);
   }
-  return{status:texts.length>=2?'pass':'review',detail:texts.length>=2?'依次讲解了前两处切入点':'只有一个切入点',answer:texts.join('\n\n')};
+  return{status:texts.length>=2?'pass':'review',detail:texts.length>=2?'依次讲解了前两处切入点（测试模式只检查讲解，自动前进和滚动暂停由命令行验收检查）':'只有一个切入点',answer:texts.join('\n\n')};
  }
  async function run(){
   if(!profile||!consent||running)return;stopped.current=false;halted.current=null;setRunning(true);setCopied('');

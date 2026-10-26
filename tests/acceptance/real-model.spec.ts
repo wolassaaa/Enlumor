@@ -46,9 +46,11 @@ async function record(page:Page,check:{id:string;title:string},run:()=>Promise<O
 }
 /** Waits until a new reply appears or the panel shows an error; returns the reply and what the agent did meanwhile.
  * The panel keeps only the latest few answers, so a new one may replace the oldest instead of adding to the count. */
-async function awaitReply(page:Page,selector:string,before:number,timeout:number){
+/** The newest reply before a request is sent, so a reply that replaces it can be told apart. */
+const lastReply=async(page:Page,selector:string)=>(await page.locator(selector).last().innerText().catch(()=>'')).trim();
+async function awaitReply(page:Page,selector:string,before:number,timeout:number,previous=''){
  const steps=new Set<string>(),deadline=Date.now()+timeout,items=page.locator(selector);const app=appRef!;await app.evaluate(()=>{(globalThis as any).surfingSteps=[];});
- const last=async()=>(await items.last().innerText().catch(()=>'')).trim(),previous=before?await last():'';
+ const last=async()=>(await items.last().innerText().catch(()=>'')).trim();
  while(Date.now()<deadline){
   for(const t of await app.evaluate(()=>(globalThis as any).surfingSteps as string[]))steps.add(t);
   const count=await items.count();
@@ -60,9 +62,9 @@ async function awaitReply(page:Page,selector:string,before:number,timeout:number
 }
 
 async function askCheck(page:Page,c:Check,vision:boolean):Promise<Omit<Result,'id'|'name'|'ms'|'shot'>>{
- const before=await page.locator('.surfing-response').count();
+ const before=await page.locator('.surfing-response').count(),previous=await lastReply(page,'.surfing-response');
  await page.getByLabel('Surfing 随时提问',{exact:true}).fill(c.question!);await page.getByRole('button',{name:'发送问题',exact:true}).click();
- const r=await awaitReply(page,'.surfing-response',before,180_000);if(r.error)return{status:'fail',detail:'没有得到回答',error:r.error};
+ const r=await awaitReply(page,'.surfing-response',before,180_000,previous);if(r.error)return{status:'fail',detail:'没有得到回答',error:r.error};
  const article=page.locator('.surfing-conversation article').last(),chips=await article.locator('.surfing-evidence button').count();
  // The answer is its conclusion and every step of the path to it, graded the same way as the in-app test mode.
  const tour=await article.locator('.surfing-tour .tour-text').allInnerTexts(),text=[r.text,...tour].join('\n');
@@ -70,8 +72,8 @@ async function askCheck(page:Page,c:Check,vision:boolean):Promise<Omit<Result,'i
  return{...graded,detail:graded.detail+(tour.length?` · 带路 ${tour.length} 步`:''),answer:text};
 }
 async function routeCheck(page:Page,c:Check):Promise<Omit<Result,'id'|'name'|'ms'|'shot'>>{
- const before=await page.locator('.surfing-stops li').count();await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();
- const r=await awaitReply(page,'.surfing-stops li',before,180_000);if(r.error)return{status:'fail',detail:'没有生成切入点',error:r.error};
+ const before=await page.locator('.surfing-stops li').count(),previous=await lastReply(page,'.surfing-stops li');await page.getByRole('button',{name:'生成探索切入点',exact:true}).click();
+ const r=await awaitReply(page,'.surfing-stops li',before,180_000,previous);if(r.error)return{status:'fail',detail:'没有生成切入点',error:r.error};
  await page.waitForTimeout(500);const stops=await page.locator('.surfing-stops li button').allInnerTexts();
  return{...gradeBenchmarkRoute(c,stops.map(title=>({title}))),answer:stops.join('\n')};
 }

@@ -45,3 +45,8 @@ it('the Lumen figure check grades what the answer says is highest, not every men
  expect(grade('我看不到图像，只能依据图注；无法判断 Retrieval 是否最高。',false)).toBe('pass');
  expect(grade('准确率最高的是 Retrieval。',false)).toBe('review');
 });
+it('a manifest pattern may not repeat a group (exponential backtracking) or refer back to one',()=>{
+ const check=(p:string)=>()=>validateBenchmarkManifest({enlumorBenchmark:1,name:'x',checks:[{id:'a',kind:'ask',title:'t',question:'q',expect:{all:[p]}}]});
+ for(const bad of ['(a|aa)+$','(a+)+','(x|y)*z','(ab){2,}','(a)\\1'])expect(check(bad)).toThrow('BENCHMARK_INVALID');
+ for(const fine of ['1(\\.0)? ?(秒|s)','(最高|最好)的?(方法)?(是|为)\\s*\\*{0,2}lumen','5\\s*个','f\\(x\\)'])expect(check(fine)).not.toThrow();
+});

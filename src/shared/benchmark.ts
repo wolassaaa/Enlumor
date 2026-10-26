@@ -11,9 +11,10 @@ const fail=():never=>{throw Error('BENCHMARK_INVALID');};
 const text=(v:unknown,max:number)=>typeof v==='string'&&v.trim().length>0&&v.length<=max;
 const record=(v:unknown):v is Record<string,unknown>=>!!v&&typeof v==='object'&&!Array.isArray(v);
 function keys(v:Record<string,unknown>,allowed:string[]){if(Object.keys(v).some(k=>!allowed.includes(k)))fail();}
-// Short patterns without nested quantifiers like (a+)+, so a crafted manifest cannot make grading hang.
+// Short patterns whose groups are never repeated: (a+)+ and (a|aa)+ backtrack exponentially, so a crafted manifest could make
+// grading hang. An optional group, (\.0)?, is fine; so are repeated characters and classes. Backreferences are refused too.
 function pattern(v:unknown){
- if(!text(v,200)||/\([^)]*[*+][^)]*\)\s*[*+{]/.test(v as string))fail();
+ if(!text(v,200)||/(^|[^\\])\)\s*[*+{]/.test(v as string)||/\\[1-9]/.test(v as string))fail();
  try{new RegExp(v as string,'i');}catch{fail();}
 }
 function expectation(v:unknown){
