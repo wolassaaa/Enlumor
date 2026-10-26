@@ -106,3 +106,21 @@ describe('trusted source and atomic legacy conversion',()=>{
     const anchor=await f.service.prepareAnchor(context,{pageIndex:0,quote,quads:[[55,315,90,315,55,280,90,280]]},signal());const top=Math.max(...chars.map((c:any)=>c.quad[1]));expect(Math.max(...anchor.quads.map(q=>q[1]))).toBeCloseTo(top);
   });
 });
+
+it('export writes the marks as the reader sees them plus legacy annotations not yet converted, each once',async()=>{
+ const f=await fixture();legacy(f,'old');await f.service.convertLegacyPage(f.context,0,signal());
+ // Added after the page was converted, so it is still a read-only legacy annotation.
+ legacy(f,'later',{type:'note',quote:'',note:'late note',quads:[[30,60,50,60,30,40,50,40]]});
+ const h=editingHost(f.edits,f.context),commit=async(requestId:string,command:any)=>{const r:any=await runEditingCommand({context:f.context,requestId,command},h,signal());if(r.status!=='committed')throw Error(JSON.stringify(r));return r;};
+ await commit('recolor',{type:'update_mark',id:'old',expectedVersion:f.edits.readSnapshot(f.context).versions.old,patch:{color:'#cc2200'}});
+ const note=await commit('note',{type:'create_mark',markType:'note',pageIndex:0,color:'#2255aa',note:'new note',geometry:{quads:[[100,60,120,60,100,40,120,40]]}});
+ const hidden=await commit('hidden',{type:'create_mark',markType:'note',pageIndex:0,color:'#22aa55',note:'hidden note',geometry:{quads:[[200,60,220,60,200,40,220,40]]}});
+ const hiddenId=Object.keys(hidden.versions)[0],noteId=Object.keys(note.versions)[0];
+ await commit('hide',{type:'set_marks_visibility',targets:[{id:hiddenId,expectedVersion:f.edits.readSnapshot(f.context).versions[hiddenId]}],visible:false});
+ const list=f.edits.exportAnnotations(f.doc.id);
+ expect(list.map(a=>a.id).sort()).toEqual(['later','old',noteId].sort());expect(list.find(a=>a.id==='old')!.color).toBe('#cc2200');
+ const target=join(f.dir,'exported.pdf'),result=await run<{annotationCount:number}>({operation:'export',source:f.source,target,fingerprint:f.doc.fingerprint,annotations:list});
+ expect(result.annotationCount).toBe(3);
+ const written=JSON.parse(execFileSync(python,['-c','import pymupdf as f,sys,json;d=f.open(sys.argv[1]);print(json.dumps(sorted([[a.type[1],a.info["subject"],"#%02x%02x%02x"%tuple(round(c*255) for c in a.colors["stroke"])] for a in d[0].annots()])))',target],{encoding:'utf8'}));
+ expect(written).toEqual([['Highlight','old','#cc2200'],['Text','later','#123456'],['Text',noteId,'#2255aa']].sort());
+});

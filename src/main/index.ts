@@ -126,10 +126,9 @@ app.whenReady().then(async () => {
   handle('reading:save', (state: ReadingState) => workspace.saveReading(state));
   handle('document:export', async id => {
     const doc = workspace.verified(id);
-    if(editingService?.hasUserEdits(id))throw Error('EDITING_EXPORT_UNAVAILABLE: 新标识导出尚未接入');
     const target = await dialog.showSaveDialog(window, { title: '导出批注 PDF（原文件保持不变）', defaultPath: path.join(path.dirname(doc.path), `${path.basename(doc.path, '.pdf')}-enlumor.pdf`), filters: [{ name: 'PDF', extensions: ['pdf'] }] });
     if (target.canceled || !target.filePath) return { cancelled: true };
-    const result = await runPdfTask<{ path: string; annotationCount: number }>({ operation: 'export', source: doc.path, target: target.filePath, fingerprint: doc.fingerprint, annotations: workspace.annotations(id) });
+    const result = await runPdfTask<{ path: string; annotationCount: number }>({ operation: 'export', source: doc.path, target: target.filePath, fingerprint: doc.fingerprint, annotations: editingService ? editingService.exportAnnotations(id) : workspace.annotations(id) });
     return { cancelled: false, ...result };
   });
   window.on('close', event => {

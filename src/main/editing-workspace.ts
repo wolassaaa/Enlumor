@@ -120,6 +120,16 @@ export class WorkspaceEdits {
     });
   }
   legacy(documentId:string,inputs=this.legacyInputs(documentId)):LegacyMarkView[] {return inputs.filter((x):x is LegacyInput & {annotation:Annotation}=>x.annotation!==null).map(x=>({legacyId:x.legacyId,inputDigest:x.inputDigest,annotation:x.annotation,status:'readonly',reason:x.reason}));}
+  /** What "export annotated PDF" writes: every visible mark, plus the legacy annotations not yet converted (they are still
+   * shown read-only). A converted legacy annotation is exported as its mark, which keeps its id, so edits and deletions made
+   * since are what gets written and nothing is written twice. Hidden marks stay out, as they are out of the reader's view. */
+  exportAnnotations(documentId:string):Annotation[] {
+    const d=this.workspace.document(documentId),c={documentId,fingerprint:d.fingerprint,revision:0};
+    this.db.exec('BEGIN');try {
+      const marks=this.marks(c).marks.filter(m=>m.visible).map(({origin:_o,retained:_r,visible:_v,version:_n,anchorId:_a,placement:_p,...mark})=>({...mark,author:'user' as const}));
+      const result=[...marks,...this.legacy(documentId).map(x=>x.annotation)];this.db.exec('COMMIT');return result;
+    }catch(e){this.db.exec('ROLLBACK');throw e;}
+  }
   /** Every committed user edit records an operation; automatic legacy conversion records none. */
   hasUserEdits(c:Pick<CommandContext,'documentId'|'fingerprint'>):boolean {return !!this.db.prepare('SELECT 1 FROM edit_operations WHERE documentId=? AND fingerprint=? LIMIT 1').get(c.documentId,c.fingerprint);}
   view(c:CommandContext,actor:EditActor):EditingView {

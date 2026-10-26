@@ -60,6 +60,8 @@ export class EditingIpc {
  async reanchor(input:unknown){return this.request(input,['legacyId','anchorId','expectedInputDigest'],async(v,s,signal)=>{identifier(v.legacyId);identifier(v.anchorId);identifier(v.expectedInputDigest);await this.sources.reanchorLegacy(s.context,v.legacyId,v.anchorId,v.expectedInputDigest,signal);return this.view(s.sessionId);});}
  /** Legacy export only knows legacy annotations; it is unsafe once the user has edited marks, not merely because viewing converted them. */
  hasUserEdits(documentId:string){const doc=this.workspace.verified(documentId);return this.edits.hasUserEdits({documentId,fingerprint:doc.fingerprint});}
+ /** The annotations to write into an exported PDF: the marks as the reader sees them, plus unconverted legacy ones. */
+ exportAnnotations(documentId:string){this.workspace.verified(documentId);return this.edits.exportAnnotations(documentId);}
  close(){this.abort.abort();this.session=null;}
 }
 export function registerEditingIpc(handle:(name:string,fn:(input:any)=>unknown)=>void,service:EditingIpc|null){
