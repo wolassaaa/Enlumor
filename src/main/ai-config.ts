@@ -21,7 +21,7 @@ export function validateAiProfile(profile:AiProfileInput):URL {
  const p=profile.parameters;if(!p||typeof p!=='object'||Array.isArray(p)||Object.getPrototypeOf(p)!==Object.prototype)throw invalid();
  // Protocol-specific controls, never authentication/routing/prompts or arbitrary request fields.
  const allowed:Record<string,string[]>={
-  'openai-chat':['temperature','top_p','seed','presence_penalty','frequency_penalty','reasoning_effort','enable_thinking'],
+  'openai-chat':['temperature','top_p','seed','presence_penalty','frequency_penalty','reasoning_effort','enable_thinking','thinking'],
   'openai-responses':['temperature','top_p'],
   'anthropic-messages':['temperature','top_p','top_k'],
   gemini:['temperature','topP','topK'],
@@ -30,7 +30,9 @@ export function validateAiProfile(profile:AiProfileInput):URL {
  };
  for(const [key,value]of Object.entries(p)){
   if(!allowed[profile.protocol].includes(key))throw invalid();
-  if(key==='reasoning_effort'){if(typeof value!=='string'||!['none','minimal','low','medium','high','xhigh'].includes(value))throw invalid();}
+  if(key==='reasoning_effort'){if(typeof value!=='string'||!['none','minimal','low','medium','high','xhigh','max'].includes(value))throw invalid();}
+  // DeepSeek's switch: {type:'enabled'|'disabled'} and nothing else.
+  else if(key==='thinking'){if(!value||typeof value!=='object'||Array.isArray(value)||Object.keys(value).join()!=='type'||!['enabled','disabled'].includes((value as any).type))throw invalid();}
   else if(key==='enable_thinking'||key==='incremental_output'){if(typeof value!=='boolean')throw invalid();}
   else {
    if(typeof value!=='number'||!Number.isFinite(value))throw invalid();
