@@ -163,4 +163,14 @@ describe('parsed mark cache',()=>{
     committed(await runEditingCommand({context:f.context,requestId:'cache-b',command:{type:'update_mark',id,expectedVersion:mark.version,patch:{note:'edited'}}},h,signal()));
     expect(a.edits.readSnapshot(f.context).marks[0].note).toBe('edited');
   });
+  it('geometry and placement edits work on cached marks',async()=>{
+    const f=fixture(),a=await open(f.file),h=editingHost(a.edits,f.context);
+    const arrow=committed(await runEditingCommand({context:f.context,requestId:'cache-arrow',command:{type:'create_mark',markType:'arrow',pageIndex:0,color:'#123456',note:'',geometry:{points:[20,100,80,90],quads:[[20,100,80,100,20,90,80,90]]}}},h,signal()));
+    const note=committed(await runEditingCommand({context:f.context,requestId:'cache-note-place',command:freeNote},h,signal()));
+    const [arrowId,noteId]=[Object.keys(arrow.versions)[0],Object.keys(note.versions)[0]];
+    committed(await runEditingCommand({context:f.context,requestId:'cache-geometry',command:{type:'set_mark_geometry',id:arrowId,expectedVersion:1,geometry:{points:[30,100,90,80],quads:[[30,100,90,100,30,80,90,80]]}}},h,signal()));
+    committed(await runEditingCommand({context:f.context,requestId:'cache-placement',command:{type:'set_mark_placement',id:noteId,expectedVersion:1,placement:{dx:4,dy:2}}},h,signal()));
+    const marks=a.edits.readSnapshot(f.context).marks;
+    expect(marks.find(m=>m.id===arrowId)!.points).toEqual([30,100,90,80]);expect(marks.find(m=>m.id===noteId)!.placement).toEqual({dx:4,dy:2});
+  });
 });

@@ -14,11 +14,12 @@ export function invalid(code: EditErrorCode = 'EDIT_INVALID'): never { throw new
 
 /** Only own data properties are inspected. No external getter is evaluated, even on arrays. */
 // Edit data the host parsed with JSON.parse from its own storage and validated, then deeply froze. It cannot carry accessors,
-// holes, symbols or cycles and cannot change, so copying it returns it as it is; dense ink snapshots are mostly this.
+// holes, symbols or cycles and cannot change, so a copy shares it instead of copying it; dense ink snapshots are mostly this.
+// The value passed to copyEditData itself is still copied one level deep, because callers edit the copy they get back.
 const trustedEditData = new WeakSet<object>();
-/** Deeply freezes host-parsed, already validated edit data and lets copyEditData return it without copying. */
+/** Deeply freezes host-parsed, already validated edit data and lets copies share it. */
 export function trustEditData<T extends object>(value: T): T {
-  const freeze = (v: unknown) => { if (v && typeof v === 'object' && !Object.isFrozen(v)) { for (const key of Object.keys(v)) freeze((v as Record<string, unknown>)[key]); Object.freeze(v); } };
+  const freeze = (v: unknown) => { if (v && typeof v === 'object' && !Object.isFrozen(v)) { for (const key of Object.keys(v)) freeze((v as Record<string, unknown>)[key]); Object.freeze(v); trustedEditData.add(v); } };
   freeze(value); trustedEditData.add(value); return value;
 }
 export function copyEditData<T>(input: T): T {
@@ -26,7 +27,7 @@ export function copyEditData<T>(input: T): T {
   function visit(value: unknown, depth: number): unknown {
     if (depth > 32) invalid('EDIT_TOO_LARGE');
     if (value === null || typeof value === 'string' || typeof value === 'boolean') return value;
-    if (typeof value === 'object' && trustedEditData.has(value)) return value;
+    if (depth > 0 && typeof value === 'object' && trustedEditData.has(value)) return value;
     if (typeof value === 'number') { if (!Number.isFinite(value)) invalid(); return Object.is(value, -0) ? 0 : value; }
     if (typeof value !== 'object' || seen.has(value)) invalid();
     seen.add(value);
