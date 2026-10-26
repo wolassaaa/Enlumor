@@ -3,7 +3,7 @@ import {SurfingRuntime} from './surfing-runtime';
 import {measureSurfingInputTokens} from './surfing-token-worker-host';
 import {openEditingWorkspace} from './editing-workspace';
 import {EditingSourceService} from './editing-sources';
-import {EditingIpc,registerEditingIpc,validateEditingProfile} from './editing-ipc';
+import {EditingIpc,registerEditingIpc} from './editing-ipc';
 import{CruiseSessions}from'./cruise-sessions';
 import{ExplanationRequests}from'./cruise-requests';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, safeStorage } from 'electron';
@@ -19,9 +19,11 @@ import type { AnnotationChange, OpenedDocument, ReadingState } from '../shared/m
 
 protocol.registerSchemesAsPrivileged([{ scheme: 'enlumor', privileges: { standard: true, secure: true, supportFetchAPI: true } }]);
 app.setName('Enlumor');
-const editingPreview=app.commandLine.hasSwitch('editing-preview');
-const rawData=app.commandLine.getSwitchValue('user-data-dir');
-const customData = editingPreview?validateEditingProfile(rawData,process.cwd(),path.join(app.getPath('appData'),'Enlumor')):rawData;
+// The editing library is the default annotation path. --legacy-editing keeps a workspace that has not been upgraded on the
+// legacy path; an upgraded workspace goes back by restoring its workspace.sqlite.pre-v5.*.bak (see docs/EDITING.md).
+// --editing-preview is accepted for older scripts and changes nothing.
+const legacyEditing=app.commandLine.hasSwitch('legacy-editing');
+const customData=app.commandLine.getSwitchValue('user-data-dir');
 let editingService:EditingIpc|null=null;
 if (customData) { mkdirSync(customData, { recursive: true }); app.setPath('userData', customData); }
 let workspace: Workspace;
@@ -46,8 +48,14 @@ async function choosePdf(): Promise<string | null> {
 
 app.whenReady().then(async () => {
   mkdirSync(app.getPath('userData'), { recursive: true });
-  if(editingPreview){const opened=await openEditingWorkspace(path.join(app.getPath('userData'),'workspace.sqlite'));workspace=opened.workspace;editingService=new EditingIpc(workspace,opened.edits,new EditingSourceService(workspace,opened.edits,runPdfTask));}
-  else workspace = new Workspace(path.join(app.getPath('userData'), 'workspace.sqlite'));
+  const workspaceFile=path.join(app.getPath('userData'),'workspace.sqlite');
+  if(legacyEditing)workspace=new Workspace(workspaceFile,{allowEditingSchema:true});
+  else {
+   // Upgrading to the editing schema backs the workspace up first and changes nothing if any step fails; then the app
+   // still starts, on the legacy path, rather than refusing to open the reader's documents.
+   try{const opened=await openEditingWorkspace(workspaceFile);workspace=opened.workspace;editingService=new EditingIpc(workspace,opened.edits,new EditingSourceService(workspace,opened.edits,runPdfTask));}
+   catch(error){console.error('Editing library unavailable, using the legacy annotation path: '+(error instanceof Error?error.message:String(error)));workspace=new Workspace(workspaceFile,{allowEditingSchema:true});}
+  }
   aiProfiles=new AiProfiles(workspace.db,{available:()=>safeStorage.isEncryptionAvailable(),encrypt:text=>safeStorage.encryptString(text),decrypt:data=>safeStorage.decryptString(Buffer.from(data))});
   const rendererRoot = path.resolve(__dirname, '../renderer');
   protocol.handle('enlumor', request => {
@@ -126,10 +134,9 @@ app.whenReady().then(async () => {
   handle('reading:save', (state: ReadingState) => workspace.saveReading(state));
   handle('document:export', async id => {
     const doc = workspace.verified(id);
-    if(editingService?.hasUserEdits(id))throw Error('EDITING_EXPORT_UNAVAILABLE: 新标识导出尚未接入');
     const target = await dialog.showSaveDialog(window, { title: '导出批注 PDF（原文件保持不变）', defaultPath: path.join(path.dirname(doc.path), `${path.basename(doc.path, '.pdf')}-enlumor.pdf`), filters: [{ name: 'PDF', extensions: ['pdf'] }] });
     if (target.canceled || !target.filePath) return { cancelled: true };
-    const result = await runPdfTask<{ path: string; annotationCount: number }>({ operation: 'export', source: doc.path, target: target.filePath, fingerprint: doc.fingerprint, annotations: workspace.annotations(id) });
+    const result = await runPdfTask<{ path: string; annotationCount: number }>({ operation: 'export', source: doc.path, target: target.filePath, fingerprint: doc.fingerprint, annotations: editingService ? editingService.exportAnnotations(id) : workspace.annotations(id) });
     return { cancelled: false, ...result };
   });
   window.on('close', event => {
@@ -156,6 +163,10 @@ app.whenReady().then(async () => {
     else dialog.showMessageBox(window, { type: 'error', message: '保存未完成，窗口保持打开。请先处理错误或重试。' });
   });
   void window.loadURL(process.env.ENLUMOR_DEV_URL || 'enlumor://app/index.html');
+}).catch(error => {
+  // Without this, a startup failure leaves no window and no explanation.
+  dialog.showErrorBox('Enlumor 无法启动', error instanceof Error ? error.message : String(error));
+  app.exit(1);
 });
 app.on('window-all-closed', () => app.quit());
 app.on('will-quit', () => {surfingRuntime?.invalidate();aiFlight?.abort();cruiseRequests?.cancel();editingService?.close();workspace?.close();});

@@ -20,7 +20,9 @@ describe('production Workspace schema5 and editing transactions',()=>{
     const f=fixture(),a=await open(f.file),h=editingHost(a.edits,f.context),points=Array.from({length:512},(_,i)=>i%2?100:20+i*.1);
     const operations=Array.from({length:64},()=>({type:'create_mark' as const,markType:'ink' as const,pageIndex:0,color:'#123456',note:'',geometry:{points:[...points],quads:[[10,120,100,120,10,80,100,80]]}}));
     const result=committed(await runEditingCommand({context:f.context,requestId:'dense-history',command:{type:'apply_edit_batch',operations}},h,signal()));
-    const spy=vi.spyOn(a.workspace.db,'prepare');expect(a.edits.history(f.context,a.edits.actor)).toEqual({undoIds:[result.operationId],redoIds:[]});const historySql=spy.mock.calls.map(c=>c[0]).filter(s=>s.includes('FROM edit_operations'));expect(historySql).toHaveLength(2);expect(historySql.every(s=>s.includes("json_extract(payload,'$.operationId','$.currentVersions','$.redoEligible')")&&!s.startsWith('SELECT payload'))).toBe(true);spy.mockRestore();
+    const spy=vi.spyOn(a.workspace.db,'prepare');expect(a.edits.history(f.context,a.edits.actor)).toEqual({undoIds:[result.operationId],redoIds:[]});const historySql=spy.mock.calls.map(c=>c[0]).filter(s=>s.includes('FROM edit_operations'));expect(historySql.length).toBeGreaterThan(0);expect(historySql.every(s=>!/SELECT\s+(payload|\*)/.test(s)&&(!s.includes('payload')||s.includes("json_extract(payload,'$.operationId','$.currentVersions','$.redoEligible')")))).toBe(true);spy.mockRestore();
+    // Metadata is extracted once per operation; a second look reads only ids.
+    const again=vi.spyOn(a.workspace.db,'prepare');a.edits.history(f.context,a.edits.actor);expect(again.mock.calls.filter(c=>c[0].includes('FROM edit_operations')).every(c=>!c[0].includes('json_extract')||c[0].includes('WHERE operationId=?'))).toBe(true);again.mockRestore();
     committed(await runEditingCommand({context:f.context,requestId:'dense-undo',command:{type:'undo_edit',operationId:result.operationId}},h,signal()));expect(a.edits.history(f.context,a.edits.actor)).toEqual({undoIds:[],redoIds:[result.operationId]});
     const other=await open(f.file),id=Object.keys(result.versions)[0];other.workspace.db.prepare('UPDATE edit_versions SET version=3 WHERE documentId=? AND id=?').run(f.doc.id,id);expect(a.edits.history(f.context,a.edits.actor)).toEqual({undoIds:[],redoIds:[]});
   });
@@ -143,3 +145,32 @@ describe('production Workspace schema5 and editing transactions',()=>{
   });
 });
 
+describe('parsed mark cache',()=>{
+  it('rereads a mark another connection changed, even at the same version, and reports one it corrupted',async()=>{
+    const f=fixture(),a=await open(f.file),h=editingHost(a.edits,f.context);
+    const r=committed(await runEditingCommand({context:f.context,requestId:'cache-note',command:freeNote},h,signal()));const id=Object.keys(r.versions)[0];
+    expect(a.edits.readSnapshot(f.context).marks[0].note).toBe('saved');
+    const other=await open(f.file),row=other.workspace.db.prepare('SELECT payload FROM edit_marks WHERE id=?').get(id)!;
+    other.workspace.db.prepare('UPDATE edit_marks SET payload=? WHERE id=?').run(JSON.stringify({...JSON.parse(String(row.payload)),note:'changed elsewhere'}),id);
+    expect(a.edits.readSnapshot(f.context).marks[0].note).toBe('changed elsewhere');
+    other.workspace.db.prepare('UPDATE edit_marks SET payload=? WHERE id=?').run('{broken',id);
+    expect(a.edits.readSnapshot(f.context).marks).toEqual([]);expect(a.edits.view(f.context,a.edits.actor).diagnostics).toContainEqual({legacyId:id,reason:'INVALID_EDIT_MARK'});
+  });
+  it('a cached mark is frozen and its own later edits are read back',async()=>{
+    const f=fixture(),a=await open(f.file),h=editingHost(a.edits,f.context);
+    const r=committed(await runEditingCommand({context:f.context,requestId:'cache-a',command:freeNote},h,signal()));const id=Object.keys(r.versions)[0];
+    const mark=a.edits.readSnapshot(f.context).marks[0];expect(Object.isFrozen(mark)).toBe(true);expect(()=>{(mark as any).note='x';}).toThrow();
+    committed(await runEditingCommand({context:f.context,requestId:'cache-b',command:{type:'update_mark',id,expectedVersion:mark.version,patch:{note:'edited'}}},h,signal()));
+    expect(a.edits.readSnapshot(f.context).marks[0].note).toBe('edited');
+  });
+  it('geometry and placement edits work on cached marks',async()=>{
+    const f=fixture(),a=await open(f.file),h=editingHost(a.edits,f.context);
+    const arrow=committed(await runEditingCommand({context:f.context,requestId:'cache-arrow',command:{type:'create_mark',markType:'arrow',pageIndex:0,color:'#123456',note:'',geometry:{points:[20,100,80,90],quads:[[20,100,80,100,20,90,80,90]]}}},h,signal()));
+    const note=committed(await runEditingCommand({context:f.context,requestId:'cache-note-place',command:freeNote},h,signal()));
+    const [arrowId,noteId]=[Object.keys(arrow.versions)[0],Object.keys(note.versions)[0]];
+    committed(await runEditingCommand({context:f.context,requestId:'cache-geometry',command:{type:'set_mark_geometry',id:arrowId,expectedVersion:1,geometry:{points:[30,100,90,80],quads:[[30,100,90,100,30,80,90,80]]}}},h,signal()));
+    committed(await runEditingCommand({context:f.context,requestId:'cache-placement',command:{type:'set_mark_placement',id:noteId,expectedVersion:1,placement:{dx:4,dy:2}}},h,signal()));
+    const marks=a.edits.readSnapshot(f.context).marks;
+    expect(marks.find(m=>m.id===arrowId)!.points).toEqual([30,100,90,80]);expect(marks.find(m=>m.id===noteId)!.placement).toEqual({dx:4,dy:2});
+  });
+});

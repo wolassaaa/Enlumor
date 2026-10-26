@@ -7,7 +7,7 @@ const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-stri
 const source=path.join(folder,'reading tools.pdf'),output=path.join(folder,'drawing.pdf');
 execFileSync(python,['-c',`import pymupdf as f;d=f.open();\nfor i in range(200):\n p=d.new_page(width=480,height=640);p.insert_text((48,72),'Evidence page '+str(i+1),fontsize=16);p.insert_text((48,105),'Second line of original evidence.',fontsize=12)\nd.save(${JSON.stringify(source)})`]);
 async function launch(profile:string,scale=1){
- const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+profile,'--force-device-scale-factor='+scale],env:{...process.env,ENLUMOR_PYTHON:python}});
+ const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--legacy-editing','--user-data-dir='+profile,'--force-device-scale-factor='+scale],env:{...process.env,ENLUMOR_PYTHON:python}});
  await app.evaluate(({dialog},files)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[files.source]});dialog.showSaveDialog=async()=>({canceled:false,filePath:files.output});},{source,output});return app;
 }
 async function select(app:Awaited<ReturnType<typeof launch>>){const page=await app.firstWindow();await page.locator('.page[data-page-number="1"] .textLayer span').first().evaluate(item=>{const range=document.createRange();range.selectNodeContents(item);const selection=getSelection()!;selection.removeAllRanges();selection.addRange(range);document.querySelector('#viewerContainer')!.dispatchEvent(new MouseEvent('mouseup',{bubbles:true}));});}

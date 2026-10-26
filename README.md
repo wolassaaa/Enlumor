@@ -21,11 +21,17 @@
 
 ---
 
-## Latest development snapshot — 24 October 2026
+## Latest development snapshot — 27 October 2026 (code freeze)
 
-`main` now includes the latest editing integration and **Surfing whole-document co-reading** source. Surfing can use confirmed full-document text, the current page and recent in-session dialogue; full-document sending requires explicit confirmation. This differs from the legacy current-block Cruise flow described below.
+The development branches add three things:
 
-This is **development code**, not a new stable binary release. Windows **0.1.15** remains the last verified release named here. See [current development status](docs/CURRENT_DEVELOPMENT.md) for capabilities, local checks and acceptance still outstanding.
+- **Surfing whole-document co-reading** that walks you through an answer step by step, gliding to each place in the paper.
+- **Thinking levels** taken from the model's own API.
+- **The editing library** as the default annotation path, with PDF export and a `--legacy-editing` switch.
+
+Full-document sending still needs explicit confirmation. Real-model results so far cover one model, DeepSeek V4.1 Flash.
+
+This is **development code**, not a new stable binary release. Windows **0.1.15** remains the last verified release named here. See [current development status](docs/CURRENT_DEVELOPMENT.md) for measurements and known gaps, and the [roadmap](docs/ROADMAP.md) for what comes next.
 
 ## Reading first
 

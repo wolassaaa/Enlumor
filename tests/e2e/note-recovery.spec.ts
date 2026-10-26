@@ -3,7 +3,7 @@ import {mkdtempSync} from 'node:fs';import {tmpdir} from 'node:os';import path f
 const root=path.resolve('.'),folder=mkdtempSync(path.join(tmpdir(),'enlumor-note-fix-')),source=path.join(folder,'notes.pdf'),python=path.join(root,'.venv/Scripts/python.exe');
 execFileSync(python,['-c',`import pymupdf as f;d=f.open();p=d.new_page(width=480,height=640);p.insert_text((48,72),'Original note anchor',fontsize=16);d.new_page();d.save(${JSON.stringify(source)})`]);
 async function launch(name:string){
- const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--user-data-dir='+path.join(folder,name)],env:{...process.env,ENLUMOR_PYTHON:python}});
+ const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[root]),'--legacy-editing','--user-data-dir='+path.join(folder,name)],env:{...process.env,ENLUMOR_PYTHON:python}});
  await app.evaluate(({dialog},source)=>{dialog.showOpenDialog=async()=>({canceled:false,filePaths:[source]});},source);
  const page=await app.firstWindow();await page.getByRole('button',{name:'打开 PDF',exact:true}).first().click();await expect(page.locator('.textLayer span').first()).toBeVisible();return{app,page};
 }
