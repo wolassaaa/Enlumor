@@ -128,7 +128,7 @@ npm run test:e2e
 
 Enlumor is independently developed, with an **open-source direction** and no mandatory Enlumor subscription proposed. Solving real academic reading problems comes before forcing a paid SaaS model.
 
-A project-wide licence has not yet been selected. Do not assume an MIT or other permissive licence. PyMuPDF has AGPL/commercial licensing conditions; project and dependency licensing must be resolved before distribution.
+Enlumor is licensed under the [GNU Affero General Public License v3.0 or later](LICENSE). You may use, study, modify and share it. If you distribute a modified version, or let people use one over a network, you must offer them its source under the same licence. The PDF export bundles PyMuPDF, which is also AGPL-licensed. Other dependencies are MIT or Apache-2.0.
 
 ## Explore the work
 
