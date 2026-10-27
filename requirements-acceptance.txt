@@ -1,0 +1,3 @@
+# Only for the real-model benchmark (npm run acceptance); not part of the packaged app.
+segno==1.6.6
+opencv-python-headless==5.0.0.93

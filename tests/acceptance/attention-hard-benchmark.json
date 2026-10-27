@@ -1,0 +1,191 @@
+{
+  "enlumorBenchmark": 1,
+  "name": "Attention Is All You Need — hard",
+  "checks": [
+    {
+      "id": "big-training",
+      "kind": "ask",
+      "title": "多处拼合：big 的训练步数与时长",
+      "question": "big 模型训练了多少步、每步多久、共几天、用什么硬件？",
+      "expect": {
+        "all": [
+          "300,?000|30 ?万",
+          "1(\\.0)? ?(秒|s)",
+          "3\\.5",
+          "P100"
+        ],
+        "evidence": true,
+        "chinese": true
+      }
+    },
+    {
+      "id": "optimizer",
+      "kind": "ask",
+      "title": "细节：β2 与 warmup_steps",
+      "question": "Adam 的 β2 和 warmup_steps 分别是多少？",
+      "expect": {
+        "all": [
+          "0\\.98",
+          "4,?000"
+        ],
+        "evidence": true
+      }
+    },
+    {
+      "id": "vocab",
+      "kind": "ask",
+      "title": "细节：两个任务的词表",
+      "question": "英德、英法两个任务的词表各多大，用什么分词？",
+      "expect": {
+        "all": [
+          "37,?000|3\\.7 ?万",
+          "32,?000|3\\.2 ?万"
+        ],
+        "any": [
+          "byte.?pair|BPE|字节对",
+          "word.?piece"
+        ],
+        "evidence": true
+      }
+    },
+    {
+      "id": "label-smoothing",
+      "kind": "ask",
+      "title": "因果：label smoothing",
+      "question": "label smoothing 取多少？对困惑度和 BLEU 有何影响？",
+      "expect": {
+        "all": [
+          "0\\.1",
+          "困惑度|perplexity",
+          "BLEU"
+        ],
+        "evidence": true
+      }
+    },
+    {
+      "id": "scaling",
+      "kind": "ask",
+      "title": "理解：为何除以 √d_k",
+      "question": "为什么点积要除以 √d_k？",
+      "expect": {
+        "all": [
+          "softmax"
+        ],
+        "any": [
+          "梯度|gradient"
+        ],
+        "evidence": true,
+        "chinese": true
+      }
+    },
+    {
+      "id": "heads",
+      "kind": "ask",
+      "title": "消融：单头差多少 BLEU",
+      "question": "Table 3 中单头注意力比最佳设置差多少 BLEU？头太多会怎样？",
+      "expect": {
+        "all": [
+          "0\\.9"
+        ],
+        "any": [
+          "下降|变差|drop|worse|降低"
+        ],
+        "evidence": true
+      }
+    },
+    {
+      "id": "checkpoints",
+      "kind": "ask",
+      "title": "细节：平均几个检查点",
+      "question": "base 和 big 模型各平均了最后几个检查点？",
+      "expect": {
+        "all": [
+          "5\\s*个|last\\s*5|最后\\s*5|5 checkpoints",
+          "20"
+        ],
+        "evidence": true
+      }
+    },
+    {
+      "id": "absent",
+      "kind": "ask",
+      "title": "诚实：不编论文没有的内容",
+      "question": "Transformer 在 ImageNet 图像分类上的准确率是多少？",
+      "expect": {
+        "any": [
+          "没有|未|并未|不包含|不涉及|无法|not"
+        ],
+        "none": [
+          "\\d{2}\\.\\d\\s*%"
+        ]
+      }
+    },
+    {
+      "id": "figure1",
+      "kind": "ask",
+      "title": "看图：图 1 解码器子层",
+      "question": "看图 1：解码器每层从下到上是哪几个子层？",
+      "vision": {
+        "mustView": true,
+        "expect": {
+          "all": [
+            "masked|掩码|遮蔽|屏蔽"
+          ],
+          "any": [
+            "feed|前馈"
+          ]
+        }
+      },
+      "textOnly": {
+        "expect": {
+          "any": [
+            "看不到|无法(查看|看到)|不能(查看|看到)|图像|图片|图注|caption|根据(正文|文字)"
+          ]
+        }
+      }
+    },
+    {
+      "id": "figure2",
+      "kind": "ask",
+      "title": "看图：图 2 左侧的操作",
+      "question": "看图 2 左侧：从下到上依次是哪些操作方框？哪个标为可选？",
+      "vision": {
+        "mustView": true,
+        "expect": {
+          "all": [
+            "matmul",
+            "scale",
+            "softmax",
+            "mask"
+          ],
+          "any": [
+            "opt|可选"
+          ]
+        }
+      },
+      "textOnly": {
+        "expect": {
+          "any": [
+            "看不到|无法(查看|看到)|不能(查看|看到)|图像|图片|图注|caption|根据(正文|文字)"
+          ]
+        }
+      }
+    },
+    {
+      "id": "route",
+      "kind": "route",
+      "title": "生成探索切入点",
+      "minStops": 3,
+      "expect": {
+        "chinese": true
+      }
+    },
+    {
+      "id": "guided",
+      "kind": "guided",
+      "title": "带着读",
+      "dwell": 5,
+      "depth": "concise"
+    }
+  ]
+}

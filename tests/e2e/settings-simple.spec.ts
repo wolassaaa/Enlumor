@@ -10,7 +10,7 @@ test('simple provider setup defaults model, validates inline, saves and tests cu
  const app=await electron.launch({executablePath:process.env.ENLUMOR_TEST_APP,args:[...(process.env.ENLUMOR_TEST_APP?[]:[path.resolve('.')]),'--user-data-dir='+folder]});
  try{const page=await app.firstWindow();await page.getByRole('button',{name:'模型设置',exact:true}).click();
  await page.getByLabel('厂商预设',{exact:true}).selectOption({label:'DeepSeek'});
- await expect(page.getByLabel('模型 ID',{exact:true})).toHaveValue('deepseek-chat');
+ await expect(page.getByLabel('模型 ID',{exact:true})).toHaveValue('deepseek-flash');
  await expect(page.getByLabel('协议',{exact:true})).not.toBeVisible();
  await expect(page.getByLabel('协议参数 JSON',{exact:true})).not.toBeVisible();
  await page.getByLabel('模型 ID',{exact:true}).fill('');await page.getByRole('button',{name:'保存并测试',exact:true}).click();

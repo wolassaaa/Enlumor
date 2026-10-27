@@ -1,0 +1,15 @@
+{
+  "enlumorBenchmark": 1,
+  "name": "Lumen Routing fixture",
+  "checks": [
+    {"id": "method", "kind": "ask", "title": "整篇提问：答出方法名并给出原文证据",
+     "question": "这篇论文提出的方法叫什么名字？用一两句话说明它的两个阶段。",
+     "expect": {"all": ["lumen"], "evidence": true, "chinese": true}},
+    {"id": "figure", "kind": "ask", "title": "看图提问：图 1 中哪个方法最高（答案只画在图里）",
+     "question": "Figure 1 中哪个方法的准确率最高？请说明你是怎么判断的。",
+     "vision": {"mustView": true, "expect": {"all": ["retrieval[^。.]{0,16}(最高|highest|最好|best|领先)|(最高|highest|最好|best|领先)[^。.]{0,12}retrieval"], "none": ["(最高|最好|best|highest)的?(方法)?(是|为)\\s*\\*{0,2}lumen"]}},
+     "textOnly": {"expect": {"any": ["看不到|无法(查看|看到|识别)|不能(查看|看到)|图像|图片|caption|图注"], "none": ["(最高|最好|best|highest)的?(方法)?(是|为)\\s*\\*{0,2}retrieval"]}}},
+    {"id": "route", "kind": "route", "title": "生成探索切入点", "minStops": 2, "expect": {"chinese": true}},
+    {"id": "guided", "kind": "guided", "title": "带着读：自动讲解、前进，滚动即停", "dwell": 5, "depth": "concise"}
+  ]
+}

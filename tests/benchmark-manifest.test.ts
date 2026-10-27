@@ -1,0 +1,52 @@
+import {it,expect} from 'vitest';
+import {readFileSync} from 'node:fs';
+import {gradeBenchmarkAnswer,validateBenchmarkManifest} from '../src/shared/benchmark';
+const load=(f:string)=>JSON.parse(readFileSync('tests/acceptance/'+f,'utf8'));
+const ask={id:'a',kind:'ask',title:'t',question:'q',expect:{all:['x']}};
+it('accepts the shipped benchmarks',()=>{for(const f of ['lumen-benchmark.json','attention-benchmark.json'])expect(validateBenchmarkManifest(load(f)).checks.length).toBeGreaterThan(3);});
+it('rejects manifests a crafted PDF could carry',()=>{
+ const bad=[null,{enlumorBenchmark:2,name:'n',checks:[ask]},{enlumorBenchmark:1,name:'n',checks:[]},{enlumorBenchmark:1,name:'n',checks:[ask],run:'rm -rf'},
+  {enlumorBenchmark:1,name:'n',checks:[{...ask,expect:{all:['(a+)+$']}}]},{enlumorBenchmark:1,name:'n',checks:[{...ask,expect:{all:['[unclosed']}}]},
+  {enlumorBenchmark:1,name:'n',checks:[{...ask,question:undefined}]},{enlumorBenchmark:1,name:'n',checks:[ask,ask]},{enlumorBenchmark:1,name:'n',checks:Array.from({length:21},(_,i)=>({...ask,id:'c'+i}))},
+  {enlumorBenchmark:1,name:'n',checks:[{...ask,kind:'shell'}]},{enlumorBenchmark:1,name:'n',checks:[{...ask,expect:{all:['x'.repeat(201)]}}]},{enlumorBenchmark:1,name:'n',checks:[{id:'g',kind:'guided',title:'t',dwell:1}]}];
+ for(const m of bad)expect(()=>validateBenchmarkManifest(m)).toThrow('BENCHMARK_INVALID');
+});
+it('grades vision models on whether they looked, and text-only models on honesty',()=>{
+ const figure=load('lumen-benchmark.json').checks.find((c:any)=>c.id==='figure');
+ expect(gradeBenchmarkAnswer(figure,true,'Retrieval 最高',1,['查看第 2 页']).status).toBe('pass');
+ expect(gradeBenchmarkAnswer(figure,true,'Retrieval 最高',1,[]).status).toBe('review');
+ expect(gradeBenchmarkAnswer(figure,true,'Lumen 最高',1,['查看第 2 页']).status).toBe('fail');
+ expect(gradeBenchmarkAnswer(figure,false,'我看不到图像，只能根据图注推测',1,[]).status).toBe('pass');
+ expect(gradeBenchmarkAnswer(figure,false,'Lumen 大概最好',1,[]).status).toBe('review');
+ const method=load('lumen-benchmark.json').checks.find((c:any)=>c.id==='method');
+ expect(gradeBenchmarkAnswer(method,false,'方法叫 Lumen Routing',2,[]).status).toBe('pass');
+ expect(gradeBenchmarkAnswer(method,false,'It is called Lumen Routing',2,[]).detail).toContain('没有用中文回答');
+ expect(gradeBenchmarkAnswer(method,false,'方法叫 Lumen Routing',0,[]).detail).toContain('没有原文证据');
+});
+
+import {gradeBenchmarkRoute,validateBenchmarkManifest as validateRouteManifest} from '../src/shared/benchmark';
+it('entry points are graded on count and, when asked, on every title being in Chinese',()=>{
+ const check={id:'route',kind:'route' as const,title:'r',minStops:2,expect:{chinese:true}};
+ expect(gradeBenchmarkRoute(check,[{title:'研究问题'},{title:'方法骨架'}]).status).toBe('pass');
+ expect(gradeBenchmarkRoute(check,[{title:'研究问题'},{title:'Method spine'}])).toMatchObject({status:'fail',detail:expect.stringContaining('没有用中文')});
+ expect(gradeBenchmarkRoute(check,[{title:'研究问题'}])).toMatchObject({status:'fail',detail:expect.stringContaining('只有 1 个切入点')});
+ expect(gradeBenchmarkRoute({...check,expect:undefined},[{title:'A'},{title:'B'}]).status).toBe('pass');
+ // a route expectation from an untrusted manifest is validated like any other
+ expect(()=>validateRouteManifest({enlumorBenchmark:1,name:'x',checks:[{id:'r',kind:'route',title:'r',expect:{all:['(a+)+']}}]})).toThrow('BENCHMARK_INVALID');
+});
+it('answers are graded as text, so markdown emphasis does not hide a correct number',()=>{
+ expect(gradeBenchmarkAnswer({id:'c',kind:'ask',title:'t',question:'q',expect:{all:['5\\s*个','`?d_model`? ?= ?512']}},false,'平均最后 **5** 个检查点；`d_model` = 512',1,[]).status).toBe('pass');
+});
+it('the Lumen figure check grades what the answer says is highest, not every mention next to "best"',()=>{
+ const m=validateBenchmarkManifest(JSON.parse(readFileSync('tests/acceptance/lumen-benchmark.json','utf8')));const fig=m.checks.find(c=>c.id==='figure')!;
+ const grade=(answer:string,vision:boolean)=>gradeBenchmarkAnswer(fig,vision,answer,1,vision?['查看第 2 页']:[]).status;
+ expect(grade('准确率最高的是 **Retrieval**，不是论文主推的 Lumen。这与读者预期的“Lumen（本文提出的方法）最好”不一致。',true)).toBe('pass');
+ expect(grade('准确率最高的是 Lumen。',true)).toBe('fail');
+ expect(grade('我看不到图像，只能依据图注；无法判断 Retrieval 是否最高。',false)).toBe('pass');
+ expect(grade('准确率最高的是 Retrieval。',false)).toBe('review');
+});
+it('a manifest pattern may not repeat a group (exponential backtracking) or refer back to one',()=>{
+ const check=(p:string)=>()=>validateBenchmarkManifest({enlumorBenchmark:1,name:'x',checks:[{id:'a',kind:'ask',title:'t',question:'q',expect:{all:[p]}}]});
+ for(const bad of ['(a|aa)+$','(a+)+','(x|y)*z','(ab){2,}','(a)\\1'])expect(check(bad)).toThrow('BENCHMARK_INVALID');
+ for(const fine of ['1(\\.0)? ?(秒|s)','(最高|最好)的?(方法)?(是|为)\\s*\\*{0,2}lumen','5\\s*个','f\\(x\\)'])expect(check(fine)).not.toThrow();
+});

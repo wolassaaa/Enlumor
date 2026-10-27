@@ -22,23 +22,32 @@ describe('Surfing reading agent',()=>{
   expect(h.prompts[1].turns![0]).toEqual({role:'assistant',text:JSON.stringify({actions:[{type:'view_page',pageNumber:2}]})});expect(h.prompts[1].turns![1].images).toEqual([{mediaType:'image/jpeg',data:'QUJD'}]);
   expect(h.events).toEqual([{requestId:'ask',type:'step',note:'查看第 2 页'},{requestId:'ask',type:'answer',question:'图 2 说明了什么？',explanation:{text:'图 2 显示准确率随上下文变长而下降。',passageIds:['p1']}}]);
  });
- it('a text-only model is told it cannot see images and cannot ask for a page image',async()=>{
-  const h=setup('deepseek-chat',[JSON.stringify({actions:[{type:'view_page',pageNumber:2}]})]);await h.service.ask(ask());
-  expect(h.prompts[0].system).toContain('You cannot see images');expect(h.prompts[0].system).not.toContain('"view_page"');expect(h.rendered).toEqual([]);expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});
+ it('a text-only model is told it cannot see images; asking anyway gets a refusal, not a failed answer',async()=>{
+  const h=setup('deepseek-chat',[JSON.stringify({actions:[{type:'view_page',pageNumber:2}]}),final]);await h.service.ask(ask());
+  expect(h.prompts[0].system).toContain('You cannot see images');expect(h.prompts[0].system).not.toContain('"view_page"');expect(h.rendered).toEqual([]);
+  // asking anyway is answered with a refusal, and the model still gets to answer from the text
+  expect(h.prompts[1].turns![1].text).toContain('this model cannot see images');expect(h.prompts[1].turns![1].images).toBeUndefined();expect(h.events.at(-1).type).toBe('answer');
  });
  it('reading and searching feed passages back; the last step must answer',async()=>{
-  const h=setup('claude-sonnet-4',[JSON.stringify({actions:[{type:'search',query:'retrieval'},{type:'read_page',pageNumber:3}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:2}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]})],'anthropic-messages');
+  const h=setup('claude-sonnet-4',[JSON.stringify({actions:[{type:'search',query:'retrieval'},{type:'read_page',pageNumber:3}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:2}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]})],'anthropic-messages');
   await h.service.ask(ask());
-  expect(h.prompts).toHaveLength(4);expect(h.prompts[1].turns![1].text).toContain('[p2] (p.3) We conclude retrieval helps.');expect(h.prompts[3].turns!.at(-1)!.text).toContain('last step');
-  expect(h.events.filter(e=>e.type==='step').map(e=>e.note)).toEqual(['搜索「retrieval」','重读第 3 页','重读第 1 页','重读第 2 页']);expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});
+  // The fourth reply still asks for actions; one correction turn says no steps are left, then the answer fails.
+  expect(h.prompts).toHaveLength(5);expect(h.prompts[4].turns!.at(-1)!.text).toContain('no steps are left');expect(h.prompts[1].turns![1].text).toContain('[p2] (p.3) We conclude retrieval helps.');expect(h.prompts[3].turns!.at(-1)!.text).toContain('last step');
+  expect(h.events.filter(e=>e.type==='step').map(e=>e.note)).toEqual(['搜索「retrieval」','重读第 3 页','重读第 1 页','重读第 2 页','修正回答格式']);expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});
  });
  it('a protocol without multi-turn support answers in one step',async()=>{
   const h=setup('lite',[final],'spark');await h.service.ask(ask());expect(h.prompts).toHaveLength(1);expect(h.prompts[0].system).not.toContain('"actions"');expect(h.events.at(-1).type).toBe('answer');
  });
  it('rejects invented pages, unknown action types and invented sources',()=>{
-  for(const raw of [{actions:[{type:'view_page',pageNumber:9}]},{actions:[{type:'go_to_page',pageNumber:1}]},{actions:[]},{actions:[{type:'read_page',pageNumber:1,extra:1}]},{text:'x',passageIds:['made-up']}])
+  for(const raw of [{actions:[{type:'view_page',pageNumber:9}]},{actions:[{type:'read_page',pageNumber:0}]},{actions:[{type:'go_to_page',pageNumber:1}]},{actions:[]},{actions:[{type:'read_page',pageNumber:1,extra:1}]},{text:'x',passageIds:['made-up']}])
    expect(()=>parseSurfingAgentStep(JSON.stringify(raw),snapshot,true,true)).toThrow('SURFING_INVALID_ROUTE');
   expect(parseSurfingAgentStep(final,snapshot,false,true).kind).toBe('final');
  });
  it('search ranks passages by matched words',()=>{expect(searchSurfingPassages(snapshot,'context length accuracy').map(p=>p.id)).toEqual(['p1']);expect(searchSurfingPassages(snapshot,'nothing here')).toEqual([]);});
+});
+it('the panel hears once per request that the model is thinking, and test mode keeps waiting for the answer',async()=>{
+ const events:any[]=[];const ports:SurfingRequestPorts={getContext:()=>context,load:async()=>structuredClone(snapshot),profile:()=>({profile:{id:'profile',name:'t',model:'deepseek-flash',protocol:'openai-chat',endpoint:'http://localhost/v1',maxOutputTokens:1000,timeoutMs:10000,parameters:{}},contextWindowTokens:100000}),measureInputTokens:()=>2000,
+  generate:async(_p,_prompt,o)=>{o.onThinking?.();o.onThinking?.();return final;},emit:e=>events.push(e)};
+ await new SurfingRequests(ports).ask(ask());
+ expect(events.map(e=>e.type)).toEqual(['thinking','answer']);
 });

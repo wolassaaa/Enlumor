@@ -8,8 +8,9 @@ import{CruiseSessions}from'./cruise-sessions';
 import{ExplanationRequests}from'./cruise-requests';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, safeStorage } from 'electron';
 import {AiProfiles} from './ai-profiles';
+import {validateBenchmarkManifest} from '../shared/benchmark';
 import {generateText,listAiModelInfo,listAiModels} from './ai-client';
-import { readFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, mkdirSync, existsSync } from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { Workspace } from './workspace';
@@ -55,7 +56,11 @@ app.whenReady().then(async () => {
     if (url.host !== 'app' || !file.startsWith(rendererRoot + path.sep)) return new Response('', { status: 403 });
     return net.fetch(pathToFileURL(file).toString());
   });
-  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 940, minHeight: 640, backgroundColor: '#f3f1ec', title: 'Enlumor',
+  // The brand mark for the window and taskbar: the renderer output in a build, public/ when running from source.
+  if (process.platform === 'win32') app.setAppUserModelId('local.enlumor.reader');
+  const iconFile = process.platform === 'win32' ? 'enlumor-icon.ico' : 'enlumor-icon.png';
+  const windowIcon = [path.join(__dirname, '../renderer', iconFile), path.join(__dirname, '../../public', iconFile)].find(file => existsSync(file));
+  window = new BrowserWindow({ width: 1360, height: 900, minWidth: 940, minHeight: 640, backgroundColor: '#f5f2ed', title: 'Enlumor', ...(windowIcon ? { icon: windowIcon } : {}),
     webPreferences: { preload: path.join(__dirname, 'preload.cjs'), contextIsolation: true, sandbox: true, nodeIntegration: false, webSecurity: true } });
   window.on('blur',()=>{surfingRuntime?.cancel();cruiseRequests?.cancel();if(!window.webContents.isDestroyed())window.webContents.send('cruise:background');});
   window.removeMenu();
@@ -95,6 +100,8 @@ app.whenReady().then(async () => {
   handle('ai:profiles:list',()=>aiProfiles.list());
   handle('ai:profiles:save',input=>aiProfiles.save(input));
   handle('ai:profiles:delete',id=>aiProfiles.delete(id));
+  // A benchmark PDF carries its own checks; the app validates them before offering test mode.
+  handle('benchmark:get',async id=>{const doc=workspace.verified(id);const raw=await runPdfTask<unknown>({operation:'benchmark-manifest',source:doc.path,fingerprint:doc.fingerprint});return raw===null?null:validateBenchmarkManifest(raw);});
   handle('ai:models:discover',input=>listAiModelInfo(aiProfiles.discoveryProfile(input?.draft,input?.savedId),{fetch:(input,init)=>net.fetch(String(input),init)}));
   handle('ai:profiles:models',id=>listAiModels(aiProfiles.resolve(id),{fetch:(input,init)=>net.fetch(String(input),init)}));
   handle('ai:profiles:test',async id=>{
