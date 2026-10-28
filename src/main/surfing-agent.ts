@@ -26,7 +26,8 @@ export function parseSurfingAgentStep(raw:string,snapshot:SurfingContext,allowAc
   if(!allowActions||Object.keys(value).length!==1||!Array.isArray(value.actions)||!value.actions.length||value.actions.length>SURFING_AGENT_MAX_ACTIONS)throw Error('SURFING_INVALID_ROUTE');
   const actions=value.actions.map((a:any):SurfingAgentAction=>{
    if(!a||typeof a!=='object')throw Error('SURFING_INVALID_ROUTE');
-   if((a.type==='view_page'&&vision||a.type==='read_page')&&Object.keys(a).length===2&&Number.isInteger(a.pageNumber)&&a.pageNumber>=1&&a.pageNumber<=snapshot.pageCount)return{type:a.type,pageNumber:a.pageNumber};
+   // A text-only model asking for a page image is answered, not failed: it is told to use the text instead.
+   if((a.type==='view_page'||a.type==='read_page')&&Object.keys(a).length===2&&Number.isInteger(a.pageNumber)&&a.pageNumber>=1&&a.pageNumber<=snapshot.pageCount)return{type:a.type,pageNumber:a.pageNumber};
    if(a.type==='search'&&Object.keys(a).length===2&&typeof a.query==='string'&&a.query.trim()&&a.query.length<=200)return{type:'search',query:a.query.trim()};
    throw Error('SURFING_INVALID_ROUTE');
   });
@@ -49,7 +50,8 @@ export async function runSurfingAgentActions(actions:SurfingAgentAction[],snapsh
  const parts:string[]=[],images:AiImage[]=[],notes:string[]=[];let views=0;
  for(const a of actions){
   if(a.type==='view_page'){
-   if(!renderPage||views>=viewsLeft){parts.push(`view_page ${a.pageNumber}: not available now; use the text instead.`);continue;}
+   if(!renderPage){parts.push(`view_page ${a.pageNumber}: this model cannot see images. Answer from the text and say so if the figure matters.`);continue;}
+   if(views>=viewsLeft){parts.push(`view_page ${a.pageNumber}: not available now; use the text instead.`);continue;}
    images.push(await renderPage(a.pageNumber-1));views++;notes.push(`查看第 ${a.pageNumber} 页`);parts.push(`view_page ${a.pageNumber}: the page image is attached.`);
   }else if(a.type==='read_page'){
    const page=snapshot.passages.filter(p=>p.pageIndex===a.pageNumber-1);let text=page.map(line).join('\n');if(text.length>6000)text=text.slice(0,6000)+'\n…';

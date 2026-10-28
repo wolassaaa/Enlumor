@@ -8,6 +8,7 @@ import{CruiseSessions}from'./cruise-sessions';
 import{ExplanationRequests}from'./cruise-requests';
 import { app, BrowserWindow, dialog, ipcMain, protocol, net, safeStorage } from 'electron';
 import {AiProfiles} from './ai-profiles';
+import {validateBenchmarkManifest} from '../shared/benchmark';
 import {generateText,listAiModelInfo,listAiModels} from './ai-client';
 import { readFileSync, mkdirSync } from 'node:fs';
 import path from 'node:path';
@@ -95,6 +96,8 @@ app.whenReady().then(async () => {
   handle('ai:profiles:list',()=>aiProfiles.list());
   handle('ai:profiles:save',input=>aiProfiles.save(input));
   handle('ai:profiles:delete',id=>aiProfiles.delete(id));
+  // A benchmark PDF carries its own checks; the app validates them before offering test mode.
+  handle('benchmark:get',async id=>{const doc=workspace.verified(id);const raw=await runPdfTask<unknown>({operation:'benchmark-manifest',source:doc.path,fingerprint:doc.fingerprint});return raw===null?null:validateBenchmarkManifest(raw);});
   handle('ai:models:discover',input=>listAiModelInfo(aiProfiles.discoveryProfile(input?.draft,input?.savedId),{fetch:(input,init)=>net.fetch(String(input),init)}));
   handle('ai:profiles:models',id=>listAiModels(aiProfiles.resolve(id),{fetch:(input,init)=>net.fetch(String(input),init)}));
   handle('ai:profiles:test',async id=>{

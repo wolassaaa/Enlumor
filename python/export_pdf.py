@@ -58,6 +58,16 @@ def editing_page(source, fingerprint, page_index):
     if len(json.dumps(result,ensure_ascii=True).encode('utf-8'))>1024*1024-64: raise ValueError('PDF_RESPONSE_TOO_LARGE')
     return result
 
+def benchmark_manifest(source, fingerprint):
+    """The embedded Enlumor benchmark manifest of a verified original, or None. Bounded; the app validates its content."""
+    editing_source(source,fingerprint)
+    with fitz.open(source) as doc:
+        if doc.needs_pass or 'enlumor-benchmark.json' not in doc.embfile_names(): return None
+        data = doc.embfile_get('enlumor-benchmark.json')
+    if len(data) > 64 * 1024: raise ValueError('BENCHMARK_INVALID')
+    try: return json.loads(data.decode('utf-8'))
+    except (UnicodeDecodeError, ValueError) as error: raise ValueError('BENCHMARK_INVALID') from error
+
 def render_page(source, fingerprint, page_index, max_side=1280):
     """One page as a JPEG the reading companion can look at: figures, tables and formulas the text layer loses."""
     if type(page_index) is not int or page_index < 0 or type(max_side) is not int or not 256 <= max_side <= 2048: raise ValueError('SURFING_INVALID_INPUT')
@@ -239,6 +249,7 @@ if __name__ == '__main__':
         elif request['operation'] == 'editing-page': result = editing_page(request['source'],request['fingerprint'],request['pageIndex'])
         elif request['operation'] == 'verify-block': result = verify_block(request['source'], request['fingerprint'], request['block'])
         elif request['operation'] == 'surfing-document': result = surfing_document(request['source'], request['fingerprint'])
+        elif request['operation'] == 'benchmark-manifest': result = benchmark_manifest(request['source'], request['fingerprint'])
         elif request['operation'] == 'render-page': result = render_page(request['source'], request['fingerprint'], request['pageIndex'])
         elif request['operation'] == 'export': result = export_pdf(request['source'], request['target'], request['fingerprint'], request['annotations'])
         else: raise ValueError('INVALID_OPERATION')
