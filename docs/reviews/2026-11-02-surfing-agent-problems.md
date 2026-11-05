@@ -1,5 +1,7 @@
 # Surfing 阅读 agent：我们遇到的问题，从底层到顶层
 
+> 2026-11-06：这份问题地图已被[系统 review](2026-11-06-system-review.md)补充和修正（见那份文档的"对 11-02 问题地图的修正"一节），后续施工见[长期规划](../plans/2026-11-06-agent-system-plan.md)。
+
 依据：`feat/editing-default` 分支的代码（代码冻结时的最新版本）、`.cache/acceptance/` 里 34 份真实模型报告、冻结时的 `docs/ROADMAP.md` 和 `docs/CURRENT_DEVELOPMENT.md`。除了标注"估算"的地方，数字都来自这些记录。
 
 注意：`main` 还没有这些工作，它们在 PR #3、#4、#5 里，三个都还开着。演示和讲述都要以 `feat/editing-default` 为准。
