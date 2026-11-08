@@ -1,6 +1,6 @@
 import {describe,it,expect} from 'vitest';
 import {SurfingRequests,type SurfingRequestPorts} from '../src/main/surfing-requests';
-import {parseSurfingAgentStep,searchSurfingPassages} from '../src/main/surfing-agent';
+import {parseSurfingAgentStep,searchSurfingPassages,unwrapJsonReply} from '../src/main/surfing-agent';
 import type {SurfingContext} from '../src/shared/surfing-context';
 import type {AiPrompt} from '../src/shared/ai';
 const context={documentId:'doc',fingerprint:'hash',revision:1};
@@ -23,13 +23,13 @@ describe('Surfing reading agent',()=>{
   expect(h.events).toEqual([{requestId:'ask',type:'step',note:'查看第 2 页'},{requestId:'ask',type:'answer',question:'图 2 说明了什么？',explanation:{text:'图 2 显示准确率随上下文变长而下降。',passageIds:['p1']}}]);
  });
  it('a text-only model is told it cannot see images and cannot ask for a page image',async()=>{
-  const h=setup('deepseek-chat',[JSON.stringify({actions:[{type:'view_page',pageNumber:2}]})]);await h.service.ask(ask());
+  const bad=JSON.stringify({actions:[{type:'view_page',pageNumber:2}]}),h=setup('deepseek-chat',[bad,bad]);await h.service.ask(ask());
   expect(h.prompts[0].system).toContain('You cannot see images');expect(h.prompts[0].system).not.toContain('"view_page"');expect(h.rendered).toEqual([]);expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});
  });
  it('reading and searching feed passages back; the last step must answer',async()=>{
-  const h=setup('claude-sonnet-4',[JSON.stringify({actions:[{type:'search',query:'retrieval'},{type:'read_page',pageNumber:3}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:2}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]})],'anthropic-messages');
+  const h=setup('claude-sonnet-4',[JSON.stringify({actions:[{type:'search',query:'retrieval'},{type:'read_page',pageNumber:3}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:2}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),JSON.stringify({actions:[{type:'read_page',pageNumber:1}]})],'anthropic-messages');
   await h.service.ask(ask());
-  expect(h.prompts).toHaveLength(4);expect(h.prompts[1].turns![1].text).toContain('[p2] (p.3) We conclude retrieval helps.');expect(h.prompts[3].turns!.at(-1)!.text).toContain('last step');
+  expect(h.prompts).toHaveLength(5);expect(h.prompts[1].turns![1].text).toContain('[p2] (p.3) We conclude retrieval helps.');expect(h.prompts[3].turns!.at(-1)!.text).toContain('last step');
   expect(h.events.filter(e=>e.type==='step').map(e=>e.note)).toEqual(['搜索「retrieval」','重读第 3 页','重读第 1 页','重读第 2 页']);expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});
  });
  it('a protocol without multi-turn support answers in one step',async()=>{
@@ -39,6 +39,47 @@ describe('Surfing reading agent',()=>{
   for(const raw of [{actions:[{type:'view_page',pageNumber:9}]},{actions:[{type:'go_to_page',pageNumber:1}]},{actions:[]},{actions:[{type:'read_page',pageNumber:1,extra:1}]},{text:'x',passageIds:['made-up']}])
    expect(()=>parseSurfingAgentStep(JSON.stringify(raw),snapshot,true,true)).toThrow('SURFING_INVALID_ROUTE');
   expect(parseSurfingAgentStep(final,snapshot,false,true).kind).toBe('final');
+ });
+ it('reads an answer wrapped in a code fence or prose without another request',async()=>{
+  for(const raw of ['```json\n'+final+'\n```','```\n'+final+'\n```','好的，答案如下：\n'+final+'\n希望有帮助。']){
+   const h=setup('deepseek-chat',[raw]);await h.service.ask(ask());expect(h.prompts).toHaveLength(1);expect(h.events.at(-1).type).toBe('answer');
+  }
+  expect(unwrapJsonReply('no json here')).toBe('no json here');expect(unwrapJsonReply('a {broken} b')).toBe('a {broken} b');
+ });
+ it('tells the model what was wrong once and accepts the corrected reply',async()=>{
+  const cases:[object,string][]=[[{actions:[{type:'read_page',pageNumber:9}]},'pageNumber must be a whole number from 1 to 3'],[{actions:[{type:'go_to_page',pageNumber:1}]},'read_page'],[{actions:[{type:'view_page',pageNumber:1}]},'view_page is not available'],[{actions:[{type:'search',query:' '}]},'search needs'],[{actions:[]},'1 to 3 actions'],[{text:'x',passageIds:['made-up']},'made-up'],[{text:'x'},'exactly']];
+  for(const [reply,hint] of cases){
+   const h=setup('deepseek-chat',[JSON.stringify(reply),final]);await h.service.ask(ask());
+   expect(h.prompts).toHaveLength(2);expect(h.prompts[1].turns!.at(-1)!.text).toContain(hint);expect(h.prompts[1].turns!.at(-2)).toEqual({role:'assistant',text:JSON.stringify(reply)});expect(h.events.at(-1).type).toBe('answer');
+  }
+ });
+ it('recovers text that is not JSON and keeps long replies out of the retry',async()=>{
+  const h=setup('deepseek-chat',['x'.repeat(5000),final]);await h.service.ask(ask());
+  expect(h.prompts[1].turns![0].text).toHaveLength(2000);expect(h.prompts[1].turns![1].text).toContain('one JSON object');expect(h.events.at(-1).type).toBe('answer');
+ });
+ it('retries only once per request',async()=>{
+  const h=setup('deepseek-chat',['nope','still nope',final]);await h.service.ask(ask());expect(h.prompts).toHaveLength(2);expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});
+ });
+ it('a look-closer action on the last step is answered with a demand for the final answer',async()=>{
+  const look=JSON.stringify({actions:[{type:'read_page',pageNumber:1}]}),h=setup('deepseek-chat',[look,look,look,look,final]);await h.service.ask(ask());
+  expect(h.prompts).toHaveLength(5);expect(h.prompts[4].turns!.at(-1)!.text).toContain('final JSON answer now');expect(h.events.at(-1).type).toBe('answer');
+ });
+ it('a protocol without multi-turn support fails without a retry',async()=>{
+  const h=setup('lite',['nope',final],'spark');await h.service.ask(ask());expect(h.prompts).toHaveLength(1);expect(h.events.at(-1)).toMatchObject({type:'error',code:'SURFING_INVALID_ROUTE'});
+ });
+ it('sends the same prompt again after an empty reply',async()=>{
+  const empty=Object.assign(Error('AI_INCOMPLETE'),{emptyReply:true}),h=setup('deepseek-chat',[]);const prompts:AiPrompt[]=[];let calls=0;
+  (h.service as any).ports.generate=async(_p:unknown,prompt:AiPrompt)=>{prompts.push(prompt);if(calls++===0)throw empty;return final;};
+  await h.service.ask(ask());expect(prompts).toHaveLength(2);expect(prompts[1]).toEqual(prompts[0]);expect(h.events.at(-1).type).toBe('answer');
+ });
+ it('other provider failures are not retried',async()=>{
+  const h=setup('deepseek-chat',[]);let calls=0;(h.service as any).ports.generate=async()=>{calls++;throw Error('AI_INCOMPLETE');};
+  await h.service.ask(ask());expect(calls).toBe(1);expect(h.events.at(-1)).toMatchObject({type:'error',code:'AI_INCOMPLETE'});
+ });
+ it('repairs a route the same way',async()=>{
+  const route=JSON.stringify({stops:[{title:'Entry',reason:'Why',passageIds:['p1']}]}),h=setup('deepseek-chat',[JSON.stringify({stops:[{title:'Entry',reason:'Why',passageIds:['made-up']}]}),route]);
+  await h.service.start({requestId:'route',profileId:'profile',context:{...context},consent:true});
+  expect(h.prompts).toHaveLength(2);expect(h.prompts[1].turns!.at(-1)!.text).toContain('made-up');expect(h.events.at(-1).type).toBe('route');
  });
  it('search ranks passages by matched words',()=>{expect(searchSurfingPassages(snapshot,'context length accuracy').map(p=>p.id)).toEqual(['p1']);expect(searchSurfingPassages(snapshot,'nothing here')).toEqual([]);});
 });

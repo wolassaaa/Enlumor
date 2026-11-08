@@ -11,6 +11,8 @@ export type AiImage={mediaType:'image/jpeg'|'image/png';data:string};
 /** Later turns of one request: the model's previous step, then what the app returns to it (text and optional page images). */
 export type AiTurn={role:'assistant'|'user';text:string;images?:AiImage[]};
 export type AiPrompt={system:string;user:string;turns?:AiTurn[]};
+/** What the provider reports it charged for; a field is absent when the provider does not say. */
+export type AiUsage={inputTokens?:number;outputTokens?:number;cachedInputTokens?:number};
 export const AI_MAX_TURNS=12,AI_MAX_IMAGES=6,AI_MAX_IMAGE_BASE64=2_500_000;
 /** One bound for every assembled prompt; whether it fits a model is decided by its token count and context window. */
 export const AI_MAX_PROMPT_CHARACTERS=1_000_000;

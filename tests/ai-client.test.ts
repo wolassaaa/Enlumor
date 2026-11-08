@@ -7,6 +7,21 @@ async function server(handler:RequestListener){const s=createServer(handler);ser
 afterEach(async()=>{await Promise.all(servers.splice(0).map(s=>new Promise<void>(r=>{s.closeAllConnections();s.close(()=>r());})));});
 const profile=(protocol:AiProtocol,endpoint='https://models.example/v1'):AiProfileInput=>({id:'test',name:'fixture',protocol,endpoint,model:'test-model',credential:{kind:'api-key',apiKey:'fixture-secret'},maxOutputTokens:256,timeoutMs:1000,parameters:{}});
 const prompt={system:'Explain only supplied evidence.',user:'中文原文'};
+const sse=(...events:unknown[])=>events.map(e=>'data: '+JSON.stringify(e)+'\n\n').join('');
+const usageOf=async(protocol:AiProtocol,body:string)=>{const endpoint=await server((_req,res)=>{res.writeHead(200,{'content-type':'text/event-stream'});res.end(body);});const seen:unknown[]=[];await generateText({...profile(protocol,endpoint),credential:undefined},prompt,{onUsage:u=>seen.push(u)});return seen.at(-1);};
+it('marks a finished reply with no text so a caller can safely retry it, unlike a cut-off one',async()=>{
+ const reply=async(body:string)=>{const endpoint=await server((_req,res)=>{res.writeHead(200,{'content-type':'text/event-stream'});res.end(body);});return generateText({...profile('openai-chat',endpoint),credential:undefined},prompt).catch(e=>e);};
+ const empty=await reply(sse({choices:[{delta:{},finish_reason:'stop'}]})+'data: [DONE]\n\n');expect(empty.message).toBe('AI_INCOMPLETE');expect(empty.emptyReply).toBe(true);
+ const cut=await reply(sse({choices:[{delta:{content:'part'},finish_reason:'length'}]})+'data: [DONE]\n\n');expect(cut.message).toBe('AI_INCOMPLETE');expect(cut.emptyReply).toBeUndefined();
+});
+it('reports the token usage each protocol sends with its stream',async()=>{
+ expect(await usageOf('openai-chat',sse({choices:[{delta:{content:'ok'},finish_reason:'stop'}],usage:{prompt_tokens:90,completion_tokens:9,prompt_cache_hit_tokens:80,prompt_cache_miss_tokens:10}})+'data: [DONE]\n\n')).toEqual({inputTokens:90,outputTokens:9,cachedInputTokens:80});
+ expect(await usageOf('openai-chat',sse({choices:[{delta:{content:'ok'},finish_reason:'stop',}],usage:{prompt_tokens:90,completion_tokens:9,prompt_tokens_details:{cached_tokens:70}}})+'data: [DONE]\n\n')).toEqual({inputTokens:90,outputTokens:9,cachedInputTokens:70});
+ expect(await usageOf('openai-responses',sse({type:'response.output_text.delta',delta:'ok'},{type:'response.completed',response:{status:'completed',usage:{input_tokens:90,output_tokens:9,input_tokens_details:{cached_tokens:60}}}}))).toEqual({inputTokens:90,outputTokens:9,cachedInputTokens:60});
+ expect(await usageOf('anthropic-messages',sse({type:'message_start',message:{usage:{input_tokens:30,cache_read_input_tokens:50,cache_creation_input_tokens:10,output_tokens:1}}},{type:'content_block_delta',delta:{type:'text_delta',text:'ok'}},{type:'message_delta',delta:{stop_reason:'end_turn'},usage:{output_tokens:9}},{type:'message_stop'}))).toEqual({inputTokens:90,outputTokens:9,cachedInputTokens:50});
+ expect(await usageOf('gemini',sse({candidates:[{content:{parts:[{text:'ok'}]},finishReason:'STOP'}],usageMetadata:{promptTokenCount:90,candidatesTokenCount:9,cachedContentTokenCount:40}}))).toEqual({inputTokens:90,outputTokens:9,cachedInputTokens:40});
+ expect(await usageOf('openai-chat',sse({choices:[{delta:{content:'ok'},finish_reason:'stop'}]})+'data: [DONE]\n\n')).toBeUndefined();
+});
 it('builds Chat and Responses endpoints without duplicate version and keeps protocol shapes distinct',()=>{
  const chat=buildAiRequest(profile('openai-chat'),prompt,true);expect(chat.url).toBe('https://models.example/v1/chat/completions');expect(chat.body.messages[0]).toEqual({role:'system',content:prompt.system});expect(chat.headers.Authorization).toBe('Bearer fixture-secret');expect(chat.body.stream).toBe(true);
  const response=buildAiRequest(profile('openai-responses','https://models.example/v1/responses'),prompt,true);expect(response.url).toBe('https://models.example/v1/responses');expect(response.body.input).toBe(prompt.user);expect(response.body.instructions).toBe(prompt.system);expect(response.body.messages).toBeUndefined();

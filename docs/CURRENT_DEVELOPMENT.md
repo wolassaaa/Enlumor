@@ -7,6 +7,8 @@ This source snapshot synchronises the editing integration and Surfing repair wor
 - Surfing whole-document questions and optional exploration routes, beside the PDF; current-page context, page/source navigation, cancellation and recent successful in-session dialogue. Full-document sending requires explicit confirmation. Conversation history is bounded and not persistent across opening sessions.
 - Token budgeting runs off the foreground thread where supported. Known OpenAI models and supported DeepSeek Chat-compatible profiles have separate budgeting paths; budget estimates are not universal exact token counts.
 
+- Each Surfing request appends one local run record to `logs/surfing-runs.jsonl` in the app's user-data folder: model, steps, tool use, provider-reported tokens, timing and outcome. It keeps a short document fingerprint but never paper text, questions, answers, search queries, endpoints or keys, and nothing is uploaded. `node scripts/surfing-runs.mjs` summarises the file; delete the file to clear it.
+
 ## Fresh checks for this source publication
 On24 October2026, `npm run typecheck`, `npm test`, `npm run test:python` and `npm run build` exited0. The unit suite passed39 files /619 tests; Python passed21 tests. The build reported its existing large-chunk advisory; it completed successfully.
 

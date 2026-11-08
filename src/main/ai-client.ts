@@ -1,7 +1,7 @@
 import{generateSpark}from'./spark-client';
 import{validateAiProfile}from'./ai-config';
 export{validateAiProfile}from'./ai-config';
-import {AI_MAX_IMAGE_BASE64,AI_MAX_IMAGES,AI_MAX_PROMPT_CHARACTERS,AI_MAX_TURNS,type AiImage,type AiProfileInput,type AiPrompt,type AiTurn} from '../shared/ai';
+import {AI_MAX_IMAGE_BASE64,AI_MAX_IMAGES,AI_MAX_PROMPT_CHARACTERS,AI_MAX_TURNS,type AiImage,type AiProfileInput,type AiPrompt,type AiTurn,type AiUsage} from '../shared/ai';
 import type {AiModelInfo} from '../shared/ai-models';
 
 const MAX_RESPONSE_BYTES=4*1024*1024,MAX_EVENT_BYTES=512*1024;
@@ -105,6 +105,19 @@ function decodeObject(profile:AiProfileInput,value:any,stream:boolean):{text:str
  return{text,done};
 }
 
+const tokenCount=(value:unknown)=>Number.isSafeInteger(value)&&(value as number)>=0?value as number:undefined;
+/** Usage in the words of each protocol. Anthropic counts cached input apart from input_tokens; the others include it. */
+function reportedUsage(profile:AiProfileInput,value:any):AiUsage{
+ switch(profile.protocol){
+  case'openai-chat':{const u=value?.usage;return{inputTokens:tokenCount(u?.prompt_tokens),outputTokens:tokenCount(u?.completion_tokens),cachedInputTokens:tokenCount(u?.prompt_cache_hit_tokens??u?.prompt_tokens_details?.cached_tokens)};}
+  case'openai-responses':{const u=value?.response?.usage??value?.usage;return{inputTokens:tokenCount(u?.input_tokens),outputTokens:tokenCount(u?.output_tokens),cachedInputTokens:tokenCount(u?.input_tokens_details?.cached_tokens)};}
+  case'anthropic-messages':{const u=value?.message?.usage??value?.usage,input=tokenCount(u?.input_tokens),cached=tokenCount(u?.cache_read_input_tokens);return{inputTokens:input===undefined?undefined:input+(cached||0)+(tokenCount(u?.cache_creation_input_tokens)||0),outputTokens:tokenCount(u?.output_tokens),cachedInputTokens:cached};}
+  case'gemini':{const u=value?.usageMetadata;return{inputTokens:tokenCount(u?.promptTokenCount),outputTokens:tokenCount(u?.candidatesTokenCount),cachedInputTokens:tokenCount(u?.cachedContentTokenCount)};}
+  case'dashscope':{const u=value?.usage;return{inputTokens:tokenCount(u?.input_tokens),outputTokens:tokenCount(u?.output_tokens)};}
+  default:return{};
+ }
+}
+
 // Services name the context window differently (OpenRouter/Together context_length, Groq context_window, Mistral max_context_length,
 // vLLM max_model_len, Gemini inputTokenLimit); whatever is present and plausible is kept.
 const windowFields=['context_length','context_window','max_context_length','max_model_len','max_input_tokens','inputTokenLimit'];
@@ -148,12 +161,13 @@ async function httpFailure(response:Response):Promise<Error>{
  return failure('AI_CONTEXT_OVERFLOW');
 }
 
-export async function generateText(profile:AiProfileInput,prompt:AiPrompt,options:{stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;fetch?:typeof fetch}={}):Promise<string>{
+export async function generateText(profile:AiProfileInput,prompt:AiPrompt,options:{stream?:boolean;signal?:AbortSignal;onDelta?:(text:string)=>void;onUsage?:(usage:AiUsage)=>void;fetch?:typeof fetch}={}):Promise<string>{
  if(profile.protocol==='spark'){if(prompt?.turns?.length)throw failure('AI_TURNS_UNSUPPORTED');return generateSpark(profile,prompt,options);}
  const stream=options.stream!==false,request=buildAiRequest(profile,prompt,stream),timer=new AbortController();
  const timeout=setTimeout(()=>timer.abort(),profile.timeoutMs);
  const signal=options.signal?AbortSignal.any([options.signal,timer.signal]):timer.signal;
- let text='',bytes=0,reader:ReadableStreamDefaultReader<Uint8Array>|undefined;
+ let text='',bytes=0,reader:ReadableStreamDefaultReader<Uint8Array>|undefined,usage:AiUsage|undefined;
+ const noteUsage=(value:unknown)=>{for(const [k,v] of Object.entries(reportedUsage(profile,value)))if(v!==undefined)usage={...usage,[k]:v};};
  const emit=(delta:string)=>{if(!delta)return;text+=delta;if(text.length>MAX_RESPONSE_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');options.onDelta?.(delta);};
  try{
   const response=await(options.fetch||fetch)(request.url,{method:'POST',headers:request.headers,body:JSON.stringify(request.body),redirect:'error',signal});
@@ -168,7 +182,7 @@ export async function generateText(profile:AiProfileInput,prompt:AiPrompt,option
    if(event==='error')throw failure('AI_REMOTE_ERROR');if(!data)return;
    if(data==='[DONE]'){if(profile.protocol!=='openai-chat')throw failure('AI_INVALID_RESPONSE');done=true;return;}
    let value;try{value=JSON.parse(data);}catch{throw failure('AI_INVALID_RESPONSE');}
-   const decoded=decodeObject(profile,value,true);let delta=decoded.text;if(profile.protocol==='dashscope'&&profile.parameters.incremental_output===false){if(!delta.startsWith(text))throw failure('AI_INVALID_RESPONSE');delta=delta.slice(text.length);}emit(delta);done||=decoded.done;
+   noteUsage(value);const decoded=decodeObject(profile,value,true);let delta=decoded.text;if(profile.protocol==='dashscope'&&profile.parameters.incremental_output===false){if(!delta.startsWith(text))throw failure('AI_INVALID_RESPONSE');delta=delta.slice(text.length);}emit(delta);done||=decoded.done;
   };
   while(!done){
    const chunk=await reader.read();if(chunk.done){pending+=decoder.decode();break;}
@@ -176,9 +190,10 @@ export async function generateText(profile:AiProfileInput,prompt:AiPrompt,option
    pending+=decoder.decode(chunk.value,{stream:true});
    if(sse){let split:RegExpExecArray|null;while((split=/\r?\n\r?\n/.exec(pending))){const raw=pending.slice(0,split.index);pending=pending.slice(split.index+split[0].length);frame(raw);if(done)break;}if(pending.length>MAX_EVENT_BYTES)throw failure('AI_RESPONSE_TOO_LARGE');}
   }
-  if(!sse){let value;try{value=JSON.parse(pending);}catch{throw failure('AI_INVALID_RESPONSE');}const decoded=decodeObject(profile,value,false);emit(decoded.text);done=decoded.done;}
+  if(!sse){let value;try{value=JSON.parse(pending);}catch{throw failure('AI_INVALID_RESPONSE');}noteUsage(value);const decoded=decodeObject(profile,value,false);emit(decoded.text);done=decoded.done;}
   else if(!done&&pending.trim())frame(pending);
-  if(!done||!text.trim())throw failure('AI_INCOMPLETE');return text;
+  if(done&&!text.trim())throw Object.assign(failure('AI_INCOMPLETE'),{emptyReply:true});
+  if(!done)throw failure('AI_INCOMPLETE');if(usage)options.onUsage?.(usage);return text;
  }catch(error){
   if(options.signal?.aborted)throw failure('AI_CANCELLED');if(timer.signal.aborted)throw failure('AI_TIMEOUT');
   if(error instanceof Error&&/^AI_[A-Z_0-9]+$/.test(error.message))throw error;
