@@ -37,3 +37,15 @@ npm run acceptance
 输出上限默认用模型自身的上限（和普通用户一样）；要比较不同上限时设 `ENLUMOR_ACCEPTANCE_MAX_OUTPUT`。
 
 每次的得分追加到 `.cache/acceptance/history.jsonl`，报告里会列出同一基准最近几次的得分，方便比较不同模型和版本。
+
+## 批量运行（多套题 + App 内测试模式）
+
+会调用真实模型、要花钱，跑之前先确认。
+
+```powershell
+scripts/acceptance/set-acceptance-key.ps1   # 一次：接口地址、模型、密钥存进 Windows 用户环境变量
+scripts/acceptance/run-acceptance.ps1       # 默认跑 lumen、attention、attention-hard，再跑 App 内测试模式
+scripts/acceptance/run-acceptance.ps1 -Benchmarks lumen -SkipInApp
+```
+
+基准 PDF 放在 `.cache/benchmarks/`（不进版本库，因为里面有别人的论文）：每套题要 `<名字>-benchmark.pdf`，App 内测试模式还要 `<名字>-qr-only.pdf`，都用上面的 `benchmark.py add` 生成。App 内测试模式的用例是 `in-app-real.spec.ts`，只有设了 `ENLUMOR_INAPP=1` 才会跑，所以单独 `npm run acceptance` 不会多花钱。
