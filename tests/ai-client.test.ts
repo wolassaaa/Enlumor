@@ -78,3 +78,13 @@ it('caps a complete oversized SSE event, not only the unfinished buffer',async()
 for(const protocol of ['openai-chat','openai-responses','anthropic-messages','gemini'] as const)it(`${protocol}: model discovery uses the right GET route and normalizes IDs`,async()=>{
  let method='',route='';const endpoint=await server((req,res)=>{method=req.method!;route=req.url!;res.setHeader('content-type','application/json');res.end(JSON.stringify(protocol==='gemini'?{models:[{name:'models/demo'},{name:'models/demo'}]}:{data:[{id:'demo'},{id:'demo'}]}));});expect(await listAiModels(profile(protocol,endpoint))).toEqual(['demo']);expect(method).toBe('GET');expect(route).toBe(protocol==='gemini'?'/v1beta/models':'/v1/models');
 });
+it('OpenAI reasoning models get max_completion_tokens; other chat models keep max_tokens',()=>{
+ for(const model of ['o1','o3-mini','o4-mini','gpt-5','gpt-5-mini','openai/gpt-5.1']){
+  const body=buildAiRequest({...profile('openai-chat'),model},prompt).body;
+  expect(body.max_completion_tokens,model).toBe(256);expect(body.max_tokens,model).toBeUndefined();
+ }
+ for(const model of ['gpt-4o','gpt-4.1','deepseek-flash','qwen-max','omni-1']){
+  const body=buildAiRequest({...profile('openai-chat'),model},prompt).body;
+  expect(body.max_tokens,model).toBe(256);expect(body.max_completion_tokens,model).toBeUndefined();
+ }
+});

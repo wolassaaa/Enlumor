@@ -45,7 +45,7 @@ export function buildAiRequest(profile:AiProfileInput,prompt:AiPrompt,stream=tru
  switch(profile.protocol){
   case'openai-chat':
    addPath('/chat/completions','/v1');if(key)headers.Authorization='Bearer '+key;
-   body={model:profile.model,messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.images?.length?[{type:'text',text:t.text},...t.images.map(i=>({type:'image_url',image_url:{url:dataUrl(i)}}))]:t.text}))],max_tokens:maxOutput,stream,...profile.parameters};break;
+   body={model:profile.model,messages:[{role:'system',content:prompt.system},{role:'user',content:prompt.user},...turns.map(t=>({role:t.role,content:t.images?.length?[{type:'text',text:t.text},...t.images.map(i=>({type:'image_url',image_url:{url:dataUrl(i)}}))]:t.text}))],[chatLimitField(profile.model)]:maxOutput,stream,...profile.parameters};break;
   case'openai-responses':
    addPath('/responses','/v1');if(key)headers.Authorization='Bearer '+key;
    body={model:profile.model,instructions:prompt.system,input:turns.length?[{role:'user',content:[{type:'input_text',text:prompt.user}]},...turns.map(t=>t.role==='assistant'?{role:'assistant',content:[{type:'output_text',text:t.text}]}:{role:'user',content:[{type:'input_text',text:t.text},...(t.images||[]).map(i=>({type:'input_image',image_url:dataUrl(i)}))]})]:prompt.user,max_output_tokens:maxOutput,stream,store:false,...profile.parameters};break;
@@ -154,6 +154,8 @@ const overflow=/context[_ ]length|context window|maximum context|prompt is too l
 const overflowLimit=[/maximum context length is (\d{4,8})/i,/> ?(\d{4,8}) maximum/i,/allowed \((\d{4,8})\)/i,/(?:limit|maximum)(?: of| is)? (\d{4,8}) tokens/i];
 // "Too many output tokens requested" in the words of OpenAI, DeepSeek, Anthropic, Gemini and OpenAI-compatible servers: first
 // the unmistakable phrasings, then (only when nothing says the context is too long) any mention of the output limit.
+// OpenAI reasoning models (o1, o3, o4, gpt-5) reject max_tokens on Chat Completions and need max_completion_tokens.
+const chatLimitField=(model:string)=>/^(o[134]|gpt-5)/.test(model.trim().toLowerCase().split('/').pop()||'')?'max_completion_tokens':'max_tokens';
 const outputLimitStated=/max_tokens is too large|valid range of max_tokens|maximum allowed number of output tokens|at most \d+ (completion|output) tokens|max_tokens: ?\d+ ?>/i;
 const outputLimit=/max_tokens|max_output_tokens|maxOutputTokens|max_completion_tokens|output tokens|completion tokens/i;
 /** Error code for a failed HTTP response. An over-long prompt becomes AI_CONTEXT_OVERFLOW, with the service's real window when it states one;
