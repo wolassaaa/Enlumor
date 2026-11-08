@@ -1,5 +1,7 @@
 # Enlumor v0.5.1 Wave A Closeout Implementation Plan
 
+> 历史记录：写的是当时的计划或判断，不代表现状。当前状态见 [STATUS.md](../../STATUS.md)，施工顺序见 [2026-11-06 规划](../../plans/2026-11-06-agent-system-plan.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. 每次一个实施者，任务审查＋两项整轮review；不创建并行产品写入者。
 
 **Goal:** 补齐当前证据块追问并完成已有控制接口复核，准备可真实验收的Wave A，不提前开发Surfing。

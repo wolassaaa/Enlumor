@@ -16,7 +16,7 @@
 
 全文发送仍需你明确确认。真实模型实测目前只覆盖 DeepSeek V4.1 Flash 一个模型。
 
-这是开发源码，**不是新的正式安装包发布**；下文的正式 Windows 版本仍是 0.1.15。实测数字和已知问题见[当前开发状态](docs/CURRENT_DEVELOPMENT.md)，后续计划见[路线图](docs/ROADMAP.md)。
+这是开发源码，**不是新的正式安装包发布**；下文的正式 Windows 版本仍是 0.1.15。实测数字和已知问题见[当前开发状态](docs/STATUS.md)，后续计划见[路线图](docs/ROADMAP.md)。
 
 ## 先把阅读做好
 
@@ -33,7 +33,7 @@
 - **自带密钥（BYOK）**：你选服务商、填密钥，并向服务商支付推理费用。
 - **围绕当前段落**：Cruise 共读发送当前阅读块，不上传整份 PDF；启用 AI 时，该上下文可能离开设备。
 - **保留主动权**：暂停、取消、手动接管、回到原文；对取消和过期响应设置隔离。
-- **测试边界如实写**：本地契约和模拟服务测试不等于每家厂商的真实密钥实测，配置细节见[接口兼容矩阵](docs/API-COMPATIBILITY.md)。
+- **测试边界如实写**：本地契约和模拟服务测试不等于每家厂商的真实密钥实测，配置细节见[接口兼容矩阵](docs/archive/API-COMPATIBILITY.md)。
 
 当前正式 Windows 版本为 **0.1.15**，包含阅读与批注底座、Cruise 控制和模型配置。后续候选分支的来源校验和独立编辑库不自动算作正式版已集成。真实模型服务、AI 流式输出和导出并行时的前台阅读体验，仍需按实际环境验收。
 
@@ -71,6 +71,6 @@ npm run test:e2e
 
 ## 继续了解
 
-[功能交付清单](docs/FEATURES.md) · [实现记录](docs/IMPLEMENTATION.md) · [Review 节奏](docs/REVIEW-CADENCE.md) · [归档开发说明](docs/DEVELOPMENT_NOTES.zh-CN.md)
+[功能交付清单](docs/archive/FEATURES.md) · [实现记录](docs/archive/IMPLEMENTATION.md) · [Review 节奏](docs/archive/REVIEW-CADENCE.md) · [归档开发说明](docs/DEVELOPMENT_NOTES.zh-CN.md)
 
 反馈请描述可复现的阅读任务、应用版本和预期行为；不要公开密钥或私有文档。

@@ -1,6 +1,6 @@
 # Enlumor 长期愿景与分阶段计划
 
-这份文档写的是 Enlumor 更远的方向：它从哪里来，可能走到哪里，每一步在什么条件下才开始做。它不是开发任务，也没有排期。近期要做的事见[路线图](ROADMAP.md)，现状见[当前开发状态](CURRENT_DEVELOPMENT.md)。
+这份文档写的是 Enlumor 更远的方向：它从哪里来，可能走到哪里，每一步在什么条件下才开始做。它不是开发任务，也没有排期。近期要做的事见[路线图](ROADMAP.md)，现状见[当前开发状态](STATUS.md)。
 
 核心目标不变：**Remove the friction, not the thinking.** 消除阅读和研究里的阻力，不替人思考。
 

@@ -61,7 +61,7 @@
 按[长期规划](plans/2026-11-06-agent-system-plan.md)的第 0 阶段"收拢"（第 1、2 周，11-09 到 11-22）：
 
 - 第 1 周（已完成）：保住未提交的工作，搬回两条 backlog，合并 PR，写 `AGENTS.md`、`CLAUDE.md` 和这一页。
-- 第 2 周：清理自称"当前"的旧文档和 `evidence/`；加 Windows CI；几处小修（验收脚本进版本库、dev 构建 worker、删 OpenRouter 预设）。
+- 第 2 周（11-09 夜里提前开工）：Windows CI 和三处小修在 PR #6；旧文档归档到 `docs/archive/`，过时的计划、spec、review 开头加了说明。还没做：`evidence/` 的去留（等你决定），隐藏旧 Cruise、星火和 DashScope 的去留（产品决定）。
 
 完成标准：只有这一页自称当前状态；CI 变绿；开一个新会话问"当前状态和下一步"，不用纠正就能答对。
 
