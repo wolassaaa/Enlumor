@@ -5,7 +5,7 @@
 **Goal:** 在隔离候选中把已验收编辑库接入同一真实Workspace、原文核验与现有人工PDF工具，完成保存/撤销/恢复闭环。
 **Architecture:** 主进程独占可信来源、会话、SQLite与命令执行；renderer只经窄桥接提交人工操作并显示只读投影。结构升级与旧批注按页核验分离，不长期双写旧annotations，不推倒PDF阅读底座。
 **Tech Stack:** 现有Electron/TypeScript/node:sqlite/PDF.js、本地PyMuPDF组件、Vitest/Playwright/unittest；依赖与正式版本号不变。
-**Spec:** docs/superpowers/specs/2026-10-20-editing-production-integration-design.md。用户已认可书面设计；本实施计划待审阅。
+**Spec:** docs/superpowers/specs/2026-10-20-editing-production-integration-design.md。用户已认可书面设计，并于2026-10-23明确按计划继续；实施中。
 
 ## Global Constraints
 
@@ -61,13 +61,13 @@
 - 人工重新定位先给旧/新原文和位置预览；确认后核对expectedInputDigest，原子转换并在auditPayload保存原对象、用户actor、前后锚点和时间。它是独立可追踪的兼容转换审计，不伪装普通undo_edit；之后的新标识编辑才进入普通撤销历史。转换本身不宣称可撤销迁移，原记录仍保留。
 - 新固定错误码：BACKUP_BUSY/BACKUP_STALE/BACKUP_FAILED/DATABASE_VERSION/LEGACY_READ_ONLY/LEGACY_CHANGED/PDF_CANCELED；源身份错误沿用SOURCE_MISSING/SOURCE_CHANGED，命令错误沿用库。
 
-- [ ] **Step1 RED（正式仓储）**：tests/editing-workspace.test.ts建立真实v4临时库，断言升级后schema5、七表存在、备份schema4/integrity_check=ok、其他表行一致；关闭重开不重置版本/回执。分别注入备份失败、DDL中断、busy和备份后另一连接提交，断言旧库仍v4、零新标识/历史。更高版本返回DATABASE_VERSION且哈希不变。
-- [ ] **Step2 观察RED**：`npx vitest run tests/editing-workspace.test.ts`，预期缺失新模块/接口或功能断言失败；保存实际输出与退出码，不把未知模块失败当所有原子性案例已验证。
-- [ ] **Step3 GREEN（仓储）**：实现上述同连接适配，真实两连接测试同版本仅一次提交、确认失败零消耗、commit前/后取消、关库重开同请求不重建、定向撤销/墓碑版本递增；不用旧tests/helpers/editing-sqlite-store.ts代替生产类。
-- [ ] **Step4 RED（源与旧数据）**：tests/editing-sources.test.ts和tests/python/test_editing_anchors.py生成多行/双栏/重复句/斜向字/裁剪偏移/0、90、180、270旋转、扫描页PDF；断言对应位置唯一、输出原生四顶点、源哈希不变。缺文字/quote错/四边形包住另一段均拒绝。缺源、源替换、超限、解析中取消/切上下文保留旧行；转换后删标识重开不复活；改过legacy inputDigest不能套用旧重新定位预览。
-- [ ] **Step5 观察RED**：`npx vitest run tests/editing-sources.test.ts`及`node scripts/python.mjs -m unittest discover -s tests/python -p test_editing_anchors.py -v`分别保存失败；再实现最小源服务/原子兼容转换。runPdfTask可加可选AbortSignal，已有不传signal调用行为不变，取消终止子进程、清理timeout且只settle一次。
-- [ ] **Step6 GREEN与回归**：运行两个新TS测试、Python新测试、`npm test`、`npm run test:python`、`npm run build`。明确保留原416历史基线，不预填最终测试数；独立副本验证迁移前备份可重新打开，关闭所有连接后恢复复制库，原备份哈希不变。
-- [ ] **Step7 提交/Review**：只提交Task1列明文件；提交`feat: persist editing commands in workspace with verified legacy import`。fresh Review通过后Task2，不发布、不在个人profile启动。
+- [x] **Step1 RED（正式仓储）**：tests/editing-workspace.test.ts建立真实v4临时库，断言升级后schema5、七表存在、备份schema4/integrity_check=ok、其他表行一致；关闭重开不重置版本/回执。分别注入备份失败、DDL中断、busy和备份后另一连接提交，断言旧库仍v4、零新标识/历史。更高版本返回DATABASE_VERSION且哈希不变。
+- [x] **Step2 观察RED**：`npx vitest run tests/editing-workspace.test.ts`，预期缺失新模块/接口或功能断言失败；保存实际输出与退出码，不把未知模块失败当所有原子性案例已验证。
+- [x] **Step3 GREEN（仓储）**：实现上述同连接适配，真实两连接测试同版本仅一次提交、确认失败零消耗、commit前/后取消、关库重开同请求不重建、定向撤销/墓碑版本递增；不用旧tests/helpers/editing-sqlite-store.ts代替生产类。
+- [x] **Step4 RED（源与旧数据）**：tests/editing-sources.test.ts和tests/python/test_editing_anchors.py生成多行/双栏/重复句/斜向字/裁剪偏移/0、90、180、270旋转、扫描页PDF；断言对应位置唯一、输出原生四顶点、源哈希不变。缺文字/quote错/四边形包住另一段均拒绝。缺源、源替换、超限、解析中取消/切上下文保留旧行；转换后删标识重开不复活；改过legacy inputDigest不能套用旧重新定位预览。
+- [x] **Step5 观察RED**：`npx vitest run tests/editing-sources.test.ts`及`node scripts/python.mjs -m unittest discover -s tests/python -p test_editing_anchors.py -v`分别保存失败；再实现最小源服务/原子兼容转换。runPdfTask可加可选AbortSignal，已有不传signal调用行为不变，取消终止子进程、清理timeout且只settle一次。
+- [x] **Step6 GREEN与回归**：运行两个新TS测试、Python新测试、`npm test`、`npm run test:python`、`npm run build`。明确保留原416历史基线，不预填最终测试数；独立副本验证迁移前备份可重新打开，关闭所有连接后恢复复制库，原备份哈希不变。
+- [x] **Step7 提交/Review**：只提交Task1列明文件；提交`feat: persist editing commands in workspace with verified legacy import`。fresh Review通过后Task2，不发布、不在个人profile启动。
 
 
 **关键断言示例（其余案例按上述命名/断言补齐，不抄完整实现）：**
@@ -128,4 +128,4 @@ it('late receipt preserves commit without replacing another document view', asyn
 
 明确两处语义：旧原记录不双写，手工兼容转换保留审计而非假造可撤销迁移；原20ms门禁针对readingSave，锚点准备/新编辑另测。候选preview开关保护个人v4库，新能力真实接入同一生产类但尚不发布。
 
-本轮仅形成计划，没有开始迁移/编码、未运行新增功能测试。请审阅这份实施计划是否符合预期；确认后沿用已选子代理方式连续执行两项，不在每个小步骤重新询问。
+用户2026-10-23批准执行；Task1已提交并独立Review通过，Task2实施中。实际结果以WAVE_A_STATE.json、SDD ledger和本批证据为准；不在小步骤重复询问。

@@ -1,3 +1,5 @@
+import type {MarkView} from './editing-view';
+type DisplayMark=Omit<Annotation,'author'> & {author?:'user';placement?:{dx:number;dy:number};visible?:boolean};
 import { EraserTool } from './eraser-tool';
 import{buildPageBlocks,type TextSpan}from'./cruise-blocks';
 import type{CruiseBlock}from'../shared/cruise';
@@ -19,10 +21,10 @@ export class PdfReader {
   readonly viewer: PDFViewer;
   private link: PDFLinkService;
   private task?: PDFDocumentLoadingTask;
-  private marks: Annotation[] = [];
+  private marks: DisplayMark[] = [];
   private active?: OpenedDocument;
   private generation = 0;
-  private flash?: Annotation;
+  private flash?: DisplayMark;
   private focusEpoch = 0;
   private flashTimer?: ReturnType<typeof setTimeout>;
   private ready = false;
@@ -36,7 +38,7 @@ export class PdfReader {
     this.viewer = new PDFViewer({ container, eventBus: this.bus, linkService: this.link, findController: find, annotationMode: 1, annotationEditorMode: -1, imageResourcesPath: new URL('./pdf-assets/images/', window.location.href).href });
     this.link.setViewer(this.viewer);
     this.lineTool=new LineTool(container,index=>this.viewer.getPageView(index),()=>this.ready&&canDraw(),onLine,drawingColor);
-    this.eraser=new EraserTool(container,index=>this.viewer.getPageView(index),()=>this.marks,()=>this.ready&&canDraw(),onErase);
+    this.eraser=new EraserTool(container,index=>this.viewer.getPageView(index),()=>this.marks as Annotation[],()=>this.ready&&canDraw(),onErase);
     this.bus.on('pagechanging', ({pageNumber}:{pageNumber:number}) => {
       this.eraser.cancel();const generation=this.generation;
       requestAnimationFrame(()=>{if(generation===this.generation&&this.ready)this.paint(pageNumber-1);});
@@ -151,6 +153,7 @@ export class PdfReader {
     const mark={...block,type:'highlight',author:'user',color:'#f4cf58',note:''};
     validateAnnotation(mark,this.active.pageCount);return this.focus(mark,isCurrent);
   }
+  setEditingMarks(marks:(MarkView & {documentId:string;fingerprint:string})[],changedIds?:string[]){this.marks=marks.filter(m=>m.visible);this.paint(undefined,changedIds?new Set(changedIds):undefined);}
   setMarks(marks: Annotation[], changedIds?: string[]) { this.marks = marks; this.paint(undefined,changedIds?new Set(changedIds):undefined); }
   setDrawingTool(mode:DrawingMode|'erase'|null) {this.lineTool.setMode(mode==='erase'?null:mode);this.eraser.setEnabled(mode==='erase');}
   setLineEnabled(enabled:boolean) { this.setDrawingTool(enabled?'line':null); }
@@ -170,6 +173,7 @@ export class PdfReader {
     if (!this.ready) return;
     this.bus.dispatch('find', { source: this, type: again ? 'again' : '', query, caseSensitive: false, entireWord: false, highlightAll: true, findPrevious: backwards, matchDiacritics: false });
   }
+  freeNoteAnchor():SelectionPart {const pageIndex=this.viewer.currentPageNumber-1,page=this.viewer.getPageView(pageIndex)?.pdfPage;if(!page||!this.ready)throw Error('EDIT_STALE');const [left,bottom,right,top]=page.view,x=Math.min(right-22,left+40),y=Math.max(bottom+22,top-60);return{pageIndex,quote:'',quads:[[x,y,x+20,y,x,y-20,x+20,y-20]]};}
   selection(): SelectionPart[] {
     const selection = window.getSelection();
     if (!selection || selection.isCollapsed || !selection.rangeCount || !this.active || !this.ready) return [];
@@ -203,7 +207,7 @@ export class PdfReader {
     }
     return parts;
   }
-  focus(mark: Annotation, isCurrent:()=>boolean=()=>true):Promise<void> {
+  focus(mark: DisplayMark, isCurrent:()=>boolean=()=>true):Promise<void> {
     const generation=this.generation,epoch=this.focusEpoch=(this.focusEpoch||0)+1;
     const current=()=>epoch===this.focusEpoch&&generation===this.generation&&this.ready&&mark.documentId===this.active?.id&&mark.fingerprint===this.active?.fingerprint&&isCurrent();
     if(!current())return Promise.resolve();
@@ -240,7 +244,7 @@ export class PdfReader {
       for (const {mark,flashing} of [...this.marks.map(mark=>({mark,flashing:false})), ...(this.flash ? [{mark:this.flash,flashing:true}] : [])].filter(({mark}) => mark.pageIndex === index)) {
         if(partial&&!changed!.has(mark.id)){insertionPoint=existing.get(mark.id)?.at(-1)?.nextSibling||null;continue;}
         for (const quad of mark.quads) {
-          const [left, top, right, bottom] = quadToScreen(quad, view.viewport.transform);
+          let [left, top, right, bottom] = quadToScreen(quad, view.viewport.transform);if(mark.type==='note'&&mark.placement){const delta=transform(mark.placement.dx,mark.placement.dy,view.viewport.transform),zero=transform(0,0,view.viewport.transform);left+=delta[0]-zero[0];top+=delta[1]-zero[1];right+=delta[0]-zero[0];bottom+=delta[1]-zero[1];}
           if(['line','arrow','ink'].includes(mark.type)&&!flashing) {
             const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('drawn-'+mark.type);svg.dataset.annotationId=mark.id;
             const points=mark.points!.flatMap((_,i,p)=>i%2===0?transform(p[i],p[i+1],view.viewport.transform):[]);
@@ -254,6 +258,7 @@ export class PdfReader {
           const block = document.createElement('div'); block.className = flashing ? 'mark flash' : `mark ${mark.type}`;
           block.dataset.annotationId=mark.id;
           Object.assign(block.style, { left: `${left}px`, top: `${top}px`, width: `${right - left}px`, height: `${bottom - top}px`, backgroundColor: mark.color });
+          if(mark.type==='highlight'&&!flashing){const polygon=[0,2,6,4].map(i=>{const p=transform(quad[i],quad[i+1],view.viewport.transform);return `${p[0]-left}px ${p[1]-top}px`;}).join(',');block.style.clipPath=`polygon(${polygon})`;}
           if (mark.type === 'note') { block.textContent = '▤'; block.style.width = '20px'; block.style.height = '20px'; }
           overlay.insertBefore(block,insertionPoint);
         }

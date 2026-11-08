@@ -1,0 +1,24 @@
+import {beforeEach,afterEach,describe,it,expect} from 'vitest';
+import {mkdtempSync,writeFileSync,readFileSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
+import {Workspace} from '../src/main/workspace';
+import {SurfingSessions,validateSurfingSession,surfingProfileSignature} from '../src/main/surfing-sessions';
+import type {SurfingSession} from '../src/shared/surfing-session';
+let ws:Workspace,store:SurfingSessions,root:string,doc:any;
+const profile={id:'profile',name:'Model display',protocol:'openai-chat' as const,endpoint:'http://localhost/v1',model:'gpt-4o-mini',maxOutputTokens:1000,timeoutMs:10000,parameters:{}};
+const session=():SurfingSession=>({version:1,documentId:doc.id,fingerprint:doc.fingerprint,source:{profileId:'profile',name:'Model display',model:'gpt-4o-mini',signature:surfingProfileSignature(profile)},route:{stops:[{title:'Entry',reason:'Explore',passageIds:['surf-0-0-0']}]},selected:0,answers:{'0':{text:'Completed explanation',passageIds:['surf-0-0-0']}},contextWindowTokens:128000,status:'paused'});
+beforeEach(()=>{root=mkdtempSync(join(tmpdir(),'enlumor-surfing-store-'));const file=join(root,'paper.pdf');writeFileSync(file,'%PDF source fixture');ws=new Workspace(join(root,'workspace.sqlite'));doc=ws.register(file,2);store=new SurfingSessions(ws);});
+afterEach(()=>ws.close());
+describe('bounded local Surfing session storage',()=>{
+ it('does not create a table or change schema version merely by reading',()=>{const version=ws.db.prepare('PRAGMA user_version').get();expect(store.get(doc.id)).toBe(null);expect(ws.db.prepare("SELECT name FROM sqlite_master WHERE name='surfing_sessions'").get()).toBeUndefined();expect(ws.db.prepare('PRAGMA user_version').get()).toEqual(version);});
+ it('roundtrips across a closed database without changing source PDF',()=>{const before=readFileSync(doc.path);const s=session();store.save(s);ws.close();ws=new Workspace(join(root,'workspace.sqlite'));store=new SurfingSessions(ws);expect(store.get(doc.id)).toEqual(s);expect(readFileSync(doc.path)).toEqual(before);});
+ it('returns detached data and only accepts paused progress',()=>{store.save(session());const s=store.get(doc.id)!;s.answers['0'].text='changed';expect(store.get(doc.id)!.answers['0'].text).toBe('Completed explanation');expect(()=>store.save({...session(),status:'running'} as any)).toThrow('SURFING_INVALID_SESSION');});
+ it('rejects an invalid update without overwriting previous good data',()=>{store.save(session());const bad=session();bad.selected=2;expect(()=>store.save(bad)).toThrow('SURFING_INVALID_SESSION');expect(store.get(doc.id)).toEqual(session());});
+ it('keeps previous commit if SQLite rejects a replacement',()=>{store.save(session());ws.db.exec("CREATE TRIGGER block_surfing_update BEFORE UPDATE ON surfing_sessions BEGIN SELECT RAISE(ABORT,'fixture save failure'); END");const next=session();next.answers['0'].text='new result';expect(()=>store.save(next)).toThrow('fixture save failure');expect(store.get(doc.id)).toEqual(session());});
+ it.each(['source','oversized','unknownField','answerIndex','duplicateEvidence'])('rejects invalid %s data',kind=>{const s:any=session();if(kind==='source')s.source.credential='secret';if(kind==='oversized')s.answers['0'].text='x'.repeat(8193);if(kind==='unknownField')s.pendingRequest='run later';if(kind==='answerIndex')s.answers['5']=s.answers['0'];if(kind==='duplicateEvidence')s.route.stops[0].passageIds=['surf-0-0-0','surf-0-0-0'];expect(()=>store.save(s)).toThrow('SURFING_INVALID_SESSION');});
+ it('detects malformed saved payload without deleting it',()=>{store.save(session());ws.db.prepare('UPDATE surfing_sessions SET payload=? WHERE documentId=?').run('{',doc.id);expect(()=>store.get(doc.id)).toThrow('SURFING_INVALID_SESSION');expect(ws.db.prepare('SELECT payload FROM surfing_sessions WHERE documentId=?').get(doc.id)!.payload).toBe('{');});
+ it('rejects changed original files before restoring',()=>{store.save(session());writeFileSync(doc.path,'changed');expect(()=>store.get(doc.id)).toThrow('SOURCE_CHANGED');});
+ it('revalidates persisted evidence against the freshly prepared source',()=>{const s=session();const snapshot:any={context:{documentId:doc.id,fingerprint:doc.fingerprint,revision:8},passages:[{id:'other'}]};expect(()=>validateSurfingSession(s,snapshot)).toThrow('SURFING_INVALID_SESSION');});
+ it('never includes credentials in profile binding and detects changed model settings',()=>{const base=surfingProfileSignature(profile);expect(surfingProfileSignature({...profile,credential:{kind:'api-key',apiKey:'private'}})).toBe(base);expect(surfingProfileSignature({...profile,model:'gpt-4o'})).not.toBe(base);expect(surfingProfileSignature({...profile,name:'Renamed'})).toBe(base);});
+});

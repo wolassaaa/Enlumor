@@ -2,6 +2,7 @@ import { createHash } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { prepareEdit, canonicalDigest } from '../src/shared/editing-planner';
 import type { EditEnvironment, EditMark, EditSnapshot, PreparedEdit } from '../src/shared/editing-commands';
+import {copyEditData} from '../src/shared/editing-marks';
 
 const context = { documentId: 'doc', fingerprint: 'a'.repeat(64), revision: 3 };
 const quad = [-8, 20, 30, 20, -8, 2, 30, 2];
@@ -22,6 +23,15 @@ function run(command: unknown, marks: EditMark[] = [], environment = env()) { re
 function prepared(result: PreparedEdit) { expect(result.ok).toBe(true); if (!result.ok || result.kind !== 'prepared') throw Error(JSON.stringify(result)); return result; }
 function error(command: unknown, code = 'EDIT_INVALID', marks: EditMark[] = [], environment = env()) { expect(run(command, marks, environment)).toEqual({ ok: false, error: { code, message: expect.any(String) } }); }
 const update = { type: 'update_mark', id: 'mark', expectedVersion: 4, patch: { note: 'changed' } };
+
+describe('dense geometry copy compatibility and hostile arrays',()=>{
+ it('preserves digest array edge cases and left-to-right getter effects exactly',()=>{const reference=(v:any):string=>v===null||typeof v!=='object'?JSON.stringify(v):Array.isArray(v)?`[${v.map(reference).join(',')}]`:`{${Object.keys(v).sort().map(k=>JSON.stringify(k)+':'+reference(v[k])).join(',')}}`;for(const value of [[1,2.5,-0,1e-9,1e30],[NaN,Infinity,-Infinity],[1,'x',NaN,undefined],[,2,,],[[0,-1],[2,3]]])expect(canonicalDigest(value)).toBe(createHash('sha256').update(reference(value)).digest('hex'));const a={v:1},array:any[]=[a];let hits=0;Object.defineProperty(array,'1',{get(){hits++;a.v=2;return 2;},enumerable:true});expect(canonicalDigest(array)).toBe(createHash('sha256').update('[{"v":1},2]').digest('hex'));expect(hits).toBe(1);});
+ it('retains canonical digest bytes and detached dense numeric content including negative zero',()=>{const value={z:Object.freeze([0,-0,1.25,-1e7,1e7]),a:[null,true,'文字',[2,3]]};const before=canonicalDigest(value),copy=copyEditData(value);expect(copy).toEqual({z:[0,0,1.25,-1e7,1e7],a:[null,true,'文字',[2,3]]});expect(Object.is(copy.z[1],-0)).toBe(false);expect(canonicalDigest(copy)).toBe(before);expect(copy.z).not.toBe(value.z);expect(before).toBe(createHash('sha256').update('{"a":[null,true,"文字",[2,3]],"z":[0,0,1.25,-10000000,10000000]}').digest('hex'));});
+ it('rejects sparse, nonfinite, symbols, nonenumerable extra keys and non-array prototypes',()=>{const extra=[1,2];Object.defineProperty(extra,'extra',{value:3,enumerable:false});const symbol=[1,2];Object.defineProperty(symbol,Symbol('x'),{value:3});const proto=[1,2];Object.setPrototypeOf(proto,null);for(const input of [[1,,3],[NaN],[Infinity],[-Infinity],extra,symbol,proto])expect(()=>copyEditData(input)).toThrow();});
+ it('never invokes indexed accessors, including accessor replacing a hole plus an extra key',()=>{let hits=0;const array=[1,2];Object.defineProperty(array,'1',{get(){hits++;return 2;}});const sparse:any[]=[1,,3];Object.defineProperty(sparse,'extra',{value:2});expect(()=>copyEditData(array)).toThrow();expect(()=>copyEditData(sparse)).toThrow();expect(hits).toBe(0);});
+ it('rejects cyclic and aliased nested arrays, array overlimit and excessive depth',()=>{const cycle:any[]=[];cycle.push(cycle);const alias=[1,2];let deep:any=0;for(let i=0;i<34;i++)deep=[deep];for(const input of [cycle,[alias,alias],new Array(100001),deep])expect(()=>copyEditData(input)).toThrow();});
+ it('copies the actual 1000 by 256-point workload without mutation or digest drift',()=>{const points=Array.from({length:1000},(_,i)=>Array.from({length:512},(_,j)=>i+j*.25)),before=canonicalDigest(points),start=performance.now(),copy=copyEditData(points);console.log('COPY_PROFILE '+JSON.stringify({arrays:1000,points:256,ms:performance.now()-start}));expect(canonicalDigest(copy)).toBe(before);expect(copy).toEqual(points);copy[0][0]=999;expect(points[0][0]).toBe(0);});
+});
 
 describe('pure editing contract', () => {
   it.each(['highlight', 'underline', 'strikeout', 'note', 'line', 'arrow', 'ink'] as const)('creates %s with trusted source/defaults and inverse', type => {

@@ -1,8 +1,0 @@
-import{it,expect,vi}from'vitest';
-vi.mock('pdfjs-dist',()=>({getDocument:vi.fn(),GlobalWorkerOptions:{}}));
-vi.mock('pdfjs-dist/web/pdf_viewer.mjs',()=>({EventBus:class{},PDFViewer:class{},PDFLinkService:class{},PDFFindController:class{},ScrollMode:{}}));
-import{PdfReader}from'../src/renderer/pdf-reader';
-function harness(){const r:any=Object.create(PdfReader.prototype);Object.assign(r,{generation:1,ready:true,active:{id:'a',fingerprint:'a'.repeat(64),pageCount:10},blockCache:new Map(),lineTool:{setMode(){}},eraser:{setEnabled(){}},outlineTargets:new Map(),onOutline(){},link:{setDocument(){}},viewer:{pdfDocument:{getPage:async()=>({view:[0,0,600,800],getTextContent:async()=>({styles:{},items:[{str:'original',width:100,height:14,transform:[14,0,0,14,40,700],fontName:'f'}]})})},setDocument(){}}});return r as any;}
-it('bounds cache to six pages and returns isolated copies',async()=>{const r=harness();const first=await r.readPageBlocks(0);first[0].quote='mutated';expect((await r.readPageBlocks(0))[0].quote).toBe('original');for(let p=1;p<8;p++)await r.readPageBlocks(p);expect(r.blockCache.size).toBe(6);expect(r.blockCache.has(0)).toBe(false);});
-it.each(['replacement','clear'])('rejects pending text after %s and never caches stale blocks',async change=>{const r=harness();let release!:(value:any)=>void;r.viewer.pdfDocument.getPage=()=>new Promise(resolve=>release=resolve);const pending=r.readPageBlocks(0);const rejected=expect(pending).rejects.toThrow('CRUISE_SOURCE_CHANGED');if(change==='clear')r.clear();else{r.generation++;r.active={...r.active,id:'b'};r.blockCache.clear();}release({view:[0,0,600,800],getTextContent:async()=>({styles:{},items:[]})});await rejected;expect(r.blockCache.size).toBe(0);});
-

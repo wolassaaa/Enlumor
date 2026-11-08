@@ -18,7 +18,7 @@ export function editingFixture() {
 }
 export function editingHost(edits: WorkspaceEdits, context: CommandContext): EditHost {
   return { getContext: () => context, getActor: () => edits.actor, getPageBounds: () => [[0,0,400,500]], resolveAnchors: async () => [],
-    allocateIds: deriveEditingIds, readSnapshot: c => edits.readSnapshot(c), readReceipt: k => edits.readReceipt(k),
+    allocateIds: deriveEditingIds, readSnapshot: (c, ids) => edits.readSnapshot(c, ids), readReceipt: k => edits.readReceipt(k),
     readOperation: (c,id) => edits.readOperation(c,id), getConfirmation: () => null, transaction: b => edits.transaction(b) };
 }
 export const freeNote = { type: 'create_mark', markType: 'note', pageIndex: 0, color: '#123456', note: 'saved', geometry: { quads: [[10,30,30,30,10,10,30,10]] } } as const;

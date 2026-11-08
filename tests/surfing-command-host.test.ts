@@ -1,0 +1,24 @@
+import {describe,it,expect} from 'vitest';
+import {createSurfingCommandHost} from '../src/renderer/surfing-command-host';
+import type {SurfingContext} from '../src/shared/surfing-context';
+const fingerprint='a'.repeat(64);
+const source=():SurfingContext=>({context:{documentId:'doc',fingerprint,revision:1},pageCount:2,passages:[{id:'surf-1-0-0',documentId:'doc',fingerprint,pageIndex:1,quote:'Native trusted passage',quads:[[0,10,20,10,0,0,20,0]]}],emptyPages:[0],characterCount:22,coverage:'partial-text'});
+function setup(){let doc:{id:string;fingerprint:string;pageCount:number}|null={id:'doc',fingerprint,pageCount:2};let snapshot:SurfingContext|null=source();const effects:any[]=[];const reader={go:(page:number,current:()=>boolean)=>{if(current())effects.push(['go',page]);},locateCruiseBlock:async(b:any,current:()=>boolean)=>{if(current())effects.push(['focus',b.id]);},clearCruiseFocus:()=>effects.push(['clear'])};return{effects,reader,host:createSurfingCommandHost(()=>reader,()=>doc,()=>snapshot),switchDoc:()=>{doc={id:'other',fingerprint,pageCount:2};},replace:()=>{snapshot=source();},clear:()=>{snapshot=null;}};}
+describe('Surfing trusted-snapshot command adapter',()=>{
+ it('resolves Python source ID from trusted snapshot, not PDF.js block cache',async()=>{const h=setup();const result=await h.host.run({type:'show_evidence',pageIndex:1,passageId:'surf-1-0-0'});expect(result.ok).toBe(true);expect(h.effects).toEqual([['focus','surf-1-0-0']]);});
+ it('rejects invented source ID without moving viewport',async()=>{const h=setup();const r=await h.host.run({type:'show_evidence',pageIndex:1,passageId:'fake'});expect(r).toMatchObject({ok:false,error:{code:'EVIDENCE_NOT_FOUND'}});expect(h.effects).toEqual([]);});
+ it('rejects a correct ID on a wrong page',async()=>{const h=setup();expect(await h.host.run({type:'show_evidence',pageIndex:0,passageId:'surf-1-0-0'})).toMatchObject({ok:false,error:{code:'EVIDENCE_NOT_FOUND'}});expect(h.effects).toEqual([]);});
+ it('reports stale context when document does not match snapshot',async()=>{const h=setup();h.switchDoc();expect(await h.host.run({type:'go_to_page',pageIndex:1})).toMatchObject({ok:false,error:{code:'COMMAND_STALE'}});expect(h.effects).toEqual([]);});
+ it('returns cloned page data without a viewport change',async()=>{const h=setup();const r=await h.host.run({type:'read_page',pageIndex:1});expect(r.ok).toBe(true);if(r.ok&&r.result.kind==='page')r.result.blocks[0].quote='mutated';const again=await h.host.run({type:'read_page',pageIndex:1});expect(again).toMatchObject({ok:true,result:{blocks:[{quote:'Native trusted passage'}]}});expect(h.effects).toEqual([]);});
+ it('cancels the actual pending focus when user takes over',async()=>{const h=setup();let release!:()=>void;h.reader.locateCruiseBlock=(_b,current)=>new Promise(resolve=>{release=()=>{if(current())h.effects.push(['late-focus']);resolve();};});const pending=h.host.run({type:'show_evidence',pageIndex:1,passageId:'surf-1-0-0'});await new Promise(r=>setTimeout(r,0));h.host.invalidate();release();expect(await pending).toMatchObject({ok:false});expect(h.effects).not.toContainEqual(['late-focus']);});
+ it('snapshot replacement invalidates already scheduled viewport effects',async()=>{const h=setup();let release!:()=>void;h.reader.locateCruiseBlock=(_b,current)=>new Promise(resolve=>{release=()=>{if(current())h.effects.push(['late-focus']);resolve();};});const pending=h.host.run({type:'show_evidence',pageIndex:1,passageId:'surf-1-0-0'});await new Promise(r=>setTimeout(r,0));h.replace();release();expect(await pending).toMatchObject({ok:false,error:{code:'COMMAND_STALE'}});expect(h.effects).not.toContainEqual(['late-focus']);});
+ it('missing snapshot cannot navigate',async()=>{const h=setup();h.clear();expect(await h.host.run({type:'go_to_page',pageIndex:1})).toMatchObject({ok:false,error:{code:'COMMAND_STALE'}});expect(h.effects).toEqual([]);});
+ it('converts zero-based page index once through the existing command contract',async()=>{const h=setup();expect((await h.host.run({type:'go_to_page',pageIndex:1})).ok).toBe(true);expect(h.effects).toEqual([['go',2]]);});
+});
+
+it.each(['go_to_page','show_evidence'] as const)('new %s intent preempts a pending old focus',async kind=>{
+ const h=setup();let release!:()=>void;let calls=0;
+ h.reader.locateCruiseBlock=(b,current)=>{calls++;if(calls===1)return new Promise(resolve=>{release=()=>{if(current())h.effects.push(['late-old-focus']);resolve();};});if(current())h.effects.push(['new-focus',b.id]);return Promise.resolve();};
+ const old=h.host.run({type:'show_evidence',pageIndex:1,passageId:'surf-1-0-0'});await new Promise(r=>setTimeout(r,0));
+ const next=await h.host.run(kind==='go_to_page'?{type:'go_to_page',pageIndex:0}:{type:'show_evidence',pageIndex:1,passageId:'surf-1-0-0'});expect(next.ok).toBe(true);release();expect(await old).toMatchObject({ok:false});expect(h.effects).not.toContainEqual(['late-old-focus']);
+});

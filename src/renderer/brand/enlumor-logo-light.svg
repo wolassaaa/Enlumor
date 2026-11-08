@@ -1,0 +1,67 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="434" height="270" viewBox="0 0 434 270" fill="none" role="img" aria-labelledby="enlumor-logo-title enlumor-logo-desc">
+  <title id="enlumor-logo-title">Enlumor</title>
+  <desc id="enlumor-logo-desc">Two connected, gently asymmetric opening pages, illuminated from their central seam in blue and warm ivory.</desc>
+  <defs>
+    <path id="enlumor-page-left" d="M20 25.5C78 4.5 143 14.5 186 50.5C215 74.5 230 98 233.5 124.5C238 163 235 210 223 259C205 243 185 235 158 230C123 222 90 224 64 211C36 197 26 173 21 141L13 39C12.2 31.5 13.3 28 20 25.5Z"/>
+    <path id="enlumor-page-right" d="M223 259C238 216 246 169 235 129C250 96 276 66 311 45C345 23.5 384 13 415 11.5C419 11.1 422 11.2 421.7 17.3C419.5 74 409.5 119.5 382 150C355 181 319 191 283 208C259 219.5 238 239.5 223 259Z"/>
+    <clipPath id="enlumor-clip-left"><use href="#enlumor-page-left"/></clipPath>
+    <clipPath id="enlumor-clip-right"><use href="#enlumor-page-right"/></clipPath>
+    <linearGradient id="enlumor-left-blue" x1="49" y1="31" x2="172" y2="241" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#426ACE"/>
+      <stop offset=".34" stop-color="#294EA9"/>
+      <stop offset=".71" stop-color="#283D7E"/>
+      <stop offset="1" stop-color="#8E7A8D"/>
+    </linearGradient>
+    <radialGradient id="enlumor-left-rim" cx="0" cy="0" r="1" gradientTransform="translate(231 111) scale(158 148)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F2F5FF"/>
+      <stop offset=".25" stop-color="#EAF2FF" stop-opacity=".9"/>
+      <stop offset=".5" stop-color="#B4D2FF" stop-opacity=".6"/>
+      <stop offset=".78" stop-color="#80AAFF" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#80AAFF" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="enlumor-left-light" cx="0" cy="0" r="1" gradientTransform="translate(240 222) rotate(180) scale(145 158)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFF4"/>
+      <stop offset=".23" stop-color="#FFF8DF"/>
+      <stop offset=".43" stop-color="#FFE3C1" stop-opacity=".96"/>
+      <stop offset=".68" stop-color="#F1C5B5" stop-opacity=".7"/>
+      <stop offset="1" stop-color="#E0B5C6" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="enlumor-right-colour" x1="339" y1="25" x2="313" y2="211" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F0CE9F"/>
+      <stop offset=".27" stop-color="#DDB29F"/>
+      <stop offset=".56" stop-color="#AC9BC6"/>
+      <stop offset=".79" stop-color="#6376C3"/>
+      <stop offset="1" stop-color="#426BC7"/>
+    </linearGradient>
+    <radialGradient id="enlumor-right-light" cx="0" cy="0" r="1" gradientTransform="translate(239 127) rotate(-32) scale(112 68)" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFF5"/>
+      <stop offset=".26" stop-color="#FFF5D6" stop-opacity=".95"/>
+      <stop offset=".6" stop-color="#FFDDB8" stop-opacity=".58"/>
+      <stop offset="1" stop-color="#FFDDB8" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="enlumor-seam" x1="237" y1="120" x2="223" y2="259" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFAE5"/>
+      <stop offset=".38" stop-color="#FFFFF6"/>
+      <stop offset=".82" stop-color="#FFFCEB"/>
+      <stop offset="1" stop-color="#EBF0FF"/>
+    </linearGradient>
+    <linearGradient id="enlumor-edge-left" x1="110" y1="20" x2="226" y2="249" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#B2CBFF" stop-opacity=".68"/>
+      <stop offset=".4" stop-color="#87ACFF" stop-opacity=".18"/>
+      <stop offset="1" stop-color="#FFF5DF" stop-opacity=".7"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#enlumor-clip-left)">
+    <use href="#enlumor-page-left" fill="url(#enlumor-left-blue)"/>
+    <path d="M0 0H434V270H0Z" fill="url(#enlumor-left-rim)"/>
+    <path d="M0 0H434V270H0Z" fill="url(#enlumor-left-light)" opacity=".88"/>
+  </g>
+  <g clip-path="url(#enlumor-clip-right)">
+    <use href="#enlumor-page-right" fill="url(#enlumor-right-colour)"/>
+    <path d="M0 0H434V270H0Z" fill="url(#enlumor-right-light)" opacity=".76"/>
+  </g>
+  <path d="M233.5 124.5C236.1 120.5 238.4 120 240.8 123.5C247.6 161.7 238.5 213.4 223 259C229.5 207.6 231.9 163.9 233.5 124.5Z" fill="url(#enlumor-seam)"/>
+  <use href="#enlumor-page-left" stroke="url(#enlumor-edge-left)" stroke-width=".7"/>
+  <path d="M235 129C250 96 276 66 311 45C345 23.5 384 13 415 11.5C419 11.1 422 11.2 421.7 17.3" stroke="#BC9FA8" stroke-opacity=".7" stroke-width=".85"/>
+  <use href="#enlumor-page-right" stroke="#7A7DB0" stroke-opacity=".24" stroke-width=".8"/>
+</svg>

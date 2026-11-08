@@ -39,3 +39,5 @@ evidence/production-integration-design/originals/** -text -diff
 evidence/production-integration-design/*.txt -text -diff
 evidence/production-integration-plan/originals/** -text -diff
 evidence/production-integration-plan/*.txt -text -diff
+evidence/editing-production-integration/originals/** -text -diff
+evidence/editing-production-integration/*.txt -text -diff

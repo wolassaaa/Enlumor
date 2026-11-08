@@ -9,7 +9,16 @@ const markOrder = (a: EditMark, b: EditMark) => a.pageIndex - b.pageIndex || com
 export function canonicalDigest(value: unknown): string {
   function encode(v: any): string {
     if (v === null || typeof v !== 'object') return JSON.stringify(v);
-    if (Array.isArray(v)) return `[${v.map(encode).join(',')}]`;
+    if (Array.isArray(v)) {
+      let numeric = true;
+      // Once-only, left-to-right reads, as in the original encoder. Dense numeric
+      // geometry has no object keys to sort; native JSON emits identical bytes.
+      const parts = v.map(item => {
+        if (typeof item === 'number' && Number.isFinite(item)) return item;
+        numeric = false; return encode(item);
+      });
+      return numeric && Object.keys(parts).length === parts.length ? JSON.stringify(parts) : `[${parts.join(',')}]`;
+    }
     return `{${Object.keys(v).sort(compare).map(key => `${JSON.stringify(key)}:${encode(v[key])}`).join(',')}}`;
   }
   return createHash('sha256').update(encode(value)).digest('hex');
