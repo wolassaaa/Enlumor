@@ -7,7 +7,6 @@ type Preset={key:string;label:string;protocol:AiProtocol;endpoint:string;model?:
 const presets:Preset[]=[
  {key:'openai',label:'OpenAI',protocol:'openai-chat',endpoint:'https://api.openai.com/v1'},
  {key:'deepseek',label:'DeepSeek',protocol:'openai-chat',endpoint:'https://api.deepseek.com/v1',model:'deepseek-flash'},
- {key:'openrouter',label:'OpenRouter（多家模型聚合）',protocol:'openai-chat',endpoint:'https://openrouter.ai/api/v1'},
  {key:'siliconflow',label:'硅基流动 SiliconFlow',protocol:'openai-chat',endpoint:'https://api.siliconflow.cn/v1'},
  {key:'bailian',label:'阿里云百炼 / 通义千问',protocol:'openai-chat',endpoint:'https://dashscope.aliyuncs.com/compatible-mode/v1'},
  {key:'zhipu',label:'智谱 GLM',protocol:'openai-chat',endpoint:'https://open.bigmodel.cn/api/paas/v4'},
