@@ -1,5 +1,7 @@
 # Editing command library — isolated acceptance
 
+> 历史记录：写的是当时的计划或判断，不代表现状。当前状态见 [STATUS.md](../STATUS.md)，施工顺序见 [2026-11-06 规划](../plans/2026-11-06-agent-system-plan.md)。
+
 ## Delivered boundary
 
 This batch implements a Node-side library, not production reader integration. `runEditingCommand(input, host, signal)` uses the shared planner/mark contract; `queryEditingReceipt(input, host)` recovers durable success without changing any state. No window/preload API, production IPC, Workspace/Annotation migration, user database, model call, UI effect, dependency or PDF-writing port is added.
