@@ -1,5 +1,7 @@
 # Enlumor v0.4：已批准方向与 Wave A/B 范围
 
+> 历史记录：写的是当时的计划或判断，不代表现状。当前状态见 [STATUS.md](../../STATUS.md)，施工顺序见 [2026-11-06 规划](../../plans/2026-11-06-agent-system-plan.md)。
+
 > **历史基线（2026-10-18）：**当前以[产品计划v0.5.1](../../product/Enlumor_Product_Plan_v0.5.1.md)为准。保留已实现底座；Cruise摘要不再为硬门槛，后续优先Surfing MVP。原文以下内容用于追溯，不授权执行过时的旧Wave B。
 
 日期：2026-10-17。应用起点：0.1.15 / commit 0f9959a。

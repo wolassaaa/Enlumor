@@ -1,5 +1,7 @@
 # Enlumor Editing Production Integration Implementation Plan
 
+> 历史记录：写的是当时的计划或判断，不代表现状。当前状态见 [STATUS.md](../../STATUS.md)，施工顺序见 [2026-11-06 规划](../../plans/2026-11-06-agent-system-plan.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development。沿用用户选择：单一实施者，每项独立Review，两项后整体Review。本文经用户书面审阅后实施；不重复询问执行方式。
 
 **Goal:** 在隔离候选中把已验收编辑库接入同一真实Workspace、原文核验与现有人工PDF工具，完成保存/撤销/恢复闭环。

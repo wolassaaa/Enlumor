@@ -30,7 +30,7 @@ npm start          # 启动已构建的桌面应用
 
 此前0.1.9 修复便签模态焦点隔离、原文锚点固定与失败草稿保留；保存失败后收起详情仍能重试。明确放弃失败便签编辑不会删除旧的已保存内容。
 
-此前0.1.8 新增箭头与画笔（标准PDF批注导出）。右栏选择工具后页内拖动，一次笔迹保存后恢复文字选择；Esc或布局改变取消。画笔每条最多4096采样点，长笔迹抽样降密度，不模拟压感。箭头头部应用内实心、导出空心，端点方向保持一致。保留删除线、直线、下划线、高亮、便签、侧栏调宽/间距、多标签及按需渲染。完整清单与每两项review见 [docs/FEATURES.md](FEATURES.md)、[docs/REVIEW-CADENCE.md](REVIEW-CADENCE.md)。
+此前0.1.8 新增箭头与画笔（标准PDF批注导出）。右栏选择工具后页内拖动，一次笔迹保存后恢复文字选择；Esc或布局改变取消。画笔每条最多4096采样点，长笔迹抽样降密度，不模拟压感。箭头头部应用内实心、导出空心，端点方向保持一致。保留删除线、直线、下划线、高亮、便签、侧栏调宽/间距、多标签及按需渲染。完整清单与每两项review见 [docs/FEATURES.md](archive/FEATURES.md)、[docs/REVIEW-CADENCE.md](archive/REVIEW-CADENCE.md)。
 
 ## 0.1.13 Cruise 共读
 
@@ -42,7 +42,7 @@ npm start          # 启动已构建的桌面应用
 ## 0.1.14 国内原生接口
 
 模型设置新增DashScope原生文本HTTP/SSE、Spark WebSocket。Spark填写APPID/APIKey/APISecret和匹配版本的domain；凭据加密保存，编辑时三项一起填写或全部留空保留。
-两个协议共用现有Cruise，不另开一套聊天界面；支持错误/超时/取消和旧响应隔离。Spark WS使用Node内置直连，不自动继承Electron HTTP代理。完整配置与测试等级见 [API兼容矩阵](API-COMPATIBILITY.md)。
+两个协议共用现有Cruise，不另开一套聊天界面；支持错误/超时/取消和旧响应隔离。Spark WS使用Node内置直连，不自动继承Electron HTTP代理。完整配置与测试等级见 [API兼容矩阵](archive/API-COMPATIBILITY.md)。
 本轮110单测＋8Python＋95最终EXE流程通过；厂商真实密钥连接仍待用户配置后验证。
 
 ## 已有功能

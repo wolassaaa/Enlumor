@@ -1,5 +1,7 @@
 # Enlumor Editing Command Library Implementation Plan
 
+> 历史记录：写的是当时的计划或判断，不代表现状。当前状态见 [STATUS.md](../../STATUS.md)，施工顺序见 [2026-11-06 规划](../../plans/2026-11-06-agent-system-plan.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. 沿用用户选择：单一实施者、每项独立Review、两项后整轮Review；详细计划经用户审阅后才写运行时代码。
 
 **Goal:** 构建七类标识的编辑命令合同、变更生成和事务执行库，证明实际本地提交与历史正确；不将纯变更计划或测试仓储冒充应用上线。

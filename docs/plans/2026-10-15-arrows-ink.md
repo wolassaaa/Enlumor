@@ -1,4 +1,6 @@
 # Enlumor arrows and ink implementation plan
+
+> 历史记录：写的是当时的计划或判断，不代表现状。当前状态见 [STATUS.md](../STATUS.md)，施工顺序见 [2026-11-06 规划](2026-11-06-agent-system-plan.md)。
 Spec: docs/FEATURES.md; user-approved reading/annotation roadmap and two-task review cadence.
 Baseline: 48ab539. Release target: 0.1.8.
 ## Global Constraints

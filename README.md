@@ -15,7 +15,7 @@
 <p align="center">
   <a href="#a-real-reader">See the reader</a> ·
   <a href="#getting-started">Get started</a> ·
-  <a href="docs/API-COMPATIBILITY.md">Provider setup</a> ·
+  <a href="docs/archive/API-COMPATIBILITY.md">Provider setup</a> ·
   <a href="README.zh-CN.md">简体中文</a>
 </p>
 
@@ -31,7 +31,7 @@ The development branches add three things:
 
 Full-document sending still needs explicit confirmation. Real-model results so far cover one model, DeepSeek V4.1 Flash.
 
-This is **development code**, not a new stable binary release. Windows **0.1.15** remains the last verified release named here. See [current development status](docs/CURRENT_DEVELOPMENT.md) for measurements and known gaps, and the [roadmap](docs/ROADMAP.md) for what comes next.
+This is **development code**, not a new stable binary release. Windows **0.1.15** remains the last verified release named here. See [current development status](docs/STATUS.md) for measurements and known gaps, and the [roadmap](docs/ROADMAP.md) for what comes next.
 
 ## Reading first
 
@@ -62,7 +62,7 @@ Export annotations to a **separate PDF** while preserving the original. A local 
 - **BYOK:** choose a provider, supply your own key and pay that provider directly.
 - **Bounded context:** Cruise sends the current reading block, not the entire PDF. Optional AI can send this context off-device.
 - **You stay in control:** pause, cancel or take over reading. Old or cancelled responses are guarded against.
-- **Honest compatibility:** protocol adapters and local test coverage do not imply every provider or model has been tested with real credentials. See the [compatibility matrix](docs/API-COMPATIBILITY.md).
+- **Honest compatibility:** protocol adapters and local test coverage do not imply every provider or model has been tested with real credentials. See the [compatibility matrix](docs/archive/API-COMPATIBILITY.md).
 
 ### Built, being tested, imagined
 
@@ -140,8 +140,8 @@ Enlumor is licensed under the [GNU Affero General Public License v3.0 or later](
 
 | For readers | For builders |
 | :--- | :--- |
-| [中文介绍](README.zh-CN.md) · [Provider compatibility](docs/API-COMPATIBILITY.md) | [Feature delivery](docs/FEATURES.md) · [Implementation](docs/IMPLEMENTATION.md) |
-| [Report a concrete reading problem](https://github.com/wolassaaa/Enlumor/issues) | [Review cadence](docs/REVIEW-CADENCE.md) · [Development notes](docs/DEVELOPMENT_NOTES.zh-CN.md) |
+| [中文介绍](README.zh-CN.md) · [Provider compatibility](docs/archive/API-COMPATIBILITY.md) | [Feature delivery](docs/archive/FEATURES.md) · [Implementation](docs/archive/IMPLEMENTATION.md) |
+| [Report a concrete reading problem](https://github.com/wolassaaa/Enlumor/issues) | [Review cadence](docs/archive/REVIEW-CADENCE.md) · [Development notes](docs/DEVELOPMENT_NOTES.zh-CN.md) |
 
 Feedback is most useful with a reproducible task, app version and expected behaviour. Do not post API keys or private documents in an issue.
 

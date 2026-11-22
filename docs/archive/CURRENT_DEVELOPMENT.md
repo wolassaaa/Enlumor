@@ -1,6 +1,8 @@
+> 已归档（2026-11-09）：内容停在写作时，不代表现状。当前状态见 [STATUS.md](../STATUS.md)。
+
 # Current development snapshot — 27 October 2026 (code freeze)
 
-This is the source state at the 08:00 code freeze on 27 October 2026. It is development code, not a new stable binary release; the formal Windows release remains 0.1.15. Work after the freeze is listed in the [roadmap](ROADMAP.md).
+This is the source state at the 08:00 code freeze on 27 October 2026. It is development code, not a new stable binary release; the formal Windows release remains 0.1.15. Work after the freeze is listed in the [roadmap](../ROADMAP.md).
 
 The work sits on three stacked branches:
 
@@ -14,7 +16,7 @@ The work sits on three stacked branches:
 
 - **Surfing** answers questions about the whole paper beside the PDF. Full-document sending still needs explicit confirmation. The model can look at pages, read page text and search before it answers; answers are validated JSON, and one repair turn handles malformed replies. When an answer uses several places in the paper it comes with numbered steps, and an invalid step is dropped rather than failing the answer.
 - **Thinking levels** come from the model's own API: DeepSeek offers off, low, high (default) and max; OpenAI reasoning models offer low, medium (default) and high. Other models get no thinking parameter, and the selector is disabled.
-- **The editing library is the default.** Opening an older workspace upgrades it from schema v4 to v5 after an integrity-checked backup; older annotations convert when their page is opened. PDF export writes the marks as the reader sees them plus any annotation not yet converted. If the library cannot open, the app logs why and falls back to the old path. See [EDITING.md](EDITING.md) for the upgrade, the switch and how to roll back.
+- **The editing library is the default.** Opening an older workspace upgrades it from schema v4 to v5 after an integrity-checked backup; older annotations convert when their page is opened. PDF export writes the marks as the reader sees them plus any annotation not yet converted. If the library cannot open, the app logs why and falls back to the old path. See [EDITING.md](../EDITING.md) for the upgrade, the switch and how to roll back.
 
 ## Measured
 
@@ -59,4 +61,4 @@ Unit tests: 683 passed. Full end-to-end run: 178 of 183 passed. Of the five fail
 
 ## Development use
 
-Install with `setup.ps1`, then `npm run build` and `npm start`. Rebuild after source changes. Use a separate user-data profile for experiments. Older executables such as 0.1.15 refuse to open an upgraded (v5) workspace; to go back, restore the pre-v5 backup as [EDITING.md](EDITING.md) describes. No personal profile, credential or private paper is part of this source.
+Install with `setup.ps1`, then `npm run build` and `npm start`. Rebuild after source changes. Use a separate user-data profile for experiments. Older executables such as 0.1.15 refuse to open an upgraded (v5) workspace; to go back, restore the pre-v5 backup as [EDITING.md](../EDITING.md) describes. No personal profile, credential or private paper is part of this source.

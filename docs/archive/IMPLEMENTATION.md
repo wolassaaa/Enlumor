@@ -1,3 +1,5 @@
+> 已归档（2026-11-09）：内容停在写作时，不代表现状。当前状态见 [STATUS.md](../STATUS.md)。
+
 # Enlumor / Foundation ledger
 
 Approved scope: phase 1 of the user-supplied implementation plan, 2026-10-15.

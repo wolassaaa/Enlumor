@@ -1,5 +1,7 @@
 # Enlumor Document Command Foundation Implementation Plan
 
+> 历史记录：写的是当时的计划或判断，不代表现状。当前状态见 [STATUS.md](../../STATUS.md)，施工顺序见 [2026-11-06 规划](../../plans/2026-11-06-agent-system-plan.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development. 沿用用户选择的子代理方式，单一实施者，逐项Review；两项完成后整轮Review。步骤使用checkbox跟踪。
 
 **Goal:** 先交付能操作真实PDF、具有严格输入校验和取消语义的基础阅读指令库，而不是空工具目录或新的聊天界面。

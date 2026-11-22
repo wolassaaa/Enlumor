@@ -1,5 +1,7 @@
 # Enlumor Cruise Overnight Implementation Plan
 
+> 历史记录：写的是当时的计划或判断，不代表现状。当前状态见 [STATUS.md](../../STATUS.md)，施工顺序见 [2026-11-06 规划](../../plans/2026-11-06-agent-system-plan.md)。
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. 实施在本线程顺序进行；每两项后按requesting-code-review调用一次只读独立reviewer，不并行修改共享工作区。
 
 **Goal:** 交付可配置多协议模型服务、可定位原文并可暂停/手动接管的PDF Cruise，补国内兼容及原生接口。

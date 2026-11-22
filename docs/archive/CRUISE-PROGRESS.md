@@ -1,3 +1,5 @@
+> 已归档（2026-11-09）：内容停在写作时，不代表现状。当前状态见 [STATUS.md](../STATUS.md)。
+
 # Cruise 夜间执行记录
 
 计划：docs/superpowers/plans/2026-10-17-cruise-overnight.md
